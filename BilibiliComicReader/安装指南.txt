@@ -1,0 +1,12 @@
+例：在 Edge 中导入扩展
+1.打开 Microsoft Edge。
+
+2.在地址栏输入 edge://extensions/ 并回车。
+
+3.在左侧菜单栏，打开 “开发人员模式” (Developer mode) 的开关。
+
+4.点击右侧出现的 “加载解压缩的扩展” (Load unpacked) 按钮。
+
+5.在弹出的对话框中，选择解压后的 BiliComicReader 文件夹。
+
+6.重进B站网页即可

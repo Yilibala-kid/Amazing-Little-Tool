@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "B站漫画模式阅读器",
+  "version": "1.0",
+  "description": "将B站专栏和动态转换为双页阅读模式",
+  "permissions": ["activeTab"],
+  "content_scripts": [
+    {
+      "matches": [
+        "*://www.bilibili.com/read/*",
+        "*://www.bilibili.com/opus/*",
+        "*://t.bilibili.com/*"
+      ],
+      "js": ["content.js"]
+    }
+  ],
+  "action": {
+    "default_title": "B站漫画模式"
+  }
+}
