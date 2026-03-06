@@ -10,3 +10,25 @@
 5.在弹出的对话框中，选择解压后的 BiliComicReader 文件夹。
 
 6.重进B站网页即可
+（可能Edge会一直发弹窗，使用下面的油猴导入插件可以避免这个问题）
+
+
+1. 安装油猴插件 (Tampermonkey)https://microsoftedge.microsoft.com/addons/detail/tampermonkey/iikmkjmpaadaobahmlepeloendndfphd
+在左侧菜单栏，打开 “开发人员模式” (Developer mode) 的开关。
+在“篡改猴”的详细信息中勾选“允许用户脚本”
+
+2.点击浏览器右上角的 油猴图标。
+
+3.选择 “添加新脚本” (Create a new script)。
+
+4.在弹出的代码编辑窗口中，删除所有默认生成的代码。
+
+5.将content.js代码完整地 粘贴 进去。
+
+6.按下快捷键 Ctrl + S 或点击菜单栏的 “文件” -> “保存”。
+
+7.重进B站网页即可
+
+
+
+页面右下角会出现 “📖 漫画模式” 按钮，点击即可进入。
