@@ -1,0 +1,212 @@
+/* B站收藏夹快捷跳转 - Content Styles */
+
+:root {
+    --fav-primary: #fb7299;
+    --fav-primary-dark: #fa6598;
+    --fav-bg: rgba(0, 0, 0, 0.85);
+    --fav-border: rgba(255, 255, 255, 0.2);
+    --fav-hover: rgba(255, 255, 255, 0.1);
+    --fav-delete-bg: rgba(0, 0, 0, 0.4);
+    --fav-radius: 8px;
+    --fav-radius-lg: 12px;
+}
+
+/* 悬浮按钮 */
+#bilibili-fav-float-btn {
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    background: var(--fav-primary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(251, 114, 153, 0.4);
+    z-index: 999999;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+#bilibili-fav-float-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 16px rgba(251, 114, 153, 0.6);
+}
+
+/* 收藏夹面板 */
+#bilibili-fav-panel {
+    position: fixed;
+    bottom: 140px;
+    right: 20px;
+    width: 280px;
+    max-height: 500px;
+    background: var(--fav-bg);
+    backdrop-filter: blur(10px);
+    border-radius: var(--fav-radius-lg);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    z-index: 1000000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s, transform 0.2s, visibility 0.2s;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    transform: translateY(10px);
+    color: #fff;
+}
+
+#bilibili-fav-panel.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+/* 面板头部 */
+.bilibili-fav-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--fav-border);
+    background: var(--fav-primary);
+    color: #fff;
+    border-radius: var(--fav-radius-lg) var(--fav-radius-lg) 0 0;
+    font-weight: 600;
+}
+
+.bilibili-fav-close {
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+}
+
+.bilibili-fav-close:hover { opacity: 1; }
+.bilibili-fav-content { max-height: 400px; overflow-y: auto; }
+.bilibili-fav-list { padding: 10px; display: flex; flex-wrap: wrap; gap: 0; }
+
+/* 空状态 */
+.bilibili-fav-empty { text-align: center; color: #999; padding: 40px 20px; font-size: 14px; }
+
+/* 消息提示 */
+.bilibili-fav-msg { padding: 8px; text-align: center; font-size: 13px; display: none; }
+
+/* 收藏项 */
+.bilibili-fav-item-link { display: block; text-decoration: none; color: inherit; width: calc(50% - 4px); position: relative; }
+
+.bilibili-fav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 6px 0;
+    border-radius: var(--fav-radius);
+    transition: background 0.2s;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    height: 80px;
+    box-sizing: border-box;
+}
+
+.bilibili-fav-item[data-readlist="true"] { padding: 0; }
+.bilibili-fav-item-link:hover .bilibili-fav-item { background: var(--fav-hover); }
+
+.bilibili-fav-item-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    position: relative;
+    z-index: 1;
+}
+
+.bilibili-fav-item[data-readlist="true"] .bilibili-fav-item-info { padding: 0; overflow: hidden; border-radius: inherit; }
+
+/* 头像 */
+.bilibili-fav-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--fav-primary);
+    position: relative;
+    z-index: 1;
+}
+
+.bilibili-fav-avatar.cover { display: block; width: 100%; height: 100%; border-radius: var(--fav-radius); border: none; position: absolute; inset: 0; }
+
+/* 名称 */
+.bilibili-fav-name {
+    font-size: 12px;
+    color: #fff;
+    font-weight: 500;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    position: relative;
+    z-index: 1;
+}
+
+.bilibili-fav-item[data-readlist="true"] .bilibili-fav-name {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    color: #fff;
+    background: linear-gradient(transparent, rgba(0,0,0,0.7));
+    padding: 20px 8px 8px;
+    border-radius: 0 0 var(--fav-radius) var(--fav-radius);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+
+/* 删除按钮 */
+.bilibili-fav-delete {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    font-size: 14px;
+    line-height: 16px;
+    color: #fff;
+    background: var(--fav-delete-bg);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s;
+    z-index: 2;
+    opacity: 0;
+}
+
+.bilibili-fav-item:hover .bilibili-fav-delete { opacity: 1; }
+.bilibili-fav-delete:hover { background: #ff4757; }
+
+/* 面板底部 */
+.bilibili-fav-footer { padding: 12px 20px; border-top: 1px solid var(--fav-border); display: flex; gap: 10px; justify-content: center; }
+
+.bilibili-fav-add-btn {
+    padding: 8px 16px;
+    font-size: 13px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--fav-primary);
+    color: #fff;
+    border: none;
+}
+
+.bilibili-fav-add-btn:hover { background: var(--fav-primary-dark); }
+
+/* 滚动条 */
+.bilibili-fav-content::-webkit-scrollbar { width: 6px; }
+.bilibili-fav-content::-webkit-scrollbar-track { background: var(--fav-hover); }
+.bilibili-fav-content::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.3); border-radius: 3px; }
+.bilibili-fav-content::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.5); }
