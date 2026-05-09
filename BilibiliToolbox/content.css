@@ -27,12 +27,19 @@
     cursor: pointer;
     box-shadow: 0 4px 12px rgba(251, 114, 153, 0.4);
     z-index: 999999;
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition: transform 0.2s, box-shadow 0.2s, opacity 0.3s, visibility 0.3s;
+    line-height: 1;
+    text-align: center;
 }
 
 #bilibili-fav-float-btn:hover {
     transform: scale(1.1);
     box-shadow: 0 6px 16px rgba(251, 114, 153, 0.6);
+}
+
+#bilibili-fav-float-btn.hide-forward-active {
+    background: var(--fav-primary);
+    border-radius: 6px;
 }
 
 /* 收藏夹面板 */
@@ -61,12 +68,36 @@
     transform: translateY(0);
 }
 
+#bilibili-fav-controls-panel {
+    position: fixed;
+    bottom: 140px;
+    right: 20px;
+    width: 280px;
+    background: var(--fav-bg);
+    backdrop-filter: blur(10px);
+    border-radius: var(--fav-radius-lg);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    z-index: 1000001;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s, transform 0.2s, visibility 0.2s;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    transform: translateY(10px);
+    color: #fff;
+}
+
+#bilibili-fav-controls-panel.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
 /* 面板头部 */
 .bilibili-fav-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 16px;
+    padding: 6px 12px;
     border-bottom: 1px solid var(--fav-border);
     background: var(--fav-primary);
     color: #fff;
@@ -74,21 +105,94 @@
     font-weight: 600;
 }
 
-.bilibili-fav-close {
-    background: none;
-    border: none;
-    color: #fff;
-    font-size: 24px;
+.bilibili-fav-content { max-height: 400px; overflow-y: auto; }
+.bilibili-fav-list { padding: 10px; display: flex; flex-wrap: wrap; justify-content: space-between; }
+
+.bilibili-toolbox-control-content { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+
+.bilibili-toolbox-control-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px;
+    border-radius: var(--fav-radius);
+    border: 1px solid var(--fav-border);
+    background: rgba(255, 255, 255, 0.05);
     cursor: pointer;
-    padding: 0;
-    line-height: 1;
-    opacity: 0.8;
-    transition: opacity 0.2s;
 }
 
-.bilibili-fav-close:hover { opacity: 1; }
-.bilibili-fav-content { max-height: 400px; overflow-y: auto; }
-.bilibili-fav-list { padding: 10px; display: flex; flex-wrap: wrap; gap: 0; }
+.bilibili-toolbox-control-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.bilibili-toolbox-control-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+}
+
+.bilibili-toolbox-control-desc,
+.bilibili-toolbox-control-status {
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.bilibili-toolbox-control-desc { color: rgba(255, 255, 255, 0.78); }
+
+.bilibili-toolbox-control-status {
+    padding: 10px 12px;
+    border-radius: var(--fav-radius);
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+}
+
+.bilibili-toolbox-switch {
+    position: relative;
+    width: 46px;
+    height: 28px;
+    flex-shrink: 0;
+}
+
+.bilibili-toolbox-switch input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    margin: 0;
+}
+
+.bilibili-toolbox-switch-slider {
+    position: absolute;
+    inset: 0;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.24);
+    transition: background 0.2s ease;
+}
+
+.bilibili-toolbox-switch-slider::before {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.bilibili-toolbox-switch input:checked + .bilibili-toolbox-switch-slider {
+    background: var(--fav-primary);
+}
+
+.bilibili-toolbox-switch input:checked + .bilibili-toolbox-switch-slider::before {
+    transform: translateX(18px);
+}
 
 /* 空状态 */
 .bilibili-fav-empty { text-align: center; color: #999; padding: 40px 20px; font-size: 14px; }
@@ -103,7 +207,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 6px 0;
+    padding: 4px 6px;
     border-radius: var(--fav-radius);
     transition: background 0.2s;
     text-align: center;
@@ -152,6 +256,7 @@
     white-space: nowrap;
     position: relative;
     z-index: 1;
+    margin-top: 8px;
 }
 
 .bilibili-fav-item[data-readlist="true"] .bilibili-fav-name {
@@ -189,9 +294,7 @@
 .bilibili-fav-item:hover .bilibili-fav-delete { opacity: 1; }
 .bilibili-fav-delete:hover { background: #ff4757; }
 
-/* 面板底部 */
-.bilibili-fav-footer { padding: 12px 20px; border-top: 1px solid var(--fav-border); display: flex; gap: 10px; justify-content: center; }
-
+/* 收藏项添加按钮 */
 .bilibili-fav-add-btn {
     padding: 8px 16px;
     font-size: 13px;
@@ -210,3 +313,5 @@
 .bilibili-fav-content::-webkit-scrollbar-track { background: var(--fav-hover); }
 .bilibili-fav-content::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.3); border-radius: 3px; }
 .bilibili-fav-content::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.5); }
+
+.bilibili-toolbox-hide-forward-dynamic { display: none !important; }

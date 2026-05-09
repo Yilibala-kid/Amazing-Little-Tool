@@ -116,6 +116,15 @@
             font-size: 12px;
             padding: 20px;
         }
+        .storage-note {
+            margin-top: 8px;
+            font-size: 12px;
+            line-height: 1.5;
+            color: #666;
+        }
+        .storage-note.readonly {
+            color: #d46b08;
+        }
         .btn {
             width: 100%;
             padding: 10px;
@@ -130,6 +139,19 @@
         .btn:hover {
             background: #fa6598;
         }
+        .btn:disabled,
+        .delete-btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.55;
+        }
+        .btn:disabled:hover {
+            background: #fb7299;
+        }
+        .delete-btn:disabled:hover {
+            background: none;
+            color: #999;
+            border-color: #ddd;
+        }
     </style>
 </head>
 <body>
@@ -140,11 +162,12 @@
     <div class="content">
         <div class="section">
             <div class="section-title">&#25910;&#34255;&#21015;&#34920;</div>
+            <div class="storage-note" id="storageNote"></div>
             <div class="user-list" id="userList">
                 <div class="empty-tip">&#26242;&#26080;&#25910;&#34255;</div>
             </div>
         </div>
-        <button type="button" class="btn" id="addCurrentBtn">+ &#28155;&#21152;&#24403;&#21069;&#39029;&#38754;&#29992;&#25143;</button>
+        <button type="button" class="btn" id="addCurrentBtn">+ &#28155;&#21152;&#24403;&#21069;&#39029;&#38754;</button>
     </div>
     <script src="shared.js"></script>
     <script src="popup.js"></script>

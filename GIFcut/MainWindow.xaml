@@ -49,13 +49,17 @@
                 <TextBox Width="60" Text="{Binding CropWidth, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,5,0"/>
                 <TextBox Width="60" Text="{Binding CropHeight, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,15,0"/>
                 <TextBlock Text="速度:" VerticalAlignment="Center" Margin="5,0,5,0" Foreground="Black"/>
-                <ComboBox Width="60" SelectedIndex="1" Margin="0,0,10,0" SelectionChanged="SpeedComboBox_SelectionChanged">
+                <ComboBox Width="60" SelectedIndex="1" Margin="0,0,15,0" SelectionChanged="SpeedComboBox_SelectionChanged">
                     <ComboBoxItem Content="0.5x"/>
                     <ComboBoxItem Content="1x"/>
                     <ComboBoxItem Content="1.5x"/>
                     <ComboBoxItem Content="2x"/>
                     <ComboBoxItem Content="3x"/>
                 </ComboBox>
+                <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="5,0"/>
+                <TextBlock Text="缩放:" VerticalAlignment="Center" Margin="10,0,5,0" Foreground="Black" FontWeight="Bold"/>
+                <TextBox Width="60" Text="{Binding OutputScalePercent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,5,0"/>
+                <TextBlock Text="%" VerticalAlignment="Center" Margin="0,0,10,0" Foreground="Black"/>
                 <Button Content="导出" Command="{Binding ExportCommand}" IsEnabled="{Binding CanExport}"
                         Background="#4CAF50" BorderBrush="#4CAF50" Foreground="Black" FontWeight="Bold"/>
             </StackPanel>

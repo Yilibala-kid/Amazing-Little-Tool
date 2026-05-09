@@ -69,6 +69,9 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty] private string _playButtonText = "播放";
     [ObservableProperty] private double _speed = 1.0; // 速度倍率
 
+    // 缩放百分比
+    [ObservableProperty] private int _outputScalePercent = 100;
+
     public ObservableCollection<BitmapSource> Thumbnails { get; } = new();
 
     public int FrameCount => _frames.Count;
@@ -190,6 +193,7 @@ public partial class MainViewModel : ObservableObject
             CropHeight = _gifReader.Height;
             ImageWidth = _gifReader.Width;
             ImageHeight = _gifReader.Height;
+            OutputScalePercent = 100;
 
             // 更新 UI 状态
             SliderMax = _frames.Count - 1;
@@ -446,7 +450,8 @@ public partial class MainViewModel : ObservableObject
                 EndFrame,
                 cropRect,
                 dialog.FileName,
-                Speed);
+                Speed,
+                OutputScalePercent);
 
             if (result == "success")
             {

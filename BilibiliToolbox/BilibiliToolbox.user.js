@@ -1,3 +1,360 @@
+// ==UserScript==
+// @name         Bilibili Toolbox
+// @namespace    https://github.com/yilibala/amazing-little-tool
+// @version      1.0.0
+// @description  Bilibili comic reader + favorites toolbox in a single Tampermonkey file
+// @author       Yilibala
+// @match        *://www.bilibili.com/read/*
+// @match        *://www.bilibili.com/opus/*
+// @match        *://t.bilibili.com/*
+// @match        *://www.bilibili.com/*
+// @match        *://space.bilibili.com/*
+// @run-at       document-start
+// ==/UserScript==
+
+// Bilibili Toolbox - CSS Injection
+(function () {
+    'use strict';
+
+    const styleBase64 = 'LyogQuermeaUtuiXj+WkueW/q+aNt+i3s+i9rCAtIENvbnRlbnQgU3R5bGVzICovDQoNCjpyb290IHsNCiAgICAtLWZhdi1wcmltYXJ5OiAjZmI3Mjk5Ow0KICAgIC0tZmF2LXByaW1hcnktZGFyazogI2ZhNjU5ODsNCiAgICAtLWZhdi1iZzogcmdiYSgwLCAwLCAwLCAwLjg1KTsNCiAgICAtLWZhdi1ib3JkZXI6IHJnYmEoMjU1LCAyNTUsIDI1NSwgMC4yKTsNCiAgICAtLWZhdi1ob3ZlcjogcmdiYSgyNTUsIDI1NSwgMjU1LCAwLjEpOw0KICAgIC0tZmF2LWRlbGV0ZS1iZzogcmdiYSgwLCAwLCAwLCAwLjQpOw0KICAgIC0tZmF2LXJhZGl1czogOHB4Ow0KICAgIC0tZmF2LXJhZGl1cy1sZzogMTJweDsNCn0NCg0KLyog5oKs5rWu5oyJ6ZKuICovDQojYmlsaWJpbGktZmF2LWZsb2F0LWJ0biB7DQogICAgcG9zaXRpb246IGZpeGVkOw0KICAgIGJvdHRvbTogODBweDsNCiAgICByaWdodDogMjBweDsNCiAgICB3aWR0aDogNTBweDsNCiAgICBoZWlnaHQ6IDUwcHg7DQogICAgYmFja2dyb3VuZDogdmFyKC0tZmF2LXByaW1hcnkpOw0KICAgIGJvcmRlci1yYWRpdXM6IDUwJTsNCiAgICBkaXNwbGF5OiBmbGV4Ow0KICAgIGFsaWduLWl0ZW1zOiBjZW50ZXI7DQogICAganVzdGlmeS1jb250ZW50OiBjZW50ZXI7DQogICAgZm9udC1zaXplOiAyNHB4Ow0KICAgIGN1cnNvcjogcG9pbnRlcjsNCiAgICBib3gtc2hhZG93OiAwIDRweCAxMnB4IHJnYmEoMjUxLCAxMTQsIDE1MywgMC40KTsNCiAgICB6LWluZGV4OiA5OTk5OTk7DQogICAgdHJhbnNpdGlvbjogdHJhbnNmb3JtIDAuMnMsIGJveC1zaGFkb3cgMC4ycywgb3BhY2l0eSAwLjNzLCB2aXNpYmlsaXR5IDAuM3M7DQogICAgbGluZS1oZWlnaHQ6IDE7DQogICAgdGV4dC1hbGlnbjogY2VudGVyOw0KfQ0KDQojYmlsaWJpbGktZmF2LWZsb2F0LWJ0bjpob3ZlciB7DQogICAgdHJhbnNmb3JtOiBzY2FsZSgxLjEpOw0KICAgIGJveC1zaGFkb3c6IDAgNnB4IDE2cHggcmdiYSgyNTEsIDExNCwgMTUzLCAwLjYpOw0KfQ0KDQojYmlsaWJpbGktZmF2LWZsb2F0LWJ0bi5oaWRlLWZvcndhcmQtYWN0aXZlIHsNCiAgICBiYWNrZ3JvdW5kOiB2YXIoLS1mYXYtcHJpbWFyeSk7DQogICAgYm9yZGVyLXJhZGl1czogNnB4Ow0KfQ0KDQovKiDmlLbol4/lpLnpnaLmnb8gKi8NCiNiaWxpYmlsaS1mYXYtcGFuZWwgew0KICAgIHBvc2l0aW9uOiBmaXhlZDsNCiAgICBib3R0b206IDE0MHB4Ow0KICAgIHJpZ2h0OiAyMHB4Ow0KICAgIHdpZHRoOiAyODBweDsNCiAgICBtYXgtaGVpZ2h0OiA1MDBweDsNCiAgICBiYWNrZ3JvdW5kOiB2YXIoLS1mYXYtYmcpOw0KICAgIGJhY2tkcm9wLWZpbHRlcjogYmx1cigxMHB4KTsNCiAgICBib3JkZXItcmFkaXVzOiB2YXIoLS1mYXYtcmFkaXVzLWxnKTsNCiAgICBib3gtc2hhZG93OiAwIDhweCAzMnB4IHJnYmEoMCwgMCwgMCwgMC4yKTsNCiAgICB6LWluZGV4OiAxMDAwMDAwOw0KICAgIG9wYWNpdHk6IDA7DQogICAgdmlzaWJpbGl0eTogaGlkZGVuOw0KICAgIHRyYW5zaXRpb246IG9wYWNpdHkgMC4ycywgdHJhbnNmb3JtIDAuMnMsIHZpc2liaWxpdHkgMC4yczsNCiAgICBmb250LWZhbWlseTogLWFwcGxlLXN5c3RlbSwgQmxpbmtNYWNTeXN0ZW1Gb250LCAiU2Vnb2UgVUkiLCBSb2JvdG8sICJIZWx2ZXRpY2EgTmV1ZSIsIEFyaWFsLCBzYW5zLXNlcmlmOw0KICAgIHRyYW5zZm9ybTogdHJhbnNsYXRlWSgxMHB4KTsNCiAgICBjb2xvcjogI2ZmZjsNCn0NCg0KI2JpbGliaWxpLWZhdi1wYW5lbC5zaG93IHsNCiAgICBvcGFjaXR5OiAxOw0KICAgIHZpc2liaWxpdHk6IHZpc2libGU7DQogICAgdHJhbnNmb3JtOiB0cmFuc2xhdGVZKDApOw0KfQ0KDQojYmlsaWJpbGktZmF2LWNvbnRyb2xzLXBhbmVsIHsNCiAgICBwb3NpdGlvbjogZml4ZWQ7DQogICAgYm90dG9tOiAxNDBweDsNCiAgICByaWdodDogMjBweDsNCiAgICB3aWR0aDogMjgwcHg7DQogICAgYmFja2dyb3VuZDogdmFyKC0tZmF2LWJnKTsNCiAgICBiYWNrZHJvcC1maWx0ZXI6IGJsdXIoMTBweCk7DQogICAgYm9yZGVyLXJhZGl1czogdmFyKC0tZmF2LXJhZGl1cy1sZyk7DQogICAgYm94LXNoYWRvdzogMCA4cHggMzJweCByZ2JhKDAsIDAsIDAsIDAuMik7DQogICAgei1pbmRleDogMTAwMDAwMTsNCiAgICBvcGFjaXR5OiAwOw0KICAgIHZpc2liaWxpdHk6IGhpZGRlbjsNCiAgICB0cmFuc2l0aW9uOiBvcGFjaXR5IDAuMnMsIHRyYW5zZm9ybSAwLjJzLCB2aXNpYmlsaXR5IDAuMnM7DQogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgIlNlZ29lIFVJIiwgUm9ib3RvLCAiSGVsdmV0aWNhIE5ldWUiLCBBcmlhbCwgc2Fucy1zZXJpZjsNCiAgICB0cmFuc2Zvcm06IHRyYW5zbGF0ZVkoMTBweCk7DQogICAgY29sb3I6ICNmZmY7DQp9DQoNCiNiaWxpYmlsaS1mYXYtY29udHJvbHMtcGFuZWwuc2hvdyB7DQogICAgb3BhY2l0eTogMTsNCiAgICB2aXNpYmlsaXR5OiB2aXNpYmxlOw0KICAgIHRyYW5zZm9ybTogdHJhbnNsYXRlWSgwKTsNCn0NCg0KLyog6Z2i5p2/5aS06YOoICovDQouYmlsaWJpbGktZmF2LWhlYWRlciB7DQogICAgZGlzcGxheTogZmxleDsNCiAgICBqdXN0aWZ5LWNvbnRlbnQ6IHNwYWNlLWJldHdlZW47DQogICAgYWxpZ24taXRlbXM6IGNlbnRlcjsNCiAgICBwYWRkaW5nOiA2cHggMTJweDsNCiAgICBib3JkZXItYm90dG9tOiAxcHggc29saWQgdmFyKC0tZmF2LWJvcmRlcik7DQogICAgYmFja2dyb3VuZDogdmFyKC0tZmF2LXByaW1hcnkpOw0KICAgIGNvbG9yOiAjZmZmOw0KICAgIGJvcmRlci1yYWRpdXM6IHZhcigtLWZhdi1yYWRpdXMtbGcpIHZhcigtLWZhdi1yYWRpdXMtbGcpIDAgMDsNCiAgICBmb250LXdlaWdodDogNjAwOw0KfQ0KDQouYmlsaWJpbGktZmF2LWNvbnRlbnQgeyBtYXgtaGVpZ2h0OiA0MDBweDsgb3ZlcmZsb3cteTogYXV0bzsgfQ0KLmJpbGliaWxpLWZhdi1saXN0IHsgcGFkZGluZzogMTBweDsgZGlzcGxheTogZmxleDsgZmxleC13cmFwOiB3cmFwOyBqdXN0aWZ5LWNvbnRlbnQ6IHNwYWNlLWJldHdlZW47IH0NCg0KLmJpbGliaWxpLXRvb2xib3gtY29udHJvbC1jb250ZW50IHsgcGFkZGluZzogMTZweDsgZGlzcGxheTogZmxleDsgZmxleC1kaXJlY3Rpb246IGNvbHVtbjsgZ2FwOiAxMnB4OyB9DQoNCi5iaWxpYmlsaS10b29sYm94LWNvbnRyb2wtcm93IHsNCiAgICBkaXNwbGF5OiBmbGV4Ow0KICAgIGFsaWduLWl0ZW1zOiBjZW50ZXI7DQogICAganVzdGlmeS1jb250ZW50OiBzcGFjZS1iZXR3ZWVuOw0KICAgIGdhcDogMTJweDsNCiAgICBwYWRkaW5nOiAxMnB4Ow0KICAgIGJvcmRlci1yYWRpdXM6IHZhcigtLWZhdi1yYWRpdXMpOw0KICAgIGJvcmRlcjogMXB4IHNvbGlkIHZhcigtLWZhdi1ib3JkZXIpOw0KICAgIGJhY2tncm91bmQ6IHJnYmEoMjU1LCAyNTUsIDI1NSwgMC4wNSk7DQogICAgY3Vyc29yOiBwb2ludGVyOw0KfQ0KDQouYmlsaWJpbGktdG9vbGJveC1jb250cm9sLWNvcHkgew0KICAgIGRpc3BsYXk6IGZsZXg7DQogICAgZmxleC1kaXJlY3Rpb246IGNvbHVtbjsNCiAgICBnYXA6IDRweDsNCiAgICBtaW4td2lkdGg6IDA7DQp9DQoNCi5iaWxpYmlsaS10b29sYm94LWNvbnRyb2wtdGl0bGUgew0KICAgIGZvbnQtc2l6ZTogMTRweDsNCiAgICBmb250LXdlaWdodDogNjAwOw0KICAgIGNvbG9yOiAjZmZmOw0KfQ0KDQouYmlsaWJpbGktdG9vbGJveC1jb250cm9sLWRlc2MsDQouYmlsaWJpbGktdG9vbGJveC1jb250cm9sLXN0YXR1cyB7DQogICAgZm9udC1zaXplOiAxMnB4Ow0KICAgIGxpbmUtaGVpZ2h0OiAxLjU7DQp9DQoNCi5iaWxpYmlsaS10b29sYm94LWNvbnRyb2wtZGVzYyB7IGNvbG9yOiByZ2JhKDI1NSwgMjU1LCAyNTUsIDAuNzgpOyB9DQoNCi5iaWxpYmlsaS10b29sYm94LWNvbnRyb2wtc3RhdHVzIHsNCiAgICBwYWRkaW5nOiAxMHB4IDEycHg7DQogICAgYm9yZGVyLXJhZGl1czogdmFyKC0tZmF2LXJhZGl1cyk7DQogICAgYmFja2dyb3VuZDogcmdiYSgyNTUsIDI1NSwgMjU1LCAwLjA4KTsNCiAgICBjb2xvcjogI2ZmZjsNCn0NCg0KLmJpbGliaWxpLXRvb2xib3gtc3dpdGNoIHsNCiAgICBwb3NpdGlvbjogcmVsYXRpdmU7DQogICAgd2lkdGg6IDQ2cHg7DQogICAgaGVpZ2h0OiAyOHB4Ow0KICAgIGZsZXgtc2hyaW5rOiAwOw0KfQ0KDQouYmlsaWJpbGktdG9vbGJveC1zd2l0Y2ggaW5wdXQgew0KICAgIHBvc2l0aW9uOiBhYnNvbHV0ZTsNCiAgICBpbnNldDogMDsNCiAgICBvcGFjaXR5OiAwOw0KICAgIGN1cnNvcjogcG9pbnRlcjsNCiAgICBtYXJnaW46IDA7DQp9DQoNCi5iaWxpYmlsaS10b29sYm94LXN3aXRjaC1zbGlkZXIgew0KICAgIHBvc2l0aW9uOiBhYnNvbHV0ZTsNCiAgICBpbnNldDogMDsNCiAgICBib3JkZXItcmFkaXVzOiA5OTlweDsNCiAgICBiYWNrZ3JvdW5kOiByZ2JhKDI1NSwgMjU1LCAyNTUsIDAuMjQpOw0KICAgIHRyYW5zaXRpb246IGJhY2tncm91bmQgMC4ycyBlYXNlOw0KfQ0KDQouYmlsaWJpbGktdG9vbGJveC1zd2l0Y2gtc2xpZGVyOjpiZWZvcmUgew0KICAgIGNvbnRlbnQ6ICIiOw0KICAgIHBvc2l0aW9uOiBhYnNvbHV0ZTsNCiAgICB0b3A6IDNweDsNCiAgICBsZWZ0OiAzcHg7DQogICAgd2lkdGg6IDIycHg7DQogICAgaGVpZ2h0OiAyMnB4Ow0KICAgIGJvcmRlci1yYWRpdXM6IDUwJTsNCiAgICBiYWNrZ3JvdW5kOiAjZmZmOw0KICAgIHRyYW5zaXRpb246IHRyYW5zZm9ybSAwLjJzIGVhc2U7DQogICAgYm94LXNoYWRvdzogMCAycHggOHB4IHJnYmEoMCwgMCwgMCwgMC4yNSk7DQp9DQoNCi5iaWxpYmlsaS10b29sYm94LXN3aXRjaCBpbnB1dDpjaGVja2VkICsgLmJpbGliaWxpLXRvb2xib3gtc3dpdGNoLXNsaWRlciB7DQogICAgYmFja2dyb3VuZDogdmFyKC0tZmF2LXByaW1hcnkpOw0KfQ0KDQouYmlsaWJpbGktdG9vbGJveC1zd2l0Y2ggaW5wdXQ6Y2hlY2tlZCArIC5iaWxpYmlsaS10b29sYm94LXN3aXRjaC1zbGlkZXI6OmJlZm9yZSB7DQogICAgdHJhbnNmb3JtOiB0cmFuc2xhdGVYKDE4cHgpOw0KfQ0KDQovKiDnqbrnirbmgIEgKi8NCi5iaWxpYmlsaS1mYXYtZW1wdHkgeyB0ZXh0LWFsaWduOiBjZW50ZXI7IGNvbG9yOiAjOTk5OyBwYWRkaW5nOiA0MHB4IDIwcHg7IGZvbnQtc2l6ZTogMTRweDsgfQ0KDQovKiDmtojmga/mj5DnpLogKi8NCi5iaWxpYmlsaS1mYXYtbXNnIHsgcGFkZGluZzogOHB4OyB0ZXh0LWFsaWduOiBjZW50ZXI7IGZvbnQtc2l6ZTogMTNweDsgZGlzcGxheTogbm9uZTsgfQ0KDQovKiDmlLbol4/pobkgKi8NCi5iaWxpYmlsaS1mYXYtaXRlbS1saW5rIHsgZGlzcGxheTogYmxvY2s7IHRleHQtZGVjb3JhdGlvbjogbm9uZTsgY29sb3I6IGluaGVyaXQ7IHdpZHRoOiBjYWxjKDUwJSAtIDRweCk7IHBvc2l0aW9uOiByZWxhdGl2ZTsgfQ0KDQouYmlsaWJpbGktZmF2LWl0ZW0gew0KICAgIGRpc3BsYXk6IGZsZXg7DQogICAgZmxleC1kaXJlY3Rpb246IGNvbHVtbjsNCiAgICBhbGlnbi1pdGVtczogY2VudGVyOw0KICAgIHBhZGRpbmc6IDRweCA2cHg7DQogICAgYm9yZGVyLXJhZGl1czogdmFyKC0tZmF2LXJhZGl1cyk7DQogICAgdHJhbnNpdGlvbjogYmFja2dyb3VuZCAwLjJzOw0KICAgIHRleHQtYWxpZ246IGNlbnRlcjsNCiAgICBwb3NpdGlvbjogcmVsYXRpdmU7DQogICAgb3ZlcmZsb3c6IGhpZGRlbjsNCiAgICBoZWlnaHQ6IDgwcHg7DQogICAgYm94LXNpemluZzogYm9yZGVyLWJveDsNCn0NCg0KLmJpbGliaWxpLWZhdi1pdGVtW2RhdGEtcmVhZGxpc3Q9InRydWUiXSB7IHBhZGRpbmc6IDA7IH0NCi5iaWxpYmlsaS1mYXYtaXRlbS1saW5rOmhvdmVyIC5iaWxpYmlsaS1mYXYtaXRlbSB7IGJhY2tncm91bmQ6IHZhcigtLWZhdi1ob3Zlcik7IH0NCg0KLmJpbGliaWxpLWZhdi1pdGVtLWluZm8gew0KICAgIGRpc3BsYXk6IGZsZXg7DQogICAgZmxleC1kaXJlY3Rpb246IGNvbHVtbjsNCiAgICBhbGlnbi1pdGVtczogY2VudGVyOw0KICAgIHdpZHRoOiAxMDAlOw0KICAgIGhlaWdodDogMTAwJTsNCiAgICBwb3NpdGlvbjogcmVsYXRpdmU7DQogICAgei1pbmRleDogMTsNCn0NCg0KLmJpbGliaWxpLWZhdi1pdGVtW2RhdGEtcmVhZGxpc3Q9InRydWUiXSAuYmlsaWJpbGktZmF2LWl0ZW0taW5mbyB7IHBhZGRpbmc6IDA7IG92ZXJmbG93OiBoaWRkZW47IGJvcmRlci1yYWRpdXM6IGluaGVyaXQ7IH0NCg0KLyog5aS05YOPICovDQouYmlsaWJpbGktZmF2LWF2YXRhciB7DQogICAgd2lkdGg6IDQ0cHg7DQogICAgaGVpZ2h0OiA0NHB4Ow0KICAgIGJvcmRlci1yYWRpdXM6IDUwJTsNCiAgICBvYmplY3QtZml0OiBjb3ZlcjsNCiAgICBib3JkZXI6IDJweCBzb2xpZCB2YXIoLS1mYXYtcHJpbWFyeSk7DQogICAgcG9zaXRpb246IHJlbGF0aXZlOw0KICAgIHotaW5kZXg6IDE7DQp9DQoNCi5iaWxpYmlsaS1mYXYtYXZhdGFyLmNvdmVyIHsgZGlzcGxheTogYmxvY2s7IHdpZHRoOiAxMDAlOyBoZWlnaHQ6IDEwMCU7IGJvcmRlci1yYWRpdXM6IHZhcigtLWZhdi1yYWRpdXMpOyBib3JkZXI6IG5vbmU7IHBvc2l0aW9uOiBhYnNvbHV0ZTsgaW5zZXQ6IDA7IH0NCg0KLyog5ZCN56ewICovDQouYmlsaWJpbGktZmF2LW5hbWUgew0KICAgIGZvbnQtc2l6ZTogMTJweDsNCiAgICBjb2xvcjogI2ZmZjsNCiAgICBmb250LXdlaWdodDogNTAwOw0KICAgIG1heC13aWR0aDogMTAwJTsNCiAgICBvdmVyZmxvdzogaGlkZGVuOw0KICAgIHRleHQtb3ZlcmZsb3c6IGVsbGlwc2lzOw0KICAgIHdoaXRlLXNwYWNlOiBub3dyYXA7DQogICAgcG9zaXRpb246IHJlbGF0aXZlOw0KICAgIHotaW5kZXg6IDE7DQogICAgbWFyZ2luLXRvcDogOHB4Ow0KfQ0KDQouYmlsaWJpbGktZmF2LWl0ZW1bZGF0YS1yZWFkbGlzdD0idHJ1ZSJdIC5iaWxpYmlsaS1mYXYtbmFtZSB7DQogICAgcG9zaXRpb246IGFic29sdXRlOw0KICAgIGJvdHRvbTogMDsNCiAgICBsZWZ0OiAwOw0KICAgIHJpZ2h0OiAwOw0KICAgIGNvbG9yOiAjZmZmOw0KICAgIGJhY2tncm91bmQ6IGxpbmVhci1ncmFkaWVudCh0cmFuc3BhcmVudCwgcmdiYSgwLDAsMCwwLjcpKTsNCiAgICBwYWRkaW5nOiAyMHB4IDhweCA4cHg7DQogICAgYm9yZGVyLXJhZGl1czogMCAwIHZhcigtLWZhdi1yYWRpdXMpIHZhcigtLWZhdi1yYWRpdXMpOw0KICAgIHRleHQtc2hhZG93OiAwIDFweCAycHggcmdiYSgwLDAsMCwwLjUpOw0KfQ0KDQovKiDliKDpmaTmjInpkq4gKi8NCi5iaWxpYmlsaS1mYXYtZGVsZXRlIHsNCiAgICBwb3NpdGlvbjogYWJzb2x1dGU7DQogICAgdG9wOiA0cHg7DQogICAgcmlnaHQ6IDRweDsNCiAgICB3aWR0aDogMThweDsNCiAgICBoZWlnaHQ6IDE4cHg7DQogICAgcGFkZGluZzogMDsNCiAgICBmb250LXNpemU6IDE0cHg7DQogICAgbGluZS1oZWlnaHQ6IDE2cHg7DQogICAgY29sb3I6ICNmZmY7DQogICAgYmFja2dyb3VuZDogdmFyKC0tZmF2LWRlbGV0ZS1iZyk7DQogICAgYm9yZGVyOiBub25lOw0KICAgIGJvcmRlci1yYWRpdXM6IDUwJTsNCiAgICBjdXJzb3I6IHBvaW50ZXI7DQogICAgdHJhbnNpdGlvbjogYWxsIDAuMnM7DQogICAgei1pbmRleDogMjsNCiAgICBvcGFjaXR5OiAwOw0KfQ0KDQouYmlsaWJpbGktZmF2LWl0ZW06aG92ZXIgLmJpbGliaWxpLWZhdi1kZWxldGUgeyBvcGFjaXR5OiAxOyB9DQouYmlsaWJpbGktZmF2LWRlbGV0ZTpob3ZlciB7IGJhY2tncm91bmQ6ICNmZjQ3NTc7IH0NCg0KLyog5pS26JeP6aG55re75Yqg5oyJ6ZKuICovDQouYmlsaWJpbGktZmF2LWFkZC1idG4gew0KICAgIHBhZGRpbmc6IDhweCAxNnB4Ow0KICAgIGZvbnQtc2l6ZTogMTNweDsNCiAgICBib3JkZXItcmFkaXVzOiA2cHg7DQogICAgY3Vyc29yOiBwb2ludGVyOw0KICAgIHRyYW5zaXRpb246IGFsbCAwLjJzOw0KICAgIGJhY2tncm91bmQ6IHZhcigtLWZhdi1wcmltYXJ5KTsNCiAgICBjb2xvcjogI2ZmZjsNCiAgICBib3JkZXI6IG5vbmU7DQp9DQoNCi5iaWxpYmlsaS1mYXYtYWRkLWJ0bjpob3ZlciB7IGJhY2tncm91bmQ6IHZhcigtLWZhdi1wcmltYXJ5LWRhcmspOyB9DQoNCi8qIOa7muWKqOadoSAqLw0KLmJpbGliaWxpLWZhdi1jb250ZW50Ojotd2Via2l0LXNjcm9sbGJhciB7IHdpZHRoOiA2cHg7IH0NCi5iaWxpYmlsaS1mYXYtY29udGVudDo6LXdlYmtpdC1zY3JvbGxiYXItdHJhY2sgeyBiYWNrZ3JvdW5kOiB2YXIoLS1mYXYtaG92ZXIpOyB9DQouYmlsaWJpbGktZmF2LWNvbnRlbnQ6Oi13ZWJraXQtc2Nyb2xsYmFyLXRodW1iIHsgYmFja2dyb3VuZDogcmdiYSgyNTUsIDI1NSwgMjU1LCAwLjMpOyBib3JkZXItcmFkaXVzOiAzcHg7IH0NCi5iaWxpYmlsaS1mYXYtY29udGVudDo6LXdlYmtpdC1zY3JvbGxiYXItdGh1bWI6aG92ZXIgeyBiYWNrZ3JvdW5kOiByZ2JhKDI1NSwgMjU1LCAyNTUsIDAuNSk7IH0NCg0KLmJpbGliaWxpLXRvb2xib3gtaGlkZS1mb3J3YXJkLWR5bmFtaWMgeyBkaXNwbGF5OiBub25lICFpbXBvcnRhbnQ7IH0NCg==';
+    const decodeBase64Utf8 = (base64) => new TextDecoder().decode(Uint8Array.from(atob(base64), ch => ch.charCodeAt(0)));
+    const styleText = decodeBase64Utf8(styleBase64);
+    const injectStyle = () => {
+        if (document.getElementById('bilibili-toolbox-userscript-style')) return;
+        const parent = document.head || document.documentElement;
+        if (!parent) {
+            requestAnimationFrame(injectStyle);
+            return;
+        }
+
+        const style = document.createElement('style');
+        style.id = 'bilibili-toolbox-userscript-style';
+        style.textContent = styleText;
+        parent.appendChild(style);
+    };
+
+    injectStyle();
+});
+
+// Bilibili Toolbox - shared.js
+// Bilibili Toolbox - shared utilities
+(function() {
+    'use strict';
+
+    const SHARED_STORAGE_KEY = 'bilibiliToolboxSharedData.v1';
+    const STORAGE_VERSION = 1;
+    const SHARED_STORAGE_UPDATE_EVENT = 'bilibili-toolbox:shared-storage-updated';
+    const USER_TYPE = 'user';
+    const READLIST_TYPE = 'readlist';
+    const FALLBACK_IMAGE = 'https://www.bilibili.com/favicon.ico';
+    const BILIBILI_DOMAIN = 'bilibili.com';
+    const BILIBILI_SPACE_URL = 'https://space.bilibili.com/';
+    const BILIBILI_READLIST_URL = 'https://www.bilibili.com/read/readlist/rl';
+    const UID_URL_PATTERNS = [
+        [/space\.bilibili\.com\/(\d+)/, () => true],
+        [/t\.bilibili\.com\/(\d+)/, uid => uid.length > 6]
+    ];
+
+    function normalizeObject(value) {
+        return value && typeof value === 'object' ? value : {};
+    }
+
+    function createDefaultData() {
+        return {
+            version: STORAGE_VERSION,
+            updatedAt: 0,
+            favorites: [],
+            settings: {}
+        };
+    }
+
+    function normalizeFavoriteList(favorites) {
+        return Array.isArray(favorites)
+            ? favorites.filter(item => item && typeof item === 'object')
+            : [];
+    }
+
+    function normalizeToolboxData(data) {
+        const next = normalizeObject(data);
+        return {
+            version: STORAGE_VERSION,
+            updatedAt: typeof next.updatedAt === 'number' ? next.updatedAt : 0,
+            favorites: normalizeFavoriteList(next.favorites),
+            settings: normalizeObject(next.settings)
+        };
+    }
+
+    function stampToolboxData(data, updatedAt = Date.now()) {
+        return normalizeToolboxData({
+            ...normalizeToolboxData(data),
+            version: STORAGE_VERSION,
+            updatedAt
+        });
+    }
+
+    function parseToolboxDataFromRaw(raw) {
+        if (typeof raw !== 'string' || !raw.trim()) return null;
+        try {
+            return normalizeToolboxData(JSON.parse(raw));
+        } catch (_) {
+            return null;
+        }
+    }
+
+    function isBilibiliUrl(url) {
+        return typeof url === 'string' && url.includes(BILIBILI_DOMAIN);
+    }
+
+    function getFavoriteType(item) {
+        return item?.type || USER_TYPE;
+    }
+
+    function isReadlistFavorite(item) {
+        return getFavoriteType(item) === READLIST_TYPE;
+    }
+
+    function getFavoriteKey(item) {
+        if (!item) return '';
+        const type = isReadlistFavorite(item) ? READLIST_TYPE : USER_TYPE;
+        const value = isReadlistFavorite(item) ? item.id : item.uid;
+        return value ? `${type}:${value}` : '';
+    }
+
+    function getFavoriteName(item) {
+        return isReadlistFavorite(item)
+            ? (item?.title || '\u4e13\u680f')
+            : (item?.uname || '\u7528\u6237');
+    }
+
+    function getFavoriteImage(item) {
+        return isReadlistFavorite(item)
+            ? (item?.cover || FALLBACK_IMAGE)
+            : (item?.face || FALLBACK_IMAGE);
+    }
+
+    function getFavoriteLink(item) {
+        if (!item) return '#';
+        return isReadlistFavorite(item)
+            ? `${BILIBILI_READLIST_URL}${item.id}`
+            : `${BILIBILI_SPACE_URL}${item.uid}/dynamic`;
+    }
+
+    function escapeHtml(str) {
+        if (typeof str !== 'string') return '';
+        return str
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function extractUidFromUrl(url) {
+        if (typeof url !== 'string') return null;
+        for (const [pattern, isValid] of UID_URL_PATTERNS) {
+            const match = url.match(pattern);
+            if (match && isValid(match[1])) return match[1];
+        }
+        return null;
+    }
+
+    const $ = (selector, fallback = '') => document.querySelector(selector)?.textContent.trim() || fallback;
+    const $src = (selector) => document.querySelector(selector)?.src || '';
+
+    // Expose API for use by other scripts (extension content scripts, userscripts)
+    window.Shared = {
+        SHARED_STORAGE_KEY,
+        STORAGE_VERSION,
+        SHARED_STORAGE_UPDATE_EVENT,
+        USER_TYPE,
+        READLIST_TYPE,
+        FALLBACK_IMAGE,
+        BILIBILI_DOMAIN,
+        BILIBILI_SPACE_URL,
+        BILIBILI_READLIST_URL,
+        normalizeObject,
+        createDefaultData,
+        normalizeFavoriteList,
+        normalizeToolboxData,
+        stampToolboxData,
+        isBilibiliUrl,
+        getFavoriteType,
+        isReadlistFavorite,
+        getFavoriteKey,
+        getFavoriteName,
+        getFavoriteImage,
+        getFavoriteLink,
+        escapeHtml,
+        extractUidFromUrl,
+        $,
+        $src
+    };
+})();
+
+// Bilibili Toolbox - animations.js
+// Bilibili Toolbox - Animation Module
+(function() {
+    'use strict';
+
+    const FADE_ANIMATION_DURATION = 200;
+    const FADE_SETTLE_DURATION = 300;
+    const FADE_SHIFT_DISTANCE = 60;
+    const BOOK_ANIMATION_DURATION = 500;
+    const DEFAULT_ANIMATION_MODE = 'smooth';
+    const ANIMATION_MODES = ['none', 'smooth', 'fade'];
+    const ANIMATION_BUTTON_MAP = {
+        none: ['\u65e0', '\u7ffb\u9875\u52a8\u753b\uff1a\u5173\u95ed', '#333'],
+        smooth: ['\u5e73\u6ed1', '\u7ffb\u9875\u52a8\u753b\uff1a\u5e73\u6ed1\u6ed1\u52a8', '#4b5563'],
+        fade: ['\u6de1\u5165', '\u7ffb\u9875\u52a8\u753b\uff1a\u6de1\u5165\u6de1\u51fa', '#4b5563'],
+        book: ['\u4e66\u672c', '\u7ffb\u9875\u52a8\u753b\uff1a\u4e66\u672c\u5377\u66f2', '#4b5563']
+    };
+
+    function normalizeMode(animationMode) {
+        return ANIMATION_MODES.includes(animationMode) ? animationMode : DEFAULT_ANIMATION_MODE;
+    }
+
+    function getNextMode(animationMode) {
+        const currentIndex = ANIMATION_MODES.indexOf(normalizeMode(animationMode));
+        return ANIMATION_MODES[(currentIndex + 1) % ANIMATION_MODES.length];
+    }
+
+    function syncAnimationButtonState(animationBtn, animationMode) {
+        if (!animationBtn) return;
+        const [text, title, background] = ANIMATION_BUTTON_MAP[normalizeMode(animationMode)];
+        Object.assign(animationBtn, { innerText: text, title });
+        animationBtn.style.background = background;
+    }
+
+    function resolveRenderMode(animate, hasExistingImage, animationMode) {
+        return animate && hasExistingImage ? normalizeMode(animationMode) : 'none';
+    }
+
+    function resolveTransitionDirection(step, isRightToLeft, lastStep) {
+        const normalizedStep = step || (isRightToLeft ? lastStep : -lastStep) || 1;
+        return isRightToLeft ? (normalizedStep > 0 ? 1 : -1) : (normalizedStep > 0 ? -1 : 1);
+    }
+
+    function playSmoothTransition(imgContainer, renderIndex, getCurrentIndex, transitionToken, getTransitionToken, loadImages, direction) {
+        Object.assign(imgContainer.style, {
+            transition: `transform ${FADE_ANIMATION_DURATION}ms, opacity ${FADE_ANIMATION_DURATION}ms`,
+            opacity: '0',
+            filter: 'none',
+            transform: `translateX(${direction * FADE_SHIFT_DISTANCE}px) scale(0.95)`
+        });
+        window.setTimeout(() => {
+            if (renderIndex !== getCurrentIndex()) return;
+            if (transitionToken !== getTransitionToken()) return;
+            loadImages(renderIndex, 'smooth', direction);
+        }, FADE_ANIMATION_DURATION);
+    }
+
+    function playFadeTransition(imgContainer, renderIndex, getCurrentIndex, transitionToken, getTransitionToken, loadImages, direction) {
+        Object.assign(imgContainer.style, {
+            transition: `opacity ${FADE_ANIMATION_DURATION}ms`,
+            opacity: '0',
+            filter: 'none'
+        });
+        window.setTimeout(() => {
+            if (renderIndex !== getCurrentIndex()) return;
+            if (transitionToken !== getTransitionToken()) return;
+            loadImages(renderIndex, 'fade', direction);
+        }, FADE_ANIMATION_DURATION);
+    }
+
+    // =====================================================================
+    // 书本翻页动画（占位，待实现）
+    // =====================================================================
+    function playBookTransition(imgContainer, renderIndex, getCurrentIndex, transitionToken, getTransitionToken, loadImages, direction) {
+        // TODO: 实现书本3D翻页动画
+        // 提示：可参考 StPageFlip-master 的几何交点算法
+        console.warn('[BilibiliToolbox] book transition not implemented yet, falling back to fade');
+        playFadeTransition(imgContainer, renderIndex, getCurrentIndex, transitionToken, getTransitionToken, loadImages, direction);
+    }
+
+    // =====================================================================
+    // 动画流程编排
+    // =====================================================================
+
+    function runTransitionFlow(options) {
+        const {
+            animate, imgContainer, animationMode, step, isRightToLeft, lastStep,
+            renderIndex, getCurrentIndex, transitionToken, getTransitionToken, loadImages
+        } = options;
+        const renderMode = resolveRenderMode(animate, Boolean(imgContainer.firstChild), animationMode);
+        const direction = resolveTransitionDirection(step, isRightToLeft, lastStep);
+
+        if (renderMode === 'smooth') {
+            playSmoothTransition(imgContainer, renderIndex, getCurrentIndex, transitionToken, getTransitionToken, loadImages, direction);
+            return;
+        }
+        if (renderMode === 'fade') {
+            playFadeTransition(imgContainer, renderIndex, getCurrentIndex, transitionToken, getTransitionToken, loadImages, direction);
+            return;
+        }
+        if (renderMode === 'book') {
+            playBookTransition(imgContainer, renderIndex, getCurrentIndex, transitionToken, getTransitionToken, loadImages, direction);
+            return;
+        }
+        loadImages(renderIndex, 'none', direction);
+    }
+
+    function resetAnimatedContainer(imgContainer, animationMode, transitionDirection, applyTransform) {
+        const mode = normalizeMode(animationMode);
+        imgContainer.innerHTML = '';
+        imgContainer.style.transition = 'none';
+        applyTransform();
+        if (mode === 'smooth') {
+            Object.assign(imgContainer.style, {
+                transform: `translateX(${-transitionDirection * FADE_SHIFT_DISTANCE}px) scale(0.95)`,
+                opacity: '0', filter: 'none'
+            });
+        } else if (mode === 'fade') {
+            Object.assign(imgContainer.style, { opacity: '0', filter: 'none' });
+        } else {
+            Object.assign(imgContainer.style, { opacity: '1', filter: 'none' });
+        }
+    }
+
+    function finishAnimatedRender(imgContainer, animationMode, transitionDirection, applyTransform) {
+        const mode = normalizeMode(animationMode);
+        if (mode === 'smooth') {
+            imgContainer.getBoundingClientRect();
+            Object.assign(imgContainer.style, {
+                transition: `transform ${FADE_SETTLE_DURATION}ms ease-out, opacity ${FADE_SETTLE_DURATION}ms ease-out`,
+                opacity: '1', filter: 'none', transform: 'translateX(0) scale(1)'
+            });
+        } else if (mode === 'fade') {
+            imgContainer.getBoundingClientRect();
+            Object.assign(imgContainer.style, {
+                transition: `opacity ${FADE_SETTLE_DURATION}ms ease-out`,
+                opacity: '1', filter: 'none'
+            });
+        } else if (mode === 'book') {
+            // TODO: 实现书本动画结束时的处理
+            Object.assign(imgContainer.style, { transition: 'none', opacity: '1', filter: 'none' });
+        } else {
+            Object.assign(imgContainer.style, { transition: 'none', opacity: '1', filter: 'none' });
+        }
+        applyTransform();
+    }
+
+    window.BiliAnimations = {
+        FADE_ANIMATION_DURATION,
+        FADE_SETTLE_DURATION,
+        FADE_SHIFT_DISTANCE,
+        BOOK_ANIMATION_DURATION,
+        DEFAULT_ANIMATION_MODE,
+        ANIMATION_MODES,
+        normalizeAnimationMode: normalizeMode,
+        getNextAnimationMode: getNextMode,
+        syncAnimationButton: syncAnimationButtonState,
+        runTransition: runTransitionFlow,
+        resetImageContainer: resetAnimatedContainer,
+        finishRender: finishAnimatedRender
+    };
+})();
+
+// Bilibili Toolbox - content.js
 // Bilibili Toolbox - Content Script
 // 整合了极光漫画+ 收藏夹功能（本地版 - 无外部API调用）
 (function() {
@@ -15,7 +372,7 @@
     const MIN_SCALE = 0.5;
     const MAX_SCALE = 3;
     const SCALE_STEP = 0.1;
-    const CONTROLS_HIDE_DELAY = 500;
+    const CONTROLS_HIDE_DELAY = 1000;
     const SWIPE_THRESHOLD = 50;
     const PRELOAD_COUNT = 4;
     const MOBILE_BREAKPOINT = 768;
@@ -1330,7 +1687,7 @@
             if (nextVisible) {
                 this.hideTimer = setTimeout(() => {
                     this.updateControlVisibility(false);
-                }, this.isTouchDevice ? 2000 : CONTROLS_HIDE_DELAY);
+                }, this.isTouchDevice ? 3500 : CONTROLS_HIDE_DELAY);
             }
         }
 
@@ -2000,3 +2357,4 @@
     }
 
 })();
+

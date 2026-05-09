@@ -14,7 +14,8 @@ public class GifExporterService
         int endFrame,
         System.Windows.Int32Rect cropRect,
         string outputPath,
-        double speed = 1.0)
+        double speed = 1.0,
+        int outputScalePercent = 100)
     {
         try
         {
@@ -68,6 +69,16 @@ public class GifExporterService
                 // 提取裁剪区域的像素并创建新图像
                 using var croppedImage = ExtractCroppedImage(sourceImage, cropX, cropY, cropWidth, cropHeight);
 
+                // 根据缩放百分比计算最终尺寸
+                int finalWidth = cropWidth;
+                int finalHeight = cropHeight;
+                if (outputScalePercent != 100 && outputScalePercent > 0)
+                {
+                    finalWidth = (int)Math.Round(cropWidth * outputScalePercent / 100.0);
+                    finalHeight = (int)Math.Round(cropHeight * outputScalePercent / 100.0);
+                    croppedImage.Mutate(x => x.Resize(finalWidth, finalHeight));
+                }
+
                 // 获取源帧
                 var sourceFrame = croppedImage.Frames[0];
 
@@ -84,13 +95,13 @@ public class GifExporterService
                 else
                 {
                     // 后续帧：创建新图像并复制像素
-                    var newImage = new Image<Rgba32>(cropWidth, cropHeight);
+                    var newImage = new Image<Rgba32>(finalWidth, finalHeight);
                     var destFrame = newImage.Frames[0];
 
                     // 复制像素
-                    for (int y = 0; y < cropHeight; y++)
+                    for (int y = 0; y < finalHeight; y++)
                     {
-                        for (int x = 0; x < cropWidth; x++)
+                        for (int x = 0; x < finalWidth; x++)
                         {
                             destFrame[x, y] = sourceFrame[x, y];
                         }
