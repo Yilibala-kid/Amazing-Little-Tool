@@ -1,31 +1,45 @@
-/* B站收藏夹快捷跳转 - Content Styles */
+/* Bilibili Toolbox — Spotify-inspired dark theme */
 
 :root {
-    --fav-primary: #fb7299;
-    --fav-primary-dark: #fa6598;
-    --fav-bg: rgba(0, 0, 0, 0.85);
-    --fav-border: rgba(255, 255, 255, 0.2);
-    --fav-hover: rgba(255, 255, 255, 0.1);
-    --fav-delete-bg: rgba(0, 0, 0, 0.4);
-    --fav-radius: 8px;
-    --fav-radius-lg: 12px;
+    --acc: #fb7299;
+    --acc-hover: #fc8bab;
+    --acc-active: #e86288;
+    --bg-deepest: #0a0a0a;
+    --bg-surface: #181818;
+    --bg-elevated: #1f1f1f;
+    --bg-overlay: rgba(20, 20, 20, 0.94);
+    --text-primary: #ffffff;
+    --text-secondary: #b3b3b3;
+    --text-muted: #7c7c7c;
+    --border-subtle: rgba(255, 255, 255, 0.12);
+    --border-strong: #4d4d4d;
+    --error: #f3727f;
+    --error-hover: #e86a77;
+    --shadow-heavy: 0 8px 24px rgba(0, 0, 0, 0.5);
+    --shadow-card: 0 4px 8px rgba(0, 0, 0, 0.3);
+    --shadow-float: 0 4px 16px rgba(251, 114, 153, 0.25);
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-pill: 9999px;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
-/* 悬浮按钮 */
+/* ===== Floating star button ===== */
 #bilibili-fav-float-btn {
     position: fixed;
     bottom: 80px;
     right: 20px;
     width: 50px;
     height: 50px;
-    background: var(--fav-primary);
+    background: var(--acc);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 24px;
     cursor: pointer;
-    box-shadow: 0 4px 12px rgba(251, 114, 153, 0.4);
+    box-shadow: var(--shadow-float);
     z-index: 999999;
     transition: transform 0.2s, box-shadow 0.2s, opacity 0.3s, visibility 0.3s;
     line-height: 1;
@@ -34,92 +48,93 @@
 
 #bilibili-fav-float-btn:hover {
     transform: scale(1.1);
-    box-shadow: 0 6px 16px rgba(251, 114, 153, 0.6);
+    box-shadow: 0 6px 20px rgba(251, 114, 153, 0.4);
 }
 
 #bilibili-fav-float-btn.hide-forward-active {
-    background: var(--fav-primary);
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
 }
 
-/* 收藏夹面板 */
-#bilibili-fav-panel {
-    position: fixed;
-    bottom: 140px;
-    right: 20px;
-    width: 280px;
-    max-height: 500px;
-    background: var(--fav-bg);
-    backdrop-filter: blur(10px);
-    border-radius: var(--fav-radius-lg);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-    z-index: 1000000;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.2s, transform 0.2s, visibility 0.2s;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    transform: translateY(10px);
-    color: #fff;
-}
-
-#bilibili-fav-panel.show {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
-}
-
+/* ===== Shared panel base ===== */
+#bilibili-fav-panel,
 #bilibili-fav-controls-panel {
     position: fixed;
     bottom: 140px;
     right: 20px;
     width: 280px;
-    background: var(--fav-bg);
-    backdrop-filter: blur(10px);
-    border-radius: var(--fav-radius-lg);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-    z-index: 1000001;
+    background: var(--bg-overlay);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-heavy);
+    z-index: 1000000;
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.2s, transform 0.2s, visibility 0.2s;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-family: var(--font);
     transform: translateY(10px);
-    color: #fff;
+    color: var(--text-primary);
+    border: 1px solid var(--border-subtle);
 }
 
+#bilibili-fav-controls-panel { z-index: 1000001; }
+
+#bilibili-fav-panel.show,
 #bilibili-fav-controls-panel.show {
     opacity: 1;
     visibility: visible;
     transform: translateY(0);
 }
 
-/* 面板头部 */
+/* ===== Panel header ===== */
 .bilibili-fav-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 6px 12px;
-    border-bottom: 1px solid var(--fav-border);
-    background: var(--fav-primary);
-    color: #fff;
-    border-radius: var(--fav-radius-lg) var(--fav-radius-lg) 0 0;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border-subtle);
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
     font-weight: 600;
+    font-size: 14px;
+    letter-spacing: 0.3px;
 }
 
+/* ===== Panel content ===== */
 .bilibili-fav-content { max-height: 400px; overflow-y: auto; }
-.bilibili-fav-list { padding: 10px; display: flex; flex-wrap: wrap; justify-content: space-between; }
 
-.bilibili-toolbox-control-content { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.bilibili-fav-list {
+    padding: 8px 10px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 4px;
+}
+
+.bilibili-fav-content::-webkit-scrollbar { width: 5px; }
+.bilibili-fav-content::-webkit-scrollbar-track { background: transparent; }
+.bilibili-fav-content::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 3px; }
+.bilibili-fav-content::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.25); }
+
+/* ===== Dynamic controls content ===== */
+.bilibili-toolbox-control-content {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
 
 .bilibili-toolbox-control-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    padding: 12px;
-    border-radius: var(--fav-radius);
-    border: 1px solid var(--fav-border);
-    background: rgba(255, 255, 255, 0.05);
+    padding: 12px 14px;
+    border-radius: var(--radius-md);
+    background: var(--bg-surface);
     cursor: pointer;
+    border: 1px solid var(--border-subtle);
 }
 
 .bilibili-toolbox-control-copy {
@@ -132,24 +147,25 @@
 .bilibili-toolbox-control-title {
     font-size: 14px;
     font-weight: 600;
-    color: #fff;
+    color: var(--text-primary);
 }
 
-.bilibili-toolbox-control-desc,
+.bilibili-toolbox-control-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
 .bilibili-toolbox-control-status {
     font-size: 12px;
-    line-height: 1.5;
+    line-height: 1.4;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-surface);
+    color: var(--text-secondary);
 }
 
-.bilibili-toolbox-control-desc { color: rgba(255, 255, 255, 0.78); }
-
-.bilibili-toolbox-control-status {
-    padding: 10px 12px;
-    border-radius: var(--fav-radius);
-    background: rgba(255, 255, 255, 0.08);
-    color: #fff;
-}
-
+/* ===== Toggle switch ===== */
 .bilibili-toolbox-switch {
     position: relative;
     width: 46px;
@@ -168,9 +184,9 @@
 .bilibili-toolbox-switch-slider {
     position: absolute;
     inset: 0;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.24);
-    transition: background 0.2s ease;
+    border-radius: var(--radius-pill);
+    background: rgba(255, 255, 255, 0.2);
+    transition: background 0.2s;
 }
 
 .bilibili-toolbox-switch-slider::before {
@@ -182,43 +198,103 @@
     height: 22px;
     border-radius: 50%;
     background: #fff;
-    transition: transform 0.2s ease;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+    transition: transform 0.2s;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .bilibili-toolbox-switch input:checked + .bilibili-toolbox-switch-slider {
-    background: var(--fav-primary);
+    background: var(--acc);
 }
 
 .bilibili-toolbox-switch input:checked + .bilibili-toolbox-switch-slider::before {
     transform: translateX(18px);
 }
 
-/* 空状态 */
-.bilibili-fav-empty { text-align: center; color: #999; padding: 40px 20px; font-size: 14px; }
+/* ===== Empty state ===== */
+.bilibili-fav-empty { text-align: center; color: var(--text-muted); padding: 40px 20px; font-size: 14px; }
 
-/* 消息提示 */
-.bilibili-fav-msg { padding: 8px; text-align: center; font-size: 13px; display: none; }
+/* ===== Toast message ===== */
+.bilibili-fav-msg { padding: 8px; text-align: center; font-size: 12px; display: none; }
 
-/* 收藏项 */
-.bilibili-fav-item-link { display: block; text-decoration: none; color: inherit; width: calc(50% - 4px); position: relative; }
+/* ===== Pill buttons (global) ===== */
+.bilibili-fav-add-btn,
+.bilibili-toolbox-export-btn,
+.bilibili-toolbox-import-btn {
+    padding: 10px 0;
+    font-size: 13px;
+    font-weight: 600;
+    border: none;
+    border-radius: var(--radius-pill);
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--text-primary);
+    letter-spacing: 0.3px;
+    flex: 1;
+}
+
+.bilibili-fav-add-btn {
+    padding: 8px 16px;
+    flex: none;
+}
+
+/* Primary pill — accent fill */
+.bilibili-fav-add-btn,
+.bilibili-toolbox-export-btn {
+    background: var(--acc);
+    color: #fff;
+}
+
+.bilibili-fav-add-btn:hover,
+.bilibili-toolbox-export-btn:hover {
+    background: var(--acc-hover);
+}
+
+/* Secondary pill — dark fill */
+.bilibili-toolbox-import-btn {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-strong);
+}
+
+.bilibili-toolbox-import-btn:hover {
+    background: #2a2a2a;
+}
+
+/* ===== Button group layout ===== */
+.bilibili-toolbox-control-actions {
+    display: flex;
+    gap: 8px;
+    padding: 0 16px 16px;
+}
+
+/* ===== Favorite list items ===== */
+.bilibili-fav-item-link {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    width: calc(50% - 2px);
+    position: relative;
+}
 
 .bilibili-fav-item {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 4px 6px;
-    border-radius: var(--fav-radius);
+    padding: 8px 6px 10px;
+    border-radius: var(--radius-md);
     transition: background 0.2s;
     text-align: center;
     position: relative;
     overflow: hidden;
-    height: 80px;
+    height: 88px;
     box-sizing: border-box;
+    background: transparent;
 }
 
 .bilibili-fav-item[data-readlist="true"] { padding: 0; }
-.bilibili-fav-item-link:hover .bilibili-fav-item { background: var(--fav-hover); }
+
+.bilibili-fav-item-link:hover .bilibili-fav-item {
+    background: var(--bg-surface);
+}
 
 .bilibili-fav-item-info {
     display: flex;
@@ -230,25 +306,37 @@
     z-index: 1;
 }
 
-.bilibili-fav-item[data-readlist="true"] .bilibili-fav-item-info { padding: 0; overflow: hidden; border-radius: inherit; }
+.bilibili-fav-item[data-readlist="true"] .bilibili-fav-item-info {
+    padding: 0;
+    overflow: hidden;
+    border-radius: inherit;
+}
 
-/* 头像 */
+/* ===== Avatar — round, no border ===== */
 .bilibili-fav-avatar {
     width: 44px;
     height: 44px;
     border-radius: 50%;
     object-fit: cover;
-    border: 2px solid var(--fav-primary);
     position: relative;
     z-index: 1;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
-.bilibili-fav-avatar.cover { display: block; width: 100%; height: 100%; border-radius: var(--fav-radius); border: none; position: absolute; inset: 0; }
+.bilibili-fav-avatar.cover {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: var(--radius-md);
+    box-shadow: none;
+    position: absolute;
+    inset: 0;
+}
 
-/* 名称 */
+/* ===== Name label ===== */
 .bilibili-fav-name {
     font-size: 12px;
-    color: #fff;
+    color: var(--text-primary);
     font-weight: 500;
     max-width: 100%;
     overflow: hidden;
@@ -256,7 +344,7 @@
     white-space: nowrap;
     position: relative;
     z-index: 1;
-    margin-top: 8px;
+    margin-top: 6px;
 }
 
 .bilibili-fav-item[data-readlist="true"] .bilibili-fav-name {
@@ -265,24 +353,25 @@
     left: 0;
     right: 0;
     color: #fff;
-    background: linear-gradient(transparent, rgba(0,0,0,0.7));
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.75));
     padding: 20px 8px 8px;
-    border-radius: 0 0 var(--fav-radius) var(--fav-radius);
-    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    font-weight: 600;
 }
 
-/* 删除按钮 */
+/* ===== Delete button — ghost pill ===== */
 .bilibili-fav-delete {
     position: absolute;
     top: 4px;
     right: 4px;
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
     padding: 0;
-    font-size: 14px;
-    line-height: 16px;
-    color: #fff;
-    background: var(--fav-delete-bg);
+    font-size: 12px;
+    line-height: 20px;
+    color: var(--text-primary);
+    background: rgba(0, 0, 0, 0.5);
     border: none;
     border-radius: 50%;
     cursor: pointer;
@@ -292,62 +381,157 @@
 }
 
 .bilibili-fav-item:hover .bilibili-fav-delete { opacity: 1; }
-.bilibili-fav-delete:hover { background: #ff4757; }
+.bilibili-fav-delete:hover { background: var(--error); }
 
-/* 收藏项添加按钮 */
-.bilibili-fav-add-btn {
-    padding: 8px 16px;
-    font-size: 13px;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.2s;
-    background: var(--fav-primary);
-    color: #fff;
-    border: none;
-}
-
-.bilibili-fav-add-btn:hover { background: var(--fav-primary-dark); }
-
-/* 导出导入按钮 */
-.bilibili-toolbox-control-actions {
-    display: flex;
-    gap: 8px;
-    padding: 0 16px 16px;
-}
-
-.bilibili-toolbox-export-btn,
-.bilibili-toolbox-import-btn {
-    flex: 1;
-    padding: 10px 0;
-    font-size: 13px;
-    font-weight: 600;
-    border: none;
-    border-radius: var(--fav-radius);
-    cursor: pointer;
-    transition: all 0.2s;
-    color: #fff;
-}
-
-.bilibili-toolbox-export-btn {
-    background: var(--fav-primary);
-}
-
-.bilibili-toolbox-export-btn:hover {
-    background: var(--fav-primary-dark);
-}
-
-.bilibili-toolbox-import-btn {
-    background: rgba(255, 255, 255, 0.15);
-}
-
-.bilibili-toolbox-import-btn:hover {
-    background: rgba(255, 255, 255, 0.25);
-}
-
-/* 滚动条 */
-.bilibili-fav-content::-webkit-scrollbar { width: 6px; }
-.bilibili-fav-content::-webkit-scrollbar-track { background: var(--fav-hover); }
-.bilibili-fav-content::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.3); border-radius: 3px; }
-.bilibili-fav-content::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.5); }
-
+/* ===== Hidden forward dynamic ===== */
 .bilibili-toolbox-hide-forward-dynamic { display: none !important; }
+
+/* ══════════════════════════════════════ */
+/*  Comic Reader — Spotify dark theme   */
+/* ══════════════════════════════════════ */
+
+#comic-reader-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--bg-deepest);
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    touch-action: none;
+    overscroll-behavior: none;
+    isolation: isolate;
+}
+
+.comic-img-container {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 0;
+    margin: 0;
+    cursor: grab;
+    touch-action: none;
+    will-change: transform;
+}
+
+/* ===== Reader control panels ===== */
+.comic-controls,
+.comic-settings-controls {
+    position: fixed;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    background: var(--bg-overlay);
+    padding: 8px 10px;
+    border-radius: var(--radius-lg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-primary);
+    z-index: 10001;
+    transition: opacity 0.5s;
+    opacity: 1;
+    box-shadow: var(--shadow-heavy);
+}
+
+.comic-controls { bottom: 24px; right: 24px; }
+.comic-settings-controls { top: 24px; right: 24px; }
+
+/* ===== Reader pill buttons ===== */
+.comic-btn {
+    padding: 8px 16px;
+    cursor: pointer;
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-pill);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.comic-btn-alt {
+    background: transparent;
+    border-color: var(--border-subtle);
+}
+
+.comic-btn:hover { background: #2a2a2a; }
+
+.comic-btn-alt:hover { background: var(--bg-elevated); }
+
+.comic-btn.active {
+    background: var(--acc);
+    border-color: var(--acc);
+    color: #fff;
+}
+.comic-btn.active:hover { background: var(--acc-hover); }
+
+/* ===== Reader toast ===== */
+.comic-toast {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 8px 16px;
+    border-radius: var(--radius-pill);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+    z-index: 10004;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+    background: var(--bg-overlay);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border-subtle);
+    box-shadow: var(--shadow-card);
+}
+
+/* ===== Reader images ===== */
+#comic-reader-overlay img {
+    cursor: grab;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.4);
+    touch-action: none;
+    user-select: none;
+    -webkit-user-drag: none;
+}
+
+#comic-reader-overlay .comic-img-full { max-width: 100%; max-height: 100%; }
+#comic-reader-overlay .comic-img-half { max-width: 50%; max-height: 100%; }
+#comic-reader-overlay .comic-img-half[data-rotated="true"] { max-width: 100vh; max-height: 50vw; }
+#comic-reader-overlay .comic-img-full[data-rotated="true"] { max-width: 100vh; max-height: 100vw; }
+
+/* ===== Compact layout (mobile) ===== */
+#comic-reader-overlay.reader-compact .comic-btn {
+    min-width: 54px;
+    min-height: 44px;
+    padding: 10px 12px;
+    font-size: 14px;
+}
+
+#comic-reader-overlay.reader-compact .comic-controls {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    width: auto;
+    padding: 8px 12px;
+}
+
+#comic-reader-overlay.reader-compact .comic-settings-controls {
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 8px 12px;
+}

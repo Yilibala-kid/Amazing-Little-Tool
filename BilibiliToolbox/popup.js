@@ -1,6 +1,6 @@
 // Bilibili Toolbox - popup script
 
-let cachedData = createDefaultData();
+let cachedData = window.Shared.createDefaultData();
 let activeBilibiliTabId = null;
 let canAddCurrent = false;
 
@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 function applyData(data, options = {}) {
-    cachedData = normalizeToolboxData(data);
+    cachedData = window.Shared.normalizeToolboxData(data);
     activeBilibiliTabId = options.tabId ?? activeBilibiliTabId ?? null;
     canAddCurrent = Boolean(options.canAddCurrent);
     renderFavorites();
@@ -24,21 +24,21 @@ async function cleanupObsoleteExtensionStorage() {
 }
 
 async function getSharedData() {
-    const result = await chrome.storage.local.get([SHARED_STORAGE_KEY]);
-    return result[SHARED_STORAGE_KEY]
-        ? normalizeToolboxData(result[SHARED_STORAGE_KEY])
+    const result = await chrome.storage.local.get([window.Shared.SHARED_STORAGE_KEY]);
+    return result[window.Shared.SHARED_STORAGE_KEY]
+        ? window.Shared.normalizeToolboxData(result[window.Shared.SHARED_STORAGE_KEY])
         : null;
 }
 
 async function setSharedData(data) {
-    const nextData = stampToolboxData(data);
-    await chrome.storage.local.set({ [SHARED_STORAGE_KEY]: nextData });
+    const nextData = window.Shared.stampToolboxData(data);
+    await chrome.storage.local.set({ [window.Shared.SHARED_STORAGE_KEY]: nextData });
     return nextData;
 }
 
 async function getActiveBilibiliTab() {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    return isBilibiliUrl(tab?.url) ? tab : null;
+    return window.Shared.isBilibiliUrl(tab?.url) ? tab : null;
 }
 
 async function loadData() {
@@ -47,7 +47,7 @@ async function loadData() {
         getActiveBilibiliTab()
     ]);
 
-    const data = sharedData || await setSharedData(createDefaultData());
+    const data = sharedData || await setSharedData(window.Shared.createDefaultData());
     applyData(data, {
         tabId: activeTab?.id ?? null,
         canAddCurrent: Boolean(activeTab?.id)
@@ -75,11 +75,11 @@ function renderStorageState() {
 }
 
 function renderFavoriteItem(item) {
-    const favoriteKey = getFavoriteKey(item);
-    const name = escapeHtml(getFavoriteName(item));
-    const image = escapeHtml(getFavoriteImage(item));
-    const link = escapeHtml(getFavoriteLink(item));
-    const type = isReadlistFavorite(item) ? '专栏' : '空间';
+    const favoriteKey = window.Shared.getFavoriteKey(item);
+    const name = window.Shared.escapeHtml(window.Shared.getFavoriteName(item));
+    const image = window.Shared.escapeHtml(window.Shared.getFavoriteImage(item));
+    const link = window.Shared.escapeHtml(window.Shared.getFavoriteLink(item));
+    const type = window.Shared.isReadlistFavorite(item) ? '专栏' : '空间';
 
     return `<div class="user-item">
         <div class="user-info">
@@ -88,7 +88,7 @@ function renderFavoriteItem(item) {
         </div>
         <div class="user-actions">
             <a href="${link}" target="_blank" rel="noopener noreferrer" class="user-link">${type}</a>
-            <button type="button" class="delete-btn" data-key="${escapeHtml(favoriteKey)}">删除</button>
+            <button type="button" class="delete-btn" data-key="${window.Shared.escapeHtml(favoriteKey)}">删除</button>
         </div>
     </div>`;
 }
@@ -104,7 +104,7 @@ function renderFavorites() {
 }
 
 async function deleteFavorite(favoriteKey) {
-    const filtered = cachedData.favorites.filter(item => getFavoriteKey(item) !== favoriteKey);
+    const filtered = cachedData.favorites.filter(item => window.Shared.getFavoriteKey(item) !== favoriteKey);
     if (filtered.length === cachedData.favorites.length) return;
 
     await persistData({
@@ -124,71 +124,6 @@ function setupEventListeners() {
     document.getElementById('addCurrentBtn')?.addEventListener('click', addCurrentFavorite);
 }
 
-async function getPageReadlistData(tabId, readlistId) {
-    let pageData = {};
-
-    try {
-        const results = await chrome.scripting.executeScript({
-            target: { tabId },
-            func: () => {
-                const title = document.querySelector('.read-list-title, .title, h1')?.textContent?.trim() || '专栏';
-                const cover = document.querySelector('.read-list-cover img, .cover-img img, .banner-image img, [class*="cover"] img')?.src || '';
-                return { title, cover };
-            }
-        });
-        pageData = results?.[0]?.result || {};
-    } catch (_) {}
-
-    return {
-        type: READLIST_TYPE,
-        id: readlistId,
-        title: pageData.title || '专栏',
-        cover: pageData.cover || ''
-    };
-}
-
-async function getPageFavoriteData(tabId, uid) {
-    let pageData = {};
-
-    try {
-        const results = await chrome.scripting.executeScript({
-            target: { tabId },
-            func: () => {
-                const extractUserNameFromMeta = () => {
-                    const title = document.title || '';
-                    const keywords = document.querySelector('meta[name="keywords"]')?.content || '';
-                    const description = document.querySelector('meta[name="description"]')?.content || '';
-                    const profileSuffixPattern = '(?:\\u7684)?\\u4e2a\\u4eba(?:\\u52a8\\u6001|\\u7a7a\\u95f4|\\u4e3b\\u9875)';
-
-                    return (
-                        title.match(new RegExp(`^(.+?)${profileSuffixPattern}`))?.[1]
-                        || keywords.match(new RegExp(`^(.+?)${profileSuffixPattern}`))?.[1]
-                        || description.match(/\u54d4\u54e9\u54d4\u54e9(.+?)\u7684\u4e2a\u4eba(?:\u52a8\u6001|\u7a7a\u95f4)/)?.[1]
-                        || description.match(/\u5173\u6ce8(.+?)\u8d26\u53f7/)?.[1]
-                        || ''
-                    ).trim();
-                };
-
-                const nameEl = document.querySelector('.user-name, .user-name-shadow, .name, [data-uname]');
-                const faceEl = document.querySelector('.user-face img, .avatar img, [class*="face"] img, [data-face]');
-                return {
-                    uname: nameEl?.textContent?.trim() || nameEl?.getAttribute('data-uname') || extractUserNameFromMeta() || '',
-                    face: faceEl?.src || faceEl?.getAttribute('data-face') || ''
-                };
-            }
-        });
-
-        pageData = results?.[0]?.result || {};
-    } catch (_) {}
-
-    return {
-        type: USER_TYPE,
-        uid,
-        uname: pageData.uname || `用户 ${uid}`,
-        face: pageData.face || ''
-    };
-}
-
 async function addCurrentFavorite() {
     const activeTab = await getActiveBilibiliTab();
     if (!activeTab?.url) {
@@ -199,49 +134,35 @@ async function addCurrentFavorite() {
     activeBilibiliTabId = activeTab.id;
     canAddCurrent = true;
 
-    const url = activeTab.url;
-    const readlistMatch = url.match(/readlist\/rl(\d+)/);
-    if (readlistMatch) {
-        const pageData = await getPageReadlistData(activeTab.id, readlistMatch[1]);
-        const favoriteKey = getFavoriteKey(pageData);
-        if (cachedData.favorites.some(item => getFavoriteKey(item) === favoriteKey)) {
-            alert('已在收藏列表');
-            return;
-        }
-
-        await persistData({
-            ...cachedData,
-            favorites: [...cachedData.favorites, pageData]
-        });
-        alert(`已添加 ${pageData.title} 到收藏列表`);
+    let item;
+    try {
+        item = await chrome.tabs.sendMessage(activeTab.id, { type: 'GET_PAGE_FAVORITE_DATA' });
+    } catch (_) {
+        item = null;
+    }
+    if (!item) {
+        alert('无法获取当前页面信息');
         return;
     }
 
-    const uid = extractUidFromUrl(url);
-    if (!uid) {
-        alert('无法获取当前页面用户信息');
-        return;
-    }
-
-    const favoriteKey = `${USER_TYPE}:${uid}`;
-    if (cachedData.favorites.some(item => getFavoriteKey(item) === favoriteKey)) {
+    const favoriteKey = window.Shared.getFavoriteKey(item);
+    if (cachedData.favorites.some(f => window.Shared.getFavoriteKey(f) === favoriteKey)) {
         alert('已在收藏列表');
         return;
     }
 
-    const newFavorite = await getPageFavoriteData(activeTab.id, uid);
     await persistData({
         ...cachedData,
-        favorites: [...cachedData.favorites, newFavorite]
+        favorites: [...cachedData.favorites, item]
     });
-    alert(`已添加 ${newFavorite.uname} 到收藏列表`);
+    alert(`已添加 ${window.Shared.getFavoriteName(item)} 到收藏列表`);
 }
 
 async function handleStorageChange(changes, areaName) {
-    if (areaName !== 'local' || !changes[SHARED_STORAGE_KEY]) return;
+    if (areaName !== 'local' || !changes[window.Shared.SHARED_STORAGE_KEY]) return;
 
     const activeTab = await getActiveBilibiliTab();
-    applyData(changes[SHARED_STORAGE_KEY].newValue || createDefaultData(), {
+    applyData(changes[window.Shared.SHARED_STORAGE_KEY].newValue || window.Shared.createDefaultData(), {
         tabId: activeTab?.id ?? null,
         canAddCurrent: Boolean(activeTab?.id)
     });
