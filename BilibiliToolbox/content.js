@@ -388,6 +388,10 @@
                 </label>
                 <div class="bilibili-toolbox-control-status"></div>
             </div>
+            <div class="bilibili-toolbox-control-actions">
+                <button class="bilibili-toolbox-export-btn">导出收藏</button>
+                <button class="bilibili-toolbox-import-btn">导入收藏</button>
+            </div>
         `;
 
         document.body.appendChild(panel);
@@ -401,6 +405,9 @@
                 scheduleDynamicFilterRetries();
             });
         });
+
+        panel.querySelector('.bilibili-toolbox-export-btn').addEventListener('click', exportFavorites);
+        panel.querySelector('.bilibili-toolbox-import-btn').addEventListener('click', importFavorites);
 
         renderDynamicControlsPanel();
     }
@@ -435,6 +442,96 @@
             ? '已隐藏转发动态'
             : '已显示全部动态';
         syncFloatBtnHideState();
+    }
+
+    function exportFavorites() {
+        chrome.storage.local.get([window.Shared.SHARED_STORAGE_KEY], (result) => {
+            const raw = result[window.Shared.SHARED_STORAGE_KEY];
+            if (!raw || !raw.favorites || !raw.favorites.length) {
+                showMessage('暂无可导出的收藏', true);
+                return;
+            }
+            const json = JSON.stringify(raw, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const now = new Date();
+            const pad = (n) => String(n).padStart(2, '0');
+            const ts = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+            a.href = url;
+            a.download = `bilibili-favorites-${ts}.json`;
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showMessage(`已导出 ${raw.favorites.length} 条收藏`);
+        });
+    }
+
+    function importFavorites() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.style.display = 'none';
+        document.body.appendChild(input);
+
+        input.addEventListener('change', () => {
+            const file = input.files[0];
+            input.remove();
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = () => {
+                let importedData;
+                try {
+                    importedData = JSON.parse(reader.result);
+                } catch (_) {
+                    showMessage('JSON解析失败，请检查文件格式', true);
+                    return;
+                }
+
+                const validation = window.Shared.validateFavoritesData(importedData);
+                if (!validation.valid || !validation.items.length) {
+                    showMessage(validation.errors[0] || '文件中没有有效的收藏数据', true);
+                    return;
+                }
+
+                chrome.storage.local.get([window.Shared.SHARED_STORAGE_KEY], (result) => {
+                    const existing = window.Shared.normalizeToolboxData(result[window.Shared.SHARED_STORAGE_KEY]);
+                    const merged = window.Shared.mergeFavorites(existing.favorites, validation.items);
+                    const nextData = window.Shared.stampToolboxData(
+                        { ...existing, favorites: merged.result },
+                        Date.now()
+                    );
+                    chrome.storage.local.set({ [window.Shared.SHARED_STORAGE_KEY]: nextData }, () => {
+                        mirrorSharedToolboxData(nextData);
+                        renderFavoriteList();
+                        let msg = `导入 ${merged.added} 条，跳过 ${merged.skipped} 条重复`;
+                        if (validation.errors.length) {
+                            msg += `，${validation.errors.length} 条格式错误`;
+                        }
+                        showMessage(msg);
+                    });
+                });
+            };
+            reader.onerror = () => {
+                input.remove();
+                showMessage('文件读取失败', true);
+            };
+            reader.readAsText(file);
+        });
+
+        window.addEventListener('focus', function cleanup() {
+            window.removeEventListener('focus', cleanup);
+            setTimeout(() => {
+                if (input.parentNode && !input.files.length) {
+                    input.remove();
+                }
+            }, 300);
+        });
+
+        input.click();
     }
 
     function showDynamicControlsPanel() {

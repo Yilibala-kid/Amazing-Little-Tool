@@ -308,6 +308,42 @@
 
 .bilibili-fav-add-btn:hover { background: var(--fav-primary-dark); }
 
+/* 导出导入按钮 */
+.bilibili-toolbox-control-actions {
+    display: flex;
+    gap: 8px;
+    padding: 0 16px 16px;
+}
+
+.bilibili-toolbox-export-btn,
+.bilibili-toolbox-import-btn {
+    flex: 1;
+    padding: 10px 0;
+    font-size: 13px;
+    font-weight: 600;
+    border: none;
+    border-radius: var(--fav-radius);
+    cursor: pointer;
+    transition: all 0.2s;
+    color: #fff;
+}
+
+.bilibili-toolbox-export-btn {
+    background: var(--fav-primary);
+}
+
+.bilibili-toolbox-export-btn:hover {
+    background: var(--fav-primary-dark);
+}
+
+.bilibili-toolbox-import-btn {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.bilibili-toolbox-import-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
 /* 滚动条 */
 .bilibili-fav-content::-webkit-scrollbar { width: 6px; }
 .bilibili-fav-content::-webkit-scrollbar-track { background: var(--fav-hover); }
