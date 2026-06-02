@@ -2,7 +2,9 @@
 (function() {
     'use strict';
 
-    const Toolbox = window.BilibiliToolbox || (window.BilibiliToolbox = {});
+    if (!window.BilibiliToolbox) throw new Error('BilibiliToolbox: shared.js not loaded');
+
+    const Toolbox = window.BilibiliToolbox;
     const IMAGE_ATTRS = [
         'data-origin-src',
         'data-original',

@@ -8,85 +8,19 @@
 // @run-at       document-start
 // @grant        GM.getValue
 // @grant        GM.setValue
-// @grant        GM_getValue
-// @grant        GM_setValue
 // ==/UserScript==
 
 (function() {
     'use strict';
 
-    const STORAGE_PREFIX = 'bilibili-toolbox-userscript:';
     const changeListeners = new Set();
 
-    function hasLegacyGmStorage() {
-        return typeof GM_getValue === 'function' && typeof GM_setValue === 'function';
-    }
-
-    function hasModernGmStorage() {
-        return typeof GM === 'object'
-            && typeof GM.getValue === 'function'
-            && typeof GM.setValue === 'function';
-    }
-
-    function readLocalValue(key) {
-        const raw = localStorage.getItem(STORAGE_PREFIX + key);
-        if (raw === null) return undefined;
-        try { return JSON.parse(raw); } catch (_) { return undefined; }
-    }
-
-    function getFavoriteKey(item) {
-        if (!item || typeof item !== 'object') return '';
-        const type = item.type === 'readlist' ? 'readlist' : 'user';
-        const value = type === 'readlist' ? item.id : item.uid;
-        return value ? type + ':' + value : '';
-    }
-
-    function mergeStoredValue(primary, localValue) {
-        if (!primary || !localValue || typeof primary !== 'object' || typeof localValue !== 'object') {
-            return primary === undefined ? localValue : primary;
-        }
-        if (!Array.isArray(primary.favorites) || !Array.isArray(localValue.favorites)) return primary;
-
-        const favorites = [...primary.favorites];
-        const keys = new Set(favorites.map(getFavoriteKey).filter(Boolean));
-        localValue.favorites.forEach(item => {
-            const key = getFavoriteKey(item);
-            if (!key || keys.has(key)) return;
-            keys.add(key);
-            favorites.push(item);
-        });
-
-        return {
-            ...localValue,
-            ...primary,
-            settings: { ...(localValue.settings || {}), ...(primary.settings || {}) },
-            favorites
-        };
-    }
-
     async function readValue(key) {
-        if (hasModernGmStorage() || hasLegacyGmStorage()) {
-            const localValue = readLocalValue(key);
-            const gmValue = hasModernGmStorage() ? await GM.getValue(key) : GM_getValue(key);
-            const merged = mergeStoredValue(gmValue, localValue);
-            if (localValue !== undefined && JSON.stringify(merged) !== JSON.stringify(gmValue)) {
-                await writeValue(key, merged);
-            }
-            return merged;
-        }
-        return readLocalValue(key);
+        return GM.getValue(key);
     }
 
     async function writeValue(key, value) {
-        if (hasModernGmStorage()) {
-            await GM.setValue(key, value);
-            return;
-        }
-        if (hasLegacyGmStorage()) {
-            GM_setValue(key, value);
-            return;
-        }
-        localStorage.setItem(STORAGE_PREFIX + key, JSON.stringify(value));
+        await GM.setValue(key, value);
     }
 
     function normalizeGetKeys(keys) {
@@ -128,7 +62,7 @@
     };
     window.chrome = chromeShim;
 
-    const css = "/* ===== content.css ===== */\n/* Bilibili Toolbox — Spotify-inspired dark theme */\r\n\r\n:root {\r\n    --acc: #fb7299;\r\n    --acc-hover: #fc8bab;\r\n    --acc-active: #e86288;\r\n    --bg-deepest: #0a0a0a;\r\n    --bg-surface: #181818;\r\n    --bg-elevated: #1f1f1f;\r\n    --bg-overlay: rgba(20, 20, 20, 0.94);\r\n    --text-primary: #ffffff;\r\n    --text-secondary: #b3b3b3;\r\n    --text-muted: #7c7c7c;\r\n    --border-subtle: rgba(255, 255, 255, 0.12);\r\n    --border-strong: #4d4d4d;\r\n    --error: #f3727f;\r\n    --error-hover: #e86a77;\r\n    --shadow-heavy: 0 8px 24px rgba(0, 0, 0, 0.5);\r\n    --shadow-card: 0 4px 8px rgba(0, 0, 0, 0.3);\r\n    --shadow-float: 0 4px 16px rgba(251, 114, 153, 0.25);\r\n    --radius-sm: 6px;\r\n    --radius-md: 8px;\r\n    --radius-lg: 12px;\r\n    --radius-pill: 9999px;\r\n    --font: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif;\r\n}\r\n\r\n/* ===== Floating star button ===== */\r\n#bilibili-fav-float-btn {\r\n    position: fixed;\r\n    bottom: 80px;\r\n    right: 20px;\r\n    width: 50px;\r\n    height: 50px;\r\n    background: var(--acc);\r\n    border-radius: 50%;\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    font-size: 24px;\r\n    cursor: pointer;\n    box-shadow: var(--shadow-float);\n    z-index: 999999;\n    transition: transform 0.2s, box-shadow 0.2s, opacity 0.3s, visibility 0.3s;\r\n    line-height: 1;\r\n    text-align: center;\r\n}\r\n\r\n#bilibili-fav-float-btn:hover {\r\n    transform: scale(1.1);\r\n    box-shadow: 0 6px 20px rgba(251, 114, 153, 0.4);\r\n}\r\n\r\n#bilibili-fav-float-btn.hide-forward-active {\r\n    border-radius: var(--radius-sm);\r\n}\r\n\r\n/* ===== Shared panel base ===== */\r\n#bilibili-fav-panel,\r\n#bilibili-fav-controls-panel {\r\n    position: fixed;\r\n    bottom: 140px;\r\n    right: 20px;\r\n    width: 280px;\r\n    background: var(--bg-overlay);\r\n    backdrop-filter: blur(20px);\r\n    -webkit-backdrop-filter: blur(20px);\r\n    border-radius: var(--radius-lg);\r\n    box-shadow: var(--shadow-heavy);\r\n    z-index: 1000000;\n    opacity: 0;\r\n    visibility: hidden;\r\n    transition: opacity 0.2s, transform 0.2s, visibility 0.2s;\r\n    font-family: var(--font);\r\n    transform: translateY(10px);\r\n    color: var(--text-primary);\r\n    border: 1px solid var(--border-subtle);\r\n}\r\n\r\n#bilibili-fav-controls-panel { z-index: 1000001; }\n\r\n#bilibili-fav-panel.show,\r\n#bilibili-fav-controls-panel.show {\r\n    opacity: 1;\r\n    visibility: visible;\r\n    transform: translateY(0);\r\n}\r\n\r\n/* ===== Panel header ===== */\r\n.bilibili-fav-header {\n    display: flex;\n    justify-content: space-between;\n    align-items: center;\n    padding: 10px 16px;\r\n    border-bottom: 1px solid var(--border-subtle);\r\n    background: var(--bg-elevated);\r\n    color: var(--text-primary);\r\n    border-radius: var(--radius-lg) var(--radius-lg) 0 0;\r\n    font-weight: 600;\r\n    font-size: 14px;\n    letter-spacing: 0.3px;\n}\n\n.bilibili-fav-header-actions {\n    display: flex;\n    align-items: center;\n    gap: 6px;\n}\n\r\n/* ===== Panel content ===== */\r\n.bilibili-fav-content { max-height: 400px; overflow-y: auto; }\r\n\r\n.bilibili-fav-list {\r\n    padding: 8px 10px;\r\n    display: flex;\r\n    flex-wrap: wrap;\r\n    justify-content: space-between;\r\n    gap: 4px;\r\n}\r\n\r\n.bilibili-fav-content::-webkit-scrollbar { width: 5px; }\r\n.bilibili-fav-content::-webkit-scrollbar-track { background: transparent; }\r\n.bilibili-fav-content::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 3px; }\r\n.bilibili-fav-content::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.25); }\r\n\r\n/* ===== Dynamic controls content ===== */\r\n.bilibili-toolbox-control-content {\r\n    padding: 16px;\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: 12px;\r\n}\r\n\r\n.bilibili-toolbox-control-row {\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: space-between;\r\n    gap: 12px;\r\n    padding: 12px 14px;\r\n    border-radius: var(--radius-md);\r\n    background: var(--bg-surface);\r\n    cursor: pointer;\r\n    border: 1px solid var(--border-subtle);\r\n}\r\n\r\n.bilibili-toolbox-control-copy {\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: 4px;\r\n    min-width: 0;\r\n}\r\n\r\n.bilibili-toolbox-control-title {\r\n    font-size: 14px;\r\n    font-weight: 600;\r\n    color: var(--text-primary);\r\n}\r\n\r\n.bilibili-toolbox-control-desc {\r\n    font-size: 12px;\r\n    color: var(--text-secondary);\r\n    line-height: 1.4;\r\n}\r\n\r\n.bilibili-toolbox-control-status {\r\n    font-size: 12px;\r\n    line-height: 1.4;\r\n    padding: 8px 12px;\r\n    border-radius: var(--radius-sm);\r\n    background: var(--bg-surface);\r\n    color: var(--text-secondary);\r\n}\r\n\r\n/* ===== Toggle switch ===== */\r\n.bilibili-toolbox-switch {\r\n    position: relative;\r\n    width: 46px;\r\n    height: 28px;\r\n    flex-shrink: 0;\r\n}\r\n\r\n.bilibili-toolbox-switch input {\r\n    position: absolute;\r\n    inset: 0;\r\n    opacity: 0;\r\n    cursor: pointer;\r\n    margin: 0;\r\n}\r\n\r\n.bilibili-toolbox-switch-slider {\r\n    position: absolute;\r\n    inset: 0;\r\n    border-radius: var(--radius-pill);\r\n    background: rgba(255, 255, 255, 0.2);\r\n    transition: background 0.2s;\r\n}\r\n\r\n.bilibili-toolbox-switch-slider::before {\r\n    content: \"\";\r\n    position: absolute;\r\n    top: 3px;\r\n    left: 3px;\r\n    width: 22px;\r\n    height: 22px;\r\n    border-radius: 50%;\r\n    background: #fff;\r\n    transition: transform 0.2s;\r\n    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);\r\n}\r\n\r\n.bilibili-toolbox-switch input:checked + .bilibili-toolbox-switch-slider {\r\n    background: var(--acc);\r\n}\r\n\r\n.bilibili-toolbox-switch input:checked + .bilibili-toolbox-switch-slider::before {\r\n    transform: translateX(18px);\r\n}\r\n\r\n/* ===== Empty state ===== */\r\n.bilibili-fav-empty { text-align: center; color: var(--text-muted); padding: 40px 20px; font-size: 14px; }\r\n\r\n/* ===== Toast message ===== */\r\n.bilibili-fav-msg { padding: 8px; text-align: center; font-size: 12px; display: none; }\r\n\r\n/* ===== Pill buttons (global) ===== */\r\n.bilibili-fav-add-btn,\n.bilibili-fav-control-btn,\n.bilibili-toolbox-export-btn,\n.bilibili-toolbox-import-btn {\n    padding: 10px 0;\r\n    font-size: 13px;\r\n    font-weight: 600;\r\n    border: none;\r\n    border-radius: var(--radius-pill);\r\n    cursor: pointer;\r\n    transition: all 0.2s;\r\n    color: var(--text-primary);\r\n    letter-spacing: 0.3px;\r\n    flex: 1;\r\n}\r\n\r\n.bilibili-fav-add-btn {\n    padding: 8px 16px;\n    flex: none;\n}\n\n.bilibili-fav-control-btn {\n    display: none;\n    padding: 8px 12px;\n    flex: none;\n}\n\r\n/* Primary pill — accent fill */\r\n.bilibili-fav-add-btn,\n.bilibili-fav-control-btn,\n.bilibili-toolbox-export-btn {\n    background: var(--acc);\r\n    color: #fff;\r\n}\r\n\r\n.bilibili-fav-add-btn:hover,\n.bilibili-fav-control-btn:hover,\n.bilibili-toolbox-export-btn:hover {\n    background: var(--acc-hover);\r\n}\r\n\r\n/* Secondary pill — dark fill */\r\n.bilibili-toolbox-import-btn {\r\n    background: var(--bg-elevated);\r\n    border: 1px solid var(--border-strong);\r\n}\r\n\r\n.bilibili-toolbox-import-btn:hover {\r\n    background: #2a2a2a;\r\n}\r\n\r\n/* ===== Button group layout ===== */\r\n.bilibili-toolbox-control-actions {\r\n    display: flex;\r\n    gap: 8px;\r\n    padding: 0 16px 16px;\r\n}\r\n\r\n/* ===== Favorite list items ===== */\r\n.bilibili-fav-item-link {\r\n    display: block;\r\n    text-decoration: none;\r\n    color: inherit;\r\n    width: calc(50% - 2px);\r\n    position: relative;\r\n}\r\n\r\n.bilibili-fav-item {\r\n    display: flex;\r\n    flex-direction: column;\r\n    align-items: center;\r\n    padding: 8px 6px 10px;\r\n    border-radius: var(--radius-md);\r\n    transition: background 0.2s;\r\n    text-align: center;\r\n    position: relative;\r\n    overflow: hidden;\r\n    height: 88px;\r\n    box-sizing: border-box;\r\n    background: transparent;\r\n}\r\n\r\n.bilibili-fav-item[data-readlist=\"true\"] { padding: 0; }\r\n\r\n.bilibili-fav-item-link:hover .bilibili-fav-item {\r\n    background: var(--bg-surface);\r\n}\r\n\r\n.bilibili-fav-item-info {\r\n    display: flex;\r\n    flex-direction: column;\r\n    align-items: center;\r\n    width: 100%;\r\n    height: 100%;\r\n    position: relative;\r\n    z-index: 1;\r\n}\r\n\r\n.bilibili-fav-item[data-readlist=\"true\"] .bilibili-fav-item-info {\r\n    padding: 0;\r\n    overflow: hidden;\r\n    border-radius: inherit;\r\n}\r\n\r\n/* ===== Avatar — round, no border ===== */\r\n.bilibili-fav-avatar {\r\n    width: 44px;\r\n    height: 44px;\r\n    border-radius: 50%;\r\n    object-fit: cover;\r\n    position: relative;\r\n    z-index: 1;\r\n    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);\r\n}\r\n\r\n.bilibili-fav-avatar.cover {\r\n    display: block;\r\n    width: 100%;\r\n    height: 100%;\r\n    border-radius: var(--radius-md);\r\n    box-shadow: none;\r\n    position: absolute;\r\n    inset: 0;\r\n}\r\n\r\n/* ===== Name label ===== */\r\n.bilibili-fav-name {\r\n    font-size: 12px;\r\n    color: var(--text-primary);\r\n    font-weight: 500;\r\n    max-width: 100%;\r\n    overflow: hidden;\r\n    text-overflow: ellipsis;\r\n    white-space: nowrap;\r\n    position: relative;\r\n    z-index: 1;\r\n    margin-top: 6px;\r\n}\r\n\r\n.bilibili-fav-item[data-readlist=\"true\"] .bilibili-fav-name {\r\n    position: absolute;\r\n    bottom: 0;\r\n    left: 0;\r\n    right: 0;\r\n    color: #fff;\r\n    background: linear-gradient(transparent, rgba(0, 0, 0, 0.75));\r\n    padding: 20px 8px 8px;\r\n    border-radius: 0 0 var(--radius-md) var(--radius-md);\r\n    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);\r\n    font-weight: 600;\r\n}\r\n\r\n/* ===== Delete button — ghost pill ===== */\r\n.bilibili-fav-delete {\n    position: absolute;\n    top: 4px;\n    right: 4px;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    width: 20px;\n    height: 20px;\n    padding: 0;\n    font-size: 14px;\n    line-height: 1;\n    color: var(--text-primary);\n    background: rgba(0, 0, 0, 0.5);\n    border: none;\n    border-radius: 50%;\n    appearance: none;\n    cursor: pointer;\n    transition: all 0.2s;\r\n    z-index: 2;\r\n    opacity: 0;\r\n}\r\n\r\n.bilibili-fav-item:hover .bilibili-fav-delete { opacity: 1; }\r\n.bilibili-fav-delete:hover { background: var(--error); }\r\n\r\n/* ===== Hidden forward dynamic ===== */\r\n.bilibili-toolbox-hide-forward-dynamic { display: none !important; }\r\n\r\n/* ══════════════════════════════════════ */\r\n/*  Comic Reader — Spotify dark theme   */\r\n/* ══════════════════════════════════════ */\r\n\r\n.comic-entry-btn {\n    position: fixed;\n    bottom: 24px;\n    right: 24px;\n    z-index: 9999;\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    padding: 10px 18px;\n    cursor: pointer;\n    background: var(--acc);\n    color: #fff;\n    border: none;\n    border-radius: 24px;\n    font-size: 20px;\n    line-height: 1;\n    box-shadow: 0 4px 16px rgba(251,114,153,0.3);\n}\n\n.comic-entry-btn-touch {\n    bottom: 16px;\n    right: 16px;\n    padding: 12px 16px;\n    font-size: 18px;\n}\n\n#comic-reader-overlay {\n    position: fixed;\r\n    inset: 0;\r\n    background: var(--bg-deepest);\r\n    z-index: 10000;\r\n    display: flex;\r\n    flex-direction: column;\r\n    align-items: center;\r\n    justify-content: center;\r\n    overflow: hidden;\r\n    touch-action: none;\r\n    overscroll-behavior: none;\r\n    isolation: isolate;\n}\n\n.comic-img-container {\n    display: flex;\n    width: 100%;\n    height: 100%;\n    align-items: center;\n    justify-content: center;\r\n    gap: 4px;\r\n    padding: 0;\r\n    margin: 0;\r\n    cursor: grab;\n    touch-action: none;\n    transform-origin: center center;\n    will-change: transform;\n}\n\n.comic-img-container.is-grabbing,\n.comic-img-container.is-grabbing img { cursor: grabbing; }\n\n/* ===== Reader control panels ===== */\n.comic-controls,\r\n.comic-settings-controls {\r\n    position: fixed;\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: 6px;\r\n    background: var(--bg-overlay);\r\n    padding: 8px 10px;\r\n    border-radius: var(--radius-lg);\r\n    backdrop-filter: blur(20px);\r\n    -webkit-backdrop-filter: blur(20px);\r\n    border: 1px solid var(--border-subtle);\r\n    color: var(--text-primary);\r\n    z-index: 10001;\r\n    transition: opacity 0.5s;\r\n    opacity: 1;\n    box-shadow: var(--shadow-heavy);\n}\n\n.comic-controls.is-hidden,\n.comic-settings-controls.is-hidden { opacity: 0; }\n\n.comic-controls { bottom: 24px; right: 24px; }\n.comic-settings-controls { top: 24px; right: 24px; }\n\n.comic-settings-panel {\n    position: fixed;\n    left: 50%;\n    top: 50%;\n    z-index: 10002;\n    display: flex;\n    flex-direction: column;\n    gap: 8px;\n    width: min(460px, calc(100vw - 32px));\n    max-height: min(76vh, 560px);\n    overflow-y: auto;\n    padding: 14px;\n    color: var(--text-primary);\n    background: var(--bg-overlay);\n    border: 1px solid var(--border-subtle);\n    border-radius: var(--radius-md);\n    box-shadow: var(--shadow-heavy);\n    backdrop-filter: blur(20px);\n    -webkit-backdrop-filter: blur(20px);\n    opacity: 0;\n    visibility: hidden;\n    pointer-events: none;\n    transform: translate(-50%, -50%) scale(0.96);\n    transition: opacity 0.18s ease-out, transform 0.18s ease-out, visibility 0.18s;\n}\n\n.comic-settings-panel.show {\n    opacity: 1;\n    visibility: visible;\n    pointer-events: auto;\n    transform: translate(-50%, -50%) scale(1);\n}\n\n.comic-settings-panel .comic-btn {\n    min-width: 96px;\n    padding: 8px 12px;\n    border-radius: var(--radius-md);\n    white-space: nowrap;\n}\n\n.comic-settings-panel-header {\n    padding: 2px 2px 10px;\n    border-bottom: 1px solid var(--border-subtle);\n}\n\n.comic-settings-panel-title {\n    font-size: 15px;\n    font-weight: 700;\n    color: var(--text-primary);\n}\n\n.comic-settings-panel-desc {\n    margin-top: 4px;\n    font-size: 12px;\n    line-height: 1.5;\n    color: var(--text-secondary);\n}\n\n.comic-settings-item {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    gap: 14px;\n    padding: 12px;\n    border: 1px solid var(--border-subtle);\n    border-radius: var(--radius-md);\n    background: rgba(255, 255, 255, 0.035);\n}\n\n.comic-settings-copy {\n    min-width: 0;\n}\n\n.comic-settings-title {\n    font-size: 13px;\n    font-weight: 700;\n    color: var(--text-primary);\n}\n\n.comic-settings-desc {\n    margin-top: 4px;\n    font-size: 12px;\n    line-height: 1.45;\n    color: var(--text-secondary);\n}\n\n.comic-settings-action {\n    display: flex;\n    flex-shrink: 0;\n    align-items: center;\n    justify-content: flex-end;\n}\n\n.comic-reader-row {\n    display: flex;\n    gap: 6px;\n    align-items: center;\n    justify-content: center;\n}\n\n.comic-reader-row-wrap { flex-wrap: wrap; }\n\n.comic-page-info {\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    gap: 4px;\n    font-size: 14px;\n    min-width: 68px;\n    min-height: 32px;\n    padding: 0 2px;\n    color: var(--text-primary);\n    cursor: pointer;\n    white-space: nowrap;\n}\n\n.comic-page-display {\n    display: inline;\n}\n\n.comic-page-input {\n    display: none;\n    width: 44px;\n    height: 32px;\n    padding: 0 8px;\n    color: var(--text-primary);\n    background: var(--bg-deepest);\n    border: 1px solid var(--border-subtle);\n    border-radius: var(--radius-pill);\n    font: inherit;\n    text-align: center;\n    outline: none;\n}\n\n.comic-page-input:focus {\n    border-color: var(--acc);\n    box-shadow: 0 0 0 2px rgba(251, 114, 153, 0.18);\n}\n\n.comic-page-range {\n    display: none;\n    color: var(--text-secondary);\n}\n\n.comic-page-info.is-editing {\n    cursor: text;\n    justify-content: flex-start;\n}\n\n.comic-page-info.is-editing .comic-page-display {\n    display: none;\n}\n\n.comic-page-info.is-editing .comic-page-input,\n.comic-page-info.is-editing .comic-page-range {\n    display: inline-flex;\n}\n\n/* ===== Reader pill buttons ===== */\n.comic-btn {\r\n    padding: 8px 16px;\r\n    cursor: pointer;\r\n    background: var(--bg-elevated);\r\n    color: var(--text-primary);\r\n    border: 1px solid var(--border-strong);\r\n    border-radius: var(--radius-pill);\r\n    font-size: 13px;\r\n    font-weight: 500;\r\n    letter-spacing: 0.3px;\r\n    transition: background 0.15s, border-color 0.15s;\r\n}\r\n\r\n.comic-btn-alt {\r\n    background: transparent;\r\n    border-color: var(--border-subtle);\r\n}\r\n\r\n.comic-btn:hover { background: #2a2a2a; }\r\n\r\n.comic-btn-alt:hover { background: var(--bg-elevated); }\r\n\r\n.comic-btn.active {\r\n    background: var(--acc);\r\n    border-color: var(--acc);\r\n    color: #fff;\r\n}\r\n.comic-btn.active:hover { background: var(--acc-hover); }\r\n\r\n/* ===== Reader toast ===== */\r\n.comic-toast {\r\n    position: fixed;\r\n    left: 50%;\r\n    transform: translateX(-50%);\r\n    padding: 8px 16px;\r\n    border-radius: var(--radius-pill);\r\n    font-size: 13px;\r\n    font-weight: 500;\r\n    color: var(--text-primary);\r\n    z-index: 10004;\r\n    opacity: 0;\r\n    transition: opacity 0.2s;\r\n    pointer-events: none;\r\n    background: var(--bg-overlay);\r\n    backdrop-filter: blur(12px);\r\n    -webkit-backdrop-filter: blur(12px);\r\n    border: 1px solid var(--border-subtle);\n    box-shadow: var(--shadow-card);\n    top: 18px;\n}\n\n.comic-toast.is-visible { opacity: 1; }\n\n.comic-toast.is-error { background: rgba(180, 40, 40, 0.94); }\n\n/* ===== Reader images ===== */\n#comic-reader-overlay img {\n    cursor: grab;\n    display: block;\n    max-width: none;\n    max-height: none;\n    object-fit: contain;\n    box-shadow: 0 0 30px rgba(0, 0, 0, 0.4);\n    touch-action: none;\n    user-select: none;\n    -webkit-user-drag: none;\n    flex-shrink: 0;\n}\n\n#comic-reader-overlay .comic-img-full,\n#comic-reader-overlay .comic-img-half {\n    max-width: none;\n    max-height: none;\n}\n\n/* ===== Screenshot selection ===== */\n.comic-selection-overlay {\n    position: fixed;\n    inset: 0;\n    z-index: 10003;\n    display: none;\n    cursor: crosshair;\n    touch-action: none;\n    background: rgba(10,10,10,0.01);\n}\n\n.comic-selection-hint {\n    position: fixed;\n    top: 66px;\n    right: 18px;\n    width: 236px;\n    max-width: calc(100vw - 36px);\n    padding: 10px 12px;\n    border-radius: var(--radius-md);\n    background: rgba(15,15,15,0.92);\n    color: #fff;\n    font-size: 13px;\n    line-height: 1.45;\n    text-align: left;\n    pointer-events: none;\n    border: 1px solid var(--border-subtle);\n    box-shadow: var(--shadow-card);\n}\n\n.comic-selection-toolbar {\n    position: fixed;\n    top: 18px;\n    right: 18px;\n    display: flex;\n    gap: 10px;\n    align-items: center;\n}\n\n.comic-selection-action {\n    padding: 10px 14px;\n    border: none;\n    border-radius: var(--radius-pill);\n    color: #fff;\n    font-size: 13px;\n    cursor: pointer;\n    box-shadow: 0 4px 12px rgba(0,0,0,0.25);\n}\n\n.comic-selection-save { background: var(--acc); }\n.comic-selection-cancel { background: #d33; }\n\n.comic-selection-action.is-disabled {\n    opacity: 0.45;\n    cursor: not-allowed;\n}\n\n.comic-selection-box {\n    position: absolute;\n    display: none;\n    border: 2px dashed var(--acc);\n    background: rgba(251,114,153,0.18);\n    box-shadow: 0 0 0 1px rgba(255,255,255,0.25) inset;\n    pointer-events: none;\n}\n\n.comic-sel-handle {\n    position: absolute;\n    width: 12px;\n    height: 12px;\n    background: var(--acc);\n    border: 2px solid #fff;\n    border-radius: 50%;\n    pointer-events: auto;\n    display: none;\n    z-index: 1;\n    box-shadow: 0 1px 4px rgba(0,0,0,0.4);\n    transform: translate(-50%,-50%);\n}\n\n/* ===== Compact layout (mobile) ===== */\n#comic-reader-overlay.reader-compact .comic-btn {\n    min-width: 54px;\n    min-height: 44px;\n    padding: 10px 12px;\n    font-size: 14px;\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-controls {\n    left: auto;\n    right: max(12px, env(safe-area-inset-right));\n    bottom: max(12px, env(safe-area-inset-bottom));\n    width: fit-content;\n    max-width: calc(100vw - 24px);\n    padding: 8px 12px;\n}\n\n#comic-reader-overlay.reader-compact .comic-settings-controls {\n    top: max(12px, env(safe-area-inset-top));\n    left: auto;\n    right: max(12px, env(safe-area-inset-right));\n    width: fit-content;\n    max-width: 96px;\n    flex-direction: column;\n    flex-wrap: nowrap;\n    justify-content: center;\n    max-height: 40vh;\n    overflow-y: auto;\n    padding: 8px 12px;\n}\n\n#comic-reader-overlay.reader-compact .comic-settings-panel {\n    width: min(360px, calc(100vw - 24px));\n    padding: 12px;\n    gap: 8px;\n}\n\n#comic-reader-overlay.reader-compact .comic-settings-item {\n    align-items: center;\n    flex-direction: row;\n    gap: 14px;\n}\n\n#comic-reader-overlay.reader-compact .comic-settings-action {\n    justify-content: flex-end;\n}\n\n#comic-reader-overlay.reader-compact .comic-settings-action .comic-btn {\n    width: auto;\n}\n\n#comic-reader-overlay.reader-compact .comic-toast {\n    top: 12px;\n    max-width: calc(100vw - 24px);\n}\n\n#comic-reader-overlay.reader-compact .comic-selection-hint {\n    top: 62px;\n    right: 12px;\n    width: min(236px, calc(100vw - 24px));\n    max-width: calc(100vw - 24px);\n    font-size: 12px;\n}\n\n#comic-reader-overlay.reader-compact .comic-selection-toolbar {\n    top: 12px;\n    right: 12px;\n}\n\n#comic-reader-overlay.reader-compact .comic-selection-action {\n    padding: 10px 12px;\n    font-size: 12px;\n}\n\n@media (hover: none), (pointer: coarse) {\n    #bilibili-fav-float-btn.bilibili-fav-touch {\n        bottom: max(76px, env(safe-area-inset-bottom));\n        right: max(16px, env(safe-area-inset-right));\n        width: 54px;\n        height: 54px;\n        font-size: 24px;\n        opacity: 1 !important;\n        visibility: visible !important;\n    }\n\n    #bilibili-fav-panel,\n    #bilibili-fav-controls-panel {\n        right: max(12px, env(safe-area-inset-right));\n        bottom: max(140px, calc(env(safe-area-inset-bottom) + 84px));\n        width: min(320px, calc(100vw - 24px));\n        max-height: min(70vh, 560px);\n        overflow: hidden;\n    }\n\n    .bilibili-fav-header {\n        gap: 8px;\n        padding: 10px 12px;\n    }\n\n    .bilibili-fav-header-actions {\n        flex-shrink: 0;\n    }\n\n    .bilibili-fav-control-btn {\n        display: inline-flex;\n        align-items: center;\n        justify-content: center;\n    }\n\n    .bilibili-fav-add-btn,\n    .bilibili-fav-control-btn,\n    .bilibili-toolbox-export-btn,\n    .bilibili-toolbox-import-btn {\n        min-height: 42px;\n    }\n\n    .bilibili-fav-content {\n        max-height: min(52vh, 420px);\n    }\n\n    .bilibili-fav-delete {\n        width: 26px;\n        height: 26px;\n        font-size: 16px;\n        opacity: 1;\n    }\n\n    .bilibili-fav-item-link {\n        touch-action: manipulation;\n    }\n\n    #comic-reader-overlay.reader-compact .comic-reader-row {\n        gap: 6px;\n        flex-wrap: wrap;\n    }\n\n    #comic-reader-overlay.reader-compact .comic-settings-controls { gap: 8px; }\n\n    #comic-reader-overlay.reader-compact .comic-selection-hint { text-align: left; }\n}\n\n";
+    const css = "/* ===== content.css ===== */\n/* Bilibili Toolbox — Spotify-inspired dark theme */\r\n\r\n:root {\r\n    --acc: #fb7299;\r\n    --acc-hover: #fc8bab;\r\n    --acc-active: #e86288;\r\n    --bg-deepest: #0a0a0a;\r\n    --bg-surface: #181818;\r\n    --bg-elevated: #1f1f1f;\r\n    --bg-overlay: rgba(20, 20, 20, 0.94);\r\n    --text-primary: #ffffff;\r\n    --text-secondary: #b3b3b3;\r\n    --text-muted: #7c7c7c;\r\n    --border-subtle: rgba(255, 255, 255, 0.12);\r\n    --border-strong: #4d4d4d;\r\n    --error: #f3727f;\r\n    --error-hover: #e86a77;\r\n    --shadow-heavy: 0 8px 24px rgba(0, 0, 0, 0.5);\r\n    --shadow-card: 0 4px 8px rgba(0, 0, 0, 0.3);\r\n    --shadow-float: 0 4px 16px rgba(251, 114, 153, 0.25);\r\n    --radius-sm: 6px;\r\n    --radius-md: 8px;\r\n    --radius-lg: 12px;\r\n    --radius-pill: 9999px;\r\n    --font: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif;\r\n}\r\n\r\n/* ===== Floating star button ===== */\r\n#bilibili-fav-float-btn {\r\n    position: fixed;\r\n    bottom: 80px;\r\n    right: 20px;\r\n    width: 50px;\r\n    height: 50px;\r\n    background: var(--acc);\r\n    border-radius: 50%;\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    font-size: 24px;\r\n    cursor: pointer;\n    box-shadow: var(--shadow-float);\n    z-index: 999999;\n    transition: transform 0.2s, box-shadow 0.2s, opacity 0.3s, visibility 0.3s;\r\n    line-height: 1;\r\n    text-align: center;\r\n}\r\n\r\n#bilibili-fav-float-btn:hover {\r\n    transform: scale(1.1);\r\n    box-shadow: 0 6px 20px rgba(251, 114, 153, 0.4);\r\n}\r\n\r\n#bilibili-fav-float-btn.hide-forward-active {\r\n    border-radius: var(--radius-sm);\r\n}\r\n\r\n/* ===== Shared panel base ===== */\r\n#bilibili-fav-panel,\r\n#bilibili-fav-controls-panel {\r\n    position: fixed;\r\n    bottom: 140px;\r\n    right: 20px;\r\n    width: 280px;\r\n    background: var(--bg-overlay);\r\n    backdrop-filter: blur(20px);\r\n    -webkit-backdrop-filter: blur(20px);\r\n    border-radius: var(--radius-lg);\r\n    box-shadow: var(--shadow-heavy);\r\n    z-index: 1000000;\n    opacity: 0;\r\n    visibility: hidden;\r\n    transition: opacity 0.2s, transform 0.2s, visibility 0.2s;\r\n    font-family: var(--font);\r\n    transform: translateY(10px);\r\n    color: var(--text-primary);\r\n    border: 1px solid var(--border-subtle);\r\n}\r\n\r\n#bilibili-fav-controls-panel { z-index: 1000001; }\n\r\n#bilibili-fav-panel.show,\r\n#bilibili-fav-controls-panel.show {\r\n    opacity: 1;\r\n    visibility: visible;\r\n    transform: translateY(0);\r\n}\r\n\r\n/* ===== Panel header ===== */\r\n.bilibili-fav-header {\n    display: flex;\n    justify-content: space-between;\n    align-items: center;\n    padding: 10px 16px;\r\n    border-bottom: 1px solid var(--border-subtle);\r\n    background: var(--bg-elevated);\r\n    color: var(--text-primary);\r\n    border-radius: var(--radius-lg) var(--radius-lg) 0 0;\r\n    font-weight: 600;\r\n    font-size: 14px;\n    letter-spacing: 0.3px;\n}\n\n.bilibili-fav-header-actions {\n    display: flex;\n    align-items: center;\n    gap: 6px;\n}\n\r\n/* ===== Panel content ===== */\r\n.bilibili-fav-content { max-height: 400px; overflow-y: auto; }\r\n\r\n.bilibili-fav-list {\r\n    padding: 8px 10px;\r\n    display: flex;\r\n    flex-wrap: wrap;\r\n    justify-content: space-between;\r\n    gap: 4px;\r\n}\r\n\r\n.bilibili-fav-content::-webkit-scrollbar { width: 5px; }\r\n.bilibili-fav-content::-webkit-scrollbar-track { background: transparent; }\r\n.bilibili-fav-content::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 3px; }\r\n.bilibili-fav-content::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.25); }\r\n\r\n/* ===== Dynamic controls content ===== */\r\n.bilibili-toolbox-control-content {\r\n    padding: 16px;\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: 12px;\r\n}\r\n\r\n.bilibili-toolbox-control-row {\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: space-between;\r\n    gap: 12px;\r\n    padding: 12px 14px;\r\n    border-radius: var(--radius-md);\r\n    background: var(--bg-surface);\r\n    cursor: pointer;\r\n    border: 1px solid var(--border-subtle);\r\n}\r\n\r\n.bilibili-toolbox-control-copy {\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: 4px;\r\n    min-width: 0;\r\n}\r\n\r\n.bilibili-toolbox-control-title {\r\n    font-size: 14px;\r\n    font-weight: 600;\r\n    color: var(--text-primary);\r\n}\r\n\r\n.bilibili-toolbox-control-desc {\r\n    font-size: 12px;\r\n    color: var(--text-secondary);\r\n    line-height: 1.4;\r\n}\r\n\r\n.bilibili-toolbox-control-status {\r\n    font-size: 12px;\r\n    line-height: 1.4;\r\n    padding: 8px 12px;\r\n    border-radius: var(--radius-sm);\r\n    background: var(--bg-surface);\r\n    color: var(--text-secondary);\r\n}\r\n\r\n/* ===== Toggle switch ===== */\r\n.bilibili-toolbox-switch {\r\n    position: relative;\r\n    width: 46px;\r\n    height: 28px;\r\n    flex-shrink: 0;\r\n}\r\n\r\n.bilibili-toolbox-switch input {\r\n    position: absolute;\r\n    inset: 0;\r\n    opacity: 0;\r\n    cursor: pointer;\r\n    margin: 0;\r\n}\r\n\r\n.bilibili-toolbox-switch-slider {\r\n    position: absolute;\r\n    inset: 0;\r\n    border-radius: var(--radius-pill);\r\n    background: rgba(255, 255, 255, 0.2);\r\n    transition: background 0.2s;\r\n}\r\n\r\n.bilibili-toolbox-switch-slider::before {\r\n    content: \"\";\r\n    position: absolute;\r\n    top: 3px;\r\n    left: 3px;\r\n    width: 22px;\r\n    height: 22px;\r\n    border-radius: 50%;\r\n    background: #fff;\r\n    transition: transform 0.2s;\r\n    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);\r\n}\r\n\r\n.bilibili-toolbox-switch input:checked + .bilibili-toolbox-switch-slider {\r\n    background: var(--acc);\r\n}\r\n\r\n.bilibili-toolbox-switch input:checked + .bilibili-toolbox-switch-slider::before {\r\n    transform: translateX(18px);\r\n}\r\n\r\n/* ===== Empty state ===== */\r\n.bilibili-fav-empty { text-align: center; color: var(--text-muted); padding: 40px 20px; font-size: 14px; }\r\n\r\n/* ===== Toast message ===== */\r\n.bilibili-fav-msg { padding: 8px; text-align: center; font-size: 12px; display: none; }\r\n\r\n/* ===== Pill buttons (global) ===== */\r\n.bilibili-fav-add-btn,\n.bilibili-fav-control-btn,\n.bilibili-toolbox-export-btn,\n.bilibili-toolbox-import-btn {\n    padding: 10px 0;\r\n    font-size: 13px;\r\n    font-weight: 600;\r\n    border: none;\r\n    border-radius: var(--radius-pill);\r\n    cursor: pointer;\r\n    transition: all 0.2s;\r\n    color: var(--text-primary);\r\n    letter-spacing: 0.3px;\r\n    flex: 1;\r\n}\r\n\r\n.bilibili-fav-add-btn {\n    padding: 8px 16px;\n    flex: none;\n}\n\n.bilibili-fav-control-btn {\n    display: none;\n    padding: 8px 12px;\n    flex: none;\n}\n\r\n/* Primary pill — accent fill */\r\n.bilibili-fav-add-btn,\n.bilibili-fav-control-btn,\n.bilibili-toolbox-export-btn {\n    background: var(--acc);\r\n    color: #fff;\r\n}\r\n\r\n.bilibili-fav-add-btn:hover,\n.bilibili-fav-control-btn:hover,\n.bilibili-toolbox-export-btn:hover {\n    background: var(--acc-hover);\r\n}\r\n\r\n/* Secondary pill — dark fill */\r\n.bilibili-toolbox-import-btn {\r\n    background: var(--bg-elevated);\r\n    border: 1px solid var(--border-strong);\r\n}\r\n\r\n.bilibili-toolbox-import-btn:hover {\r\n    background: #2a2a2a;\r\n}\r\n\r\n/* ===== Button group layout ===== */\r\n.bilibili-toolbox-control-actions {\n    display: flex;\n    gap: 8px;\n    padding: 0 16px 16px;\n}\n\n/* ===== Export text document ===== */\n.bilibili-toolbox-export-dialog {\n    position: fixed;\n    inset: 0;\n    z-index: 1000002;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    padding: 16px;\n    background: rgba(0, 0, 0, 0.72);\n}\n\n.bilibili-toolbox-export-document {\n    display: flex;\n    width: min(640px, 100%);\n    max-height: min(720px, 86vh);\n    flex-direction: column;\n    overflow: hidden;\n    background: var(--bg-elevated);\n    border: 1px solid var(--border-subtle);\n    border-radius: var(--radius-md);\n    box-shadow: var(--shadow-heavy);\n}\n\n.bilibili-toolbox-export-header {\n    display: flex;\n    min-height: 44px;\n    align-items: center;\n    justify-content: space-between;\n    padding: 0 14px;\n    color: var(--text-primary);\n    font-size: 14px;\n    font-weight: 600;\n    border-bottom: 1px solid var(--border-subtle);\n}\n\n.bilibili-toolbox-export-close {\n    display: inline-flex;\n    width: 30px;\n    height: 30px;\n    align-items: center;\n    justify-content: center;\n    padding: 0;\n    color: var(--text-secondary);\n    background: transparent;\n    border: none;\n    border-radius: 50%;\n    cursor: pointer;\n    font-size: 22px;\n    line-height: 1;\n}\n\n.bilibili-toolbox-export-close:hover {\n    color: var(--text-primary);\n    background: rgba(255, 255, 255, 0.1);\n}\n\n.bilibili-toolbox-export-text {\n    width: 100%;\n    min-height: min(560px, 72vh);\n    padding: 14px;\n    resize: vertical;\n    box-sizing: border-box;\n    color: var(--text-primary);\n    background: var(--bg-deepest);\n    border: none;\n    outline: none;\n    font-family: Consolas, \"Courier New\", monospace;\n    font-size: 13px;\n    line-height: 1.5;\n}\n\n.bilibili-toolbox-export-footer {\n    display: flex;\n    min-height: 52px;\n    align-items: center;\n    justify-content: space-between;\n    gap: 12px;\n    padding: 8px 12px;\n    border-top: 1px solid var(--border-subtle);\n}\n\n.bilibili-toolbox-export-status {\n    color: var(--text-secondary);\n    font-size: 12px;\n    line-height: 1.4;\n}\n\n.bilibili-toolbox-export-status.is-error {\n    color: var(--error);\n}\n\n.bilibili-toolbox-export-actions {\n    display: flex;\n    flex-shrink: 0;\n    align-items: center;\n    gap: 8px;\n}\n\n.bilibili-toolbox-export-clipboard,\n.bilibili-toolbox-export-confirm {\n    flex-shrink: 0;\n    padding: 8px 18px;\n    color: #fff;\n    background: var(--acc);\n    border: none;\n    border-radius: var(--radius-pill);\n    cursor: pointer;\n    font-size: 13px;\n    font-weight: 600;\n}\n\n.bilibili-toolbox-export-clipboard:hover,\n.bilibili-toolbox-export-confirm:hover {\n    background: var(--acc-hover);\n}\n\n/* ===== Favorite list items ===== */\n.bilibili-fav-item-link {\r\n    display: block;\r\n    text-decoration: none;\r\n    color: inherit;\r\n    width: calc(50% - 2px);\r\n    position: relative;\r\n}\r\n\r\n.bilibili-fav-item {\r\n    display: flex;\r\n    flex-direction: column;\r\n    align-items: center;\r\n    padding: 8px 6px 10px;\r\n    border-radius: var(--radius-md);\r\n    transition: background 0.2s;\r\n    text-align: center;\r\n    position: relative;\r\n    overflow: hidden;\r\n    height: 88px;\r\n    box-sizing: border-box;\r\n    background: transparent;\r\n}\r\n\r\n.bilibili-fav-item[data-readlist=\"true\"] { padding: 0; }\r\n\r\n.bilibili-fav-item-link:hover .bilibili-fav-item {\r\n    background: var(--bg-surface);\r\n}\r\n\r\n.bilibili-fav-item-info {\r\n    display: flex;\r\n    flex-direction: column;\r\n    align-items: center;\r\n    width: 100%;\r\n    height: 100%;\r\n    position: relative;\r\n    z-index: 1;\r\n}\r\n\r\n.bilibili-fav-item[data-readlist=\"true\"] .bilibili-fav-item-info {\r\n    padding: 0;\r\n    overflow: hidden;\r\n    border-radius: inherit;\r\n}\r\n\r\n/* ===== Avatar — round, no border ===== */\r\n.bilibili-fav-avatar {\r\n    width: 44px;\r\n    height: 44px;\r\n    border-radius: 50%;\r\n    object-fit: cover;\r\n    position: relative;\r\n    z-index: 1;\r\n    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);\r\n}\r\n\r\n.bilibili-fav-avatar.cover {\r\n    display: block;\r\n    width: 100%;\r\n    height: 100%;\r\n    border-radius: var(--radius-md);\r\n    box-shadow: none;\r\n    position: absolute;\r\n    inset: 0;\r\n}\r\n\r\n/* ===== Name label ===== */\r\n.bilibili-fav-name {\r\n    font-size: 12px;\r\n    color: var(--text-primary);\r\n    font-weight: 500;\r\n    max-width: 100%;\r\n    overflow: hidden;\r\n    text-overflow: ellipsis;\r\n    white-space: nowrap;\r\n    position: relative;\r\n    z-index: 1;\r\n    margin-top: 6px;\r\n}\r\n\r\n.bilibili-fav-item[data-readlist=\"true\"] .bilibili-fav-name {\r\n    position: absolute;\r\n    bottom: 0;\r\n    left: 0;\r\n    right: 0;\r\n    color: #fff;\r\n    background: linear-gradient(transparent, rgba(0, 0, 0, 0.75));\r\n    padding: 20px 8px 8px;\r\n    border-radius: 0 0 var(--radius-md) var(--radius-md);\r\n    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);\r\n    font-weight: 600;\r\n}\r\n\r\n/* ===== Delete button — ghost pill ===== */\r\n.bilibili-fav-delete {\n    position: absolute;\n    top: 4px;\n    right: 4px;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    width: 20px;\n    height: 20px;\n    padding: 0;\n    font-size: 14px;\n    line-height: 1;\n    color: var(--text-primary);\n    background: rgba(0, 0, 0, 0.5);\n    border: none;\n    border-radius: 50%;\n    appearance: none;\n    cursor: pointer;\n    transition: all 0.2s;\r\n    z-index: 2;\r\n    opacity: 0;\r\n}\r\n\r\n.bilibili-fav-item:hover .bilibili-fav-delete { opacity: 1; }\r\n.bilibili-fav-delete:hover { background: var(--error); }\r\n\r\n/* ===== Hidden forward dynamic ===== */\r\n.bilibili-toolbox-hide-forward-dynamic { display: none !important; }\r\n\r\n/* ══════════════════════════════════════ */\r\n/*  Comic Reader — Spotify dark theme   */\r\n/* ══════════════════════════════════════ */\r\n\r\n.comic-entry-btn {\n    position: fixed;\n    bottom: 24px;\n    right: 24px;\n    z-index: 9999;\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    padding: 10px 18px;\n    cursor: pointer;\n    background: var(--acc);\n    color: #fff;\n    border: none;\n    border-radius: 24px;\n    font-size: 20px;\n    line-height: 1;\n    box-shadow: 0 4px 16px rgba(251,114,153,0.3);\n}\n\n.comic-entry-btn-touch {\n    bottom: 16px;\n    right: 16px;\n    padding: 12px 16px;\n    font-size: 18px;\n}\n\n#comic-reader-overlay {\n    position: fixed;\r\n    inset: 0;\r\n    background: var(--bg-deepest);\r\n    z-index: 10000;\r\n    display: flex;\r\n    flex-direction: column;\r\n    align-items: center;\r\n    justify-content: center;\r\n    overflow: hidden;\r\n    touch-action: none;\r\n    overscroll-behavior: none;\r\n    isolation: isolate;\n}\n\n.comic-img-container {\n    display: flex;\n    width: 100%;\n    height: 100%;\n    align-items: center;\n    justify-content: center;\r\n    gap: 4px;\r\n    padding: 0;\r\n    margin: 0;\r\n    cursor: grab;\n    touch-action: none;\n    transform-origin: center center;\n    will-change: transform;\n}\n\n.comic-img-container.is-grabbing,\n.comic-img-container.is-grabbing img { cursor: grabbing; }\n\n/* ===== Reader control panels ===== */\n.comic-controls,\r\n.comic-settings-controls {\r\n    position: fixed;\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: 6px;\r\n    background: var(--bg-overlay);\r\n    padding: 8px 10px;\r\n    border-radius: var(--radius-lg);\r\n    backdrop-filter: blur(20px);\r\n    -webkit-backdrop-filter: blur(20px);\r\n    border: 1px solid var(--border-subtle);\r\n    color: var(--text-primary);\r\n    z-index: 10001;\r\n    transition: opacity 0.5s;\r\n    opacity: 1;\n    box-shadow: var(--shadow-heavy);\n}\n\n.comic-controls.is-hidden,\n.comic-settings-controls.is-hidden { opacity: 0; }\n\n.comic-controls { bottom: 24px; right: 24px; }\n.comic-settings-controls { top: 24px; right: 24px; }\n\n.comic-settings-panel {\n    position: fixed;\n    left: 50%;\n    top: 50%;\n    z-index: 10002;\n    display: flex;\n    flex-direction: column;\n    gap: 8px;\n    width: min(460px, calc(100vw - 32px));\n    max-height: min(76vh, 560px);\n    overflow-y: auto;\n    padding: 14px;\n    color: var(--text-primary);\n    background: var(--bg-overlay);\n    border: 1px solid var(--border-subtle);\n    border-radius: var(--radius-md);\n    box-shadow: var(--shadow-heavy);\n    backdrop-filter: blur(20px);\n    -webkit-backdrop-filter: blur(20px);\n    opacity: 0;\n    visibility: hidden;\n    pointer-events: none;\n    transform: translate(-50%, -50%) scale(0.96);\n    transition: opacity 0.18s ease-out, transform 0.18s ease-out, visibility 0.18s;\n}\n\n.comic-settings-panel.show {\n    opacity: 1;\n    visibility: visible;\n    pointer-events: auto;\n    transform: translate(-50%, -50%) scale(1);\n}\n\n.comic-settings-panel .comic-btn {\n    min-width: 96px;\n    padding: 8px 12px;\n    border-radius: var(--radius-md);\n    white-space: nowrap;\n}\n\n.comic-settings-panel-header {\n    padding: 2px 2px 10px;\n    border-bottom: 1px solid var(--border-subtle);\n}\n\n.comic-settings-panel-title {\n    font-size: 15px;\n    font-weight: 700;\n    color: var(--text-primary);\n}\n\n.comic-settings-panel-desc {\n    margin-top: 4px;\n    font-size: 12px;\n    line-height: 1.5;\n    color: var(--text-secondary);\n}\n\n.comic-settings-item {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    gap: 14px;\n    padding: 12px;\n    border: 1px solid var(--border-subtle);\n    border-radius: var(--radius-md);\n    background: rgba(255, 255, 255, 0.035);\n}\n\n.comic-settings-copy {\n    min-width: 0;\n}\n\n.comic-settings-title {\n    font-size: 13px;\n    font-weight: 700;\n    color: var(--text-primary);\n}\n\n.comic-settings-desc {\n    margin-top: 4px;\n    font-size: 12px;\n    line-height: 1.45;\n    color: var(--text-secondary);\n}\n\n.comic-settings-action {\n    display: flex;\n    flex-shrink: 0;\n    align-items: center;\n    justify-content: flex-end;\n}\n\n.comic-reader-row {\n    display: flex;\n    gap: 6px;\n    align-items: center;\n    justify-content: center;\n}\n\n.comic-reader-row-wrap { flex-wrap: wrap; }\n\n.comic-page-info {\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    gap: 4px;\n    font-size: 14px;\n    min-width: 68px;\n    min-height: 32px;\n    padding: 0 2px;\n    color: var(--text-primary);\n    cursor: pointer;\n    white-space: nowrap;\n}\n\n.comic-page-display {\n    display: inline;\n}\n\n.comic-page-input {\n    display: none;\n    width: 44px;\n    height: 32px;\n    padding: 0 8px;\n    color: var(--text-primary);\n    background: var(--bg-deepest);\n    border: 1px solid var(--border-subtle);\n    border-radius: var(--radius-pill);\n    font: inherit;\n    text-align: center;\n    outline: none;\n}\n\n.comic-page-input:focus {\n    border-color: var(--acc);\n    box-shadow: 0 0 0 2px rgba(251, 114, 153, 0.18);\n}\n\n.comic-page-range {\n    display: none;\n    color: var(--text-secondary);\n}\n\n.comic-page-info.is-editing {\n    cursor: text;\n    justify-content: flex-start;\n}\n\n.comic-page-info.is-editing .comic-page-display {\n    display: none;\n}\n\n.comic-page-info.is-editing .comic-page-input,\n.comic-page-info.is-editing .comic-page-range {\n    display: inline-flex;\n}\n\n/* ===== Reader pill buttons ===== */\n.comic-btn {\r\n    padding: 8px 16px;\r\n    cursor: pointer;\r\n    background: var(--bg-elevated);\r\n    color: var(--text-primary);\r\n    border: 1px solid var(--border-strong);\r\n    border-radius: var(--radius-pill);\r\n    font-size: 13px;\r\n    font-weight: 500;\r\n    letter-spacing: 0.3px;\r\n    transition: background 0.15s, border-color 0.15s;\r\n}\r\n\r\n.comic-btn-alt {\r\n    background: transparent;\r\n    border-color: var(--border-subtle);\r\n}\r\n\r\n.comic-btn:hover { background: #2a2a2a; }\r\n\r\n.comic-btn-alt:hover { background: var(--bg-elevated); }\r\n\r\n.comic-btn.active {\r\n    background: var(--acc);\r\n    border-color: var(--acc);\r\n    color: #fff;\r\n}\r\n.comic-btn.active:hover { background: var(--acc-hover); }\r\n\r\n/* ===== Reader toast ===== */\r\n.comic-toast {\r\n    position: fixed;\r\n    left: 50%;\r\n    transform: translateX(-50%);\r\n    padding: 8px 16px;\r\n    border-radius: var(--radius-pill);\r\n    font-size: 13px;\r\n    font-weight: 500;\r\n    color: var(--text-primary);\r\n    z-index: 10004;\r\n    opacity: 0;\r\n    transition: opacity 0.2s;\r\n    pointer-events: none;\r\n    background: var(--bg-overlay);\r\n    backdrop-filter: blur(12px);\r\n    -webkit-backdrop-filter: blur(12px);\r\n    border: 1px solid var(--border-subtle);\n    box-shadow: var(--shadow-card);\n    top: 18px;\n}\n\n.comic-toast.is-visible { opacity: 1; }\n\n.comic-toast.is-error { background: rgba(180, 40, 40, 0.94); }\n\n/* ===== Reader images ===== */\n#comic-reader-overlay img {\n    cursor: grab;\n    display: block;\n    max-width: none;\n    max-height: none;\n    object-fit: contain;\n    box-shadow: 0 0 30px rgba(0, 0, 0, 0.4);\n    touch-action: none;\n    user-select: none;\n    -webkit-user-drag: none;\n    flex-shrink: 0;\n}\n\n#comic-reader-overlay .comic-img-full,\n#comic-reader-overlay .comic-img-half {\n    max-width: none;\n    max-height: none;\n}\n\n/* ===== Screenshot selection ===== */\n.comic-selection-overlay {\n    position: fixed;\n    inset: 0;\n    z-index: 10003;\n    display: none;\n    cursor: crosshair;\n    touch-action: none;\n    background: rgba(10,10,10,0.01);\n}\n\n.comic-selection-hint {\n    position: fixed;\n    top: 66px;\n    right: 18px;\n    width: 236px;\n    max-width: calc(100vw - 36px);\n    padding: 10px 12px;\n    border-radius: var(--radius-md);\n    background: rgba(15,15,15,0.92);\n    color: #fff;\n    font-size: 13px;\n    line-height: 1.45;\n    text-align: left;\n    pointer-events: none;\n    border: 1px solid var(--border-subtle);\n    box-shadow: var(--shadow-card);\n}\n\n.comic-selection-toolbar {\n    position: fixed;\n    top: 18px;\n    right: 18px;\n    display: flex;\n    gap: 10px;\n    align-items: center;\n}\n\n.comic-selection-action {\n    padding: 10px 14px;\n    border: none;\n    border-radius: var(--radius-pill);\n    color: #fff;\n    font-size: 13px;\n    cursor: pointer;\n    box-shadow: 0 4px 12px rgba(0,0,0,0.25);\n}\n\n.comic-selection-save { background: var(--acc); }\n.comic-selection-full { background: #3467a8; }\n.comic-selection-cancel { background: #d33; }\n\n.comic-selection-action.is-disabled {\n    opacity: 0.45;\n    cursor: not-allowed;\n}\n\n.comic-selection-box {\n    position: absolute;\n    display: none;\n    border: 2px dashed var(--acc);\n    background: rgba(251,114,153,0.18);\n    box-shadow: 0 0 0 1px rgba(255,255,255,0.25) inset;\n    pointer-events: none;\n}\n\n.comic-sel-handle {\n    position: absolute;\n    width: 28px;\n    height: 28px;\n    pointer-events: auto;\n    display: none;\n    z-index: 2;\n    transform: translate(-50%,-50%);\n    touch-action: none;\n}\n\n.comic-sel-handle::after {\n    content: \"\";\n    position: absolute;\n    left: 50%;\n    top: 50%;\n    width: 12px;\n    height: 12px;\n    background: var(--acc);\n    border: 2px solid #fff;\n    border-radius: 50%;\n    box-shadow: 0 1px 4px rgba(0,0,0,0.4);\n    transform: translate(-50%,-50%);\n}\n\n.comic-sel-handle[data-dir=\"n\"],\n.comic-sel-handle[data-dir=\"s\"] {\n    width: max(28px, calc(100% - 40px));\n}\n\n.comic-sel-handle[data-dir=\"e\"],\n.comic-sel-handle[data-dir=\"w\"] {\n    height: max(28px, calc(100% - 40px));\n}\n\n.comic-sel-handle[data-dir=\"nw\"],\n.comic-sel-handle[data-dir=\"ne\"],\n.comic-sel-handle[data-dir=\"se\"],\n.comic-sel-handle[data-dir=\"sw\"] {\n    width: 34px;\n    height: 34px;\n    z-index: 3;\n}\n\n/* ===== Compact layout (mobile) ===== */\n#comic-reader-overlay.reader-compact .comic-btn {\n    min-width: 54px;\n    min-height: 44px;\n    padding: 10px 12px;\n    font-size: 14px;\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-controls {\n    left: auto;\n    right: max(12px, env(safe-area-inset-right));\n    bottom: max(12px, env(safe-area-inset-bottom));\n    width: fit-content;\n    max-width: calc(100vw - 24px);\n    padding: 8px 12px;\n}\n\n#comic-reader-overlay.reader-compact .comic-settings-controls {\n    top: max(12px, env(safe-area-inset-top));\n    left: auto;\n    right: max(12px, env(safe-area-inset-right));\n    width: fit-content;\n    max-width: 96px;\n    flex-direction: column;\n    flex-wrap: nowrap;\n    justify-content: center;\n    max-height: 40vh;\n    overflow-y: auto;\n    padding: 8px 12px;\n}\n\n#comic-reader-overlay.reader-compact .comic-settings-panel {\n    width: min(360px, calc(100vw - 24px));\n    padding: 12px;\n    gap: 8px;\n}\n\n#comic-reader-overlay.reader-compact .comic-settings-item {\n    align-items: center;\n    flex-direction: row;\n    gap: 14px;\n}\n\n#comic-reader-overlay.reader-compact .comic-settings-action {\n    justify-content: flex-end;\n}\n\n#comic-reader-overlay.reader-compact .comic-settings-action .comic-btn {\n    width: auto;\n}\n\n#comic-reader-overlay.reader-compact .comic-toast {\n    top: 12px;\n    max-width: calc(100vw - 24px);\n}\n\n#comic-reader-overlay.reader-compact .comic-selection-hint {\n    top: 62px;\n    right: 12px;\n    width: min(236px, calc(100vw - 24px));\n    max-width: calc(100vw - 24px);\n    font-size: 12px;\n}\n\n#comic-reader-overlay.reader-compact .comic-selection-toolbar {\n    top: 12px;\n    right: 12px;\n}\n\n#comic-reader-overlay.reader-compact .comic-selection-action {\n    padding: 10px 12px;\n    font-size: 12px;\n}\n\n@media (hover: none), (pointer: coarse) {\n    #bilibili-fav-float-btn.bilibili-fav-touch {\n        bottom: max(76px, env(safe-area-inset-bottom));\n        right: max(16px, env(safe-area-inset-right));\n        width: 54px;\n        height: 54px;\n        font-size: 24px;\n        opacity: 1 !important;\n        visibility: visible !important;\n    }\n\n    #bilibili-fav-panel,\n    #bilibili-fav-controls-panel {\n        right: max(12px, env(safe-area-inset-right));\n        bottom: max(140px, calc(env(safe-area-inset-bottom) + 84px));\n        width: min(320px, calc(100vw - 24px));\n        max-height: min(70vh, 560px);\n        overflow: hidden;\n    }\n\n    .bilibili-fav-header {\n        gap: 8px;\n        padding: 10px 12px;\n    }\n\n    .bilibili-fav-header-actions {\n        flex-shrink: 0;\n    }\n\n    .bilibili-fav-control-btn {\n        display: inline-flex;\n        align-items: center;\n        justify-content: center;\n    }\n\n    .bilibili-fav-add-btn,\n    .bilibili-fav-control-btn,\n    .bilibili-toolbox-export-btn,\n    .bilibili-toolbox-import-btn {\n        min-height: 42px;\n    }\n\n    .bilibili-fav-content {\n        max-height: min(52vh, 420px);\n    }\n\n    .bilibili-fav-delete {\n        width: 26px;\n        height: 26px;\n        font-size: 16px;\n        opacity: 1;\n    }\n\n    .bilibili-fav-item-link {\n        touch-action: manipulation;\n    }\n\n    .comic-sel-handle {\n        width: 36px;\n        height: 36px;\n    }\n\n    .comic-sel-handle[data-dir=\"n\"],\n    .comic-sel-handle[data-dir=\"s\"] {\n        width: max(36px, calc(100% - 48px));\n    }\n\n    .comic-sel-handle[data-dir=\"e\"],\n    .comic-sel-handle[data-dir=\"w\"] {\n        height: max(36px, calc(100% - 48px));\n    }\n\n    .comic-sel-handle[data-dir=\"nw\"],\n    .comic-sel-handle[data-dir=\"ne\"],\n    .comic-sel-handle[data-dir=\"se\"],\n    .comic-sel-handle[data-dir=\"sw\"] {\n        width: 44px;\n        height: 44px;\n    }\n\n    #comic-reader-overlay.reader-compact .comic-reader-row {\n        gap: 6px;\n        flex-wrap: wrap;\n    }\n\n    #comic-reader-overlay.reader-compact .comic-settings-controls { gap: 8px; }\n\n    #comic-reader-overlay.reader-compact .comic-selection-hint { text-align: left; }\n}\n\n";
     function injectStyle() {
         if (document.getElementById('bilibili-toolbox-userscript-style')) return;
         const style = document.createElement('style');
@@ -148,7 +82,6 @@
     const USER_TYPE = 'user';
     const READLIST_TYPE = 'readlist';
     const FALLBACK_IMAGE = 'https://www.bilibili.com/favicon.ico';
-    const BILIBILI_DOMAIN = 'bilibili.com';
     const BILIBILI_SPACE_URL = 'https://space.bilibili.com/';
     const BILIBILI_READLIST_URL = 'https://www.bilibili.com/read/readlist/rl';
     const TOOLBOX_SETTINGS = Object.freeze({
@@ -171,9 +104,32 @@
         };
     }
 
+    function normalizeFavoriteId(value) {
+        return typeof value === 'string' && /^\d+$/.test(value) ? value : '';
+    }
+
+    function normalizeFavorite(item) {
+        const identity = getFavoriteIdentity(item);
+        if (!identity) return null;
+
+        return identity.type === READLIST_TYPE
+            ? {
+                type: READLIST_TYPE,
+                id: identity.id,
+                title: typeof item.title === 'string' ? item.title : '',
+                cover: typeof item.cover === 'string' ? item.cover : ''
+            }
+            : {
+                type: USER_TYPE,
+                uid: identity.id,
+                uname: typeof item.uname === 'string' ? item.uname : '',
+                face: typeof item.face === 'string' ? item.face : ''
+            };
+    }
+
     function normalizeFavoriteList(favorites) {
         return Array.isArray(favorites)
-            ? favorites.filter(item => item && typeof item === 'object')
+            ? favorites.map(normalizeFavorite).filter(Boolean)
             : [];
     }
 
@@ -185,23 +141,21 @@
         };
     }
 
-    function isBilibiliUrl(url) {
-        return typeof url === 'string' && url.includes(BILIBILI_DOMAIN);
-    }
-
-    function getFavoriteType(item) {
-        return item?.type || USER_TYPE;
-    }
-
     function isReadlistFavorite(item) {
-        return getFavoriteType(item) === READLIST_TYPE;
+        return item?.type === READLIST_TYPE;
+    }
+
+    function getFavoriteIdentity(item) {
+        if (!item || typeof item !== 'object') return null;
+        if (item.type !== USER_TYPE && item.type !== READLIST_TYPE) return null;
+        const type = item.type;
+        const id = normalizeFavoriteId(type === READLIST_TYPE ? item.id : item.uid);
+        return id ? { type, id } : null;
     }
 
     function getFavoriteKey(item) {
-        if (!item) return '';
-        const type = isReadlistFavorite(item) ? READLIST_TYPE : USER_TYPE;
-        const value = isReadlistFavorite(item) ? item.id : item.uid;
-        return value ? `${type}:${value}` : '';
+        const identity = getFavoriteIdentity(item);
+        return identity ? `${identity.type}:${identity.id}` : '';
     }
 
     function getFavoriteName(item) {
@@ -217,10 +171,11 @@
     }
 
     function getFavoriteLink(item) {
-        if (!item) return '#';
-        return isReadlistFavorite(item)
-            ? `${BILIBILI_READLIST_URL}${item.id}`
-            : `${BILIBILI_SPACE_URL}${item.uid}/dynamic`;
+        const identity = getFavoriteIdentity(item);
+        if (!identity) return '#';
+        return identity.type === READLIST_TYPE
+            ? `${BILIBILI_READLIST_URL}${identity.id}`
+            : `${BILIBILI_SPACE_URL}${identity.id}/dynamic`;
     }
 
     function escapeHtml(str) {
@@ -245,7 +200,7 @@
     const $ = (selector, fallback = '') => document.querySelector(selector)?.textContent.trim() || fallback;
     const $src = (selector) => document.querySelector(selector)?.src || '';
 
-    const Toolbox = window.BilibiliToolbox || {};
+    const Toolbox = {};
 
     function createEventBag() {
         const cleanupFns = [];
@@ -282,16 +237,11 @@
         USER_TYPE,
         READLIST_TYPE,
         FALLBACK_IMAGE,
-        BILIBILI_DOMAIN,
-        BILIBILI_SPACE_URL,
-        BILIBILI_READLIST_URL,
         TOOLBOX_SETTINGS,
-        normalizeObject,
         createDefaultData,
+        normalizeFavorite,
         normalizeFavoriteList,
         normalizeToolboxData,
-        isBilibiliUrl,
-        getFavoriteType,
         isReadlistFavorite,
         getFavoriteKey,
         getFavoriteName,
@@ -311,7 +261,7 @@
 
     if (!window.Shared) throw new Error('BilibiliToolbox: shared.js not loaded');
 
-    const Toolbox = window.BilibiliToolbox || (window.BilibiliToolbox = {});
+    const Toolbox = window.BilibiliToolbox;
 
     let dataCache = window.Shared.createDefaultData();
     let initialized = false;
@@ -344,10 +294,6 @@
         const current = await read();
         const next = typeof mutator === 'function' ? mutator(current) : mutator;
         return write(next);
-    }
-
-    async function setFavorites(favorites) {
-        return update(current => ({ ...current, favorites }));
     }
 
     async function setSetting(key, value) {
@@ -393,36 +339,67 @@
         changeListeners = new Set();
     }
 
+    function parseFavoriteTextLine(line) {
+        const [key, name, image] = line.split('\t');
+        if (!key || !name || !image) return null;
+        const match = key.match(/^(user|readlist):(\d+)$/);
+        if (!match) return null;
+        const cleanName = name.trim();
+        const cleanImage = image.trim();
+        if (!cleanName || !cleanImage) return null;
+        const isReadlist = match[1].toLowerCase() === window.Shared.READLIST_TYPE;
+        return {
+            type: isReadlist ? window.Shared.READLIST_TYPE : window.Shared.USER_TYPE,
+            [isReadlist ? 'id' : 'uid']: match[2],
+            [isReadlist ? 'title' : 'uname']: cleanName,
+            [isReadlist ? 'cover' : 'face']: cleanImage
+        };
+    }
+
     function normalizeImportedFavorites(data) {
-        if (!data || typeof data !== 'object' || !Array.isArray(data.favorites)) return [];
-        return data.favorites.filter(item => window.Shared.getFavoriteKey(item));
+        if (typeof data === 'string') {
+            return window.Shared.normalizeFavoriteList(data.trim().split(/\r?\n/).map(parseFavoriteTextLine));
+        }
+
+        return window.Shared.normalizeFavoriteList(data);
     }
 
     function mergeFavorites(existing, imported) {
-        const keys = new Set(existing.map(item => window.Shared.getFavoriteKey(item)));
         const result = [...existing];
+        const indexes = new Map(result.map((item, index) => [window.Shared.getFavoriteKey(item), index]));
         let added = 0;
+        let updated = 0;
 
         imported.forEach(item => {
             const key = window.Shared.getFavoriteKey(item);
-            if (!key || keys.has(key)) return;
-            keys.add(key);
+            if (!key) return;
+            const index = indexes.get(key);
+            if (index !== undefined) {
+                const merged = { ...result[index], ...item };
+                if (JSON.stringify(merged) !== JSON.stringify(result[index])) {
+                    result[index] = merged;
+                    updated += 1;
+                }
+                return;
+            }
+            indexes.set(key, result.length);
             result.push(item);
             added += 1;
         });
 
-        return { result, added, skipped: imported.length - added };
+        return { result, added, updated, skipped: imported.length - added - updated };
     }
 
     async function addFavorite(item) {
         const current = await read();
-        const key = window.Shared.getFavoriteKey(item);
+        const normalized = window.Shared.normalizeFavorite(item);
+        const key = window.Shared.getFavoriteKey(normalized);
         if (!key) return { data: current, added: false, reason: 'invalid' };
         if (current.favorites.some(existing => window.Shared.getFavoriteKey(existing) === key)) {
             return { data: current, added: false, reason: 'duplicate' };
         }
 
-        const data = await write({ ...current, favorites: [...current.favorites, item] });
+        const data = await write({ ...current, favorites: [...current.favorites, normalized] });
         return { data, added: true, key };
     }
 
@@ -439,22 +416,33 @@
 
     async function importFavorites(imported) {
         const current = await read();
-        const normalized = Array.isArray(imported) ? imported : normalizeImportedFavorites(imported);
+        const normalized = normalizeImportedFavorites(imported);
         const merged = mergeFavorites(current.favorites, normalized);
-        const data = merged.added
+        const data = merged.added || merged.updated
             ? await write({ ...current, favorites: merged.result })
             : current;
         return { ...merged, data };
     }
 
-    function getExportFileName(now = new Date()) {
-        const pad = n => String(n).padStart(2, '0');
-        const ts = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
-        return `bilibili-favorites-${ts}.json`;
+    function cleanExportField(value) {
+        return typeof value === 'string' ? value.replace(/[\t\r\n]+/g, ' ').trim() : '';
     }
 
-    function createExportBlob(data = dataCache) {
-        return new Blob([JSON.stringify(window.Shared.normalizeToolboxData(data), null, 2)], { type: 'application/json' });
+    function createExportText(data = dataCache) {
+        return window.Shared.normalizeToolboxData(data).favorites
+            .map(item => {
+                const key = window.Shared.getFavoriteKey(item);
+                if (!key) return '';
+                const isReadlist = window.Shared.isReadlistFavorite(item);
+                const fields = [
+                    key,
+                    cleanExportField(window.Shared.getFavoriteName(item)),
+                    cleanExportField(window.Shared.getFavoriteImage(item))
+                ];
+                return fields.every(Boolean) ? fields.join('\t') : '';
+            })
+            .filter(Boolean)
+            .join('\n');
     }
 
     const storageApi = {
@@ -463,11 +451,9 @@
         read,
         write,
         update,
-        setFavorites,
         setSetting,
         getSetting,
-        onChanged,
-        getSnapshot: () => window.Shared.normalizeToolboxData(dataCache)
+        onChanged
     };
 
     Toolbox.storage = storageApi;
@@ -475,10 +461,8 @@
         addFavorite,
         removeFavorite,
         importFavorites,
-        mergeFavorites,
         normalizeImportedFavorites,
-        getExportFileName,
-        createExportBlob
+        createExportText
     };
 })();
 
@@ -672,7 +656,9 @@
 (function() {
     'use strict';
 
-    const Toolbox = window.BilibiliToolbox || (window.BilibiliToolbox = {});
+    if (!window.BilibiliToolbox) throw new Error('BilibiliToolbox: shared.js not loaded');
+
+    const Toolbox = window.BilibiliToolbox;
     const IMAGE_ATTRS = [
         'data-origin-src',
         'data-original',
@@ -866,7 +852,6 @@
     const SCALE_STEP = 0.1;
     const DOUBLE_CLICK_SCALE = 2;
     const MAX_RENDER_SCALE = 2;
-    const ANIMATION_MODES = ['none', 'smooth', 'fade'];
     const IMAGE_RENDER_MODES = ['sharp', 'smooth'];
     const CONTROLS_HIDE_DELAY = 500;
     const SWIPE_THRESHOLD = 50;
@@ -887,17 +872,20 @@
     });
 
     const READER_BACKGROUND = '#0a0a0a';
-    const Toolbox = window.BilibiliToolbox || {};
-    const Shared = window.Shared || {};
+    if (!window.Shared) throw new Error('BilibiliToolbox: shared.js not loaded');
+    if (!window.BilibiliToolbox?.storage) throw new Error('BilibiliToolbox: storage-service.js not loaded');
+    if (!window.BilibiliToolbox?.comicImages) throw new Error('BilibiliToolbox: comic-reader-images.js not loaded');
+    if (!window.BiliAnimations) throw new Error('BilibiliToolbox: animations.js not loaded');
+
+    const Toolbox = window.BilibiliToolbox;
+    const Shared = window.Shared;
     const storage = Toolbox.storage;
-    const TOOLBOX_SETTINGS = Shared.TOOLBOX_SETTINGS || { readerPreferences: 'readerPreferences' };
+    const TOOLBOX_SETTINGS = Shared.TOOLBOX_SETTINGS;
     const animations = window.BiliAnimations;
     const comicImages = Toolbox.comicImages;
 
     function normalizeAnimationMode(mode) {
-        return animations?.normalizeAnimationMode
-            ? animations.normalizeAnimationMode(mode)
-            : (ANIMATION_MODES.includes(mode) ? mode : DEFAULT_READER_PREFERENCES.animationMode);
+        return animations.normalizeAnimationMode(mode);
     }
 
     function normalizeImageRenderMode(mode) {
@@ -931,11 +919,10 @@
         }
 
         loadPreferences() {
-            return this.normalizePreferences(storage?.getSetting?.(TOOLBOX_SETTINGS.readerPreferences, DEFAULT_READER_PREFERENCES));
+            return this.normalizePreferences(storage.getSetting(TOOLBOX_SETTINGS.readerPreferences, DEFAULT_READER_PREFERENCES));
         }
 
         savePreferences() {
-            if (!storage?.setSetting) return;
             const preferences = this.normalizePreferences({
                 isRightToLeft: this.isRightToLeft,
                 viewMode: this.viewMode,
@@ -1160,6 +1147,11 @@
             this.el.selectionSaveBtn.innerText = '\u4fdd\u5b58\u622a\u56fe';
             this.el.selectionSaveBtn.className = 'comic-selection-action comic-selection-save';
 
+            this.el.selectionFullBtn = document.createElement('button');
+            this.el.selectionFullBtn.type = 'button';
+            this.el.selectionFullBtn.innerText = '\u4fdd\u5b58\u5168\u56fe';
+            this.el.selectionFullBtn.className = 'comic-selection-action comic-selection-full';
+
             this.el.selectionBox = document.createElement('div');
             this.el.selectionBox.className = 'comic-selection-box';
 
@@ -1177,7 +1169,7 @@
                 this.selectionHandles[dir] = h;
             }
 
-            this.el.selectionToolbar.append(this.el.selectionSaveBtn, this.el.selectionCancelBtn);
+            this.el.selectionToolbar.append(this.el.selectionFullBtn, this.el.selectionSaveBtn, this.el.selectionCancelBtn);
             this.el.selectionOverlay.append(this.el.selectionHint, this.el.selectionToolbar, this.el.selectionBox);
 
             const createSettingsRow = (title, desc, control) => {
@@ -1332,6 +1324,7 @@
             });
             this.el.pageInput.addEventListener('blur', () => this.jumpToPageFromInput());
             this.el.selectionCancelBtn.onclick = () => this.cancelScreenshotSelection(true);
+            this.el.selectionFullBtn.onclick = () => { void this.saveFullScreenshot(); };
             this.el.selectionSaveBtn.onclick = () => { void this.saveSelectionScreenshot(); };
             this.el.selectionOverlay.addEventListener('pointerdown', this.handleSelectionPointerDown);
             this.el.selectionOverlay.addEventListener('pointermove', this.handleSelectionPointerMove);
@@ -1588,6 +1581,9 @@
 
             const handle = e.target.closest?.('.comic-sel-handle');
             if (handle && this.hasValidSelection()) {
+                const rect = this.normalizeSelectionRect();
+                this.selectionStart = { x: rect.x, y: rect.y };
+                this.selectionCurrent = { x: rect.x + rect.width, y: rect.y + rect.height };
                 this.resizeDirection = handle.dataset.dir;
                 this.isDraggingSelection = true;
                 this.setSelectionHint('\u62d6\u52a8\u8fb9\u89d2\u8c03\u6574\u9009\u533a\u8303\u56f4');
@@ -1658,6 +1654,20 @@
             }
 
             const success = await this.captureScreenshot(this.normalizeSelectionRect());
+            if (success) {
+                this.cancelScreenshotSelection(false);
+            }
+        }
+
+        async saveFullScreenshot() {
+            const descriptors = this.getVisibleImageDescriptors();
+            const rect = this.getScreenshotBounds(descriptors);
+            if (!rect) {
+                this.showReaderMessage('\u5f53\u524d\u6ca1\u6709\u53ef\u622a\u56fe\u7684\u9875\u9762', true);
+                return;
+            }
+
+            const success = await this.captureScreenshot(rect, descriptors);
             if (success) {
                 this.cancelScreenshotSelection(false);
             }
@@ -2000,6 +2010,16 @@
                 })
                 .filter(item => item.src && item.width > 0 && item.height > 0);
         }
+
+        getScreenshotBounds(descriptors) {
+            if (!descriptors.length) return null;
+            const left = Math.min(...descriptors.map(item => item.x));
+            const right = Math.max(...descriptors.map(item => item.x + item.width));
+            const top = Math.min(...descriptors.map(item => item.y));
+            const bottom = Math.max(...descriptors.map(item => item.y + item.height));
+            return { x: left, y: top, width: right - left, height: bottom - top };
+        }
+
         drawScreenshotImage(ctx, img, descriptor, selectionRect) {
             const x = descriptor.x - selectionRect.x;
             const y = descriptor.y - selectionRect.y;
@@ -2085,8 +2105,7 @@
             return `bilibili-reader-${range}-${stamp}.png`;
         }
 
-        async captureScreenshot(selectionRect) {
-            const descriptors = this.getVisibleImageDescriptors();
+        async captureScreenshot(selectionRect, descriptors = this.getVisibleImageDescriptors()) {
             if (descriptors.length === 0) {
                 this.showReaderMessage('\u5f53\u524d\u6ca1\u6709\u53ef\u622a\u56fe\u7684\u9875\u9762', true);
                 return false;
@@ -2683,7 +2702,7 @@
     if (!window.Shared) throw new Error('BilibiliToolbox: shared.js not loaded');
 
     const Shared = window.Shared;
-    const Toolbox = window.BilibiliToolbox || (window.BilibiliToolbox = {});
+    const Toolbox = window.BilibiliToolbox;
     const TOOLBOX_SETTINGS = Shared.TOOLBOX_SETTINGS;
     const URL_CHANGE_EVENT = 'bilibili-toolbox:urlchange';
     const SPACE_DYNAMIC_URL_PATTERN = /^https?:\/\/space\.bilibili\.com\/\d+\/dynamic(?:[/?#]|$)/i;
@@ -3253,6 +3272,105 @@
         showDynamicControlsPanel();
     }
 
+    function closeFavoritesTextDialog() {
+        document.querySelector('#bilibili-toolbox-export-dialog .bilibili-toolbox-export-close')?.click();
+    }
+
+    function showFavoritesTextDialog({ title, text = '', readOnly = false, clipboardAction = '', confirmText = '', onConfirm = null }) {
+        closeFavoritesTextDialog();
+        const dialog = document.createElement('div');
+        dialog.id = 'bilibili-toolbox-export-dialog';
+        dialog.className = 'bilibili-toolbox-export-dialog';
+        dialog.innerHTML = `
+            <div class="bilibili-toolbox-export-document" role="dialog" aria-modal="true" aria-labelledby="bilibili-toolbox-export-title">
+                <div class="bilibili-toolbox-export-header">
+                    <span id="bilibili-toolbox-export-title"></span>
+                    <button class="bilibili-toolbox-export-close" type="button" aria-label="\u5173\u95ed">&times;</button>
+                </div>
+                <textarea class="bilibili-toolbox-export-text" aria-label="\u6536\u85cf\u6587\u672c" spellcheck="false"></textarea>
+                ${clipboardAction || onConfirm ? `
+                    <div class="bilibili-toolbox-export-footer">
+                        <span class="bilibili-toolbox-export-status" role="status"></span>
+                        <div class="bilibili-toolbox-export-actions">
+                            ${clipboardAction ? '<button class="bilibili-toolbox-export-clipboard" type="button"></button>' : ''}
+                            ${onConfirm ? '<button class="bilibili-toolbox-export-confirm" type="button"></button>' : ''}
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+
+        const close = () => {
+            document.removeEventListener('keydown', handleKeyDown);
+            dialog.remove();
+        };
+        const handleKeyDown = event => {
+            if (event.key === 'Escape') close();
+        };
+
+        dialog.querySelector('.bilibili-toolbox-export-close').addEventListener('click', close);
+        dialog.addEventListener('click', event => {
+            if (event.target === dialog) close();
+        });
+        document.addEventListener('keydown', handleKeyDown);
+        document.body.appendChild(dialog);
+
+        dialog.querySelector('#bilibili-toolbox-export-title').textContent = title;
+        const textarea = dialog.querySelector('.bilibili-toolbox-export-text');
+        textarea.value = text;
+        textarea.readOnly = readOnly;
+        const status = dialog.querySelector('.bilibili-toolbox-export-status');
+        const setStatus = (message, isError = false) => {
+            if (!status) return;
+            status.textContent = message;
+            status.classList.toggle('is-error', isError);
+        };
+
+        if (clipboardAction) {
+            const clipboard = dialog.querySelector('.bilibili-toolbox-export-clipboard');
+            clipboard.textContent = clipboardAction === 'copy' ? '\u4e00\u952e\u590d\u5236' : '\u4e00\u952e\u7c98\u8d34';
+            clipboard.addEventListener('click', async () => {
+                try {
+                    if (clipboardAction === 'copy') {
+                        await navigator.clipboard.writeText(textarea.value);
+                        setStatus('\u5df2\u590d\u5236\u5230\u526a\u8d34\u677f');
+                    } else {
+                        textarea.value = await navigator.clipboard.readText();
+                        textarea.focus();
+                        setStatus('\u5df2\u7c98\u8d34\u526a\u8d34\u677f\u5185\u5bb9');
+                    }
+                } catch (_) {
+                    textarea.focus();
+                    if (clipboardAction === 'copy') textarea.select();
+                    setStatus(
+                        clipboardAction === 'copy'
+                            ? '\u65e0\u6cd5\u8bbf\u95ee\u526a\u8d34\u677f\uff0c\u8bf7\u6309 Ctrl+C \u624b\u52a8\u590d\u5236'
+                            : '\u65e0\u6cd5\u8bbf\u95ee\u526a\u8d34\u677f\uff0c\u8bf7\u6309 Ctrl+V \u624b\u52a8\u7c98\u8d34',
+                        true
+                    );
+                }
+            });
+        }
+
+        if (onConfirm) {
+            const confirm = dialog.querySelector('.bilibili-toolbox-export-confirm');
+            confirm.textContent = confirmText;
+            confirm.addEventListener('click', () => onConfirm({ text: textarea.value, close, setStatus }));
+        }
+
+        textarea.focus();
+        if (readOnly) textarea.select();
+    }
+
+    function showExportTextDialog(text) {
+        showFavoritesTextDialog({
+            title: '\u5bfc\u51fa\u6536\u85cf\u6587\u672c',
+            text,
+            readOnly: true,
+            clipboardAction: 'copy'
+        });
+    }
+
     function exportFavorites() {
         const data = Shared.normalizeToolboxData(dataProvider());
         if (!data.favorites.length) {
@@ -3260,57 +3378,32 @@
             return;
         }
 
-        const url = URL.createObjectURL(favoritesService.createExportBlob(data));
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = favoritesService.getExportFileName();
-        a.style.display = 'none';
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
-        showMessage(`\u5df2\u5bfc\u51fa ${data.favorites.length} \u6761\u6536\u85cf`);
-    }
-
-    function readImportFile(file) {
-        return new Promise(resolve => {
-            const reader = new FileReader();
-            reader.onload = () => {
-                try {
-                    resolve(favoritesService.normalizeImportedFavorites(JSON.parse(reader.result)));
-                } catch (_) {
-                    resolve(null);
-                }
-            };
-            reader.onerror = () => resolve(null);
-            reader.readAsText(file);
-        });
+        showExportTextDialog(favoritesService.createExportText(data));
     }
 
     function importFavorites() {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.json';
-        input.style.display = 'none';
-        document.body.appendChild(input);
+        showFavoritesTextDialog({
+            title: '\u5bfc\u5165\u6536\u85cf\u6587\u672c',
+            clipboardAction: 'paste',
+            confirmText: '\u5bfc\u5165',
+            onConfirm: async ({ text, close, setStatus }) => {
+                const imported = favoritesService.normalizeImportedFavorites(text);
 
-        input.addEventListener('change', async () => {
-            const file = input.files[0];
-            input.remove();
-            if (!file) return;
+                if (!imported?.length) {
+                    setStatus('\u672a\u8bfb\u53d6\u5230\u6709\u6548\u6536\u85cf', true);
+                    return;
+                }
 
-            const imported = await readImportFile(file);
-            if (!imported || !imported.length) {
-                showMessage('\u672a\u8bfb\u53d6\u5230\u6709\u6548\u6536\u85cf', true);
-                return;
+                try {
+                    const result = await favoritesService.importFavorites(imported);
+                    renderFavoriteList();
+                    close();
+                    showMessage(`\u5bfc\u5165 ${result.added} \u6761\uff0c\u66f4\u65b0 ${result.updated} \u6761\uff0c\u8df3\u8fc7 ${result.skipped} \u6761`);
+                } catch (_) {
+                    setStatus('\u5bfc\u5165\u5931\u8d25\uff0c\u8bf7\u7a0d\u540e\u91cd\u8bd5', true);
+                }
             }
-
-            const result = await favoritesService.importFavorites(imported);
-            renderFavoriteList();
-            showMessage(`\u5bfc\u5165 ${result.added} \u6761\uff0c\u8df3\u8fc7 ${result.skipped} \u6761`);
         });
-
-        input.click();
     }
 
     function getFavoriteDisplayData(item) {
@@ -3415,6 +3508,7 @@
         document.getElementById('bilibili-fav-controls-panel')?.remove();
         document.getElementById('bilibili-fav-float-btn')?.remove();
         document.getElementById('bilibili-fav-hover-zone')?.remove();
+        closeFavoritesTextDialog();
     }
 
     Toolbox.pageInfo = {
@@ -3468,7 +3562,7 @@
     if (!window.BilibiliToolbox?.favorites) throw new Error('BilibiliToolbox: favorites service not loaded');
     if (!window.BilibiliToolbox?.contentFeatures) throw new Error('BilibiliToolbox: content-features.js not loaded');
     if (!window.BilibiliToolbox?.comicImages) throw new Error('BilibiliToolbox: comic-reader-images.js not loaded');
-    if (!window.BiliAnimations) console.warn('BilibiliToolbox: animations.js not loaded; comic reader animations are disabled');
+    if (!window.BiliAnimations) throw new Error('BilibiliToolbox: animations.js not loaded');
 
     const Toolbox = window.BilibiliToolbox;
     const storage = Toolbox.storage;

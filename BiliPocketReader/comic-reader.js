@@ -16,7 +16,6 @@
     const SCALE_STEP = 0.1;
     const DOUBLE_CLICK_SCALE = 2;
     const MAX_RENDER_SCALE = 2;
-    const ANIMATION_MODES = ['none', 'smooth', 'fade'];
     const IMAGE_RENDER_MODES = ['sharp', 'smooth'];
     const CONTROLS_HIDE_DELAY = 500;
     const SWIPE_THRESHOLD = 50;
@@ -37,17 +36,20 @@
     });
 
     const READER_BACKGROUND = '#0a0a0a';
-    const Toolbox = window.BilibiliToolbox || {};
-    const Shared = window.Shared || {};
+    if (!window.Shared) throw new Error('BilibiliToolbox: shared.js not loaded');
+    if (!window.BilibiliToolbox?.storage) throw new Error('BilibiliToolbox: storage-service.js not loaded');
+    if (!window.BilibiliToolbox?.comicImages) throw new Error('BilibiliToolbox: comic-reader-images.js not loaded');
+    if (!window.BiliAnimations) throw new Error('BilibiliToolbox: animations.js not loaded');
+
+    const Toolbox = window.BilibiliToolbox;
+    const Shared = window.Shared;
     const storage = Toolbox.storage;
-    const TOOLBOX_SETTINGS = Shared.TOOLBOX_SETTINGS || { readerPreferences: 'readerPreferences' };
+    const TOOLBOX_SETTINGS = Shared.TOOLBOX_SETTINGS;
     const animations = window.BiliAnimations;
     const comicImages = Toolbox.comicImages;
 
     function normalizeAnimationMode(mode) {
-        return animations?.normalizeAnimationMode
-            ? animations.normalizeAnimationMode(mode)
-            : (ANIMATION_MODES.includes(mode) ? mode : DEFAULT_READER_PREFERENCES.animationMode);
+        return animations.normalizeAnimationMode(mode);
     }
 
     function normalizeImageRenderMode(mode) {
@@ -81,11 +83,10 @@
         }
 
         loadPreferences() {
-            return this.normalizePreferences(storage?.getSetting?.(TOOLBOX_SETTINGS.readerPreferences, DEFAULT_READER_PREFERENCES));
+            return this.normalizePreferences(storage.getSetting(TOOLBOX_SETTINGS.readerPreferences, DEFAULT_READER_PREFERENCES));
         }
 
         savePreferences() {
-            if (!storage?.setSetting) return;
             const preferences = this.normalizePreferences({
                 isRightToLeft: this.isRightToLeft,
                 viewMode: this.viewMode,
@@ -310,6 +311,11 @@
             this.el.selectionSaveBtn.innerText = '\u4fdd\u5b58\u622a\u56fe';
             this.el.selectionSaveBtn.className = 'comic-selection-action comic-selection-save';
 
+            this.el.selectionFullBtn = document.createElement('button');
+            this.el.selectionFullBtn.type = 'button';
+            this.el.selectionFullBtn.innerText = '\u4fdd\u5b58\u5168\u56fe';
+            this.el.selectionFullBtn.className = 'comic-selection-action comic-selection-full';
+
             this.el.selectionBox = document.createElement('div');
             this.el.selectionBox.className = 'comic-selection-box';
 
@@ -327,7 +333,7 @@
                 this.selectionHandles[dir] = h;
             }
 
-            this.el.selectionToolbar.append(this.el.selectionSaveBtn, this.el.selectionCancelBtn);
+            this.el.selectionToolbar.append(this.el.selectionFullBtn, this.el.selectionSaveBtn, this.el.selectionCancelBtn);
             this.el.selectionOverlay.append(this.el.selectionHint, this.el.selectionToolbar, this.el.selectionBox);
 
             const createSettingsRow = (title, desc, control) => {
@@ -482,6 +488,7 @@
             });
             this.el.pageInput.addEventListener('blur', () => this.jumpToPageFromInput());
             this.el.selectionCancelBtn.onclick = () => this.cancelScreenshotSelection(true);
+            this.el.selectionFullBtn.onclick = () => { void this.saveFullScreenshot(); };
             this.el.selectionSaveBtn.onclick = () => { void this.saveSelectionScreenshot(); };
             this.el.selectionOverlay.addEventListener('pointerdown', this.handleSelectionPointerDown);
             this.el.selectionOverlay.addEventListener('pointermove', this.handleSelectionPointerMove);
@@ -738,6 +745,9 @@
 
             const handle = e.target.closest?.('.comic-sel-handle');
             if (handle && this.hasValidSelection()) {
+                const rect = this.normalizeSelectionRect();
+                this.selectionStart = { x: rect.x, y: rect.y };
+                this.selectionCurrent = { x: rect.x + rect.width, y: rect.y + rect.height };
                 this.resizeDirection = handle.dataset.dir;
                 this.isDraggingSelection = true;
                 this.setSelectionHint('\u62d6\u52a8\u8fb9\u89d2\u8c03\u6574\u9009\u533a\u8303\u56f4');
@@ -808,6 +818,20 @@
             }
 
             const success = await this.captureScreenshot(this.normalizeSelectionRect());
+            if (success) {
+                this.cancelScreenshotSelection(false);
+            }
+        }
+
+        async saveFullScreenshot() {
+            const descriptors = this.getVisibleImageDescriptors();
+            const rect = this.getScreenshotBounds(descriptors);
+            if (!rect) {
+                this.showReaderMessage('\u5f53\u524d\u6ca1\u6709\u53ef\u622a\u56fe\u7684\u9875\u9762', true);
+                return;
+            }
+
+            const success = await this.captureScreenshot(rect, descriptors);
             if (success) {
                 this.cancelScreenshotSelection(false);
             }
@@ -1150,6 +1174,16 @@
                 })
                 .filter(item => item.src && item.width > 0 && item.height > 0);
         }
+
+        getScreenshotBounds(descriptors) {
+            if (!descriptors.length) return null;
+            const left = Math.min(...descriptors.map(item => item.x));
+            const right = Math.max(...descriptors.map(item => item.x + item.width));
+            const top = Math.min(...descriptors.map(item => item.y));
+            const bottom = Math.max(...descriptors.map(item => item.y + item.height));
+            return { x: left, y: top, width: right - left, height: bottom - top };
+        }
+
         drawScreenshotImage(ctx, img, descriptor, selectionRect) {
             const x = descriptor.x - selectionRect.x;
             const y = descriptor.y - selectionRect.y;
@@ -1235,8 +1269,7 @@
             return `bilibili-reader-${range}-${stamp}.png`;
         }
 
-        async captureScreenshot(selectionRect) {
-            const descriptors = this.getVisibleImageDescriptors();
+        async captureScreenshot(selectionRect, descriptors = this.getVisibleImageDescriptors()) {
             if (descriptors.length === 0) {
                 this.showReaderMessage('\u5f53\u524d\u6ca1\u6709\u53ef\u622a\u56fe\u7684\u9875\u9762', true);
                 return false;

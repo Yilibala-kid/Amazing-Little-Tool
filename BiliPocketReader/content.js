@@ -7,7 +7,7 @@
     if (!window.BilibiliToolbox?.favorites) throw new Error('BilibiliToolbox: favorites service not loaded');
     if (!window.BilibiliToolbox?.contentFeatures) throw new Error('BilibiliToolbox: content-features.js not loaded');
     if (!window.BilibiliToolbox?.comicImages) throw new Error('BilibiliToolbox: comic-reader-images.js not loaded');
-    if (!window.BiliAnimations) console.warn('BilibiliToolbox: animations.js not loaded; comic reader animations are disabled');
+    if (!window.BiliAnimations) throw new Error('BilibiliToolbox: animations.js not loaded');
 
     const Toolbox = window.BilibiliToolbox;
     const storage = Toolbox.storage;

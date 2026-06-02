@@ -5,7 +5,7 @@
     if (!window.Shared) throw new Error('BilibiliToolbox: shared.js not loaded');
 
     const Shared = window.Shared;
-    const Toolbox = window.BilibiliToolbox || (window.BilibiliToolbox = {});
+    const Toolbox = window.BilibiliToolbox;
     const TOOLBOX_SETTINGS = Shared.TOOLBOX_SETTINGS;
     const URL_CHANGE_EVENT = 'bilibili-toolbox:urlchange';
     const SPACE_DYNAMIC_URL_PATTERN = /^https?:\/\/space\.bilibili\.com\/\d+\/dynamic(?:[/?#]|$)/i;
@@ -575,6 +575,105 @@
         showDynamicControlsPanel();
     }
 
+    function closeFavoritesTextDialog() {
+        document.querySelector('#bilibili-toolbox-export-dialog .bilibili-toolbox-export-close')?.click();
+    }
+
+    function showFavoritesTextDialog({ title, text = '', readOnly = false, clipboardAction = '', confirmText = '', onConfirm = null }) {
+        closeFavoritesTextDialog();
+        const dialog = document.createElement('div');
+        dialog.id = 'bilibili-toolbox-export-dialog';
+        dialog.className = 'bilibili-toolbox-export-dialog';
+        dialog.innerHTML = `
+            <div class="bilibili-toolbox-export-document" role="dialog" aria-modal="true" aria-labelledby="bilibili-toolbox-export-title">
+                <div class="bilibili-toolbox-export-header">
+                    <span id="bilibili-toolbox-export-title"></span>
+                    <button class="bilibili-toolbox-export-close" type="button" aria-label="\u5173\u95ed">&times;</button>
+                </div>
+                <textarea class="bilibili-toolbox-export-text" aria-label="\u6536\u85cf\u6587\u672c" spellcheck="false"></textarea>
+                ${clipboardAction || onConfirm ? `
+                    <div class="bilibili-toolbox-export-footer">
+                        <span class="bilibili-toolbox-export-status" role="status"></span>
+                        <div class="bilibili-toolbox-export-actions">
+                            ${clipboardAction ? '<button class="bilibili-toolbox-export-clipboard" type="button"></button>' : ''}
+                            ${onConfirm ? '<button class="bilibili-toolbox-export-confirm" type="button"></button>' : ''}
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+
+        const close = () => {
+            document.removeEventListener('keydown', handleKeyDown);
+            dialog.remove();
+        };
+        const handleKeyDown = event => {
+            if (event.key === 'Escape') close();
+        };
+
+        dialog.querySelector('.bilibili-toolbox-export-close').addEventListener('click', close);
+        dialog.addEventListener('click', event => {
+            if (event.target === dialog) close();
+        });
+        document.addEventListener('keydown', handleKeyDown);
+        document.body.appendChild(dialog);
+
+        dialog.querySelector('#bilibili-toolbox-export-title').textContent = title;
+        const textarea = dialog.querySelector('.bilibili-toolbox-export-text');
+        textarea.value = text;
+        textarea.readOnly = readOnly;
+        const status = dialog.querySelector('.bilibili-toolbox-export-status');
+        const setStatus = (message, isError = false) => {
+            if (!status) return;
+            status.textContent = message;
+            status.classList.toggle('is-error', isError);
+        };
+
+        if (clipboardAction) {
+            const clipboard = dialog.querySelector('.bilibili-toolbox-export-clipboard');
+            clipboard.textContent = clipboardAction === 'copy' ? '\u4e00\u952e\u590d\u5236' : '\u4e00\u952e\u7c98\u8d34';
+            clipboard.addEventListener('click', async () => {
+                try {
+                    if (clipboardAction === 'copy') {
+                        await navigator.clipboard.writeText(textarea.value);
+                        setStatus('\u5df2\u590d\u5236\u5230\u526a\u8d34\u677f');
+                    } else {
+                        textarea.value = await navigator.clipboard.readText();
+                        textarea.focus();
+                        setStatus('\u5df2\u7c98\u8d34\u526a\u8d34\u677f\u5185\u5bb9');
+                    }
+                } catch (_) {
+                    textarea.focus();
+                    if (clipboardAction === 'copy') textarea.select();
+                    setStatus(
+                        clipboardAction === 'copy'
+                            ? '\u65e0\u6cd5\u8bbf\u95ee\u526a\u8d34\u677f\uff0c\u8bf7\u6309 Ctrl+C \u624b\u52a8\u590d\u5236'
+                            : '\u65e0\u6cd5\u8bbf\u95ee\u526a\u8d34\u677f\uff0c\u8bf7\u6309 Ctrl+V \u624b\u52a8\u7c98\u8d34',
+                        true
+                    );
+                }
+            });
+        }
+
+        if (onConfirm) {
+            const confirm = dialog.querySelector('.bilibili-toolbox-export-confirm');
+            confirm.textContent = confirmText;
+            confirm.addEventListener('click', () => onConfirm({ text: textarea.value, close, setStatus }));
+        }
+
+        textarea.focus();
+        if (readOnly) textarea.select();
+    }
+
+    function showExportTextDialog(text) {
+        showFavoritesTextDialog({
+            title: '\u5bfc\u51fa\u6536\u85cf\u6587\u672c',
+            text,
+            readOnly: true,
+            clipboardAction: 'copy'
+        });
+    }
+
     function exportFavorites() {
         const data = Shared.normalizeToolboxData(dataProvider());
         if (!data.favorites.length) {
@@ -582,57 +681,32 @@
             return;
         }
 
-        const url = URL.createObjectURL(favoritesService.createExportBlob(data));
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = favoritesService.getExportFileName();
-        a.style.display = 'none';
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
-        showMessage(`\u5df2\u5bfc\u51fa ${data.favorites.length} \u6761\u6536\u85cf`);
-    }
-
-    function readImportFile(file) {
-        return new Promise(resolve => {
-            const reader = new FileReader();
-            reader.onload = () => {
-                try {
-                    resolve(favoritesService.normalizeImportedFavorites(JSON.parse(reader.result)));
-                } catch (_) {
-                    resolve(null);
-                }
-            };
-            reader.onerror = () => resolve(null);
-            reader.readAsText(file);
-        });
+        showExportTextDialog(favoritesService.createExportText(data));
     }
 
     function importFavorites() {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.json';
-        input.style.display = 'none';
-        document.body.appendChild(input);
+        showFavoritesTextDialog({
+            title: '\u5bfc\u5165\u6536\u85cf\u6587\u672c',
+            clipboardAction: 'paste',
+            confirmText: '\u5bfc\u5165',
+            onConfirm: async ({ text, close, setStatus }) => {
+                const imported = favoritesService.normalizeImportedFavorites(text);
 
-        input.addEventListener('change', async () => {
-            const file = input.files[0];
-            input.remove();
-            if (!file) return;
+                if (!imported?.length) {
+                    setStatus('\u672a\u8bfb\u53d6\u5230\u6709\u6548\u6536\u85cf', true);
+                    return;
+                }
 
-            const imported = await readImportFile(file);
-            if (!imported || !imported.length) {
-                showMessage('\u672a\u8bfb\u53d6\u5230\u6709\u6548\u6536\u85cf', true);
-                return;
+                try {
+                    const result = await favoritesService.importFavorites(imported);
+                    renderFavoriteList();
+                    close();
+                    showMessage(`\u5bfc\u5165 ${result.added} \u6761\uff0c\u66f4\u65b0 ${result.updated} \u6761\uff0c\u8df3\u8fc7 ${result.skipped} \u6761`);
+                } catch (_) {
+                    setStatus('\u5bfc\u5165\u5931\u8d25\uff0c\u8bf7\u7a0d\u540e\u91cd\u8bd5', true);
+                }
             }
-
-            const result = await favoritesService.importFavorites(imported);
-            renderFavoriteList();
-            showMessage(`\u5bfc\u5165 ${result.added} \u6761\uff0c\u8df3\u8fc7 ${result.skipped} \u6761`);
         });
-
-        input.click();
     }
 
     function getFavoriteDisplayData(item) {
@@ -737,6 +811,7 @@
         document.getElementById('bilibili-fav-controls-panel')?.remove();
         document.getElementById('bilibili-fav-float-btn')?.remove();
         document.getElementById('bilibili-fav-hover-zone')?.remove();
+        closeFavoritesTextDialog();
     }
 
     Toolbox.pageInfo = {

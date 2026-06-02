@@ -4,7 +4,7 @@
 
     if (!window.Shared) throw new Error('BilibiliToolbox: shared.js not loaded');
 
-    const Toolbox = window.BilibiliToolbox || (window.BilibiliToolbox = {});
+    const Toolbox = window.BilibiliToolbox;
 
     let dataCache = window.Shared.createDefaultData();
     let initialized = false;
@@ -37,10 +37,6 @@
         const current = await read();
         const next = typeof mutator === 'function' ? mutator(current) : mutator;
         return write(next);
-    }
-
-    async function setFavorites(favorites) {
-        return update(current => ({ ...current, favorites }));
     }
 
     async function setSetting(key, value) {
@@ -86,36 +82,67 @@
         changeListeners = new Set();
     }
 
+    function parseFavoriteTextLine(line) {
+        const [key, name, image] = line.split('\t');
+        if (!key || !name || !image) return null;
+        const match = key.match(/^(user|readlist):(\d+)$/);
+        if (!match) return null;
+        const cleanName = name.trim();
+        const cleanImage = image.trim();
+        if (!cleanName || !cleanImage) return null;
+        const isReadlist = match[1].toLowerCase() === window.Shared.READLIST_TYPE;
+        return {
+            type: isReadlist ? window.Shared.READLIST_TYPE : window.Shared.USER_TYPE,
+            [isReadlist ? 'id' : 'uid']: match[2],
+            [isReadlist ? 'title' : 'uname']: cleanName,
+            [isReadlist ? 'cover' : 'face']: cleanImage
+        };
+    }
+
     function normalizeImportedFavorites(data) {
-        if (!data || typeof data !== 'object' || !Array.isArray(data.favorites)) return [];
-        return data.favorites.filter(item => window.Shared.getFavoriteKey(item));
+        if (typeof data === 'string') {
+            return window.Shared.normalizeFavoriteList(data.trim().split(/\r?\n/).map(parseFavoriteTextLine));
+        }
+
+        return window.Shared.normalizeFavoriteList(data);
     }
 
     function mergeFavorites(existing, imported) {
-        const keys = new Set(existing.map(item => window.Shared.getFavoriteKey(item)));
         const result = [...existing];
+        const indexes = new Map(result.map((item, index) => [window.Shared.getFavoriteKey(item), index]));
         let added = 0;
+        let updated = 0;
 
         imported.forEach(item => {
             const key = window.Shared.getFavoriteKey(item);
-            if (!key || keys.has(key)) return;
-            keys.add(key);
+            if (!key) return;
+            const index = indexes.get(key);
+            if (index !== undefined) {
+                const merged = { ...result[index], ...item };
+                if (JSON.stringify(merged) !== JSON.stringify(result[index])) {
+                    result[index] = merged;
+                    updated += 1;
+                }
+                return;
+            }
+            indexes.set(key, result.length);
             result.push(item);
             added += 1;
         });
 
-        return { result, added, skipped: imported.length - added };
+        return { result, added, updated, skipped: imported.length - added - updated };
     }
 
     async function addFavorite(item) {
         const current = await read();
-        const key = window.Shared.getFavoriteKey(item);
+        const normalized = window.Shared.normalizeFavorite(item);
+        const key = window.Shared.getFavoriteKey(normalized);
         if (!key) return { data: current, added: false, reason: 'invalid' };
         if (current.favorites.some(existing => window.Shared.getFavoriteKey(existing) === key)) {
             return { data: current, added: false, reason: 'duplicate' };
         }
 
-        const data = await write({ ...current, favorites: [...current.favorites, item] });
+        const data = await write({ ...current, favorites: [...current.favorites, normalized] });
         return { data, added: true, key };
     }
 
@@ -132,22 +159,33 @@
 
     async function importFavorites(imported) {
         const current = await read();
-        const normalized = Array.isArray(imported) ? imported : normalizeImportedFavorites(imported);
+        const normalized = normalizeImportedFavorites(imported);
         const merged = mergeFavorites(current.favorites, normalized);
-        const data = merged.added
+        const data = merged.added || merged.updated
             ? await write({ ...current, favorites: merged.result })
             : current;
         return { ...merged, data };
     }
 
-    function getExportFileName(now = new Date()) {
-        const pad = n => String(n).padStart(2, '0');
-        const ts = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
-        return `bilibili-favorites-${ts}.json`;
+    function cleanExportField(value) {
+        return typeof value === 'string' ? value.replace(/[\t\r\n]+/g, ' ').trim() : '';
     }
 
-    function createExportBlob(data = dataCache) {
-        return new Blob([JSON.stringify(window.Shared.normalizeToolboxData(data), null, 2)], { type: 'application/json' });
+    function createExportText(data = dataCache) {
+        return window.Shared.normalizeToolboxData(data).favorites
+            .map(item => {
+                const key = window.Shared.getFavoriteKey(item);
+                if (!key) return '';
+                const isReadlist = window.Shared.isReadlistFavorite(item);
+                const fields = [
+                    key,
+                    cleanExportField(window.Shared.getFavoriteName(item)),
+                    cleanExportField(window.Shared.getFavoriteImage(item))
+                ];
+                return fields.every(Boolean) ? fields.join('\t') : '';
+            })
+            .filter(Boolean)
+            .join('\n');
     }
 
     const storageApi = {
@@ -156,11 +194,9 @@
         read,
         write,
         update,
-        setFavorites,
         setSetting,
         getSetting,
-        onChanged,
-        getSnapshot: () => window.Shared.normalizeToolboxData(dataCache)
+        onChanged
     };
 
     Toolbox.storage = storageApi;
@@ -168,9 +204,7 @@
         addFavorite,
         removeFavorite,
         importFavorites,
-        mergeFavorites,
         normalizeImportedFavorites,
-        getExportFileName,
-        createExportBlob
+        createExportText
     };
 })();

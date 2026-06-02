@@ -6,7 +6,6 @@
     const USER_TYPE = 'user';
     const READLIST_TYPE = 'readlist';
     const FALLBACK_IMAGE = 'https://www.bilibili.com/favicon.ico';
-    const BILIBILI_DOMAIN = 'bilibili.com';
     const BILIBILI_SPACE_URL = 'https://space.bilibili.com/';
     const BILIBILI_READLIST_URL = 'https://www.bilibili.com/read/readlist/rl';
     const TOOLBOX_SETTINGS = Object.freeze({
@@ -29,9 +28,32 @@
         };
     }
 
+    function normalizeFavoriteId(value) {
+        return typeof value === 'string' && /^\d+$/.test(value) ? value : '';
+    }
+
+    function normalizeFavorite(item) {
+        const identity = getFavoriteIdentity(item);
+        if (!identity) return null;
+
+        return identity.type === READLIST_TYPE
+            ? {
+                type: READLIST_TYPE,
+                id: identity.id,
+                title: typeof item.title === 'string' ? item.title : '',
+                cover: typeof item.cover === 'string' ? item.cover : ''
+            }
+            : {
+                type: USER_TYPE,
+                uid: identity.id,
+                uname: typeof item.uname === 'string' ? item.uname : '',
+                face: typeof item.face === 'string' ? item.face : ''
+            };
+    }
+
     function normalizeFavoriteList(favorites) {
         return Array.isArray(favorites)
-            ? favorites.filter(item => item && typeof item === 'object')
+            ? favorites.map(normalizeFavorite).filter(Boolean)
             : [];
     }
 
@@ -43,23 +65,21 @@
         };
     }
 
-    function isBilibiliUrl(url) {
-        return typeof url === 'string' && url.includes(BILIBILI_DOMAIN);
-    }
-
-    function getFavoriteType(item) {
-        return item?.type || USER_TYPE;
-    }
-
     function isReadlistFavorite(item) {
-        return getFavoriteType(item) === READLIST_TYPE;
+        return item?.type === READLIST_TYPE;
+    }
+
+    function getFavoriteIdentity(item) {
+        if (!item || typeof item !== 'object') return null;
+        if (item.type !== USER_TYPE && item.type !== READLIST_TYPE) return null;
+        const type = item.type;
+        const id = normalizeFavoriteId(type === READLIST_TYPE ? item.id : item.uid);
+        return id ? { type, id } : null;
     }
 
     function getFavoriteKey(item) {
-        if (!item) return '';
-        const type = isReadlistFavorite(item) ? READLIST_TYPE : USER_TYPE;
-        const value = isReadlistFavorite(item) ? item.id : item.uid;
-        return value ? `${type}:${value}` : '';
+        const identity = getFavoriteIdentity(item);
+        return identity ? `${identity.type}:${identity.id}` : '';
     }
 
     function getFavoriteName(item) {
@@ -75,10 +95,11 @@
     }
 
     function getFavoriteLink(item) {
-        if (!item) return '#';
-        return isReadlistFavorite(item)
-            ? `${BILIBILI_READLIST_URL}${item.id}`
-            : `${BILIBILI_SPACE_URL}${item.uid}/dynamic`;
+        const identity = getFavoriteIdentity(item);
+        if (!identity) return '#';
+        return identity.type === READLIST_TYPE
+            ? `${BILIBILI_READLIST_URL}${identity.id}`
+            : `${BILIBILI_SPACE_URL}${identity.id}/dynamic`;
     }
 
     function escapeHtml(str) {
@@ -103,7 +124,7 @@
     const $ = (selector, fallback = '') => document.querySelector(selector)?.textContent.trim() || fallback;
     const $src = (selector) => document.querySelector(selector)?.src || '';
 
-    const Toolbox = window.BilibiliToolbox || {};
+    const Toolbox = {};
 
     function createEventBag() {
         const cleanupFns = [];
@@ -140,16 +161,11 @@
         USER_TYPE,
         READLIST_TYPE,
         FALLBACK_IMAGE,
-        BILIBILI_DOMAIN,
-        BILIBILI_SPACE_URL,
-        BILIBILI_READLIST_URL,
         TOOLBOX_SETTINGS,
-        normalizeObject,
         createDefaultData,
+        normalizeFavorite,
         normalizeFavoriteList,
         normalizeToolboxData,
-        isBilibiliUrl,
-        getFavoriteType,
         isReadlistFavorite,
         getFavoriteKey,
         getFavoriteName,

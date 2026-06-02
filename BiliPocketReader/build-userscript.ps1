@@ -57,8 +57,6 @@ $HeaderLines = @(
     "// @run-at       document-start",
     "// @grant        GM.getValue",
     "// @grant        GM.setValue",
-    "// @grant        GM_getValue",
-    "// @grant        GM_setValue",
     "// ==/UserScript=="
 )
 $Header = ($HeaderLines -join "`n") + "`n`n"
@@ -67,78 +65,14 @@ $Compat = @"
 (function() {
     'use strict';
 
-    const STORAGE_PREFIX = 'bilibili-toolbox-userscript:';
     const changeListeners = new Set();
 
-    function hasLegacyGmStorage() {
-        return typeof GM_getValue === 'function' && typeof GM_setValue === 'function';
-    }
-
-    function hasModernGmStorage() {
-        return typeof GM === 'object'
-            && typeof GM.getValue === 'function'
-            && typeof GM.setValue === 'function';
-    }
-
-    function readLocalValue(key) {
-        const raw = localStorage.getItem(STORAGE_PREFIX + key);
-        if (raw === null) return undefined;
-        try { return JSON.parse(raw); } catch (_) { return undefined; }
-    }
-
-    function getFavoriteKey(item) {
-        if (!item || typeof item !== 'object') return '';
-        const type = item.type === 'readlist' ? 'readlist' : 'user';
-        const value = type === 'readlist' ? item.id : item.uid;
-        return value ? type + ':' + value : '';
-    }
-
-    function mergeStoredValue(primary, localValue) {
-        if (!primary || !localValue || typeof primary !== 'object' || typeof localValue !== 'object') {
-            return primary === undefined ? localValue : primary;
-        }
-        if (!Array.isArray(primary.favorites) || !Array.isArray(localValue.favorites)) return primary;
-
-        const favorites = [...primary.favorites];
-        const keys = new Set(favorites.map(getFavoriteKey).filter(Boolean));
-        localValue.favorites.forEach(item => {
-            const key = getFavoriteKey(item);
-            if (!key || keys.has(key)) return;
-            keys.add(key);
-            favorites.push(item);
-        });
-
-        return {
-            ...localValue,
-            ...primary,
-            settings: { ...(localValue.settings || {}), ...(primary.settings || {}) },
-            favorites
-        };
-    }
-
     async function readValue(key) {
-        if (hasModernGmStorage() || hasLegacyGmStorage()) {
-            const localValue = readLocalValue(key);
-            const gmValue = hasModernGmStorage() ? await GM.getValue(key) : GM_getValue(key);
-            const merged = mergeStoredValue(gmValue, localValue);
-            if (localValue !== undefined && JSON.stringify(merged) !== JSON.stringify(gmValue)) {
-                await writeValue(key, merged);
-            }
-            return merged;
-        }
-        return readLocalValue(key);
+        return GM.getValue(key);
     }
 
     async function writeValue(key, value) {
-        if (hasModernGmStorage()) {
-            await GM.setValue(key, value);
-            return;
-        }
-        if (hasLegacyGmStorage()) {
-            GM_setValue(key, value);
-            return;
-        }
-        localStorage.setItem(STORAGE_PREFIX + key, JSON.stringify(value));
+        await GM.setValue(key, value);
     }
 
     function normalizeGetKeys(keys) {
