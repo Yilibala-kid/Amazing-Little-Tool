@@ -1,11 +1,11 @@
-// Bilibili Toolbox - Comic Reader
+﻿// Bilibili Toolbox - Comic Reader
 (function() {
     'use strict';
 
-    // ============ 常量定义 ============
+    // ============ 甯搁噺瀹氫箟 ============
     const VIEW_MODES = ['auto', 'single', 'double'];
 
-    // 漫画模式常量
+    // 婕敾妯″紡甯搁噺
     const COMIC_URL_PATTERNS = [
         'bilibili.com/read/',
         'bilibili.com/opus/',
@@ -14,34 +14,111 @@
     const MIN_SCALE = 0.5;
     const MAX_SCALE = 3;
     const SCALE_STEP = 0.1;
+    const DOUBLE_CLICK_SCALE = 2;
+    const MAX_RENDER_SCALE = 2;
+    const ANIMATION_MODES = ['none', 'smooth', 'fade'];
+    const IMAGE_RENDER_MODES = ['sharp', 'smooth'];
     const CONTROLS_HIDE_DELAY = 500;
     const SWIPE_THRESHOLD = 50;
+    const TAP_DELAY = 220;
+    const DOUBLE_TAP_DELAY = 300;
+    const TAP_ZONE_RATIO = 0.28;
+    const TOUCH_ZOOM_EPSILON = 0.01;
+    const TOUCH_EDGE_EPSILON = 0.5;
+    const PAN_EDGE_ALLOWANCE = 72;
     const PRELOAD_COUNT = 4;
     const MOBILE_BREAKPOINT = 768;
+    const DEFAULT_READER_PREFERENCES = Object.freeze({
+        isRightToLeft: true,
+        viewMode: 'auto',
+        animationMode: 'smooth',
+        imageRenderMode: 'smooth',
+        tapPageNavigation: true
+    });
 
     const READER_BACKGROUND = '#0a0a0a';
+    const Toolbox = window.BilibiliToolbox || {};
+    const Shared = window.Shared || {};
+    const storage = Toolbox.storage;
+    const TOOLBOX_SETTINGS = Shared.TOOLBOX_SETTINGS || { readerPreferences: 'readerPreferences' };
     const animations = window.BiliAnimations;
+    const comicImages = Toolbox.comicImages;
 
-    // ============ 漫画模式功能 ============
+    function normalizeAnimationMode(mode) {
+        return animations?.normalizeAnimationMode
+            ? animations.normalizeAnimationMode(mode)
+            : (ANIMATION_MODES.includes(mode) ? mode : DEFAULT_READER_PREFERENCES.animationMode);
+    }
+
+    function normalizeImageRenderMode(mode) {
+        return IMAGE_RENDER_MODES.includes(mode) ? mode : DEFAULT_READER_PREFERENCES.imageRenderMode;
+    }
+
+    function isTouchLikeDevice() {
+        const coarsePointer = window.matchMedia?.('(pointer: coarse)').matches;
+        const noHover = window.matchMedia?.('(hover: none)').matches;
+        return Boolean(coarsePointer || noHover || navigator.maxTouchPoints > 0);
+    }
+
+    // ============ 婕敾妯″紡鍔熻兘 ============
 
     class BiliComicReader {
+        normalizePreferences(value = {}) {
+            const input = value && typeof value === 'object' ? value : {};
+            return {
+                isRightToLeft: typeof input.isRightToLeft === 'boolean'
+                    ? input.isRightToLeft
+                    : DEFAULT_READER_PREFERENCES.isRightToLeft,
+                viewMode: VIEW_MODES.includes(input.viewMode)
+                    ? input.viewMode
+                    : DEFAULT_READER_PREFERENCES.viewMode,
+                animationMode: normalizeAnimationMode(input.animationMode || DEFAULT_READER_PREFERENCES.animationMode),
+                imageRenderMode: normalizeImageRenderMode(input.imageRenderMode || DEFAULT_READER_PREFERENCES.imageRenderMode),
+                tapPageNavigation: typeof input.tapPageNavigation === 'boolean'
+                    ? input.tapPageNavigation
+                    : DEFAULT_READER_PREFERENCES.tapPageNavigation
+            };
+        }
+
+        loadPreferences() {
+            return this.normalizePreferences(storage?.getSetting?.(TOOLBOX_SETTINGS.readerPreferences, DEFAULT_READER_PREFERENCES));
+        }
+
+        savePreferences() {
+            if (!storage?.setSetting) return;
+            const preferences = this.normalizePreferences({
+                isRightToLeft: this.isRightToLeft,
+                viewMode: this.viewMode,
+                animationMode: this.animationMode,
+                imageRenderMode: this.imageRenderMode,
+                tapPageNavigation: this.tapPageNavigation
+            });
+            void storage.setSetting(TOOLBOX_SETTINGS.readerPreferences, preferences).catch(() => {});
+        }
+
         constructor() {
-            // 状态管理
+            const preferences = this.loadPreferences();
+            // 鐘舵€佺鐞?
             this.imgList = [];
             this.currentIndex = 0;
             this.lastStep = 2;
-            this.isRightToLeft = true;
+            this.isRightToLeft = preferences.isRightToLeft;
             this.scale = 1;
+            this.fitScale = 1;
+            this.contentNaturalWidth = 0;
+            this.contentNaturalHeight = 0;
             this.translateX = 0;
             this.translateY = 0;
             this.hideTimer = null;
             this.messageTimer = null;
-            this.viewMode = 'auto';
-            this.animationMode = 'smooth';
+            this.viewMode = preferences.viewMode;
+            this.animationMode = preferences.animationMode;
+            this.imageRenderMode = preferences.imageRenderMode;
+            this.tapPageNavigation = preferences.tapPageNavigation;
             this.rotation = 0;
             this.activePageCount = 1;
             this.controlsVisible = true;
-            this.isTouchDevice = window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
+            this.isTouchDevice = isTouchLikeDevice();
             this.isCompactLayout = false;
             this.isSelectingScreenshot = false;
             this.isDraggingSelection = false;
@@ -54,14 +131,14 @@
             this.pageFlipToken = 0;
             this.transformTransitionTimer = null;
 
-            // 拖拽状态
+            // 鎷栨嫿鐘舵€?
             this.isDragging = false;
             this.startX = 0;
             this.startY = 0;
             this.initX = 0;
             this.initY = 0;
 
-            // 触摸滑动状态
+            // 瑙︽懜婊戝姩鐘舵€?
             this.touchStartX = 0;
             this.touchStartY = 0;
             this.touchEndX = 0;
@@ -71,12 +148,13 @@
             this.touchStartedOnInteractive = false;
             this.touchPanLocked = false;
             this.touchDidMoveImage = false;
+            this.touchEdgePageStep = 0;
             this.pendingTapTimer = null;
             this.lastTapTime = 0;
             this.lastTapX = 0;
             this.lastTapY = 0;
 
-            // 双指缩放状态
+            // 鍙屾寚缂╂斁鐘舵€?
             this.isTwoFingerGesturing = false;
             this.initialPinchDistance = 0;
             this.initialScale = 1;
@@ -90,10 +168,10 @@
             this.lastTwoFingerTapCenterX = 0;
             this.lastTwoFingerTapCenterY = 0;
 
-            // DOM 元素引用
+            // DOM 鍏冪礌寮曠敤
             this.el = {};
 
-            // 绑定全局事件的 this 指向，便于后续解绑
+            // 缁戝畾鍏ㄥ眬浜嬩欢鐨?this 鎸囧悜锛屼究浜庡悗缁В缁?
             this.handleKeyDown = this.handleKeyDown.bind(this);
             this.handleFullscreenChange = this.handleFullscreenChange.bind(this);
             this.handleMouseMove = this.handleMouseMove.bind(this);
@@ -104,103 +182,32 @@
             this.handleSelectionPointerDown = this.handleSelectionPointerDown.bind(this);
             this.handleSelectionPointerMove = this.handleSelectionPointerMove.bind(this);
             this.handleSelectionPointerUp = this.handleSelectionPointerUp.bind(this);
+            this.handleSettingsOutsidePointerDown = this.handleSettingsOutsidePointerDown.bind(this);
             this.handleResize = this.handleResize.bind(this);
         }
 
-        // 1. 初始化入口按钮
+        // 1. 鍒濆鍖栧叆鍙ｆ寜閽?
         init() {
             const entryBtn = document.createElement('button');
-            entryBtn.innerHTML = '&#128216;';
-            entryBtn.style.cssText = this.isTouchDevice
-                ? 'position:fixed;bottom:16px;right:16px;z-index:9999;padding:12px 16px;cursor:pointer;background:#fb7299;color:#fff;border:none;border-radius:24px;font-size:18px;box-shadow:0 4px 16px rgba(251,114,153,0.3)'
-                : 'position:fixed;bottom:24px;right:24px;z-index:9999;padding:10px 18px;cursor:pointer;background:#fb7299;color:#fff;border:none;border-radius:24px;font-size:20px;box-shadow:0 4px 16px rgba(251,114,153,0.3)';
+            entryBtn.innerHTML = '&#128214;';
+            entryBtn.className = `comic-entry-btn${this.isTouchDevice ? ' comic-entry-btn-touch' : ''}`;
             document.body.appendChild(entryBtn);
 
             entryBtn.onclick = () => this.start();
         }
 
-        normalizeImageUrl(rawSrc) {
-            if (!rawSrc || typeof rawSrc !== 'string' || rawSrc.includes('base64')) return '';
-            let src = rawSrc.split('@')[0];
-            if (src.startsWith('//')) src = 'https:' + src;
-            if (src.startsWith('http:')) src = 'https:' + src.slice(5);
-            return src.startsWith('http') ? src : '';
-        }
-
-        collectDynamicImagesFromState() {
-            const modules = window.__INITIAL_STATE__?.detail?.modules;
-            if (!Array.isArray(modules)) return [];
-
-            return modules.flatMap(module => {
-                const pics = module?.module_top?.display?.album?.pics;
-                if (!Array.isArray(pics)) return [];
-                return pics
-                    .map(pic => this.normalizeImageUrl(pic?.url || ''))
-                    .filter(Boolean);
-            });
-        }
-
-        collectDynamicImagesFromDom() {
-            const fileSet = new Set();
-            const images = [];
-            const rawImages = document.querySelectorAll(`
-                .opus-module-content img,
-                .article-content img,
-                .bili-rich-text img,
-                .opus-read-content img,
-                .horizontal-scroll-album__indicator__thumbnail img,
-                .horizontal-scroll-album__pic__img img
-            `);
-
-            rawImages.forEach(img => {
-                const src = this.normalizeImageUrl(img.getAttribute('data-src') || img.getAttribute('src') || '');
-                if (!src) return;
-
-                const isNoise = img.closest('.reply-item, .user-face, .avatar, .sub-reply-container, .v-popover');
-                const isEmoji = img.classList.contains('emoji') || src.includes('emote') || src.includes('emoji') || src.includes('garb');
-                const fileName = src.split('/').pop();
-
-                if (!fileSet.has(fileName) && !isNoise && !isEmoji) {
-                    fileSet.add(fileName);
-                    images.push(src);
-                }
-            });
-
-            return images;
-        }
-
-        // 2. 启动阅读器
+        // 2. 鍚姩闃呰鍣?
         start() {
-            const mergedImages = [
-                ...this.collectDynamicImagesFromState(),
-                ...this.collectDynamicImagesFromDom()
-            ];
-            const seen = new Set();
-            this.imgList = mergedImages.filter(src => {
-                const fileName = src.split('/').pop();
-                if (!fileName || seen.has(fileName)) return false;
-                seen.add(fileName);
-                return true;
-            });
+            this.imgList = comicImages.collectImages();
 
-            // 排序纠正保持不变
-            this.imgList.sort((a, b) => {
-                const getTop = (url) => {
-                    const fn = url.split('/').pop();
-                    const el = document.querySelector(`img[src*="${fn}"], img[data-src*="${fn}"]`);
-                    return el ? el.getBoundingClientRect().top + window.scrollY : 0;
-                };
-                return getTop(a) - getTop(b);
-            });
-
-            if (this.imgList.length === 0) return alert('未找到漫画图片');
+            if (this.imgList.length === 0) return alert('\u672a\u627e\u5230\u6f2b\u753b\u56fe\u7247');
 
             this.currentIndex = 0;
             this.lastStep = 2;
             this.isDragging = false;
-            this.animationMode = animations.normalizeAnimationMode(this.animationMode);
+            this.animationMode = normalizeAnimationMode(this.animationMode);
 
-            // 隐藏收藏夹悬浮按钮
+            // 闅愯棌鏀惰棌澶规偓娴寜閽?
             const favBtn = document.getElementById('bilibili-fav-float-btn');
             if (favBtn) favBtn.style.display = 'none';
 
@@ -209,7 +216,7 @@
             this.render();
         }
 
-        // 3. 创建 UI
+        // 3. 鍒涘缓 UI
         createUI() {
             const createBtn = (text, title, className = 'comic-btn') => {
                 const btn = document.createElement('button');
@@ -231,58 +238,80 @@
             this.el.settingsControls = document.createElement('div');
             this.el.settingsControls.className = 'comic-settings-controls';
 
+            this.el.settingsPanel = document.createElement('div');
+            this.el.settingsPanel.className = 'comic-settings-panel';
+            this.el.settingsPanel.setAttribute('aria-hidden', 'true');
+
             const row = document.createElement('div');
-            row.style.cssText = 'display:flex;gap:10px;align-items:center;justify-content:center';
+            row.className = 'comic-reader-row';
             const secondRow = document.createElement('div');
-            secondRow.style.cssText = 'display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap';
+            secondRow.className = 'comic-reader-row comic-reader-row-wrap';
 
             [
-                ['rightBtn', '\u2192', '向右翻页', 'comic-btn'],
-                ['leftBtn', '\u2190', '向左翻页', 'comic-btn'],
-                ['offsetIncBtn', '<', '左移一页', 'comic-btn comic-btn-alt'],
-                ['offsetDecBtn', '>', '右移一页', 'comic-btn comic-btn-alt'],
+                ['rightBtn', '\u2192', '\u5411\u53f3\u7ffb\u9875', 'comic-btn'],
+                ['leftBtn', '\u2190', '\u5411\u5de6\u7ffb\u9875', 'comic-btn'],
+                ['offsetIncBtn', '<', '\u5de6\u79fb\u4e00\u9875', 'comic-btn comic-btn-alt'],
+                ['offsetDecBtn', '>', '\u53f3\u79fb\u4e00\u9875', 'comic-btn comic-btn-alt'],
                 ['directionBtn', '', '', 'comic-btn comic-btn-alt'],
                 ['animationBtn', '', '', 'comic-btn comic-btn-alt'],
                 ['viewModeBtn', '', '', 'comic-btn comic-btn-alt'],
-                ['resetViewBtn', '重置', '重置视图', 'comic-btn comic-btn-alt'],
-                ['screenshotBtn', '截图', '拖动选择截图范围', 'comic-btn comic-btn-alt'],
+                ['imageRenderBtn', '', '', 'comic-btn comic-btn-alt'],
+                ['tapPageBtn', '', '', 'comic-btn comic-btn-alt'],
+                ['resetViewBtn', '\u91cd\u7f6e', '\u91cd\u7f6e\u89c6\u56fe', 'comic-btn comic-btn-alt'],
+                ['screenshotBtn', '\u622a\u56fe', '\u62d6\u52a8\u9009\u62e9\u622a\u56fe\u8303\u56f4', 'comic-btn comic-btn-alt'],
                 ['fullScreenBtn', '', '', 'comic-btn comic-btn-alt'],
                 ['rotateBtn', '', '', 'comic-btn comic-btn-alt'],
-                ['closeBtn', '退出', '退出', 'comic-btn']
+                ['settingsBtn', '\u8bbe\u7f6e', '\u6253\u5f00\u9605\u8bfb\u5668\u8bbe\u7f6e', 'comic-btn comic-btn-alt'],
+                ['closeBtn', '\u9000\u51fa', '\u9000\u51fa', 'comic-btn']
             ].forEach(([key, text, title, style]) => {
                 this.el[key] = createBtn(text, title, style);
             });
 
             this.el.pageInfo = document.createElement('span');
-            this.el.pageInfo.style.cssText = 'font-size:14px;cursor:pointer;padding:0 8px';
-            this.el.pageInfo.title = '点击跳转指定页码';
+            this.el.pageInfo.className = 'comic-page-info';
+            this.el.pageInfo.title = '\u70b9\u51fb\u8f93\u5165\u9875\u7801';
+
+            this.el.pageDisplay = document.createElement('span');
+            this.el.pageDisplay.className = 'comic-page-display';
+
+            this.el.pageInput = document.createElement('input');
+            this.el.pageInput.className = 'comic-page-input';
+            this.el.pageInput.type = 'text';
+            this.el.pageInput.inputMode = 'numeric';
+            this.el.pageInput.pattern = '[0-9]*';
+            this.el.pageInput.autocomplete = 'off';
+            this.el.pageInput.spellcheck = false;
+            this.el.pageInput.title = '\u8f93\u5165\u9875\u7801\u540e\u56de\u8f66\u8df3\u8f6c';
+
+            this.el.pageRange = document.createElement('span');
+            this.el.pageRange.className = 'comic-page-range';
+            this.el.pageInfo.append(this.el.pageDisplay, this.el.pageInput, this.el.pageRange);
 
             this.el.toast = document.createElement('div');
             this.el.toast.className = 'comic-toast';
-            this.el.toast.style.cssText = 'top:18px;background:rgba(30,30,30,0.92);opacity:0';
 
             this.el.selectionOverlay = document.createElement('div');
-            this.el.selectionOverlay.style.cssText = 'position:fixed;inset:0;z-index:10003;display:none;cursor:crosshair;touch-action:none;background:rgba(10,10,10,0.01)';
+            this.el.selectionOverlay.className = 'comic-selection-overlay';
 
             this.el.selectionHint = document.createElement('div');
-            this.el.selectionHint.style.cssText = 'position:fixed;top:18px;left:50%;transform:translateX(-50%);padding:8px 14px;border-radius:999px;background:rgba(15,15,15,0.92);color:#fff;font-size:13px;pointer-events:none';
-            this.el.selectionHint.textContent = '拖动选择截图范围，完成后点击保存';
+            this.el.selectionHint.className = 'comic-selection-hint';
+            this.el.selectionHint.textContent = '\u62d6\u52a8\u9009\u62e9\u622a\u56fe\u8303\u56f4\uff0c\u5b8c\u6210\u540e\u70b9\u51fb\u4fdd\u5b58';
 
             this.el.selectionToolbar = document.createElement('div');
-            this.el.selectionToolbar.style.cssText = 'position:fixed;top:18px;right:18px;display:flex;gap:10px;align-items:center';
+            this.el.selectionToolbar.className = 'comic-selection-toolbar';
 
             this.el.selectionCancelBtn = document.createElement('button');
             this.el.selectionCancelBtn.type = 'button';
-            this.el.selectionCancelBtn.innerText = '取消截图';
-            this.el.selectionCancelBtn.style.cssText = 'padding:10px 14px;border:none;border-radius:999px;background:#d33;color:#fff;font-size:13px;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.25)';
+            this.el.selectionCancelBtn.innerText = '\u53d6\u6d88\u622a\u56fe';
+            this.el.selectionCancelBtn.className = 'comic-selection-action comic-selection-cancel';
 
             this.el.selectionSaveBtn = document.createElement('button');
             this.el.selectionSaveBtn.type = 'button';
-            this.el.selectionSaveBtn.innerText = '保存截图';
-            this.el.selectionSaveBtn.style.cssText = 'padding:10px 14px;border:none;border-radius:999px;background:#fb7299;color:#fff;font-size:13px;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.25)';
+            this.el.selectionSaveBtn.innerText = '\u4fdd\u5b58\u622a\u56fe';
+            this.el.selectionSaveBtn.className = 'comic-selection-action comic-selection-save';
 
             this.el.selectionBox = document.createElement('div');
-            this.el.selectionBox.style.cssText = 'position:absolute;display:none;border:2px dashed #fb7299;background:rgba(251,114,153,0.18);box-shadow:0 0 0 1px rgba(255,255,255,0.25) inset;pointer-events:none';
+            this.el.selectionBox.className = 'comic-selection-box';
 
             const handleCursors = {
                 nw: 'nwse-resize', n: 'ns-resize', ne: 'nesw-resize',
@@ -293,7 +322,7 @@
                 const h = document.createElement('div');
                 h.className = 'comic-sel-handle';
                 h.dataset.dir = dir;
-                h.style.cssText = `position:absolute;width:12px;height:12px;background:#fb7299;border:2px solid #fff;border-radius:50%;cursor:${cursor};pointer-events:auto;display:none;z-index:1;box-shadow:0 1px 4px rgba(0,0,0,0.4);transform:translate(-50%,-50%)`;
+                h.style.cursor = cursor;
                 this.el.selectionBox.appendChild(h);
                 this.selectionHandles[dir] = h;
             }
@@ -301,37 +330,78 @@
             this.el.selectionToolbar.append(this.el.selectionSaveBtn, this.el.selectionCancelBtn);
             this.el.selectionOverlay.append(this.el.selectionHint, this.el.selectionToolbar, this.el.selectionBox);
 
+            const createSettingsRow = (title, desc, control) => {
+                const item = document.createElement('div');
+                item.className = 'comic-settings-item';
+                const copy = document.createElement('div');
+                copy.className = 'comic-settings-copy';
+                const titleEl = document.createElement('div');
+                titleEl.className = 'comic-settings-title';
+                titleEl.textContent = title;
+                const descEl = document.createElement('div');
+                descEl.className = 'comic-settings-desc';
+                descEl.textContent = desc;
+                const action = document.createElement('div');
+                action.className = 'comic-settings-action';
+                copy.append(titleEl, descEl);
+                action.append(control);
+                item.append(copy, action);
+                return item;
+            };
+
+            const settingsHeader = document.createElement('div');
+            settingsHeader.className = 'comic-settings-panel-header';
+            const settingsTitle = document.createElement('div');
+            settingsTitle.className = 'comic-settings-panel-title';
+            settingsTitle.textContent = '\u9605\u8bfb\u8bbe\u7f6e';
+            const settingsDesc = document.createElement('div');
+            settingsDesc.className = 'comic-settings-panel-desc';
+            settingsDesc.textContent = '\u8c03\u6574\u663e\u793a\u3001\u7ffb\u9875\u548c\u9605\u8bfb\u4e60\u60ef\uff0c\u66f4\u6539\u4f1a\u81ea\u52a8\u4fdd\u5b58\u3002';
+            settingsHeader.append(settingsTitle, settingsDesc);
+
             row.append(this.el.leftBtn, this.el.offsetIncBtn, this.el.pageInfo, this.el.offsetDecBtn, this.el.rightBtn);
-            secondRow.append(this.el.directionBtn, this.el.resetViewBtn, this.el.fullScreenBtn);
+            secondRow.append(this.el.resetViewBtn, this.el.fullScreenBtn);
             this.el.controls.append(row, secondRow);
 
-            // 右上角设置按钮横向排列(退出在最上面)
-            this.el.settingsControls.append(this.el.closeBtn, this.el.screenshotBtn, this.el.rotateBtn, this.el.animationBtn, this.el.viewModeBtn);
+            // 鍙充笂瑙掕缃寜閽í鍚戞帓鍒?閫€鍑哄湪鏈€涓婇潰)
+            this.el.settingsControls.append(this.el.closeBtn, this.el.screenshotBtn, this.el.rotateBtn, this.el.settingsBtn);
+            this.el.settingsPanel.append(
+                settingsHeader,
+                createSettingsRow('\u663e\u793a\u8d28\u91cf', '\u539f\u56fe\u4fdd\u7559\u7ec6\u8282\uff0c\u6d41\u7545\u51cf\u5c11\u7eb9\u7406\u95ea\u70c1\u3002', this.el.imageRenderBtn),
+                createSettingsRow('\u7ffb\u9875\u52a8\u753b', '\u5728\u65e0\u52a8\u753b\u3001\u5e73\u6ed1\u548c\u6de1\u5165\u4e4b\u95f4\u5207\u6362\u3002', this.el.animationBtn),
+                createSettingsRow('\u663e\u793a\u5f20\u6570', '\u81ea\u52a8\u5224\u65ad\u5355\u56fe\u6216\u53cc\u56fe\uff0c\u4e5f\u53ef\u624b\u52a8\u6307\u5b9a\u3002', this.el.viewModeBtn),
+                createSettingsRow('\u70b9\u51fb\u7ffb\u9875\uff08\u4ec5\u79fb\u52a8\u7aef\uff09', '\u63a7\u5236\u70b9\u51fb\u5c4f\u5e55\u5de6\u53f3\u533a\u57df\u662f\u5426\u7ffb\u9875\u3002', this.el.tapPageBtn),
+                createSettingsRow('\u9605\u8bfb\u65b9\u5411', '\u9002\u914d\u4ece\u53f3\u5f80\u5de6\u6216\u4ece\u5de6\u5f80\u53f3\u7684\u9605\u8bfb\u4e60\u60ef\u3002', this.el.directionBtn)
+            );
 
-            this.el.reader.append(this.el.imgContainer, this.el.controls, this.el.settingsControls, this.el.toast, this.el.selectionOverlay);
+            this.el.reader.append(this.el.imgContainer, this.el.controls, this.el.settingsControls, this.el.settingsPanel, this.el.toast, this.el.selectionOverlay);
 
             document.body.appendChild(this.el.reader);
             this.updateDirection();
             this.syncDirectionButton();
             animations.syncAnimationButton(this.el.animationBtn, this.animationMode);
             this.syncViewModeButton();
+            this.syncImageRenderButton();
+            this.syncTapPageButton();
             this.syncRotateButton();
             this.syncFullscreenButton();
             this.applyResponsiveLayout();
         }
 
-        // 4. 绑定事件
+        // 4. 缁戝畾浜嬩欢
         bindEvents() {
             const stop = (handler) => (e) => {
                 e.stopPropagation();
                 handler();
             };
 
-            // Controls visibility — only the panels trigger show/hide, images don't
+            // Controls visibility 鈥?only the panels trigger show/hide, images don't
             this.el.controls.addEventListener('mouseenter', () => this.showControls());
             this.el.settingsControls.addEventListener('mouseenter', () => this.showControls());
+            this.el.settingsPanel.addEventListener('mouseenter', () => this.showControls());
             this.el.controls.addEventListener('mouseleave', () => this.scheduleHideControls());
             this.el.settingsControls.addEventListener('mouseleave', () => this.scheduleHideControls());
+            this.el.settingsPanel.addEventListener('mouseleave', () => this.scheduleHideControls());
             this.el.reader.addEventListener('mouseleave', () => this.scheduleHideControls());
 
             this.el.leftBtn.onclick = (e) => this.turnPage(e, this.isRightToLeft ? this.lastStep : -this.lastStep);
@@ -344,19 +414,40 @@
                 this.isRightToLeft = !this.isRightToLeft;
                 this.updateDirection();
                 this.syncDirectionButton();
+                this.savePreferences();
             });
 
             this.el.animationBtn.onclick = stop(() => {
                 this.animationMode = animations.getNextAnimationMode(this.animationMode);
                 animations.syncAnimationButton(this.el.animationBtn, this.animationMode);
+                this.savePreferences();
             });
 
             this.el.viewModeBtn.onclick = stop(() => {
                 const currentIdx = VIEW_MODES.indexOf(this.viewMode);
                 this.viewMode = VIEW_MODES[(currentIdx + 1) % VIEW_MODES.length];
                 this.syncViewModeButton();
+                this.savePreferences();
                 this.render(false);
             });
+
+            this.el.imageRenderBtn.onclick = stop(() => {
+                const currentIdx = IMAGE_RENDER_MODES.indexOf(this.imageRenderMode);
+                this.imageRenderMode = IMAGE_RENDER_MODES[(currentIdx + 1) % IMAGE_RENDER_MODES.length];
+                this.syncImageRenderButton();
+                this.savePreferences();
+                this.applyImageRenderMode();
+                this.showReaderMessage(this.imageRenderMode === 'sharp' ? '\u539f\u56fe\u6a21\u5f0f' : '\u6d41\u7545\u6a21\u5f0f');
+            });
+
+            this.el.tapPageBtn.onclick = stop(() => {
+                this.tapPageNavigation = !this.tapPageNavigation;
+                this.syncTapPageButton();
+                this.savePreferences();
+                this.showReaderMessage(this.tapPageNavigation ? '\u70b9\u51fb\u7ffb\u9875\u5df2\u5f00\u542f' : '\u70b9\u51fb\u7ffb\u9875\u5df2\u5173\u95ed');
+            });
+
+            this.el.settingsBtn.onclick = stop(() => this.toggleSettingsPanel());
 
             this.el.resetViewBtn.onclick = stop(() => this.resetTransform());
             this.el.screenshotBtn.onclick = stop(() => this.startScreenshotSelection());
@@ -371,46 +462,75 @@
 
             this.el.closeBtn.onclick = () => this.close();
 
-            // 页码跳转
-            this.el.pageInfo.onclick = stop(() => this.showJumpDialog());
+            // 椤电爜璺宠浆
+            this.el.pageInfo.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.showPageInput();
+            });
+            this.el.pageInput.addEventListener('focus', () => this.el.pageInput.select());
+            this.el.pageInput.addEventListener('keydown', (e) => {
+                e.stopPropagation();
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.jumpToPageFromInput();
+                    this.el.pageInput.blur();
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    this.hidePageInput();
+                    this.el.pageInput.blur();
+                }
+            });
+            this.el.pageInput.addEventListener('blur', () => this.jumpToPageFromInput());
             this.el.selectionCancelBtn.onclick = () => this.cancelScreenshotSelection(true);
             this.el.selectionSaveBtn.onclick = () => { void this.saveSelectionScreenshot(); };
             this.el.selectionOverlay.addEventListener('pointerdown', this.handleSelectionPointerDown);
             this.el.selectionOverlay.addEventListener('pointermove', this.handleSelectionPointerMove);
             this.el.selectionOverlay.addEventListener('pointerup', this.handleSelectionPointerUp);
             this.el.selectionOverlay.addEventListener('pointercancel', this.handleSelectionPointerUp);
+            this.el.reader.addEventListener('pointerdown', this.handleSettingsOutsidePointerDown, true);
 
-            // 图片容器事件 (翻页与拖拽起冲突)
+            // 鍥剧墖瀹瑰櫒浜嬩欢 (缈婚〉涓庢嫋鎷借捣鍐茬獊)
             this.el.imgContainer.addEventListener('wheel', (e) => {
                 e.preventDefault();
                 this.animateTransform();
-                this.scale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, this.scale + (e.deltaY > 0 ? -SCALE_STEP : SCALE_STEP)));
-                this.applyTransform();
+                this.zoomAt(e.clientX, e.clientY, this.scale + (e.deltaY > 0 ? -SCALE_STEP : SCALE_STEP));
             }, { passive: false });
 
-            this.el.imgContainer.addEventListener('mousedown', (e) => {
+            this.el.imgContainer.addEventListener('dblclick', (e) => {
                 e.preventDefault();
+                this.animateTransform(220);
+                if (Math.abs(this.scale - 1) < 0.05) {
+                    this.zoomAt(e.clientX, e.clientY, this.getDoubleClickScale());
+                    return;
+                }
+                this.resetScaleAndPan();
+            });
+
+            this.el.imgContainer.addEventListener('mousedown', (e) => {
+                if (e.button !== 0) return;
+                e.preventDefault();
+                this.setTransformTransition('none');
                 this.isDragging = true;
                 this.initX = this.translateX;
                 this.initY = this.translateY;
                 this.startX = e.clientX;
                 this.startY = e.clientY;
-                this.el.imgContainer.style.cursor = 'grabbing';
+                this.el.imgContainer.classList.add('is-grabbing');
             });
 
             this.el.imgContainer.addEventListener('mouseleave', () => {
                 this.isDragging = false;
-                this.el.imgContainer.style.cursor = 'grab';
+                this.el.imgContainer.classList.remove('is-grabbing');
             });
 
-            // 注册全局事件 (需要在退出时清理)
+            // 娉ㄥ唽鍏ㄥ眬浜嬩欢 (闇€瑕佸湪閫€鍑烘椂娓呯悊)
             document.addEventListener('mousemove', this.handleMouseMove);
             document.addEventListener('mouseup', this.handleMouseUp);
             document.addEventListener('fullscreenchange', this.handleFullscreenChange);
             window.addEventListener('keydown', this.handleKeyDown);
             window.addEventListener('resize', this.handleResize);
 
-            // 触摸滑动事件（使用已经绑定的函数引用，便于后续解绑）
+            // 瑙︽懜婊戝姩浜嬩欢锛堜娇鐢ㄥ凡缁忕粦瀹氱殑鍑芥暟寮曠敤锛屼究浜庡悗缁В缁戯級
             this.el.reader.addEventListener('touchstart', this.boundHandleTouchStart, { passive: false });
             this.el.reader.addEventListener('touchmove', this.boundHandleTouchMove, { passive: false });
             this.el.reader.addEventListener('touchend', this.boundHandleTouchEnd, { passive: false });
@@ -420,52 +540,105 @@
 
         syncDirectionButton() {
             const dir = this.isRightToLeft;
-            this.el.directionBtn.innerText = dir ? '从右往左' : '从左往右';
-            this.el.directionBtn.title = dir ? '当前：从右往左' : '当前：从左往右';
+            this.el.directionBtn.innerText = dir ? '\u4ece\u53f3\u5f80\u5de6 \u2190' : '\u4ece\u5de6\u5f80\u53f3 \u2192';
+            this.el.directionBtn.title = dir ? '\u5f53\u524d\uff1a\u4ece\u53f3\u5f80\u5de6' : '\u5f53\u524d\uff1a\u4ece\u5de6\u5f80\u53f3';
         }
 
         syncViewModeButton() {
-            const map = { auto: ['自动', '视图模式：自动'], single: ['单图', '视图模式：单图'], double: ['双图', '视图模式：双图'] };
+            const map = {
+                auto: ['\u81ea\u52a8', '\u89c6\u56fe\u6a21\u5f0f\uff1a\u81ea\u52a8'],
+                single: ['\u5355\u56fe', '\u89c6\u56fe\u6a21\u5f0f\uff1a\u5355\u56fe'],
+                double: ['\u53cc\u56fe', '\u89c6\u56fe\u6a21\u5f0f\uff1a\u53cc\u56fe']
+            };
             const [text, title] = map[this.viewMode] || map.auto;
             Object.assign(this.el.viewModeBtn, { innerText: text, title });
         }
 
+        syncImageRenderButton() {
+            const sharp = this.imageRenderMode === 'sharp';
+            this.el.imageRenderBtn.innerText = sharp ? '\u539f\u56fe' : '\u6d41\u7545';
+            this.el.imageRenderBtn.title = sharp
+                ? '\u663e\u793a\u6a21\u5f0f\uff1a\u539f\u56fe\uff08\u7ec6\u8282\u66f4\u597d\uff0c\u53ef\u80fd\u6709\u6469\u5c14\u7eb9\uff09'
+                : '\u663e\u793a\u6a21\u5f0f\uff1a\u6d41\u7545\uff08\u6469\u5c14\u7eb9\u66f4\u5c11\uff0c\u653e\u5927\u540e\u7ec6\u8282\u7a0d\u8f6f\uff09';
+            this.el.imageRenderBtn.classList.toggle('active', sharp);
+        }
+
+        syncTapPageButton() {
+            const enabled = Boolean(this.tapPageNavigation);
+            this.el.tapPageBtn.innerText = enabled ? '\u70b9\u51fb\u7ffb\u9875' : '\u70b9\u51fb\u5173\u95ed';
+            this.el.tapPageBtn.title = enabled
+                ? '\u70b9\u51fb\u5c4f\u5e55\u5de6\u53f3\u533a\u57df\u7ffb\u9875\uff08\u6ed1\u52a8\u7ffb\u9875\u59cb\u7ec8\u5f00\u542f\uff09'
+                : '\u70b9\u51fb\u5c4f\u5e55\u4e0d\u7ffb\u9875\uff08\u6ed1\u52a8\u7ffb\u9875\u59cb\u7ec8\u5f00\u542f\uff09';
+            this.el.tapPageBtn.classList.toggle('active', enabled);
+        }
+
         syncRotateButton() {
             const rot = this.rotation;
-            this.el.rotateBtn.innerText = rot === 0 ? '旋转' : `${rot}度`;
-            this.el.rotateBtn.title = rot === 0 ? '旋转90度' : `当前旋转：${rot}度`;
+            this.el.rotateBtn.innerText = rot === 0 ? '\u65cb\u8f6c' : `${rot}\u5ea6`;
+            this.el.rotateBtn.title = rot === 0 ? '\u65cb\u8f6c90\u5ea6' : `\u5f53\u524d\u65cb\u8f6c\uff1a${rot}\u5ea6`;
         }
 
         syncFullscreenButton() {
             if (this.el.fullScreenBtn) {
-                this.el.fullScreenBtn.innerText = document.fullscreenElement ? '退出全屏' : '全屏';
+                this.el.fullScreenBtn.innerText = document.fullscreenElement ? '\u9000\u51fa\u5168\u5c4f' : '\u5168\u5c4f';
                 this.el.fullScreenBtn.title = this.el.fullScreenBtn.innerText;
             }
         }
 
+        isSettingsPanelVisible() {
+            return Boolean(this.el.settingsPanel?.classList.contains('show'));
+        }
+
+        toggleSettingsPanel() {
+            if (this.isSettingsPanelVisible()) {
+                this.hideSettingsPanel();
+                return;
+            }
+            this.showControls();
+            this.el.settingsPanel.classList.add('show');
+            this.el.settingsPanel.setAttribute('aria-hidden', 'false');
+            this.el.settingsBtn.classList.add('active');
+        }
+
+        hideSettingsPanel() {
+            if (!this.el.settingsPanel) return;
+            this.el.settingsPanel.classList.remove('show');
+            this.el.settingsPanel.setAttribute('aria-hidden', 'true');
+            this.el.settingsBtn?.classList.remove('active');
+        }
+
+        handleSettingsOutsidePointerDown(e) {
+            if (!this.isSettingsPanelVisible()) return;
+            const target = e.target instanceof Element ? e.target : null;
+            if (target && (this.el.settingsPanel.contains(target) || this.el.settingsBtn.contains(target))) return;
+            this.hideSettingsPanel();
+        }
+
         toggleFullscreen() {
+            if (!this.el.reader?.requestFullscreen || document.fullscreenEnabled === false) {
+                this.showReaderMessage('\u5f53\u524d\u6d4f\u89c8\u5668\u4e0d\u652f\u6301\u7f51\u9875\u5168\u5c4f', true, 2600);
+                return;
+            }
             if (!document.fullscreenElement) {
-                this.el.reader.requestFullscreen().catch(() => { });
+                this.el.reader.requestFullscreen().catch(() => {
+                    this.showReaderMessage('\u5168\u5c4f\u5f00\u542f\u5931\u8d25\uff0c\u53ef\u80fd\u53d7\u6d4f\u89c8\u5668\u9650\u5236', true, 2600);
+                });
             } else {
-                document.exitFullscreen();
+                document.exitFullscreen().catch(() => {
+                    this.showReaderMessage('\u9000\u51fa\u5168\u5c4f\u5931\u8d25', true, 2200);
+                });
             }
         }
 
         isCompactViewport() {
-            return window.innerWidth < MOBILE_BREAKPOINT;
+            return window.innerWidth < MOBILE_BREAKPOINT || this.isTouchDevice;
         }
 
         applyResponsiveLayout() {
             this.isCompactLayout = this.isCompactViewport();
-            const c = this.isCompactLayout;
-            this.el.reader.classList.toggle('reader-compact', c);
-            Object.assign(this.el.toast.style, { top: c ? '12px' : '18px', maxWidth: c ? 'calc(100vw - 24px)' : 'none' });
-            Object.assign(this.el.selectionHint.style, { top: c ? '12px' : '18px', maxWidth: c ? 'calc(100vw - 120px)' : 'none', fontSize: c ? '12px' : '13px' });
-            Object.assign(this.el.selectionToolbar.style, { top: c ? '12px' : '18px', right: c ? '12px' : '18px' });
-            [this.el.selectionSaveBtn, this.el.selectionCancelBtn].forEach(btn => {
-                btn.style.padding = c ? '10px 12px' : '10px 14px';
-                btn.style.fontSize = c ? '12px' : '13px';
-            });
+            this.el.reader.classList.toggle('reader-compact', this.isCompactLayout);
+            this.updateFitScale();
+            this.applyTransform();
         }
 
         setSelectionHint(text) {
@@ -492,10 +665,7 @@
         updateSelectionActions() {
             const hasSelection = this.hasValidSelection();
             this.el.selectionSaveBtn.disabled = !hasSelection;
-            Object.assign(this.el.selectionSaveBtn.style, {
-                opacity: hasSelection ? '1' : '0.45',
-                cursor: hasSelection ? 'pointer' : 'not-allowed'
-            });
+            this.el.selectionSaveBtn.classList.toggle('is-disabled', !hasSelection);
         }
 
         updateSelectionBox() {
@@ -544,8 +714,9 @@
             this.pageFlipToken += 1;
             this.selectionWasControlsVisible = this.controlsVisible;
             this.clearSelectionBox();
+            this.hideSettingsPanel();
             this.el.selectionOverlay.style.display = 'block';
-            this.setSelectionHint('拖动选择截图范围，完成后点击保存');
+            this.setSelectionHint('\u62d6\u52a8\u9009\u62e9\u622a\u56fe\u8303\u56f4\uff0c\u5b8c\u6210\u540e\u70b9\u51fb\u4fdd\u5b58');
             this.hideControls();
             if (this.hideTimer) clearTimeout(this.hideTimer);
         }
@@ -555,9 +726,9 @@
             this.isSelectingScreenshot = false;
             this.clearSelectionBox();
             this.el.selectionOverlay.style.display = 'none';
-            this.setSelectionHint('拖动选择截图范围，完成后点击保存');
+            this.setSelectionHint('\u62d6\u52a8\u9009\u62e9\u622a\u56fe\u8303\u56f4\uff0c\u5b8c\u6210\u540e\u70b9\u51fb\u4fdd\u5b58');
             if (restoreControls) { this.selectionWasControlsVisible ? this.showControls() : this.hideControls(); }
-            if (showMessage) this.showReaderMessage('已取消截图');
+            if (showMessage) this.showReaderMessage('\u5df2\u53d6\u6d88\u622a\u56fe');
         }
 
         handleSelectionPointerDown(e) {
@@ -569,7 +740,7 @@
             if (handle && this.hasValidSelection()) {
                 this.resizeDirection = handle.dataset.dir;
                 this.isDraggingSelection = true;
-                this.setSelectionHint('拖动边角调整选区范围');
+                this.setSelectionHint('\u62d6\u52a8\u8fb9\u89d2\u8c03\u6574\u9009\u533a\u8303\u56f4');
                 this.el.selectionOverlay.setPointerCapture?.(e.pointerId);
                 return;
             }
@@ -582,7 +753,7 @@
             this.selectionCurrent = this.selectionStart;
             this.updateSelectionBox();
             this.updateSelectionActions();
-            this.setSelectionHint('拖动选择截图范围，完成后拖动边角微调');
+            this.setSelectionHint('\u62d6\u52a8\u9009\u62e9\u622a\u56fe\u8303\u56f4\uff0c\u5b8c\u6210\u540e\u62d6\u52a8\u8fb9\u89d2\u5fae\u8c03');
             this.el.selectionOverlay.setPointerCapture?.(e.pointerId);
         }
 
@@ -623,16 +794,16 @@
             this.updateSelectionActions();
 
             if (this.hasValidSelection()) {
-                this.setSelectionHint('选区已就绪 — 拖动边角微调，或点击保存');
+                this.setSelectionHint('\u9009\u533a\u5df2\u5c31\u7eea\uff0c\u62d6\u52a8\u8fb9\u89d2\u5fae\u8c03\uff0c\u6216\u70b9\u51fb\u4fdd\u5b58');
             } else {
                 this.clearSelectionBox();
-                this.setSelectionHint('选区太小，请重新拖动选择');
+                this.setSelectionHint('\u9009\u533a\u592a\u5c0f\uff0c\u8bf7\u91cd\u65b0\u62d6\u52a8\u9009\u62e9');
             }
         }
 
         async saveSelectionScreenshot() {
             if (!this.hasValidSelection()) {
-                this.showReaderMessage('请先拖动选出截图范围', true);
+                this.showReaderMessage('\u8bf7\u5148\u62d6\u52a8\u9009\u51fa\u622a\u56fe\u8303\u56f4', true);
                 return;
             }
 
@@ -643,24 +814,25 @@
         }
 
         setControlsOpacity(opacity) {
-            this.el.controls.style.opacity = opacity;
-            this.el.settingsControls.style.opacity = opacity;
+            const hidden = opacity === '0';
+            this.el.controls.classList.toggle('is-hidden', hidden);
+            this.el.settingsControls.classList.toggle('is-hidden', hidden);
+            if (hidden) this.hideSettingsPanel();
         }
 
         showControls() {
             if (this.hideTimer) { clearTimeout(this.hideTimer); this.hideTimer = null; }
             if (!this.controlsVisible) this.setControlsOpacity('1');
             this.controlsVisible = true;
-            this.el.reader.style.cursor = 'default';
         }
 
         hideControls() {
             this.controlsVisible = false;
             this.setControlsOpacity('0');
-            if (!this.isTouchDevice) this.el.reader.style.cursor = 'none';
         }
 
         scheduleHideControls() {
+            if (this.isSettingsPanelVisible()) return;
             if (this.hideTimer) clearTimeout(this.hideTimer);
             this.hideTimer = setTimeout(() => this.hideControls(), this.isTouchDevice ? 1000 : 500);
         }
@@ -668,16 +840,18 @@
         showReaderMessage(text, isError = false, duration = 2200) {
             if (!this.el.toast) return;
             if (this.messageTimer) clearTimeout(this.messageTimer);
-            Object.assign(this.el.toast.style, { background: isError ? 'rgba(180, 40, 40, 0.94)' : 'rgba(30,30,30,0.92)', opacity: '1' });
+            this.el.toast.classList.toggle('is-error', isError);
+            this.el.toast.classList.add('is-visible');
             this.el.toast.textContent = text;
-            this.messageTimer = setTimeout(() => { this.el.toast.style.opacity = '0'; }, duration);
+            this.messageTimer = setTimeout(() => { this.el.toast.classList.remove('is-visible'); }, duration);
         }
 
         isInteractiveTouchTarget(target) {
             const el = target instanceof Element ? target : null;
             return el?.closest('button, a, input, textarea, select')
                 || this.el.controls.contains(el)
-                || this.el.settingsControls.contains(el);
+                || this.el.settingsControls.contains(el)
+                || this.el.settingsPanel.contains(el);
         }
 
         handleResize() {
@@ -685,7 +859,23 @@
             this.applyResponsiveLayout();
         }
 
-        handleTapNavigation() {
+        handleTapNavigation(clientX) {
+            if (!this.isTouchDevice || !this.el.reader) {
+                this.controlsVisible ? this.hideControls() : this.showControls();
+                return;
+            }
+
+            const rect = this.el.reader.getBoundingClientRect();
+            const x = clientX - rect.left;
+            if (this.tapPageNavigation && x < rect.width * TAP_ZONE_RATIO) {
+                this.turnPage(null, this.isRightToLeft ? this.lastStep : -this.lastStep);
+                return;
+            }
+            if (this.tapPageNavigation && x > rect.width * (1 - TAP_ZONE_RATIO)) {
+                this.turnPage(null, this.isRightToLeft ? -this.lastStep : this.lastStep);
+                return;
+            }
+
             this.controlsVisible ? this.hideControls() : this.showControls();
         }
 
@@ -695,8 +885,39 @@
             this.pendingTapTimer = null;
         }
 
+        handleSingleFingerTap(clientX, clientY) {
+            const now = Date.now();
+            const isDoubleTap = now - this.lastTapTime < DOUBLE_TAP_DELAY
+                && Math.abs(clientX - this.lastTapX) < 36
+                && Math.abs(clientY - this.lastTapY) < 36;
+
+            this.clearPendingTap();
+            if (isDoubleTap) {
+                this.lastTapTime = 0;
+                this.lastTapX = 0;
+                this.lastTapY = 0;
+                this.animateTransform(220);
+                if (Math.abs(this.scale - 1) < 0.05) {
+                    this.zoomAt(clientX, clientY, this.getDoubleClickScale());
+                    this.touchPanLocked = this.scale > 1 + TOUCH_ZOOM_EPSILON;
+                    return;
+                }
+                this.resetScaleAndPan();
+                this.touchPanLocked = false;
+                return;
+            }
+
+            this.lastTapTime = now;
+            this.lastTapX = clientX;
+            this.lastTapY = clientY;
+            this.pendingTapTimer = setTimeout(() => {
+                this.pendingTapTimer = null;
+                this.handleTapNavigation(clientX);
+            }, TAP_DELAY);
+        }
+
         isTouchPanMode() {
-            return this.touchPanLocked;
+            return this.touchPanLocked && this.scale > 1 + TOUCH_ZOOM_EPSILON;
         }
 
         setTransformTransition(value) {
@@ -711,6 +932,195 @@
                 this.transformTransitionTimer = null;
                 this.setTransformTransition('none');
             }, duration);
+        }
+
+        getImageGap() {
+            if (!this.el.imgContainer) return 0;
+            const styles = window.getComputedStyle(this.el.imgContainer);
+            const gap = parseFloat(styles.columnGap || styles.gap || '0');
+            return Number.isFinite(gap) ? gap : 0;
+        }
+
+        isSharpRenderMode() {
+            return this.imageRenderMode === 'sharp';
+        }
+
+        getEffectiveImageSize(img) {
+            const naturalWidth = img.naturalWidth || img.width || 0;
+            const naturalHeight = img.naturalHeight || img.height || 0;
+            const rotated = this.rotation === 90 || this.rotation === 270;
+            return {
+                width: rotated ? naturalHeight : naturalWidth,
+                height: rotated ? naturalWidth : naturalHeight
+            };
+        }
+
+        getSharpDisplaySizes(images, isFull) {
+            const naturalSizes = images.map(img => this.getEffectiveImageSize(img));
+            if (isFull || naturalSizes.length < 2) return naturalSizes;
+
+            const targetHeight = Math.max(...naturalSizes.map(size => size.height || 0));
+            if (!targetHeight) return naturalSizes;
+
+            return naturalSizes.map(size => {
+                if (!size.width || !size.height) return size;
+                const ratio = targetHeight / size.height;
+                return {
+                    width: size.width * ratio,
+                    height: targetHeight
+                };
+            });
+        }
+
+        getDisplayedImageSize(img) {
+            const displayWidth = Number.parseFloat(img.dataset.displayWidth || '');
+            const displayHeight = Number.parseFloat(img.dataset.displayHeight || '');
+            if (Number.isFinite(displayWidth) && displayWidth > 0
+                && Number.isFinite(displayHeight) && displayHeight > 0) {
+                return { width: displayWidth, height: displayHeight };
+            }
+            return this.getEffectiveImageSize(img);
+        }
+
+        updateFitScale(images = Array.from(this.el.imgContainer?.querySelectorAll('img') || [])) {
+            if (!this.isSharpRenderMode()) {
+                this.fitScale = 1;
+                this.contentNaturalWidth = 0;
+                this.contentNaturalHeight = 0;
+                return;
+            }
+
+            const readerRect = this.el.reader?.getBoundingClientRect();
+            if (!readerRect || !images.length) {
+                this.fitScale = 1;
+                this.contentNaturalWidth = 0;
+                this.contentNaturalHeight = 0;
+                return;
+            }
+
+            const sizes = images.map(img => this.getDisplayedImageSize(img));
+            const gap = this.getImageGap() * Math.max(0, images.length - 1);
+            const width = sizes.reduce((sum, size) => sum + size.width, 0) + gap;
+            const height = Math.max(...sizes.map(size => size.height));
+
+            this.contentNaturalWidth = width;
+            this.contentNaturalHeight = height;
+            if (!width || !height || !readerRect.width || !readerRect.height) {
+                this.fitScale = 1;
+                return;
+            }
+
+            this.fitScale = Math.min(1, readerRect.width / width, readerRect.height / height);
+        }
+
+        getRenderScale(scale = this.scale) {
+            return Math.max(0.001, this.fitScale * scale);
+        }
+
+        getMaxScale() {
+            if (!this.fitScale) return MAX_SCALE;
+            return Math.max(MAX_SCALE, MAX_RENDER_SCALE / this.fitScale);
+        }
+
+        getDoubleClickScale() {
+            if (!this.fitScale) return DOUBLE_CLICK_SCALE;
+            return Math.min(this.getMaxScale(), Math.max(DOUBLE_CLICK_SCALE, 1 / this.fitScale));
+        }
+
+        applyImageRenderMode() {
+            const images = Array.from(this.el.imgContainer?.querySelectorAll('img') || []);
+            const isFull = images.length === 1;
+            const displaySizes = this.isSharpRenderMode()
+                ? this.getSharpDisplaySizes(images, isFull)
+                : [];
+            images.forEach((img, index) => this.setupImg(img, isFull, displaySizes[index]));
+            this.scale = 1;
+            this.translateX = 0;
+            this.translateY = 0;
+            this.updateFitScale(images);
+            this.applyTransform();
+        }
+
+        getImageBounds() {
+            if (!this.el.imgContainer) return null;
+            const images = Array.from(this.el.imgContainer.querySelectorAll('img'));
+            if (!images.length) return null;
+            const containerRect = this.el.reader?.getBoundingClientRect()
+                || this.el.imgContainer.getBoundingClientRect();
+            const imageRects = images.map(img => img.getBoundingClientRect());
+            const left = Math.min(...imageRects.map(rect => rect.left));
+            const right = Math.max(...imageRects.map(rect => rect.right));
+            const top = Math.min(...imageRects.map(rect => rect.top));
+            const bottom = Math.max(...imageRects.map(rect => rect.bottom));
+            return {
+                containerRect,
+                left,
+                right,
+                top,
+                bottom,
+                width: right - left,
+                height: bottom - top
+            };
+        }
+
+        getPanLimits() {
+            const bounds = this.getImageBounds();
+            if (!bounds || this.scale <= 1) return { maxX: 0, maxY: 0 };
+
+            const renderScale = this.getRenderScale();
+            const allowance = PAN_EDGE_ALLOWANCE / renderScale;
+            return {
+                maxX: Math.max(0, (bounds.width - bounds.containerRect.width) / (2 * renderScale)) + allowance,
+                maxY: Math.max(0, (bounds.height - bounds.containerRect.height) / (2 * renderScale)) + allowance
+            };
+        }
+
+        clampPanValue(value, limit) {
+            return Math.max(-limit, Math.min(limit, value));
+        }
+
+        clampTransform() {
+            const limits = this.getPanLimits();
+            if (!limits.maxX && !limits.maxY) {
+                this.translateX = 0;
+                this.translateY = 0;
+                return;
+            }
+
+            this.translateX = this.clampPanValue(this.translateX, limits.maxX);
+            this.translateY = this.clampPanValue(this.translateY, limits.maxY);
+        }
+
+        zoomAt(clientX, clientY, nextScale) {
+            if (!this.el.imgContainer) return;
+            const clampedScale = Math.max(MIN_SCALE, Math.min(this.getMaxScale(), nextScale));
+            const previousScale = this.scale || 1;
+            if (Math.abs(clampedScale - previousScale) < 0.001) return;
+
+            const rect = this.el.reader?.getBoundingClientRect()
+                || this.el.imgContainer.getBoundingClientRect();
+            const offsetX = clientX - (rect.left + rect.width / 2);
+            const offsetY = clientY - (rect.top + rect.height / 2);
+            const previousRenderScale = this.getRenderScale(previousScale);
+
+            this.scale = clampedScale;
+            const nextRenderScale = this.getRenderScale(clampedScale);
+            this.translateX += offsetX * (1 / nextRenderScale - 1 / previousRenderScale);
+            this.translateY += offsetY * (1 / nextRenderScale - 1 / previousRenderScale);
+            if (this.isTouchDevice) {
+                this.touchPanLocked = clampedScale > 1 + TOUCH_ZOOM_EPSILON;
+            }
+            this.applyTransform();
+        }
+
+        resetScaleAndPan() {
+            this.scale = 1;
+            this.translateX = 0;
+            this.translateY = 0;
+            this.touchPanLocked = false;
+            this.touchDidMoveImage = false;
+            this.touchEdgePageStep = 0;
+            this.applyTransform();
         }
 
         async loadExportImageSafe(src) {
@@ -808,13 +1218,13 @@
 
         async outputScreenshot(blob, filename) {
             if (this.shouldCopyScreenshotToClipboard()) {
-                try { await this.copyBlobToClipboard(blob); this.showReaderMessage('截图已复制到剪贴板'); return; } catch (_) { this.downloadBlob(blob, filename); this.showReaderMessage('剪贴板不可用，已改为保存文件', true, 2600); return; }
+                try { await this.copyBlobToClipboard(blob); this.showReaderMessage('\u622a\u56fe\u5df2\u590d\u5236\u5230\u526a\u8d34\u677f'); return; } catch (_) { this.downloadBlob(blob, filename); this.showReaderMessage('\u526a\u8d34\u677f\u4e0d\u53ef\u7528\uff0c\u5df2\u6539\u4e3a\u4fdd\u5b58\u6587\u4ef6', true, 2600); return; }
             }
             if (navigator.share) {
-                try { await this.shareScreenshot(blob, filename); this.showReaderMessage('截图已打开系统分享'); return; } catch (_) { }
+                try { await this.shareScreenshot(blob, filename); this.showReaderMessage('\u622a\u56fe\u5df2\u6253\u5f00\u7cfb\u7edf\u5206\u4eab'); return; } catch (_) { }
             }
             this.downloadBlob(blob, filename);
-            this.showReaderMessage('截图已保存');
+            this.showReaderMessage('\u622a\u56fe\u5df2\u4fdd\u5b58');
         }
 
         getScreenshotFileName(count) {
@@ -828,11 +1238,11 @@
         async captureScreenshot(selectionRect) {
             const descriptors = this.getVisibleImageDescriptors();
             if (descriptors.length === 0) {
-                this.showReaderMessage('当前没有可截图的页面', true);
+                this.showReaderMessage('\u5f53\u524d\u6ca1\u6709\u53ef\u622a\u56fe\u7684\u9875\u9762', true);
                 return false;
             }
 
-            this.showReaderMessage('正在生成截图...', false, 3000);
+            this.showReaderMessage('\u6b63\u5728\u751f\u6210\u622a\u56fe...', false, 3000);
 
             try {
                 const loadedImages = await Promise.all(descriptors.map(async descriptor => {
@@ -861,26 +1271,27 @@
                     await this.outputScreenshot(blob, this.getScreenshotFileName(this.activePageCount));
                     return true;
                 } catch (_) {
-                    this.showReaderMessage('图片受跨域限制，无法合成截图', true, 3000);
+                    this.showReaderMessage('\u56fe\u7247\u53d7\u8de8\u57df\u9650\u5236\uff0c\u65e0\u6cd5\u5408\u6210\u622a\u56fe', true, 3000);
                     return false;
                 }
             } catch (error) {
-                this.showReaderMessage('截图失败，请重试', true, 2800);
+                this.showReaderMessage('\u622a\u56fe\u5931\u8d25\uff0c\u8bf7\u91cd\u8bd5', true, 2800);
                 return false;
             }
         }
 
-        // 触摸事件处理
+        // 瑙︽懜浜嬩欢澶勭悊
         handleTouchStart(e) {
             if (this.isSelectingScreenshot) return;
             if (e.touches.length === 2) {
-                // 双指缩放开启
+                // 鍙屾寚缂╂斁寮€鍚?
                 e.preventDefault();
                 this.clearPendingTap();
                 this.setTransformTransition('none');
                 this.isTwoFingerGesturing = true;
                 this.touchPanLocked = true;
                 this.touchDidMoveImage = false;
+                this.touchEdgePageStep = 0;
                 const dx = e.touches[0].clientX - e.touches[1].clientX;
                 const dy = e.touches[0].clientY - e.touches[1].clientY;
                 this.initialPinchDistance = Math.sqrt(dx * dx + dy * dy);
@@ -901,6 +1312,7 @@
                 this.touchEndY = this.touchStartY;
                 this.isTouchSwiping = false;
                 this.touchDidMoveImage = false;
+                this.touchEdgePageStep = 0;
                 this.touchStartTime = Date.now();
                 this.touchStartedOnInteractive = this.isInteractiveTouchTarget(e.target);
                 this.initX = this.translateX;
@@ -914,14 +1326,14 @@
         handleTouchMove(e) {
             if (this.isSelectingScreenshot) return;
             if (e.touches.length === 2 && this.isTwoFingerGesturing) {
-                // 双指缩放中
+                // 鍙屾寚缂╂斁涓?
                 e.preventDefault();
                 const dx = e.touches[0].clientX - e.touches[1].clientX;
                 const dy = e.touches[0].clientY - e.touches[1].clientY;
                 const currentDistance = Math.sqrt(dx * dx + dy * dy);
 
                 const scaleFactor = currentDistance / this.initialPinchDistance;
-                this.scale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, this.initialScale * scaleFactor));
+                this.scale = Math.max(MIN_SCALE, Math.min(this.getMaxScale(), this.initialScale * scaleFactor));
 
                 const currentCenterX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
                 const currentCenterY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
@@ -930,8 +1342,9 @@
                     || Math.abs(currentCenterY - this.twoFingerTapCenterY) > 8) {
                     this.twoFingerTapCandidate = false;
                 }
-                this.translateX += currentCenterX - this.initialCenterX;
-                this.translateY += currentCenterY - this.initialCenterY;
+                const renderScale = this.getRenderScale();
+                this.translateX += (currentCenterX - this.initialCenterX) / renderScale;
+                this.translateY += (currentCenterY - this.initialCenterY) / renderScale;
                 this.initialCenterX = currentCenterX;
                 this.initialCenterY = currentCenterY;
 
@@ -948,14 +1361,32 @@
                 const deltaX = Math.abs(moveX);
                 const deltaY = Math.abs(moveY);
 
-                if (this.isTouchPanMode() && !this.touchStartedOnInteractive) {
+                if (!this.touchStartedOnInteractive) {
                     if (deltaX > 4 || deltaY > 4) {
                         e.preventDefault();
                         this.setTransformTransition('none');
-                        this.touchDidMoveImage = true;
-                        this.translateX = this.initX + moveX;
-                        this.translateY = this.initY + moveY;
+                        const renderScale = this.getRenderScale();
+                        const limits = this.getPanLimits();
+                        const nextX = this.initX + moveX / renderScale;
+                        const nextY = this.initY + moveY / renderScale;
+                        const clampedX = this.clampPanValue(nextX, limits.maxX);
+                        const clampedY = this.clampPanValue(nextY, limits.maxY);
+
+                        this.translateX = clampedX;
+                        this.translateY = clampedY;
                         this.applyTransform();
+
+                        const movedImage = Math.abs(clampedX - this.initX) > TOUCH_EDGE_EPSILON
+                            || Math.abs(clampedY - this.initY) > TOUCH_EDGE_EPSILON;
+                        const blockedHorizontally = limits.maxX <= TOUCH_EDGE_EPSILON
+                            || Math.abs(nextX - clampedX) > TOUCH_EDGE_EPSILON;
+
+                        this.touchDidMoveImage = movedImage;
+                        this.isTouchSwiping = deltaX > 10 || deltaY > 10;
+                        this.touchEdgePageStep = 0;
+                        if (deltaX > deltaY && deltaX > SWIPE_THRESHOLD && blockedHorizontally) {
+                            this.touchEdgePageStep = (moveX > 0) !== this.isRightToLeft ? -this.lastStep : this.lastStep;
+                        }
                     }
                     return;
                 }
@@ -976,6 +1407,7 @@
                 this.isTwoFingerGesturing = false;
                 this.isTouchSwiping = false;
                 this.touchDidMoveImage = false;
+                this.touchEdgePageStep = 0;
                 this.twoFingerTapCandidate = false;
                 return;
             }
@@ -985,6 +1417,9 @@
                     && Date.now() - this.twoFingerTapStartTime < 300;
                 this.isTwoFingerGesturing = false;
                 this.twoFingerTapCandidate = false;
+                if (this.scale <= 1 + TOUCH_ZOOM_EPSILON) {
+                    this.touchPanLocked = false;
+                }
                 if (isTwoFingerTap) {
                     const now = Date.now();
                     const isDoubleTwoFingerTap = now - this.lastTwoFingerTapTime < 320
@@ -1010,20 +1445,26 @@
             const threshold = SWIPE_THRESHOLD;
             const isTap = Math.abs(deltaX) < 10 && Math.abs(deltaY) < 10 && Date.now() - this.touchStartTime < 300;
 
+            if (this.touchEdgePageStep && Math.abs(deltaX) > threshold && Math.abs(deltaX) > Math.abs(deltaY)) {
+                const step = this.touchEdgePageStep;
+                this.touchEdgePageStep = 0;
+                this.touchDidMoveImage = false;
+                this.isTouchSwiping = false;
+                this.turnPage(null, step);
+                return;
+            }
+
             if (this.touchDidMoveImage) {
                 this.isTouchSwiping = false;
                 this.touchDidMoveImage = false;
+                this.touchEdgePageStep = 0;
                 return;
             }
 
             if (isTap) {
                 if (!this.touchStartedOnInteractive) {
                     e.preventDefault();
-                    this.clearPendingTap();
-                    this.pendingTapTimer = setTimeout(() => {
-                        this.pendingTapTimer = null;
-                        this.handleTapNavigation(this.touchEndX);
-                    }, 220);
+                    this.handleSingleFingerTap(this.touchEndX, this.touchEndY);
                 }
                 this.isTouchSwiping = false;
                 return;
@@ -1040,9 +1481,10 @@
             }
 
             this.isTouchSwiping = false;
+            this.touchEdgePageStep = 0;
         }
 
-        // 5. 核心渲染逻辑 (处理动画切换)
+        // 5. 鏍稿績娓叉煋閫昏緫 (澶勭悊鍔ㄧ敾鍒囨崲)
         render(animate = true, step = 0) {
             const renderIndex = this.currentIndex;
             const transitionToken = ++this.pageFlipToken;
@@ -1057,23 +1499,36 @@
                 getCurrentIndex: () => this.currentIndex,
                 transitionToken,
                 getTransitionToken: () => this.pageFlipToken,
+                getTransform: () => this.getTransformStyle(),
+                getShiftedTransform: (screenTranslateX) => this.getTransformStyle(screenTranslateX),
                 loadImages: (index, mode, direction) => { void this.loadImages(index, mode, direction); }
             });
         }
 
-        // 6. 智能图片加载逻辑 (决定单双页)
+        // 6. 鏅鸿兘鍥剧墖鍔犺浇閫昏緫 (鍐冲畾鍗曞弻椤?
         async loadImages(renderIndex, animationMode = 'none', transitionDirection = 0) {
             if (renderIndex !== this.currentIndex) return;
+
+            this.scale = 1;
+            this.fitScale = 1;
+            this.contentNaturalWidth = 0;
+            this.contentNaturalHeight = 0;
+            this.translateX = 0;
+            this.translateY = 0;
+            this.touchPanLocked = false;
+            this.touchDidMoveImage = false;
+            this.touchEdgePageStep = 0;
+            this.lastTapTime = 0;
+            this.clearPendingTap();
 
             animations.resetImageContainer(
                 this.el.imgContainer,
                 animationMode,
                 transitionDirection,
-                () => this.applyTransform()
+                () => this.applyTransform(),
+                () => this.getTransformStyle(),
+                (screenTranslateX) => this.getTransformStyle(screenTranslateX)
             );
-            this.scale = 1;
-            this.translateX = 0;
-            this.translateY = 0;
 
             const img1 = await this.loadImage(this.imgList[this.currentIndex]);
             if (!img1 || renderIndex !== this.currentIndex) return;
@@ -1112,38 +1567,63 @@
 
         commitImages(images, animationMode, preloadStart, transitionDirection = 0) {
             const isFull = images.length === 1;
+            const displaySizes = this.isSharpRenderMode()
+                ? this.getSharpDisplaySizes(images, isFull)
+                : [];
             if (animationMode === 'none') {
                 this.el.imgContainer.innerHTML = '';
             }
-            images.forEach(img => {
-                this.setupImg(img, isFull);
+            images.forEach((img, index) => {
+                this.setupImg(img, isFull, displaySizes[index]);
                 this.el.imgContainer.appendChild(img);
             });
+            this.updateFitScale(images);
             this.updatePageInfo(images.length);
             animations.finishRender(
                 this.el.imgContainer,
                 animationMode,
                 transitionDirection,
-                () => this.applyTransform()
+                () => this.applyTransform(),
+                () => this.getTransformStyle(),
+                (screenTranslateX) => this.getTransformStyle(screenTranslateX)
             );
             this.preloadImages(preloadStart);
         }
 
-        // 辅助：设置图片样式
-        setupImg(img, isFull) {
+        // 杈呭姪锛氳缃浘鐗囨牱寮?
+        setupImg(img, isFull, displaySize = null) {
             const rotated = this.rotation === 90 || this.rotation === 270;
             img.className = isFull ? 'comic-img-full' : 'comic-img-half';
             img.dataset.rotated = rotated ? 'true' : 'false';
-            Object.assign(img.style, {
-                objectFit: 'contain', flexShrink: '0',
-                transform: this.rotation ? `rotate(${this.rotation}deg)` : ''
-            });
-            if (rotated) img.style.maxWidth = '100vh';
+            img.style.objectFit = 'contain';
+            img.style.transformOrigin = 'center center';
+            img.style.imageRendering = 'auto';
+
+            if (this.isSharpRenderMode()) {
+                const effectiveSize = displaySize || this.getEffectiveImageSize(img);
+                const effectiveWidth = Math.max(1, Math.round(effectiveSize.width || 1));
+                const effectiveHeight = Math.max(1, Math.round(effectiveSize.height || 1));
+                img.dataset.displayWidth = String(effectiveWidth);
+                img.dataset.displayHeight = String(effectiveHeight);
+                img.style.width = `${rotated ? effectiveHeight : effectiveWidth}px`;
+                img.style.height = `${rotated ? effectiveWidth : effectiveHeight}px`;
+                img.style.maxWidth = 'none';
+                img.style.maxHeight = 'none';
+            } else {
+                delete img.dataset.displayWidth;
+                delete img.dataset.displayHeight;
+                img.style.width = '';
+                img.style.height = '';
+                img.style.maxWidth = rotated ? '100vh' : (isFull ? '100%' : '50%');
+                img.style.maxHeight = rotated ? (isFull ? '100vw' : '50vw') : '100%';
+            }
+
+            img.style.transform = this.rotation ? `rotate(${this.rotation}deg)` : '';
         }
 
-        // 辅助：完成渲染并触发
+        // 杈呭姪锛氬畬鎴愭覆鏌撳苟瑙﹀彂
 
-        // 翻页相关方法
+        // 缈婚〉鐩稿叧鏂规硶
 
         turnPage(e, step) {
             e?.stopPropagation?.();
@@ -1162,13 +1642,36 @@
             }
         }
 
-        showJumpDialog() {
+        showPageInput() {
+            if (!this.el.pageInfo || this.el.pageInfo.classList.contains('is-editing')) return;
+            this.el.pageInfo.classList.add('is-editing');
+            this.el.pageInput.value = '';
+            this.el.pageRange.textContent = ` / ${this.imgList.length}`;
+            window.setTimeout(() => this.el.pageInput.focus(), 0);
+        }
+
+        hidePageInput() {
+            if (!this.el.pageInfo) return;
+            this.el.pageInfo.classList.remove('is-editing');
+            this.updatePageInfo(this.activePageCount);
+        }
+
+        jumpToPageFromInput() {
+            if (!this.el.pageInfo?.classList.contains('is-editing')) return;
+            const raw = this.el.pageInput?.value?.trim() || '';
             const total = this.imgList.length;
-            const input = prompt(`当前页码: ${this.currentIndex + 1} / ${total}\n请输入要跳转的页码(1-${total}):`);
-            if (input === null) return;
-            const page = parseInt(input, 10);
-            if (isNaN(page) || page < 1 || page > total) { if (input.trim()) alert(`请输入1-${total} 之间的有效数字`); return; }
+            const page = parseInt(raw, 10);
+            if (!raw || !Number.isInteger(page) || String(page) !== raw || page < 1 || page > total) {
+                if (raw) this.showReaderMessage(`\u8bf7\u8f93\u5165 1-${total} \u4e4b\u95f4\u7684\u6709\u6548\u6570\u5b57`, true);
+                this.hidePageInput();
+                return;
+            }
+            if (page === this.currentIndex + 1) {
+                this.hidePageInput();
+                return;
+            }
             const step = page - 1 - this.currentIndex;
+            this.el.pageInfo.classList.remove('is-editing');
             this.currentIndex = page - 1;
             this.render(true, step);
         }
@@ -1182,9 +1685,12 @@
             this.activePageCount = step;
             this.lastStep = step;
             const total = this.imgList.length;
-            this.el.pageInfo.innerText = step === 1
+            this.el.pageDisplay.textContent = step === 1
                 ? `${this.currentIndex + 1} / ${total}`
                 : `${this.currentIndex + 1}-${this.currentIndex + step} / ${total}`;
+            this.el.pageInput.value = '';
+            this.el.pageInput.max = String(total);
+            this.el.pageRange.textContent = '';
         }
 
         preloadImages(start, count = PRELOAD_COUNT) {
@@ -1206,38 +1712,48 @@
             this.rotation = 0;
             this.touchPanLocked = false;
             this.touchDidMoveImage = false;
+            this.touchEdgePageStep = 0;
             this.lastTapTime = 0;
             this.twoFingerTapCandidate = false;
             this.lastTwoFingerTapTime = 0;
             this.lastTwoFingerTapCenterX = 0;
             this.lastTwoFingerTapCenterY = 0;
             this.syncRotateButton();
-            this.applyTransform();
-            this.el.imgContainer.querySelectorAll('img').forEach(img => {
-                const isFull = img.style.maxWidth === '100%' || img.style.maxHeight === '100vw';
-                img.style.transform = '';
-                img.style.maxWidth = isFull ? '100%' : '50%';
-                img.style.maxHeight = '100vh';
-            });
+            this.applyImageRenderMode();
+        }
+
+        getTransformStyle(screenTranslateX = 0, screenTranslateY = 0) {
+            const renderScale = this.getRenderScale();
+            return `scale(${renderScale}) translate(${this.translateX + screenTranslateX / renderScale}px,${this.translateY + screenTranslateY / renderScale}px)`;
+        }
+
+        writeTransform() {
+            if (this.el.imgContainer) this.el.imgContainer.style.transform = this.getTransformStyle();
         }
 
         applyTransform() {
-            if (this.el.imgContainer) this.el.imgContainer.style.transform = `scale(${this.scale}) translate(${this.translateX}px,${this.translateY}px)`;
+            this.writeTransform();
+            this.clampTransform();
+            if (this.isTouchDevice && this.scale <= 1 + TOUCH_ZOOM_EPSILON) {
+                this.touchPanLocked = false;
+            }
+            this.writeTransform();
         }
 
-        // 全局事件处理函数
+        // 鍏ㄥ眬浜嬩欢澶勭悊鍑芥暟
 
         handleMouseMove(e) {
             if (!this.isDragging) return;
-            this.translateX = this.initX + (e.clientX - this.startX);
-            this.translateY = this.initY + (e.clientY - this.startY);
+            const renderScale = this.getRenderScale();
+            this.translateX = this.initX + (e.clientX - this.startX) / renderScale;
+            this.translateY = this.initY + (e.clientY - this.startY) / renderScale;
             this.applyTransform();
         }
 
         handleMouseUp() {
             if (!this.isDragging) return;
             this.isDragging = false;
-            this.el.imgContainer.style.cursor = 'grab';
+            this.el.imgContainer.classList.remove('is-grabbing');
         }
 
         handleFullscreenChange() {
@@ -1251,19 +1767,24 @@
                 if (e.key === 'Enter') void this.saveSelectionScreenshot();
                 return;
             }
+            if (e.key === 'Escape' && this.isSettingsPanelVisible()) {
+                this.hideSettingsPanel();
+                return;
+            }
             if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') this.el.leftBtn.click();
             else if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') this.el.rightBtn.click();
             else if (e.key.toLowerCase() === 's') this.startScreenshotSelection();
             else if (e.key === 'Escape') this.close();
         }
 
-        // 清理并关闭
+        // 娓呯悊骞跺叧闂?
         close() {
             if (this.hideTimer) clearTimeout(this.hideTimer);
             if (this.messageTimer) clearTimeout(this.messageTimer);
             this.clearPendingTap();
             this.pageFlipToken += 1;
             this.cancelScreenshotSelection(false, false);
+            this.hideSettingsPanel();
 
             document.removeEventListener('mousemove', this.handleMouseMove);
             document.removeEventListener('mouseup', this.handleMouseUp);
@@ -1276,6 +1797,7 @@
                 this.el.reader.removeEventListener('touchmove', this.boundHandleTouchMove);
                 this.el.reader.removeEventListener('touchend', this.boundHandleTouchEnd);
                 this.el.reader.removeEventListener('touchcancel', this.boundHandleTouchEnd);
+                this.el.reader.removeEventListener('pointerdown', this.handleSettingsOutsidePointerDown, true);
                 this.el.selectionOverlay.removeEventListener('pointerdown', this.handleSelectionPointerDown);
                 this.el.selectionOverlay.removeEventListener('pointermove', this.handleSelectionPointerMove);
                 this.el.selectionOverlay.removeEventListener('pointerup', this.handleSelectionPointerUp);
@@ -1284,15 +1806,15 @@
                 this.el = {};
             }
 
-            // 显示收藏夹悬浮按钮
+            // 鏄剧ず鏀惰棌澶规偓娴寜閽?
             const favBtn = document.getElementById('bilibili-fav-float-btn');
             if (favBtn) favBtn.style.display = '';
         }
     }
 
 
-    // ============ 入口函数 ============
-    // 检查URL是否匹配漫画模式
+    // ============ 鍏ュ彛鍑芥暟 ============
+    // 妫€鏌RL鏄惁鍖归厤婕敾妯″紡
     function shouldInitComicReader() {
         const url = window.location.href;
         return COMIC_URL_PATTERNS.some(pattern => url.includes(pattern));

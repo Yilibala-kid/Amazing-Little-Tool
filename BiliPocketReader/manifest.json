@@ -1,37 +1,33 @@
 ﻿{
   "manifest_version": 3,
-  "name": "B\u7ad9\u5de5\u5177\u7bb1",
+  "name": "BiliPocketReader",
   "version": "1.0",
   "description": "B\u7ad9\u6f2b\u753b\u6a21\u5f0f\u9605\u8bfb\u5668 + \u6536\u85cf\u5939\u5feb\u6377\u8df3\u8f6c",
   "permissions": [
-    "activeTab",
-    "storage",
-    "scripting",
-    "tabs"
+    "storage"
   ],
   "host_permissions": [
+    "*://bilibili.com/*",
     "*://*.bilibili.com/*"
   ],
   "content_scripts": [
     {
       "matches": [
-        "*://t.bilibili.com/*",
-        "*://www.bilibili.com/*",
-        "*://space.bilibili.com/*"
+        "*://bilibili.com/*",
+        "*://*.bilibili.com/*"
       ],
       "js": [
         "shared.js",
+        "storage-service.js",
         "animations.js",
+        "comic-reader-images.js",
         "comic-reader.js",
+        "content-features.js",
         "content.js"
       ],
       "css": [
         "content.css"
       ]
     }
-  ],
-  "action": {
-    "default_popup": "popup.html",
-    "default_title": "B\u7ad9\u5de5\u5177\u7bb1"
-  }
+  ]
 }
