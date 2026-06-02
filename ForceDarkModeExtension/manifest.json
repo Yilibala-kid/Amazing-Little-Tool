@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "Force Dark Current Page",
+  "version": "1.0.0",
+  "description": "一键将当前网页强制切换为深色模式，并可随时恢复。",
+  "permissions": [
+    "activeTab",
+    "scripting"
+  ],
+  "action": {
+    "default_title": "强制深色模式",
+    "default_popup": "popup.html"
+  }
+}

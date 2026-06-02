@@ -1,0 +1,98 @@
+% !TeX root = ../QuestionSet.tex
+% ==================== 第5章 数列 ====================
+\QuestionSetChapter{数列}
+
+% ===== 5.1 等差数列 =====
+\QuestionSetSection{等差数列}
+
+\questionGroup{一、选择题}
+
+% ----------------------------------------
+\begin{question}
+若一个等比数列的各项均为正数，且前4项和为4，前8项和为68，则该等比数列的公比为\blank{3cm}．
+\end{question}
+\begin{answer}{$\pm2$}
+$S_4=4(1+q^4)=68\Rightarrow1+q^4=17\Rightarrow q^4=16\Rightarrow q=\pm2$。
+\end{answer}
+
+% ----------------------------------------
+\begin{question}
+设数列$\left\{ a_n \right\}$满足$a_1=3$，$\dfrac{a_{n+1}}{n}=\dfrac{a_n}{n+1}+\dfrac{1}{n(n+1)}$
+
+(1)证明：$\left\{ na_n \right\}$为等差数列；
+
+(2)设$f(x)=a_1x+a_2x^2+\cdots +a_mx^m$，求$f'(-2)$．
+\end{question}
+\begin{answer}{(1) 略；(2) $f'(-2)=\dfrac{7}{9}-\left(\dfrac{1}{9}+\dfrac{m+2}{3}\right)\cdot(-2)^m$。}
+(1) 由 $\dfrac{a_{n+1}}{n}=\dfrac{a_n}{n+1}+\dfrac{1}{n(n+1)}$ 变形得 $(n+1)a_{n+1}-na_n=1$，令 $b_n=na_n$，则 $b_{n+1}-b_n=1$，故 $\{b_n\}$ 为等差数列。(2) 由 $na_n=n+2$，得 $a_n=\dfrac{n+2}{n}$，代入 $f'(x)$ 并用错位相减法求和，令 $x=-2$ 代入计算得 $f'(-2)$。
+\end{answer}
+
+% ----------------------------------------
+\begin{question}[GPT生成]
+等差数列$\{a_n\}$中，$a_1=2$，公差$d=3$，则$a_5=$\choiceBox
+\choices{11}{12}{14}{17}
+\end{question}
+\begin{answer}{C}
+等差数列通项 $a_n=a_1+(n-1)d$，故 $a_5=2+4\times3=14$。选 C。
+\end{answer}
+
+% ===== 5.2 等比数列 =====
+\QuestionSetSection{等比数列}
+
+\questionGroup{一、选择题}
+
+% ----------------------------------------
+\begin{question}[GPT生成]
+等比数列$\{a_n\}$中，$a_1=3$，公比$q=2$，则$a_4=$\choiceBox
+\choices{12}{18}{24}{48}
+\end{question}
+\begin{answer}{C}
+等比数列通项 $a_n=a_1q^{n-1}$，故 $a_4=3\cdot2^3=24$。选 C。
+\end{answer}
+
+\questionGroup{二、填空题}
+
+% ----------------------------------------
+\begin{question}[GPT生成]
+等比数列$\{a_n\}$中，$a_2=6$，$a_4=24$，且公比$q>0$，则$q=$\blank{3cm}．
+\end{question}
+\begin{answer}{2}
+由 $a_4=a_2q^2$ 得 $24=6q^2$，所以 $q^2=4$。又 $q>0$，故 $q=2$。
+\end{answer}
+
+% ===== 5.3 数列求和与综合 =====
+\QuestionSetSection{数列求和与综合}
+
+\questionGroup{三、解答题}
+
+% ----------------------------------------
+\begin{question}[GPT生成]
+已知数列$\{a_n\}$的前$n$项和$S_n=n^2+2n$，求$a_n$，并判断$\{a_n\}$是否为等差数列。
+\end{question}
+\begin{answer}{$a_n=2n+1$，是等差数列}
+当 $n=1$ 时，$a_1=S_1=3$；当 $n\ge2$ 时，$a_n=S_n-S_{n-1}=n^2+2n-[(n-1)^2+2(n-1)]=2n+1$。该式对 $n=1$ 也成立，因此 $a_n=2n+1$。因为 $a_{n+1}-a_n=2$ 为常数，故 $\{a_n\}$ 是等差数列。
+\end{answer}
+
+\QuestionSetSection*{本章综合训练}
+
+\questionGroup{综合解答题}
+
+% ----------------------------------------
+\begin{question}[GPT生成]
+已知等差数列$\{a_n\}$中，$a_2=5$，$a_5=14$。（1）求首项$a_1$与公差$d$；（2）写出通项公式$a_n$；（3）设前$n$项和为$S_n$，求使$S_n>100$的最小正整数$n$。
+\end{question}
+\solutionSpace{5cm}
+\begin{answer}{(1) $a_1=2,d=3$；(2) $a_n=3n-1$；(3) $n=9$}
+由 $a_5-a_2=3d=9$ 得 $d=3$，再由 $a_2=a_1+d=5$ 得 $a_1=2$。所以 $a_n=2+3(n-1)=3n-1$。前 $n$ 项和 $S_n=\dfrac n2(a_1+a_n)=\dfrac n2(3n+1)$，令 $\dfrac n2(3n+1)>100$，检验得 $n=8$ 时 $S_8=100$，$n=9$ 时 $S_9=126$，故最小正整数为 $9$。
+\end{answer}
+
+% ----------------------------------------
+\begin{question}[GPT生成]
+已知等比数列$\{b_n\}$满足$b_1=1$，$b_2+b_3=12$，且公比$q>0$。（1）求$q$；（2）求前$5$项和$T_5$；（3）证明数列$c_n=\log_3 b_n$为等差数列。
+\end{question}
+\solutionSpace{5cm}
+\begin{answer}{(1) $q=3$；(2) $T_5=121$；(3) $c_n=n-1$，故为等差数列}
+由 $b_2=q,b_3=q^2$，得 $q+q^2=12$，即 $(q-3)(q+4)=0$。又 $q>0$，故 $q=3$。于是 $T_5=\dfrac{1-3^5}{1-3}=121$。因为 $b_n=3^{n-1}$，所以 $c_n=\log_3 3^{n-1}=n-1$，其公差为 $1$，故 $\{c_n\}$ 为等差数列。
+\end{answer}
+
+\printChapterAnswers

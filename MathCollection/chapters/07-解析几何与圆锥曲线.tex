@@ -1,0 +1,157 @@
+% !TeX root = ../QuestionSet.tex
+% ==================== 第7章 解析几何与圆锥曲线 ====================
+\QuestionSetChapter{解析几何与圆锥曲线}
+
+% ===== 7.1 直线与圆 =====
+\QuestionSetSection{直线与圆}
+
+\questionGroup{一、选择题}
+
+% ----------------------------------------
+\begin{question}
+若双曲线$C$的虚轴长为实轴长的$\sqrt{7}$倍，则$C$的离心率为\choiceBox
+\choices{$\sqrt{2}$}{2}{$\sqrt{7}$}{$2\sqrt{2}$}
+\end{question}
+\begin{answer}{D}
+设双曲线方程为 $\dfrac{x^2}{a^2}-\dfrac{y^2}{b^2}=1$（$a>0,b>0$），虚轴长 $2b$，实轴长 $2a$。由 $2b=\sqrt{7}\cdot2a$ 得 $b=\sqrt{7}a$，离心率 $e=\dfrac{c}{a}=\sqrt{1+\dfrac{b^2}{a^2}}=\sqrt{8}=2\sqrt{2}$。选 D。
+\end{answer}
+
+% ----------------------------------------
+\begin{question}
+若圆$x^2+(y+2)^2=r^2(r>0)$上到直线$y=\sqrt{3}x+2$的距离为1的点有且仅有2个，则$r$的取值范围是\choiceBox
+
+
+
+\choices[4]{$(0,1)$}{$(1,3)$}{$(3,+\infty )$}{$(0,+\infty)$}
+\end{question}
+\begin{answer}{B}
+圆心 $C(0,-2)$，$d_1=1,d_2=3$，当 $1<r<3$ 时圆与 $l_1$ 相交（2点）与 $l_2$ 不相交，共 $2$ 点。选 B。
+\end{answer}
+
+% ----------------------------------------
+\begin{question}
+设抛物线$C:y^2=6x$的焦点为$F$，过$F$的直线交$C$于$A$、$B$，过$F$且垂直于$AB$的直线交$l:x=-\dfrac{3}{2}$于$E$，过点$A$作准线$l$的垂线，垂足为$D$，则\choiceBox
+
+
+
+\choices[2]{$|AD|=|AF|$}{$|AE|=|AB|$}{$|AB|\ge 6$}{$|AE|\cdot|BE|\ge 18$}
+\end{question}
+\begin{answer}{AC}
+A：抛物线定义 $|AD|=|AF|$，A 正确；B：取通径 $A(\dfrac32,3),B(\dfrac32,-3)$，$AB=6\neq AE$，B 错；C：焦点弦 $|AB|\ge2p=6$，C 正确；D：$|AE|\cdot|BE|\ge18$，当 $m=0$ 时取等，D 正确。选 ACD。
+\end{answer}
+
+% ----------------------------------------
+\begin{question}
+设椭圆$C:\dfrac{x^2}{a^2}+\dfrac{y^2}{b^2}=1(a>b>0)$的离心率为$\dfrac{2\sqrt{2}}{3}$，下顶点为$A$，右顶点为$B$，$|AB|=\sqrt{10}$．
+
+(1)求椭圆的标准方程；
+
+(2)已知动点P不在y轴上，点R在射线AP上，且满足$\left| AR \right|\cdot \left| AP \right|=3$．
+
+（i）设$P(m,n)$，求点$R$的坐标（用$m,n$表示）；
+
+（ⅱ）设O为坐标原点，$M$是椭圆上的动点，直线OR的斜率为直线$OP$的斜率的3倍，求$|PM|$的最大值．
+\end{question}
+\begin{answer}{(1) $\dfrac{x^2}{9}+y^2=1$；(2) (i) $R\left(\dfrac{3m}{m^2+(n+1)^2},\dfrac{3(n+1)}{m^2+(n+1)^2}-1\right)$；(ii) $3\sqrt3+3\sqrt2$。}
+(1) 由 $e=\dfrac{2\sqrt2}{3}$，$|AB|^2=a^2+b^2=10$，解得 $a=3,b=1$。(2) (i) 由 $|AR|\cdot|AP|=3$，令 $\vec{AR}=t\vec{AP}$ 得 $R$ 坐标。(ii) 由 $k_{OR}=3k_{OP}$ 得 $P$ 在以 $(0,-4)$ 为圆心、半径 $3\sqrt2$ 的圆上，结合椭圆参数方程求得 $|PM|_{\max}=3\sqrt3+3\sqrt2$。
+\end{answer}
+
+% ----------------------------------------
+\begin{question}[GPT生成]
+直线$2x-y+1=0$的斜率为\blank{3cm}．
+\end{question}
+\begin{answer}{2}
+将直线方程化为 $y=2x+1$，可知斜率为 $2$。
+\end{answer}
+
+% ===== 7.2 椭圆 =====
+\QuestionSetSection{椭圆}
+
+\questionGroup{一、选择题}
+
+% ----------------------------------------
+\begin{question}[GPT生成]
+椭圆$\dfrac{x^2}{16}+\dfrac{y^2}{9}=1$的焦距为\choiceBox
+\choices{7}{$2\sqrt7$}{14}{$4\sqrt7$}
+\end{question}
+\begin{answer}{B}
+椭圆中 $a^2=16,b^2=9$，所以 $c^2=a^2-b^2=7$，焦距为 $2c=2\sqrt7$。选 B。
+\end{answer}
+
+\questionGroup{三、解答题}
+
+% ----------------------------------------
+\begin{question}[GPT生成]
+求椭圆$\dfrac{x^2}{25}+\dfrac{y^2}{9}=1$的长轴长、短轴长和离心率。
+\end{question}
+\begin{answer}{长轴长 $10$，短轴长 $6$，离心率 $\dfrac45$}
+由 $a^2=25,b^2=9$ 得 $a=5,b=3$，长轴长为 $2a=10$，短轴长为 $2b=6$。又 $c^2=a^2-b^2=16$，得 $c=4$，所以离心率 $e=\dfrac ca=\dfrac45$。
+\end{answer}
+
+% ===== 7.3 双曲线 =====
+\QuestionSetSection{双曲线}
+
+\questionGroup{一、选择题}
+
+% ----------------------------------------
+\begin{question}[GPT生成]
+双曲线$\dfrac{x^2}{9}-\dfrac{y^2}{16}=1$的渐近线方程为\choiceBox
+\choices{$y=\pm\dfrac43x$}{$y=\pm\dfrac34x$}{$y=\pm\dfrac{16}{9}x$}{$y=\pm\dfrac{9}{16}x$}
+\end{question}
+\begin{answer}{A}
+双曲线 $\dfrac{x^2}{a^2}-\dfrac{y^2}{b^2}=1$ 的渐近线为 $y=\pm\dfrac ba x$。此处 $a=3,b=4$，故渐近线为 $y=\pm\dfrac43x$。选 A。
+\end{answer}
+
+% ----------------------------------------
+\begin{question}[GPT生成]
+双曲线$\dfrac{x^2}{4}-\dfrac{y^2}{5}=1$的离心率为\blank{3cm}．
+\end{question}
+\begin{answer}{$\dfrac32$}
+由 $a^2=4,b^2=5$，得 $c^2=a^2+b^2=9$，所以 $c=3,a=2$，离心率 $e=\dfrac ca=\dfrac32$。
+\end{answer}
+
+% ===== 7.4 抛物线 =====
+\QuestionSetSection{抛物线}
+
+\questionGroup{一、选择题}
+
+% ----------------------------------------
+\begin{question}[GPT生成]
+抛物线$y^2=8x$的焦点坐标为\choiceBox
+\choices{$(1,0)$}{$(2,0)$}{$(0,2)$}{$(4,0)$}
+\end{question}
+\begin{answer}{B}
+抛物线标准方程 $y^2=2px$，由 $2p=8$ 得 $p=4$，焦点为 $(\dfrac p2,0)=(2,0)$。选 B。
+\end{answer}
+
+% ----------------------------------------
+\begin{question}[GPT生成]
+抛物线$x^2=12y$的准线方程为\blank{3cm}．
+\end{question}
+\begin{answer}{$y=-3$}
+抛物线 $x^2=2py$ 中 $2p=12$，得 $p=6$，准线为 $y=-\dfrac p2=-3$。
+\end{answer}
+
+\QuestionSetSection*{本章综合训练}
+
+\questionGroup{综合解答题}
+
+% ----------------------------------------
+\begin{question}[GPT生成]
+已知圆$C:x^2+y^2=4$，直线$l:y=kx+2$。（1）求圆心到$l$的距离；（2）若$l$与圆$C$相切，求$k$；（3）当$k=\sqrt3$时，求直线被圆截得的弦长。
+\end{question}
+\solutionSpace{5cm}
+\begin{answer}{(1) $\dfrac2{\sqrt{k^2+1}}$；(2) $k=0$；(3) $2\sqrt3$}
+圆心为 $O(0,0)$，直线写成 $kx-y+2=0$，故距离 $d=\dfrac2{\sqrt{k^2+1}}$。相切时 $d=2$，得 $\sqrt{k^2+1}=1$，所以 $k=0$。当 $k=\sqrt3$ 时，$d=\dfrac2{\sqrt4}=1$，弦长为 $2\sqrt{r^2-d^2}=2\sqrt{4-1}=2\sqrt3$。
+\end{answer}
+
+% ----------------------------------------
+\begin{question}[GPT生成]
+已知椭圆$\dfrac{x^2}{9}+\dfrac{y^2}{4}=1$。（1）求焦点坐标和离心率；（2）写出参数$\theta=\dfrac{\pi}{3}$对应的椭圆上一点$P$；（3）求$P$到右焦点$F$距离的平方。
+\end{question}
+\solutionSpace{5cm}
+\begin{answer}{(1) 焦点$(\pm\sqrt5,0)$，$e=\dfrac{\sqrt5}{3}$；(2) $P(\dfrac32,\sqrt3)$；(3) $\dfrac{41}{4}-3\sqrt5$}
+由 $a^2=9,b^2=4$，得 $c^2=a^2-b^2=5$，焦点为 $(\pm\sqrt5,0)$，离心率 $e=\dfrac ca=\dfrac{\sqrt5}{3}$。参数方程可写为 $x=3\cos\theta,y=2\sin\theta$，当 $\theta=\dfrac{\pi}{3}$ 时，$P(\dfrac32,\sqrt3)$。右焦点 $F(\sqrt5,0)$，故 $PF^2=(\dfrac32-\sqrt5)^2+(\sqrt3)^2=\dfrac{41}{4}-3\sqrt5$。
+\end{answer}
+
+\printChapterAnswers

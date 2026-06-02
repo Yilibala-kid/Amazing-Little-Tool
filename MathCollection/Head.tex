@@ -1,0 +1,468 @@
+% =============== 导言区 ===============
+\usepackage[UTF8]{ctex}             % 中文支持
+% ===== 数学相关 =====
+\usepackage{amsmath}                 % 数学公式环境（align、equation等）
+\usepackage{amssymb}                 % 额外数学符号（如\mathbb、R等）
+\usepackage{amsfonts}                % 数学字体（如\mathrm、\mathcal等）
+\usepackage{mathtools}               % amsmath增强（箭头公式、矩阵环境等）
+\usepackage{newtxtext}               % 英文正文字体（Times风格）
+\usepackage{newtxmath}               % 英文数学字体（Times风格）
+
+% ===== 页面与排版 =====
+\usepackage{geometry}                % 页面尺寸和边距设置
+\usepackage{setspace}                 % 行距控制
+
+% ===== 表格与图片 =====
+\usepackage{graphicx}                % 图片插入
+\usepackage{xcolor}                   % 颜色支持（如 \textcolor{blue}{...}）
+\usepackage{array}                   % 表格列格式控制
+\usepackage{longtable}               % 跨页长表格
+\usepackage{booktabs}                 % 专业三线表（\toprule、\midrule、\bottomrule）
+\usepackage{multirow}                % 表格单元格跨行合并
+\usepackage{wrapfig}                 % 文字环绕图片
+\usepackage{textcomp}                % 特殊符号（如 \textcopyright、\textohm 等）
+
+\usepackage{xparse}                % 带可选参数的自定义环境
+\usepackage{environ}               % 环境体捕获（用于 answer 环境）
+\usepackage{fancyhdr}              % 页眉页脚（习题集模板使用）
+\usepackage{newunicodechar}        % 兼容少量数学题中常见的 Unicode 符号
+\usepackage[colorlinks=false,pdfborder={0 0 0}]{hyperref} % 目录与跳转
+
+\graphicspath{{./Images/}{Images/}{../Images/}} % 习题图片搜索路径
+
+\newunicodechar{ⅰ}{\ensuremath{\mathrm{i}}}
+\newunicodechar{ⅱ}{\ensuremath{\mathrm{ii}}}
+\newunicodechar{ⅲ}{\ensuremath{\mathrm{iii}}}
+\newunicodechar{ⅳ}{\ensuremath{\mathrm{iv}}}
+
+% =============== 自定义命令 ===============
+% 说明：
+% 1. 命令用法中的 [...] 表示可选参数，可以省略；省略时使用默认值。
+% 2. 命令用法中的 * 表示星号版本，例如 \QuestionSetSection*{...}，星号不写时使用自动编号版本。
+% 3. 文件名、图片名等参数一般写在 {...} 中；图片标题等可选内容写在 [...] 中。
+
+% ===== 题目版式命令 =====
+% 选择题选项命令，可选参数控制排版方式；可选参数省略时默认为 [1]。
+% 用法：\choices{A}{B}{C}{D} 等价于 \choices[1]{A}{B}{C}{D}，4列横排
+% 用法：\choices[2]{A}{B}{C}{D}  2列2行
+% 用法：\choices[4]{A}{B}{C}{D}  1列4行（每个选项一行）
+\newcommand{\choices}[5][1]{%
+  \par
+  \ifcase#1\relax
+  \or % 1: 4列横排
+    \begin{tabular*}{0.8\linewidth}[t]{@{\extracolsep{\fill}}cccc}
+      \hspace{2em}A．#2 & B．#3 & C．#4 & D．#5
+    \end{tabular*}%
+  \or % 2: 2列2行
+    \begin{tabular}{p{0.45\linewidth}p{0.45\linewidth}}
+      \hspace{2em}A．#2 & B．#3 \\
+      \hspace{2em}C．#4 & D．#5
+    \end{tabular}%
+  \or % 3: 未使用
+  \or % 4: 1列4行
+    \begin{tabular}{l}
+      \hspace{2em}A．#2 \\
+      \hspace{2em}B．#3 \\
+      \hspace{2em}C．#4 \\
+      \hspace{2em}D．#5
+    \end{tabular}%
+  \fi
+}
+
+% 选择题选项括号命令
+% 用法：\choiceBox 表示选项括号 (~~~~~~)，使用 \mbox 防止括号被换行拆开
+\newcommand{\choiceBox}{\mbox{(~~~~~~)}}
+
+% 下划线填空命令
+% 用法：\blank{3cm} 表示长度为 3cm 的下划线，使用 \mbox 防止下划线被换行拆开
+\newcommand{\blank}[1]{\underline{\mbox{\hspace{#1}}}}
+
+% ===== 题内图片命令 =====
+% 图片均为非浮动排版，适合放在 question 环境中的任意位置
+\makeatletter
+\newcommand{\MC@questionImageCaption}[1]{%
+  \if\relax\detokenize{#1}\relax\else
+    \par\smallskip
+    {\small #1}%
+  \fi
+}
+
+% 居中图片
+% 用法：\questionImage{image1.png} 等价于 \questionImage[0.45\linewidth]{image1.png}
+% 用法：\questionImage[0.6\linewidth]{image1.png} 指定图片宽度
+% 用法：\questionImage[0.45\linewidth]{image1.png}[图1] 最后的 [图1] 为可选图片标题
+\NewDocumentCommand{\questionImage}{O{0.45\linewidth} m o}{%
+  \par\smallskip
+  \begin{center}
+    \includegraphics[width=#1]{#2}%
+    \IfNoValueF{#3}{\MC@questionImageCaption{#3}}%
+  \end{center}
+  \smallskip
+}
+
+% 右图左文局部图文块
+% 用法：\begin{questionImageRight}{image1.png}左侧文字\end{questionImageRight}
+%      等价于 \begin{questionImageRight}[0.32\linewidth]{image1.png}左侧文字\end{questionImageRight}
+% 用法：\begin{questionImageRight}[0.32\linewidth]{image1.png}[图1]左侧文字\end{questionImageRight}
+%      [0.32\linewidth] 为右侧图片宽度，[图1] 为可选图片标题
+\NewDocumentEnvironment{questionImageRight}{O{0.32\linewidth} m o +b}{%
+  \par\smallskip
+  \noindent
+  \begin{minipage}[t]{\dimexpr\linewidth-#1-1em\relax}
+    \vspace{0pt}\raggedright
+    #4
+  \end{minipage}%
+  \hspace{1em}%
+  \begin{minipage}[t]{#1}
+    \vspace{0pt}\centering
+    \includegraphics[width=\linewidth]{#2}%
+    \IfNoValueF{#3}{\MC@questionImageCaption{#3}}%
+  \end{minipage}%
+  \par\smallskip
+}{}
+
+% 左图右文局部图文块
+% 用法：\begin{questionImageLeft}{image1.png}右侧文字\end{questionImageLeft}
+%      等价于 \begin{questionImageLeft}[0.32\linewidth]{image1.png}右侧文字\end{questionImageLeft}
+% 用法：\begin{questionImageLeft}[0.32\linewidth]{image1.png}[图1]右侧文字\end{questionImageLeft}
+%      [0.32\linewidth] 为左侧图片宽度，[图1] 为可选图片标题
+\NewDocumentEnvironment{questionImageLeft}{O{0.32\linewidth} m o +b}{%
+  \par\smallskip
+  \noindent
+  \begin{minipage}[t]{#1}
+    \vspace{0pt}\centering
+    \includegraphics[width=\linewidth]{#2}%
+    \IfNoValueF{#3}{\MC@questionImageCaption{#3}}%
+  \end{minipage}%
+  \hspace{1em}%
+  \begin{minipage}[t]{\dimexpr\linewidth-#1-1em\relax}
+    \vspace{0pt}\raggedright
+    #4
+  \end{minipage}%
+  \par\smallskip
+}{}
+
+% 双图并排
+% 用法：\questionImagePair{imageA.png}{imageB.png}
+%      等价于 \questionImagePair[0.45\linewidth]{imageA.png}{imageB.png}
+% 用法：\questionImagePair[0.45\linewidth]{imageA.png}[图1]{imageB.png}[图2]
+%      [0.45\linewidth] 为每张图片宽度，[图1]、[图2] 为可选图片标题
+\NewDocumentCommand{\questionImagePair}{O{0.45\linewidth} m o m o}{%
+  \par\smallskip
+  \noindent
+  \begin{minipage}[t]{#1}
+    \vspace{0pt}\centering
+    \includegraphics[width=\linewidth]{#2}%
+    \IfNoValueF{#3}{\MC@questionImageCaption{#3}}%
+  \end{minipage}%
+  \hfill
+  \begin{minipage}[t]{#1}
+    \vspace{0pt}\centering
+    \includegraphics[width=\linewidth]{#4}%
+    \IfNoValueF{#5}{\MC@questionImageCaption{#5}}%
+  \end{minipage}%
+  \par\smallskip
+}
+\makeatother
+
+% ===== 答案显示模式 =====
+\newif\ifshowans
+\newif\ifshowanalysis
+\newif\ifchapteranswers
+\newif\ifbookanswers
+\showansfalse
+\showanalysistrue
+\chapteranswerstrue
+\bookanswersfalse
+
+% 开启题后显示答案功能（主要用于试卷入口 ExamPaper.tex）
+% 用法：\showAnswers        显示答案和分析
+% 用法：\showAnswersOnly    只显示答案，不显示分析
+% 用法：\hideAnswers        隐藏题后答案
+\newcommand{\showAnswers}{\global\showanstrue\global\showanalysistrue}
+\newcommand{\showAnswersOnly}{\global\showanstrue\global\showanalysisfalse}
+\newcommand{\hideAnswers}{\global\showansfalse}
+
+% 习题集常用答案方案（主要用于 QuestionSet.tex，每次只选一种）
+% 用法：\answersNone              不显示任何答案
+% 用法：\answersByChapter         题后不显示答案，每章末尾显示答案速校
+% 用法：\answersAtEnd             题后和章末不显示答案，全书末尾显示答案速校
+% 用法：\answersInline            每题后显示答案和分析
+% 用法：\answersInlineBrief       每题后只显示答案
+% 用法：\answersInlineAndChapter  每题后显示答案和分析，并在章末显示答案速校
+% 用法：\studentBook              等价于 \answersByChapter
+% 用法：\teacherBook              等价于 \answersInline
+\newcommand{\answersNone}{%
+  \global\showansfalse
+  \global\chapteranswersfalse
+  \global\bookanswersfalse
+}
+\newcommand{\answersByChapter}{%
+  \global\showansfalse
+  \global\chapteranswerstrue
+  \global\bookanswersfalse
+}
+\newcommand{\answersAtEnd}{%
+  \global\showansfalse
+  \global\chapteranswersfalse
+  \global\bookanswerstrue
+}
+\newcommand{\answersInline}{%
+  \global\showanstrue
+  \global\showanalysistrue
+  \global\chapteranswersfalse
+  \global\bookanswersfalse
+}
+\newcommand{\answersInlineBrief}{%
+  \global\showanstrue
+  \global\showanalysisfalse
+  \global\chapteranswersfalse
+  \global\bookanswersfalse
+}
+\newcommand{\answersInlineAndChapter}{%
+  \global\showanstrue
+  \global\showanalysistrue
+  \global\chapteranswerstrue
+  \global\bookanswersfalse
+}
+\newcommand{\studentBook}{\answersByChapter}
+\newcommand{\teacherBook}{\answersInline}
+
+% 解答题空白区域命令
+% 用法：\solutionSpace{5cm} 留出 5cm 答题空间；显示题后答案时自动不留大块空白
+\newcommand{\solutionSpace}[1]{%
+  \ifshowans
+    \par\smallskip
+  \else
+    \vspace{#1}\par
+  \fi
+}
+
+% 自动标号计数器
+\newcounter{qno}
+\newcounter{questionSetChapterNumber}
+\newcounter{questionSetSectionNumber}
+
+% 题目环境（替代 \Q{} 的推荐用法）
+% 用法：\begin{question}题干内容\end{question} 自动递增题号
+% 用法：\begin{question}[题源]题干内容\end{question} 可选参数 [题源] 会显示在题号后
+% 使用 begin/end 环境，解决长题目花括号匹配困难的问题
+\NewDocumentEnvironment{question}{O{}}{%
+  \stepcounter{qno}%
+  \raggedright
+  \theqno．%
+  \if\relax\detokenize{#1}\relax\else（#1）\fi
+  \ignorespaces
+}{\par}
+
+% 重置题号命令
+% 用法：\resetQuestionNumber 将题号重置为 0；通常由 \QuestionSetSection 自动调用
+\newcommand{\resetQuestionNumber}{%
+  \setcounter{qno}{0}%
+}
+
+% ===== 标题与答案命令 =====
+\makeatletter
+\newcommand{\chapteranswerlist}{}
+\newcommand{\bookanswerlist}{}
+\let\aclist\chapteranswerlist
+\newif\ifsectionanswergroups
+\sectionanswergroupsfalse
+
+% 记录大题分组
+\newcommand{\ACGroup}[1]{%
+  \g@addto@macro\chapteranswerlist{%
+    \par\smallskip
+    \noindent\textbf{#1}\par
+    \noindent
+  }%
+  \g@addto@macro\bookanswerlist{%
+    \par\smallskip
+    \noindent\textbf{#1}\par
+    \noindent
+  }%
+}
+
+% 记录单题答案
+\newcommand{\ACItem}[2]{%
+  \g@addto@macro\chapteranswerlist{%
+    \textbf{#1.}~#2\qquad
+  }%
+  \g@addto@macro\bookanswerlist{%
+    \textbf{#1.}~#2\qquad
+  }%
+}
+
+% 大题标题命令
+% 用法：\questionGroup{标题内容} 输出加粗大题标题，并把标题写入答案速校分组
+\newcommand{\questionGroup}[1]{%
+  \ifsectionanswergroups\else
+    \ACGroup{#1}%
+  \fi
+  \noindent\textbf{#1}\par
+}
+
+% 答案环境（替代 \A{答案}{分析}）
+% 用法：\begin{answer}{答案}分析内容\end{answer}
+% 用法：\begin{answer}{答案}\end{answer} 分析为空时不显示【分析】标签
+% 第一个花括号参数会进入答案速校；环境正文是详细分析
+\NewEnviron{answer}[1]{%
+  \ifshowans
+    \par\smallskip
+    {\color{red}\textbf{【答案】}}{\boldmath\textbf{#1}}\par
+    \ifshowanalysis
+      \if\relax\detokenize\expandafter{\BODY}\relax\else
+        {\color{red}\textbf{【分析】}}~\BODY\par
+      \fi
+    \fi
+    \vspace{6ex}
+  \fi
+  \begingroup
+    \edef\x{\endgroup
+      \noexpand\ACItem{\theqno}{\unexpanded{#1}}%
+    }%
+  \x
+}
+
+% 参考答案页 / 本章答案速校
+% 用法：\printAnswerCheck 显示当前已收集的答案速校内容
+\newcommand{\printAnswerCheck}{%
+    \begingroup
+    \small
+    \noindent{\large \textbf{答案速校}}\par
+    \ifx\chapteranswerlist\@empty
+      \noindent（本部分暂无答案。）\par
+    \else
+      \noindent\chapteranswerlist\par
+    \fi
+    \endgroup
+    \medskip
+}
+
+% 用法：\printBookAnswerCheck 在全书末尾输出全书答案速校；仅 \answersAtEnd 模式下生效
+\newcommand{\printBookAnswerCheck}{%
+  \ifbookanswers
+    \clearpage
+    \begin{center}
+      {\Large\bfseries 全书答案速校}
+    \end{center}
+    \begingroup
+    \small
+    \ifx\bookanswerlist\@empty
+      \noindent（本书暂无答案。）\par
+    \else
+      \noindent\bookanswerlist\par
+    \fi
+    \endgroup
+  \fi
+}
+\makeatother
+
+% ===== 章节结构命令 =====
+
+% 习题集封面、目录与页眉
+% 用法：\UseQuestionSetStyle{高中数学习题集} 设置页眉、页脚和页码样式
+\newcommand{\UseQuestionSetStyle}[1]{%
+  \setlength{\headheight}{15pt}%
+  \pagestyle{fancy}
+  \fancyhf{}
+  \fancyhead[L]{#1}
+  \fancyhead[R]{\nouppercase{\leftmark}}
+  \fancyfoot[C]{\thepage}
+  \renewcommand{\headrulewidth}{0.4pt}
+}
+
+% 用法：\QuestionSetCover{主标题}{副标题}{底部信息} 生成习题集封面
+\newcommand{\QuestionSetCover}[3]{%
+  \begin{titlepage}
+    \centering
+    \vspace*{0.16\textheight}
+    {\Huge\bfseries #1\par}
+    \vspace{1.2cm}
+    {\Large #2\par}
+    \vfill
+    {\large #3\par}
+  \end{titlepage}
+}
+
+% 用法：\QuestionSetTOC 输出目录并自动分页
+\newcommand{\QuestionSetTOC}{%
+  \clearpage
+  \tableofcontents
+  \clearpage
+}
+
+% 用法：\includeChapter{01-集合与常用逻辑用语}
+%      自动输入 chapters/01-集合与常用逻辑用语.tex，不需要写 chapters/ 和 .tex
+\newcommand{\includeChapter}[1]{%
+  \input{chapters/#1.tex}%
+}
+
+\makeatletter
+\newcommand{\MC@appendBookChapter}[1]{%
+  \g@addto@macro\bookanswerlist{%
+    \par\bigskip
+    \noindent{\large\bfseries #1}\par
+    \smallskip
+  }%
+}
+
+% 章标题（新页开始，居中大号）
+% 用法：\QuestionSetChapter{函数与基本性质} 自动显示“第1章　函数与基本性质”
+% 用法：\QuestionSetChapter*{附录} 显示“附录”，不推进章节编号
+% 非星号版本会重置小节编号、写入目录、更新页眉，并开始收集本章答案
+\NewDocumentCommand{\QuestionSetChapter}{s m}{%
+  \clearpage
+  \gdef\chapteranswerlist{}%
+  \global\sectionanswergroupsfalse
+  \IfBooleanTF{#1}{%
+    \def\MC@chapterTitle{#2}%
+  }{%
+    \stepcounter{questionSetChapterNumber}%
+    \setcounter{questionSetSectionNumber}{0}%
+    \def\MC@chapterTitle{第\arabic{questionSetChapterNumber}章　#2}%
+  }%
+  \expandafter\MC@appendBookChapter\expandafter{\MC@chapterTitle}%
+  \phantomsection
+  \addcontentsline{toc}{section}{\MC@chapterTitle}%
+  \markboth{\MC@chapterTitle}{\MC@chapterTitle}%
+  \begin{center}
+    {\Large\bfseries \MC@chapterTitle}
+  \end{center}
+}
+
+% 节标题（知识点名称，左对齐加粗）
+% 用法：\QuestionSetSection{函数的概念与表示} 自动显示“1.1　函数的概念与表示”
+% 用法：\QuestionSetSection*{本章综合训练} 显示“本章综合训练”，不推进小节编号
+% 非星号版本会递增小节编号；两种版本都会重置题号、写入目录并开启答案分组
+\NewDocumentCommand{\QuestionSetSection}{s m}{%
+  \par\medskip
+  \resetQuestionNumber
+  \global\sectionanswergroupstrue
+  \IfBooleanTF{#1}{%
+    \def\MC@sectionTitle{#2}%
+  }{%
+    \stepcounter{questionSetSectionNumber}%
+    \def\MC@sectionTitle{\arabic{questionSetChapterNumber}.\arabic{questionSetSectionNumber}　#2}%
+  }%
+  \expandafter\ACGroup\expandafter{\MC@sectionTitle}%
+  \phantomsection
+  \addcontentsline{toc}{subsection}{\MC@sectionTitle}%
+  \noindent{\large\bfseries \MC@sectionTitle}\par
+  \smallskip
+}
+
+% 本章答案速校 — 显示累积答案后清空，各章答案互不干扰
+% 用法：\printChapterAnswers 输出本章答案速校；仅章末答案模式开启时显示
+\newcommand{\printChapterAnswers}{%
+  \ifchapteranswers
+    \clearpage
+    \begin{center}
+      {\Large\bfseries 本章答案速校}
+    \end{center}
+    \printAnswerCheck
+  \fi
+  \gdef\aclist{}%
+  \gdef\chapteranswerlist{}%
+}
+\makeatother

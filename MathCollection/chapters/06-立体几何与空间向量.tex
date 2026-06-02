@@ -1,0 +1,104 @@
+% !TeX root = ../QuestionSet.tex
+% ==================== 第6章 立体几何与空间向量 ====================
+\QuestionSetChapter{立体几何与空间向量}
+
+% ===== 6.1 空间几何体 =====
+\QuestionSetSection{空间几何体}
+
+\questionGroup{一、选择题}
+
+% ----------------------------------------
+\begin{question}
+在正三棱柱$ABC-A_1B_1C_1$中，D为BC中点，则\choiceBox
+\choices[2]
+{$AD\bot{A}_{1}C$}{$BC\bot\text{平面}A{A}_{1}D$}
+{$AD//{A}_{1}{B}_{1}$}{$C{C}_{1}//\text{平面}A{A}_{1}D$}
+\end{question}
+\begin{answer}{BD}
+A：$AD\perp A_1C$ 且 $AD\perp AA_1\Rightarrow AD\perp$ 平面 $AA_1C\Rightarrow AD\perp AC$，矛盾，A 错；B：$AD\perp BC,AA_1\perp BC\Rightarrow BC\perp$ 平面 $AA_1D$，B 正确；C：$AD\parallel A_1B_1$ 与 $AD\parallel A_1D_1$ 矛盾，C 错；D：$CC_1\parallel AA_1$ 且 $CC_1$ 不在平面 $AA_1D$，故 $CC_1\parallel$ 平面 $AA_1D$，D 正确。选 BD。
+\end{answer}
+
+% ----------------------------------------
+\begin{question}
+如图所示的四棱锥${{P}-{ABCD}}$中，$PA\bot $平面$ABCD$，$BC\mathrm{}AD,AB\bot AD$．
+\begin{questionImageRight}[0.24\linewidth]{image2.png}[图1]
+(1)证明：平面$P A B \perp$平面$PAD$；
+
+(2)$PA=AB=\sqrt{2},AD=1+\sqrt{3},BC=2$，$P, B, C, D$在同一个球面上，设该球面的球心为$O$．
+
+（i）证明：$O$在平面$ABCD$上；
+
+（ⅱ）求直线$AC$与直线$PO$所成角的余弦值．
+\end{questionImageRight}
+\end{question}
+
+\begin{answer}{(1) 略；(2) (i) 略；(ii) $\dfrac{\sqrt2}{3}$。}
+(1) 由 $PA\perp$ 面 $ABCD$ 推出 $AB\perp PA$，结合 $AB\perp AD$ 证 $AB\perp$ 面 $PAD$，由面面垂直判定定理得证。(2) (i) 取 $PB,PC$ 中点 $M,N$，证球心 $O$ 在平面 $ABCD$ 上；(ii) 建立坐标系 $A(0,0,0),C(\sqrt2,2,0),P(0,0,\sqrt2),O(0,1,0)$，$\cos\langle\vec{AC},\vec{PO}\rangle=\dfrac{2}{\sqrt6\cdot\sqrt3}=\dfrac{\sqrt2}{3}$。
+\end{answer}
+
+% ----------------------------------------
+\begin{question}[GPT生成]
+一个正方体的棱长为$2$，则它的体积为\blank{3cm}．
+\end{question}
+\begin{answer}{8}
+正方体体积等于棱长的三次方，所以 $V=2^3=8$。
+\end{answer}
+
+% ===== 6.2 空间中的平行与垂直 =====
+\QuestionSetSection{空间中的平行与垂直}
+
+\questionGroup{一、选择题}
+
+% ----------------------------------------
+\begin{question}[GPT生成]
+若直线$l\perp$平面$\alpha$，且直线$m\subset\alpha$，则$l$与$m$的位置关系为\choiceBox
+\choices{平行}{相交但不垂直}{垂直}{异面}
+\end{question}
+\begin{answer}{C}
+直线垂直于一个平面，则它垂直于该平面内任意一条直线。因此 $l\perp m$。选 C。
+\end{answer}
+
+% ----------------------------------------
+\begin{question}[GPT生成]
+若两个平面$\alpha,\beta$互相垂直，它们的交线为$l$，平面$\alpha$内直线$a\perp l$，则$a$与平面$\beta$的位置关系是\blank{3cm}．
+\end{question}
+\begin{answer}{$a\perp\beta$}
+两个平面垂直时，在一个平面内垂直于交线的直线垂直于另一个平面。故 $a\perp\beta$。
+\end{answer}
+
+% ===== 6.3 空间向量与立体几何 =====
+\QuestionSetSection{空间向量与立体几何}
+
+\questionGroup{三、解答题}
+
+% ----------------------------------------
+\begin{question}[GPT生成]
+在空间直角坐标系中，已知$A(1,0,0)$，$B(0,2,0)$，$C(0,0,3)$，求$\overrightarrow{AB}\cdot\overrightarrow{AC}$。
+\end{question}
+\begin{answer}{1}
+$\overrightarrow{AB}=B-A=(-1,2,0)$，$\overrightarrow{AC}=C-A=(-1,0,3)$，所以 $\overrightarrow{AB}\cdot\overrightarrow{AC}=(-1)(-1)+2\cdot0+0\cdot3=1$。
+\end{answer}
+
+\QuestionSetSection*{本章综合训练}
+
+\questionGroup{综合解答题}
+
+% ----------------------------------------
+\begin{question}[GPT生成]
+长方体$ABCD-A_1B_1C_1D_1$中，$AB=3$，$AD=4$，$AA_1=5$。（1）求长方体体积；（2）求体对角线$AC_1$的长；（3）求直线$AC_1$与底面$ABCD$所成角。
+\end{question}
+\solutionSpace{5cm}
+\begin{answer}{(1) $60$；(2) $5\sqrt2$；(3) $45^\circ$}
+体积 $V=AB\cdot AD\cdot AA_1=3\cdot4\cdot5=60$。底面对角线 $AC=\sqrt{3^2+4^2}=5$，所以体对角线 $AC_1=\sqrt{AC^2+AA_1^2}=\sqrt{25+25}=5\sqrt2$。直线 $AC_1$ 在底面上的射影为 $AC$，所成角 $\theta$ 满足 $\tan\theta=\dfrac{AA_1}{AC}=1$，故 $\theta=45^\circ$。
+\end{answer}
+
+% ----------------------------------------
+\begin{question}[GPT生成]
+在空间直角坐标系中，$A(0,0,0)$，$B(1,0,0)$，$C(0,1,0)$，$P(0,0,2)$。（1）证明$PA\perp$平面$ABC$；（2）求四面体$PABC$体积；（3）求点$P$到直线$BC$的距离。
+\end{question}
+\solutionSpace{5cm}
+\begin{answer}{(1) 略；(2) $\dfrac13$；(3) $\dfrac{3\sqrt2}{2}$}
+平面 $ABC$ 为 $z=0$ 平面，$\overrightarrow{PA}=(0,0,-2)$ 与该平面内方向向量 $(1,0,0)$、$(0,1,0)$ 均垂直，故 $PA\perp$ 平面 $ABC$。三角形 $ABC$ 面积为 $\dfrac12$，高 $PA=2$，体积 $V=\dfrac13\cdot\dfrac12\cdot2=\dfrac13$。点 $P$ 到直线 $BC$ 的距离为 $\dfrac{|\overrightarrow{BP}\times\overrightarrow{BC}|}{|\overrightarrow{BC}|}=\dfrac3{\sqrt2}=\dfrac{3\sqrt2}{2}$。
+\end{answer}
+
+\printChapterAnswers

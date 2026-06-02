@@ -1,0 +1,92 @@
+% !TeX root = ../QuestionSet.tex
+% ==================== 第10章 计数原理与随机变量 ====================
+\QuestionSetChapter{计数原理与随机变量}
+
+% ===== 10.1 计数原理与排列组合 =====
+\QuestionSetSection{计数原理与排列组合}
+
+\questionGroup{一、选择题}
+
+% ----------------------------------------
+\begin{question}[GPT生成]
+从5名学生中选出2名参加活动，共有多少种不同选法？\choiceBox
+\choices{10}{15}{20}{25}
+\end{question}
+\begin{answer}{A}
+从 $5$ 名学生中选 $2$ 名，不考虑顺序，共有 $\mathrm{C}_5^2=\dfrac{5\cdot4}{2}=10$ 种。选 A。
+\end{answer}
+
+% ----------------------------------------
+\begin{question}[GPT生成]
+用数字$1,2,3$组成没有重复数字的三位数，共有\blank{3cm}个．
+\end{question}
+\begin{answer}{6}
+三个数字全排列，个数为 $\mathrm{A}_3^3=3\times2\times1=6$。
+\end{answer}
+
+% ===== 10.2 二项式定理 =====
+\QuestionSetSection{二项式定理}
+
+\questionGroup{一、选择题}
+
+% ----------------------------------------
+\begin{question}[GPT生成]
+$(1+x)^5$展开式中$x^2$的系数为\choiceBox
+\choices{5}{10}{20}{25}
+\end{question}
+\begin{answer}{B}
+$(1+x)^5$ 中 $x^2$ 的系数为 $\mathrm{C}_5^2=10$。选 B。
+\end{answer}
+
+% ----------------------------------------
+\begin{question}[GPT生成]
+$(2+x)^4$展开式的常数项为\blank{3cm}．
+\end{question}
+\begin{answer}{16}
+常数项来自全部取 $2$ 的项，即 $2^4=16$。
+\end{answer}
+
+% ===== 10.3 随机变量及其分布 =====
+\QuestionSetSection{随机变量及其分布}
+
+\questionGroup{一、选择题}
+
+% ----------------------------------------
+\begin{question}[GPT生成]
+随机变量$X$的分布列为$P(X=0)=\dfrac13$，$P(X=1)=\dfrac23$，则$E(X)=$\blank{3cm}．
+\end{question}
+\begin{answer}{$\dfrac23$}
+数学期望 $E(X)=0\cdot\dfrac13+1\cdot\dfrac23=\dfrac23$。
+\end{answer}
+
+% ----------------------------------------
+\begin{question}[GPT生成]
+已知随机变量$X$服从两点分布，$P(X=1)=p$，$P(X=0)=1-p$。若$E(X)=0.6$，求$p$。
+\end{question}
+\begin{answer}{$p=0.6$}
+由数学期望公式，$E(X)=1\cdot p+0\cdot(1-p)=p$。又 $E(X)=0.6$，故 $p=0.6$。
+\end{answer}
+
+\QuestionSetSection*{本章综合训练}
+
+\questionGroup{综合解答题}
+
+% ----------------------------------------
+\begin{question}[GPT生成]
+甲、乙、丙等$5$人排成一列。（1）求所有不同排法数；（2）求甲、乙不相邻的排法数；（3）若丙必须排第一，且甲、乙仍不相邻，求排法数。
+\end{question}
+\solutionSpace{5cm}
+\begin{answer}{(1) $120$；(2) $72$；(3) $12$}
+所有排法为 $5!=120$。甲、乙相邻时可把二人看成一个整体，与其余 $3$ 人共 $4$ 个对象排列，并考虑甲乙内部顺序，得 $4!\cdot2=48$，故不相邻排法为 $120-48=72$。若丙排第一，只需安排其余 $4$ 人，甲、乙不相邻：总数 $4!=24$，甲乙相邻数为 $3!\cdot2=12$，故所求为 $12$。
+\end{answer}
+
+% ----------------------------------------
+\begin{question}[GPT生成]
+已知$(1+2x)^6$展开式，并设随机变量$X\sim B(6,\dfrac13)$。（1）求展开式中$x^2$项系数；（2）求$x^3$项系数；（3）利用二项分布求$P(X=2)$和$E(X)$。
+\end{question}
+\solutionSpace{5cm}
+\begin{answer}{(1) $60$；(2) $160$；(3) $P(X=2)=\dfrac{80}{243}$，$E(X)=2$}
+由二项式定理，$x^2$ 项系数为 $\mathrm{C}_6^2\cdot2^2=15\cdot4=60$，$x^3$ 项系数为 $\mathrm{C}_6^3\cdot2^3=20\cdot8=160$。若 $X\sim B(6,\dfrac13)$，则 $P(X=2)=\mathrm{C}_6^2(\dfrac13)^2(\dfrac23)^4=15\cdot\dfrac19\cdot\dfrac{16}{81}=\dfrac{80}{243}$，期望 $E(X)=np=6\cdot\dfrac13=2$。
+\end{answer}
+
+\printChapterAnswers

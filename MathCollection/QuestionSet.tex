@@ -1,0 +1,56 @@
+% !TeX program = xelatex
+\documentclass[12pt,a4paper]{article}
+\input{Head.tex}
+\geometry{a4paper,margin=2cm,top=2cm,bottom=2cm}
+\setstretch{1.5}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{1ex}
+
+% ============ 答案显示方案 ============
+% 每次只保留一种模式取消注释即可。
+%
+% 1. 学生练习版：不显示题后解析，每章末尾给“答案速校”（默认推荐）
+%\studentBook
+%
+% 2. 纯练习版：完全不显示答案
+%\answersNone
+%
+% 3. 全书答案版：不在章末显示答案，统一在书末显示“全书答案速校”
+%\answersAtEnd
+%
+% 4. 教师详解版：每题后显示答案和分析
+%\teacherBook
+%
+% 5. 教师速览版：每题后只显示答案，不显示分析
+%\answersInlineBrief
+%
+% 6. 教师讲义版：题后详解 + 每章答案速校
+\answersInlineAndChapter
+
+\begin{document}
+
+\UseQuestionSetStyle{高中数学习题集}
+
+\QuestionSetCover
+  {高中数学习题集}
+  {按知识点章节编排，适用新高考}
+  {姓名：\blank{4cm}\qquad 班级：\blank{4cm}}
+
+\QuestionSetTOC
+
+% ============ 章节清单 ============
+% 新增章节时，在 chapters/ 下创建 .tex 文件，然后在这里加一行 \includeChapter{文件名（不含 .tex）}
+\includeChapter{01-集合与常用逻辑用语}
+\includeChapter{02-函数与基本性质}
+\includeChapter{03-三角函数与恒等变换}
+\includeChapter{04-平面向量与复数}
+\includeChapter{05-数列}
+\includeChapter{06-立体几何与空间向量}
+\includeChapter{07-解析几何与圆锥曲线}
+\includeChapter{08-导数及其应用}
+\includeChapter{09-概率与统计}
+\includeChapter{10-计数原理与随机变量}
+
+\printBookAnswerCheck
+
+\end{document}

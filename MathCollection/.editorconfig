@@ -1,0 +1,14 @@
+root = true
+
+[*.{tex,md}]
+charset = utf-8
+indent_style = space
+indent_size = 2
+trim_trailing_whitespace = false
+insert_final_newline = true
+
+[.latexmkrc]
+charset = utf-8
+indent_style = space
+indent_size = 2
+insert_final_newline = true

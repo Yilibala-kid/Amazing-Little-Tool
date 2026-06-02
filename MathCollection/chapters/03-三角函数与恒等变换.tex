@@ -1,0 +1,96 @@
+% !TeX root = ../QuestionSet.tex
+% ==================== 第3章 三角函数与恒等变换 ====================
+\QuestionSetChapter{三角函数与恒等变换}
+
+% ===== 3.1 三角函数的概念与图象 =====
+\QuestionSetSection{三角函数的概念与图象}
+
+\questionGroup{一、选择题}
+
+% ----------------------------------------
+\begin{question}
+若点$(a,0)(a>0)$是函数$y=2\tan \left( x-\dfrac{\pi}{3} \right)$的图象的一个对称中心，则$a$的最小值为\choiceBox
+\choices{$\dfrac{\pi}{6}$}{$\dfrac{\pi}{3}$}{$\dfrac{\pi}{2}$}{$\dfrac{4\pi}{3}$}
+\end{question}
+\begin{answer}{B}
+正切函数 $y=\tan(x)$ 的对称中心为 $\left(\dfrac{k\pi}{2},0\right),k\in\mathbf{Z}$。令 $x-\dfrac{\pi}{3}=\dfrac{k\pi}{2}$，得 $x=\dfrac{\pi}{3}+\dfrac{k\pi}{2}$，$a>0$ 时 $k=0$ 得 $a=\dfrac{\pi}{3}$。选 B。
+\end{answer}
+
+% ----------------------------------------
+\begin{question}
+已知$\triangle ABC$的面积为$\dfrac{1}{4}$，若$\cos 2A+\cos 2B+2\sin C=2,\cos A\cos B\sin C=\dfrac{1}{4}$，则\choiceBox
+
+
+
+\choices[2]{$\sin C=\sin^2A+\sin^2B$}{$AB=\sqrt{2}$}{$\sin A+\sin B=\dfrac{\sqrt{6}}{2}$}{$AC^2+BC^2=3$}
+\end{question}
+\begin{answer}{ABC}
+由 $\cos2A+\cos2B+2\sin C=2$ 得 $\sin C=\sin^2A+\sin^2B$，A 正确；$a^2+b^2=c^2,2R=\dfrac c{\sin C}=\sqrt2,c=\sqrt2$，B 正确；$(\sin A+\sin B)^2=\sin C+\dfrac12=\dfrac32\Rightarrow\sin A+\sin B=\dfrac{\sqrt6}{2}$，C 正确；$|AC|^2+|BC|^2=|AB|^2=2$，D 错。选 ABC。
+\end{answer}
+
+% ----------------------------------------
+\begin{question}[GPT生成]
+函数$y=\sin(2x+\dfrac{\pi}{3})$的最小正周期为\blank{3cm}．
+\end{question}
+\begin{answer}{$\pi$}
+函数 $y=\sin(\omega x+\varphi)$ 的最小正周期为 $T=\dfrac{2\pi}{|\omega|}$。此处 $\omega=2$，故 $T=\pi$。
+\end{answer}
+
+% ===== 3.2 三角恒等变换 =====
+\QuestionSetSection{三角恒等变换}
+
+\questionGroup{一、选择题}
+
+% ----------------------------------------
+\begin{question}[GPT生成]
+若$\sin\alpha=\dfrac{3}{5}$，且$\alpha$为第二象限角，则$\cos\alpha=$\choiceBox
+\choices{$\dfrac45$}{$-\dfrac45$}{$\dfrac35$}{$-\dfrac35$}
+\end{question}
+\begin{answer}{B}
+由 $\sin^2\alpha+\cos^2\alpha=1$ 得 $|\cos\alpha|=\dfrac45$。又 $\alpha$ 为第二象限角，故 $\cos\alpha<0$，所以 $\cos\alpha=-\dfrac45$。选 B。
+\end{answer}
+
+% ----------------------------------------
+\begin{question}[GPT生成]
+化简$\sin x\cos x+\cos x\sin x$得\blank{3cm}．
+\end{question}
+\begin{answer}{$\sin2x$}
+$\sin x\cos x+\cos x\sin x=2\sin x\cos x=\sin2x$。
+\end{answer}
+
+% ===== 3.3 解三角形 =====
+\QuestionSetSection{解三角形}
+
+\questionGroup{一、选择题}
+
+% ----------------------------------------
+\begin{question}[GPT生成]
+在$\triangle ABC$中，$a=4$，$b=5$，$C=60^\circ$，求边$c$的长．
+\end{question}
+\begin{answer}{$\sqrt{21}$}
+由余弦定理 $c^2=a^2+b^2-2ab\cos C$，得 $c^2=4^2+5^2-2\cdot4\cdot5\cdot\cos60^\circ=16+25-20=21$，故 $c=\sqrt{21}$。
+\end{answer}
+
+\QuestionSetSection*{本章综合训练}
+
+\questionGroup{综合解答题}
+
+% ----------------------------------------
+\begin{question}[GPT生成]
+已知函数$f(x)=2\sin\left(x+\dfrac{\pi}{6}\right)$。（1）求$f(x)$的最小正周期和最大值；（2）求$f(x)=1$在$[0,2\pi]$内的所有解；（3）写出$f(x)$取得最大值时$x$的一般形式。
+\end{question}
+\solutionSpace{5cm}
+\begin{answer}{(1) 周期 $2\pi$，最大值 $2$；(2) $0,\dfrac{2\pi}{3},2\pi$；(3) $x=\dfrac{\pi}{3}+2k\pi$}
+(1) 正弦型函数中 $x$ 的系数为 $1$，故最小正周期为 $2\pi$，最大值为 $2$。(2) $f(x)=1$ 等价于 $\sin(x+\dfrac{\pi}{6})=\dfrac12$，所以 $x+\dfrac{\pi}{6}=\dfrac{\pi}{6}+2k\pi$ 或 $\dfrac{5\pi}{6}+2k\pi$，结合区间得 $x=0,\dfrac{2\pi}{3},2\pi$。(3) 最大值在 $x+\dfrac{\pi}{6}=\dfrac{\pi}{2}+2k\pi$ 时取得，故 $x=\dfrac{\pi}{3}+2k\pi$。
+\end{answer}
+
+% ----------------------------------------
+\begin{question}[GPT生成]
+在$\triangle ABC$中，已知$a=7$，$b=8$，$C=60^\circ$。（1）求边$c$；（2）求三角形面积；（3）求$\cos A$的值。
+\end{question}
+\solutionSpace{5cm}
+\begin{answer}{(1) $c=\sqrt{57}$；(2) $14\sqrt3$；(3) $\dfrac{9}{2\sqrt{57}}$}
+(1) 由余弦定理，$c^2=a^2+b^2-2ab\cos C=49+64-2\cdot7\cdot8\cdot\dfrac12=57$，故 $c=\sqrt{57}$。(2) 面积 $S=\dfrac12ab\sin C=\dfrac12\cdot7\cdot8\cdot\dfrac{\sqrt3}{2}=14\sqrt3$。(3) 由余弦定理，$\cos A=\dfrac{b^2+c^2-a^2}{2bc}=\dfrac{64+57-49}{16\sqrt{57}}=\dfrac{9}{2\sqrt{57}}$。
+\end{answer}
+
+\printChapterAnswers

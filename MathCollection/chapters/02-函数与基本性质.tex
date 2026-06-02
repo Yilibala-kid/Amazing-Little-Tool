@@ -1,0 +1,107 @@
+% !TeX root = ../QuestionSet.tex
+% ==================== 第2章 函数与基本性质 ====================
+\QuestionSetChapter{函数与基本性质}
+
+% ===== 2.1 函数的概念与表示 =====
+\QuestionSetSection{函数的概念与表示}
+
+\questionGroup{一、选择题}
+
+% ----------------------------------------
+\begin{question}
+设$f(x)$是定义在$\mathbf{R}$上且周期为2的偶函数，当$2\le x\le 3$时，$f(x)=5-2x$，则$f\left( -\dfrac{3}{4} \right)=$\choiceBox
+\choices{$\dfrac{1}{2}$}{$-\dfrac{1}{4}$}{$\dfrac{1}{4}$}{$\dfrac{1}{2}$}
+\end{question}
+\begin{answer}{A}
+$f$ 为周期 $2$ 的偶函数，$f\left(-\dfrac34\right)=f\left(\dfrac34\right)=f\left(\dfrac{11}{4}\right)=5-2\times\dfrac{11}{4}=-\dfrac12$。选 A。
+\end{answer}
+
+% ----------------------------------------
+\begin{question}
+若实数$x$、$y$、$z$满足$2+\log_2x=3+\log_3y=5+\log_5z$，则$x$、$y$、$z$的大小关系不可能是\choiceBox
+
+
+
+\choices[2]{$x>y>z$}{$x>z>y$}{$y>x>z$}{$y>z>x$}
+\end{question}
+\begin{answer}{B}
+设 $2+\log_2x=3+\log_3y=5+\log_5z=t$，则 $x=2^{t-2},y=3^{t-3},z=5^{t-5}$。$t=8$ 时 $y>z>x$；$t=0$ 时 $x>y>z$；$t=5$ 时 $y>x>z$。故不可能为 B。
+\end{answer}
+
+% ----------------------------------------
+\begin{question}[GPT生成]
+函数$f(x)=\sqrt{x-1}+\dfrac{1}{x+2}$的定义域为\blank{3cm}．
+\end{question}
+\begin{answer}{$[1,+\infty)$}
+由 $\sqrt{x-1}$ 有意义得 $x\ge1$；由分母不为零得 $x\ne-2$。由于 $-2$ 不在 $[1,+\infty)$ 中，故定义域为 $[1,+\infty)$。
+\end{answer}
+
+% ===== 2.2 函数的性质 =====
+\QuestionSetSection{函数的性质}
+
+\questionGroup{一、选择题}
+
+% ----------------------------------------
+\begin{question}[GPT生成]
+函数$f(x)=x+\dfrac{1}{x}$在区间$(0,+\infty)$上的最小值为\choiceBox
+\choices{0}{1}{2}{不存在}
+\end{question}
+\begin{answer}{C}
+当 $x>0$ 时，由基本不等式 $x+\dfrac1x\ge2\sqrt{x\cdot\dfrac1x}=2$，当且仅当 $x=1$ 时等号成立。故最小值为 $2$。选 C。
+\end{answer}
+
+% ----------------------------------------
+\begin{question}[GPT生成]
+已知函数$f(x)=x^2-2ax+3$在$[1,+\infty)$上单调递增，求实数$a$的取值范围．
+\end{question}
+\begin{answer}{$a\le1$}
+$f(x)=(x-a)^2+3-a^2$，其对称轴为 $x=a$，开口向上。二次函数在对称轴右侧单调递增，要使 $f(x)$ 在 $[1,+\infty)$ 上单调递增，只需 $a\le1$。
+\end{answer}
+
+% ===== 2.3 指数函数与对数函数 =====
+\QuestionSetSection{指数函数与对数函数}
+
+\questionGroup{一、选择题}
+
+% ----------------------------------------
+\begin{question}[GPT生成]
+若$a>1$，则函数$y=\log_a x$的图象一定经过点\choiceBox
+\choices{$(0,1)$}{$(1,0)$}{$(a,0)$}{$(0,a)$}
+\end{question}
+\begin{answer}{B}
+由 $\log_a1=0$ 可知，无论 $a>0$ 且 $a\ne1$，函数 $y=\log_a x$ 的图象都经过点 $(1,0)$。选 B。
+\end{answer}
+
+\questionGroup{二、填空题}
+
+% ----------------------------------------
+\begin{question}[GPT生成]
+方程$\log_2(x-1)+\log_2(x+3)=3$的解为\blank{3cm}．
+\end{question}
+\begin{answer}{$-1+2\sqrt3$}
+由对数有意义得 $x>1$。原方程化为 $\log_2[(x-1)(x+3)]=3$，即 $(x-1)(x+3)=8$，整理得 $x^2+2x-11=0$，解得 $x=-1\pm2\sqrt3$。结合 $x>1$，得 $x=-1+2\sqrt3$。
+\end{answer}
+
+\QuestionSetSection*{本章综合训练}
+
+\questionGroup{综合解答题}
+
+% ----------------------------------------
+\begin{question}[GPT生成]
+已知一次函数$f(x)=kx+b$满足$f(0)=2$，$f(3)=8$。（1）求$f(x)$的解析式；（2）求$f^{-1}(x)$；（3）若$f(x)\ge10$，求$x$的取值范围。
+\end{question}
+\solutionSpace{5cm}
+\begin{answer}{(1) $f(x)=2x+2$；(2) $f^{-1}(x)=\dfrac{x-2}{2}$；(3) $x\ge4$}
+(1) 由 $f(0)=2$ 得 $b=2$，由 $f(3)=8$ 得 $3k+2=8$，故 $k=2$，所以 $f(x)=2x+2$。(2) 令 $y=2x+2$，解得 $x=\dfrac{y-2}{2}$，故 $f^{-1}(x)=\dfrac{x-2}{2}$。(3) $2x+2\ge10$，得 $x\ge4$。
+\end{answer}
+
+% ----------------------------------------
+\begin{question}[GPT生成]
+设函数$f(x)=x^2-2ax+a^2-1$。（1）写出$f(x)$的顶点坐标；（2）求$f(x)$在实数集上的最小值；（3）若$f(x)$在区间$[0,3]$上的最小值为$-1$，求$a$的取值范围。
+\end{question}
+\solutionSpace{5cm}
+\begin{answer}{(1) $(a,-1)$；(2) $-1$；(3) $0\le a\le3$}
+因为 $f(x)=(x-a)^2-1$，故顶点坐标为 $(a,-1)$，在实数集上的最小值为 $-1$。在区间 $[0,3]$ 上最小值仍为 $-1$，需要顶点横坐标 $a$ 落在该区间内，即 $0\le a\le3$。
+\end{answer}
+
+\printChapterAnswers
