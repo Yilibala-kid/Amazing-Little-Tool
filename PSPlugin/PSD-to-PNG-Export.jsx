@@ -1,6 +1,5 @@
 /*!
  * PSD to PNG 批量导出工具
- * Author: Claude
  * Released under GPL-2.0 License
 */
 
