@@ -15,3 +15,7 @@ Thumbs.db
 
 # Claude
 .claude/
+
+# Split into D:\letsgo\forMath
+MathCollection/
+MathPPT/
