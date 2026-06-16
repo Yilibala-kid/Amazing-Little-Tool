@@ -838,10 +838,10 @@
 (function() {
     'use strict';
 
-    // ============ 甯搁噺瀹氫箟 ============
+    // ============ 常量定义 ============
     const VIEW_MODES = ['auto', 'single', 'double'];
 
-    // 婕敾妯″紡甯搁噺
+    // 漫画模式常量
     const COMIC_URL_PATTERNS = [
         'bilibili.com/read/',
         'bilibili.com/opus/',
@@ -898,7 +898,7 @@
         return Boolean(coarsePointer || noHover || navigator.maxTouchPoints > 0);
     }
 
-    // ============ 婕敾妯″紡鍔熻兘 ============
+    // ============ 漫画模式功能 ============
 
     class BiliComicReader {
         normalizePreferences(value = {}) {
@@ -935,7 +935,7 @@
 
         constructor() {
             const preferences = this.loadPreferences();
-            // 鐘舵€佺鐞?
+            // 状态管理
             this.imgList = [];
             this.currentIndex = 0;
             this.lastStep = 2;
@@ -968,14 +968,14 @@
             this.pageFlipToken = 0;
             this.transformTransitionTimer = null;
 
-            // 鎷栨嫿鐘舵€?
+            // 拖拽状态
             this.isDragging = false;
             this.startX = 0;
             this.startY = 0;
             this.initX = 0;
             this.initY = 0;
 
-            // 瑙︽懜婊戝姩鐘舵€?
+            // 触摸滑动状态
             this.touchStartX = 0;
             this.touchStartY = 0;
             this.touchEndX = 0;
@@ -991,7 +991,7 @@
             this.lastTapX = 0;
             this.lastTapY = 0;
 
-            // 鍙屾寚缂╂斁鐘舵€?
+            // 双指缩放状态
             this.isTwoFingerGesturing = false;
             this.initialPinchDistance = 0;
             this.initialScale = 1;
@@ -1005,10 +1005,10 @@
             this.lastTwoFingerTapCenterX = 0;
             this.lastTwoFingerTapCenterY = 0;
 
-            // DOM 鍏冪礌寮曠敤
+            // DOM 元素引用
             this.el = {};
 
-            // 缁戝畾鍏ㄥ眬浜嬩欢鐨?this 鎸囧悜锛屼究浜庡悗缁В缁?
+            // 绑定全局事件的 this 指向，便于后续解绑
             this.handleKeyDown = this.handleKeyDown.bind(this);
             this.handleFullscreenChange = this.handleFullscreenChange.bind(this);
             this.handleMouseMove = this.handleMouseMove.bind(this);
@@ -1023,7 +1023,7 @@
             this.handleResize = this.handleResize.bind(this);
         }
 
-        // 1. 鍒濆鍖栧叆鍙ｆ寜閽?
+        // 1. 初始化入口按钮
         init() {
             const entryBtn = document.createElement('button');
             entryBtn.innerHTML = '&#128214;';
@@ -1033,7 +1033,7 @@
             entryBtn.onclick = () => this.start();
         }
 
-        // 2. 鍚姩闃呰鍣?
+        // 2. 启动阅读器
         start() {
             this.imgList = comicImages.collectImages();
 
@@ -1044,7 +1044,7 @@
             this.isDragging = false;
             this.animationMode = normalizeAnimationMode(this.animationMode);
 
-            // 闅愯棌鏀惰棌澶规偓娴寜閽?
+            // 隐藏收藏夹悬浮按钮
             const favBtn = document.getElementById('bilibili-fav-float-btn');
             if (favBtn) favBtn.style.display = 'none';
 
@@ -1053,7 +1053,7 @@
             this.render();
         }
 
-        // 3. 鍒涘缓 UI
+        // 3. 创建 UI
         createUI() {
             const createBtn = (text, title, className = 'comic-btn') => {
                 const btn = document.createElement('button');
@@ -1205,7 +1205,7 @@
             secondRow.append(this.el.resetViewBtn, this.el.fullScreenBtn);
             this.el.controls.append(row, secondRow);
 
-            // 鍙充笂瑙掕缃寜閽í鍚戞帓鍒?閫€鍑哄湪鏈€涓婇潰)
+            // 右上角设置按钮横向排列（退出在最上面）
             this.el.settingsControls.append(this.el.closeBtn, this.el.screenshotBtn, this.el.rotateBtn, this.el.settingsBtn);
             this.el.settingsPanel.append(
                 settingsHeader,
@@ -1332,7 +1332,7 @@
             this.el.selectionOverlay.addEventListener('pointercancel', this.handleSelectionPointerUp);
             this.el.reader.addEventListener('pointerdown', this.handleSettingsOutsidePointerDown, true);
 
-            // 鍥剧墖瀹瑰櫒浜嬩欢 (缈婚〉涓庢嫋鎷借捣鍐茬獊)
+            // 图片容器事件（翻页与拖拽起冲突）
             this.el.imgContainer.addEventListener('wheel', (e) => {
                 e.preventDefault();
                 this.animateTransform();
@@ -1366,14 +1366,14 @@
                 this.el.imgContainer.classList.remove('is-grabbing');
             });
 
-            // 娉ㄥ唽鍏ㄥ眬浜嬩欢 (闇€瑕佸湪閫€鍑烘椂娓呯悊)
+            // 注册全局事件（需要在退出时清理）
             document.addEventListener('mousemove', this.handleMouseMove);
             document.addEventListener('mouseup', this.handleMouseUp);
             document.addEventListener('fullscreenchange', this.handleFullscreenChange);
             window.addEventListener('keydown', this.handleKeyDown);
             window.addEventListener('resize', this.handleResize);
 
-            // 瑙︽懜婊戝姩浜嬩欢锛堜娇鐢ㄥ凡缁忕粦瀹氱殑鍑芥暟寮曠敤锛屼究浜庡悗缁В缁戯級
+            // 触摸滑动事件（使用已经绑定的函数引用，便于后续解绑）
             this.el.reader.addEventListener('touchstart', this.boundHandleTouchStart, { passive: false });
             this.el.reader.addEventListener('touchmove', this.boundHandleTouchMove, { passive: false });
             this.el.reader.addEventListener('touchend', this.boundHandleTouchEnd, { passive: false });
@@ -2149,11 +2149,11 @@
             }
         }
 
-        // 瑙︽懜浜嬩欢澶勭悊
+        // 触摸事件处理
         handleTouchStart(e) {
             if (this.isSelectingScreenshot) return;
             if (e.touches.length === 2) {
-                // 鍙屾寚缂╂斁寮€鍚?
+                // 双指缩放开启
                 e.preventDefault();
                 this.clearPendingTap();
                 this.setTransformTransition('none');
@@ -2195,7 +2195,7 @@
         handleTouchMove(e) {
             if (this.isSelectingScreenshot) return;
             if (e.touches.length === 2 && this.isTwoFingerGesturing) {
-                // 鍙屾寚缂╂斁涓?
+                // 双指缩放中
                 e.preventDefault();
                 const dx = e.touches[0].clientX - e.touches[1].clientX;
                 const dy = e.touches[0].clientY - e.touches[1].clientY;
@@ -2353,7 +2353,7 @@
             this.touchEdgePageStep = 0;
         }
 
-        // 5. 鏍稿績娓叉煋閫昏緫 (澶勭悊鍔ㄧ敾鍒囨崲)
+        // 5. 核心渲染逻辑（处理动画切换）
         render(animate = true, step = 0) {
             const renderIndex = this.currentIndex;
             const transitionToken = ++this.pageFlipToken;
@@ -2374,7 +2374,7 @@
             });
         }
 
-        // 6. 鏅鸿兘鍥剧墖鍔犺浇閫昏緫 (鍐冲畾鍗曞弻椤?
+        // 6. 智能图片加载逻辑（决定单双页）
         async loadImages(renderIndex, animationMode = 'none', transitionDirection = 0) {
             if (renderIndex !== this.currentIndex) return;
 
@@ -2459,7 +2459,7 @@
             this.preloadImages(preloadStart);
         }
 
-        // 杈呭姪锛氳缃浘鐗囨牱寮?
+        // 辅助：设置图片样式
         setupImg(img, isFull, displaySize = null) {
             const rotated = this.rotation === 90 || this.rotation === 270;
             img.className = isFull ? 'comic-img-full' : 'comic-img-half';
@@ -2490,9 +2490,9 @@
             img.style.transform = this.rotation ? `rotate(${this.rotation}deg)` : '';
         }
 
-        // 杈呭姪锛氬畬鎴愭覆鏌撳苟瑙﹀彂
+        // 辅助：完成渲染并触发
 
-        // 缈婚〉鐩稿叧鏂规硶
+        // 翻页相关方法
 
         turnPage(e, step) {
             e?.stopPropagation?.();
@@ -2609,7 +2609,7 @@
             this.writeTransform();
         }
 
-        // 鍏ㄥ眬浜嬩欢澶勭悊鍑芥暟
+        // 全局事件处理函数
 
         handleMouseMove(e) {
             if (!this.isDragging) return;
@@ -2646,7 +2646,7 @@
             else if (e.key === 'Escape') this.close();
         }
 
-        // 娓呯悊骞跺叧闂?
+        // 清理并关闭
         close() {
             if (this.hideTimer) clearTimeout(this.hideTimer);
             if (this.messageTimer) clearTimeout(this.messageTimer);
@@ -2675,15 +2675,15 @@
                 this.el = {};
             }
 
-            // 鏄剧ず鏀惰棌澶规偓娴寜閽?
+            // 显示收藏夹悬浮按钮
             const favBtn = document.getElementById('bilibili-fav-float-btn');
             if (favBtn) favBtn.style.display = '';
         }
     }
 
 
-    // ============ 鍏ュ彛鍑芥暟 ============
-    // 妫€鏌RL鏄惁鍖归厤婕敾妯″紡
+    // ============ 入口函数 ============
+    // 检查 URL 是否匹配漫画模式
     function shouldInitComicReader() {
         const url = window.location.href;
         return COMIC_URL_PATTERNS.some(pattern => url.includes(pattern));
