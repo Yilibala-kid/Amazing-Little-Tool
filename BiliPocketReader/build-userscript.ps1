@@ -37,7 +37,6 @@ $UserScriptDescription = ($Manifest.description -replace "[\r\n]+", " ").Trim()
 if (-not $UserScriptDescription) {
     $UserScriptDescription = "Bilibili comic reader and favorites shortcut"
 }
-$UserScriptDescription = "Bilibili comic reader and favorites shortcut"
 $CssText = ""
 foreach ($CssFile in $ContentScript.css) {
     $CssPath = Join-Path $Root $CssFile

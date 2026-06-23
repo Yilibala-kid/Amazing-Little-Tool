@@ -82,26 +82,46 @@
         changeListeners = new Set();
     }
 
-    function parseFavoriteTextLine(line) {
-        const [key, name, image] = line.split('\t');
-        if (!key || !name || !image) return null;
+    function parseFavoriteBlockContent(content) {
+        if (typeof content !== 'string') return null;
+
+        const firstSeparator = content.indexOf('==');
+        if (firstSeparator < 0) return null;
+        const secondSeparator = content.indexOf('==', firstSeparator + 2);
+        if (secondSeparator < 0) return null;
+
+        const key = content.slice(0, firstSeparator).trim();
+        const name = content.slice(firstSeparator + 2, secondSeparator).replace(/\s+/g, ' ').trim();
+        const image = content.slice(secondSeparator + 2).replace(/\s+/g, '').trim();
         const match = key.match(/^(user|readlist):(\d+)$/);
         if (!match) return null;
-        const cleanName = name.trim();
-        const cleanImage = image.trim();
-        if (!cleanName || !cleanImage) return null;
+        if (!name || !image) return null;
+
         const isReadlist = match[1].toLowerCase() === window.Shared.READLIST_TYPE;
         return {
             type: isReadlist ? window.Shared.READLIST_TYPE : window.Shared.USER_TYPE,
             [isReadlist ? 'id' : 'uid']: match[2],
-            [isReadlist ? 'title' : 'uname']: cleanName,
-            [isReadlist ? 'cover' : 'face']: cleanImage
+            [isReadlist ? 'title' : 'uname']: name,
+            [isReadlist ? 'cover' : 'face']: image
         };
+    }
+
+    function parseFavoriteText(text) {
+        const favorites = [];
+        const pattern = /\[([\s\S]*?)\]/g;
+        let match;
+
+        while ((match = pattern.exec(text)) !== null) {
+            const favorite = parseFavoriteBlockContent(match[1]);
+            if (favorite) favorites.push(favorite);
+        }
+
+        return favorites;
     }
 
     function normalizeImportedFavorites(data) {
         if (typeof data === 'string') {
-            return window.Shared.normalizeFavoriteList(data.trim().split(/\r?\n/).map(parseFavoriteTextLine));
+            return window.Shared.normalizeFavoriteList(parseFavoriteText(data));
         }
 
         return window.Shared.normalizeFavoriteList(data);
@@ -167,8 +187,12 @@
         return { ...merged, data };
     }
 
-    function cleanExportField(value) {
-        return typeof value === 'string' ? value.replace(/[\t\r\n]+/g, ' ').trim() : '';
+    function cleanExportName(value) {
+        return typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : '';
+    }
+
+    function cleanExportImage(value) {
+        return typeof value === 'string' ? value.replace(/\s+/g, '').trim() : '';
     }
 
     function createExportText(data = dataCache) {
@@ -176,13 +200,9 @@
             .map(item => {
                 const key = window.Shared.getFavoriteKey(item);
                 if (!key) return '';
-                const isReadlist = window.Shared.isReadlistFavorite(item);
-                const fields = [
-                    key,
-                    cleanExportField(window.Shared.getFavoriteName(item)),
-                    cleanExportField(window.Shared.getFavoriteImage(item))
-                ];
-                return fields.every(Boolean) ? fields.join('\t') : '';
+                const name = cleanExportName(window.Shared.getFavoriteName(item));
+                const image = cleanExportImage(window.Shared.getFavoriteImage(item));
+                return name && image ? `[${key}==${name}==${image}]` : '';
             })
             .filter(Boolean)
             .join('\n');

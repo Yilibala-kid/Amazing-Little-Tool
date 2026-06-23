@@ -171,6 +171,30 @@
     color: var(--text-secondary);
 }
 
+.bilibili-toolbox-keyword-input {
+    width: 100%;
+    min-height: 38px;
+    padding: 0 12px;
+    box-sizing: border-box;
+    color: var(--text-primary);
+    background: var(--bg-deepest);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    font-family: var(--font);
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s, opacity 0.2s;
+}
+
+.bilibili-toolbox-keyword-input::placeholder {
+    color: var(--text-muted);
+}
+
+.bilibili-toolbox-keyword-input:focus {
+    border-color: var(--acc);
+    box-shadow: 0 0 0 2px rgba(251, 114, 153, 0.18);
+}
+
 /* ===== Toggle switch ===== */
 .bilibili-toolbox-switch {
     position: relative;
@@ -519,7 +543,10 @@
 .bilibili-fav-item:hover .bilibili-fav-delete { opacity: 1; }
 .bilibili-fav-delete:hover { background: var(--error); }
 
-/* ===== Hidden forward dynamic ===== */
+/* ===== Dynamic filter visibility ===== */
+.bilibili-toolbox-dynamic-filter-active .bili-dyn-list__item:not(.bilibili-toolbox-dynamic-filter-ready),
+.bilibili-toolbox-dynamic-filter-active .bili-dyn-item:not(.bilibili-toolbox-dynamic-filter-ready),
+.bilibili-toolbox-dynamic-filter-active .bili-opus-view:not(.bilibili-toolbox-dynamic-filter-ready),
 .bilibili-toolbox-hide-forward-dynamic { display: none !important; }
 
 /* ══════════════════════════════════════ */

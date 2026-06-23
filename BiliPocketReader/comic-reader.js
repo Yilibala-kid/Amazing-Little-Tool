@@ -56,12 +56,6 @@
         return IMAGE_RENDER_MODES.includes(mode) ? mode : DEFAULT_READER_PREFERENCES.imageRenderMode;
     }
 
-    function isTouchLikeDevice() {
-        const coarsePointer = window.matchMedia?.('(pointer: coarse)').matches;
-        const noHover = window.matchMedia?.('(hover: none)').matches;
-        return Boolean(coarsePointer || noHover || navigator.maxTouchPoints > 0);
-    }
-
     // ============ 漫画模式功能 ============
 
     class BiliComicReader {
@@ -119,7 +113,7 @@
             this.rotation = 0;
             this.activePageCount = 1;
             this.controlsVisible = true;
-            this.isTouchDevice = isTouchLikeDevice();
+            this.isTouchDevice = Shared.isTouchLikeDevice();
             this.isCompactLayout = false;
             this.isSelectingScreenshot = false;
             this.isDraggingSelection = false;
@@ -171,6 +165,7 @@
 
             // DOM 元素引用
             this.el = {};
+            this.eventBag = null;
 
             // 绑定全局事件的 this 指向，便于后续解绑
             this.handleKeyDown = this.handleKeyDown.bind(this);
@@ -212,6 +207,7 @@
             const favBtn = document.getElementById('bilibili-fav-float-btn');
             if (favBtn) favBtn.style.display = 'none';
 
+            this.eventBag = Toolbox.createEventBag();
             this.createUI();
             this.bindEvents();
             this.render();
@@ -396,19 +392,20 @@
 
         // 4. 缁戝畾浜嬩欢
         bindEvents() {
+            const on = (...args) => this.eventBag.on(...args);
             const stop = (handler) => (e) => {
                 e.stopPropagation();
                 handler();
             };
 
             // Controls visibility 鈥?only the panels trigger show/hide, images don't
-            this.el.controls.addEventListener('mouseenter', () => this.showControls());
-            this.el.settingsControls.addEventListener('mouseenter', () => this.showControls());
-            this.el.settingsPanel.addEventListener('mouseenter', () => this.showControls());
-            this.el.controls.addEventListener('mouseleave', () => this.scheduleHideControls());
-            this.el.settingsControls.addEventListener('mouseleave', () => this.scheduleHideControls());
-            this.el.settingsPanel.addEventListener('mouseleave', () => this.scheduleHideControls());
-            this.el.reader.addEventListener('mouseleave', () => this.scheduleHideControls());
+            on(this.el.controls, 'mouseenter', () => this.showControls());
+            on(this.el.settingsControls, 'mouseenter', () => this.showControls());
+            on(this.el.settingsPanel, 'mouseenter', () => this.showControls());
+            on(this.el.controls, 'mouseleave', () => this.scheduleHideControls());
+            on(this.el.settingsControls, 'mouseleave', () => this.scheduleHideControls());
+            on(this.el.settingsPanel, 'mouseleave', () => this.scheduleHideControls());
+            on(this.el.reader, 'mouseleave', () => this.scheduleHideControls());
 
             this.el.leftBtn.onclick = (e) => this.turnPage(e, this.isRightToLeft ? this.lastStep : -this.lastStep);
             this.el.rightBtn.onclick = (e) => this.turnPage(e, this.isRightToLeft ? -this.lastStep : this.lastStep);
@@ -469,12 +466,12 @@
             this.el.closeBtn.onclick = () => this.close();
 
             // 椤电爜璺宠浆
-            this.el.pageInfo.addEventListener('click', (e) => {
+            on(this.el.pageInfo, 'click', (e) => {
                 e.stopPropagation();
                 this.showPageInput();
             });
-            this.el.pageInput.addEventListener('focus', () => this.el.pageInput.select());
-            this.el.pageInput.addEventListener('keydown', (e) => {
+            on(this.el.pageInput, 'focus', () => this.el.pageInput.select());
+            on(this.el.pageInput, 'keydown', (e) => {
                 e.stopPropagation();
                 if (e.key === 'Enter') {
                     e.preventDefault();
@@ -486,24 +483,24 @@
                     this.el.pageInput.blur();
                 }
             });
-            this.el.pageInput.addEventListener('blur', () => this.jumpToPageFromInput());
+            on(this.el.pageInput, 'blur', () => this.jumpToPageFromInput());
             this.el.selectionCancelBtn.onclick = () => this.cancelScreenshotSelection(true);
             this.el.selectionFullBtn.onclick = () => { void this.saveFullScreenshot(); };
             this.el.selectionSaveBtn.onclick = () => { void this.saveSelectionScreenshot(); };
-            this.el.selectionOverlay.addEventListener('pointerdown', this.handleSelectionPointerDown);
-            this.el.selectionOverlay.addEventListener('pointermove', this.handleSelectionPointerMove);
-            this.el.selectionOverlay.addEventListener('pointerup', this.handleSelectionPointerUp);
-            this.el.selectionOverlay.addEventListener('pointercancel', this.handleSelectionPointerUp);
-            this.el.reader.addEventListener('pointerdown', this.handleSettingsOutsidePointerDown, true);
+            on(this.el.selectionOverlay, 'pointerdown', this.handleSelectionPointerDown);
+            on(this.el.selectionOverlay, 'pointermove', this.handleSelectionPointerMove);
+            on(this.el.selectionOverlay, 'pointerup', this.handleSelectionPointerUp);
+            on(this.el.selectionOverlay, 'pointercancel', this.handleSelectionPointerUp);
+            on(this.el.reader, 'pointerdown', this.handleSettingsOutsidePointerDown, true);
 
             // 图片容器事件（翻页与拖拽起冲突）
-            this.el.imgContainer.addEventListener('wheel', (e) => {
+            on(this.el.imgContainer, 'wheel', (e) => {
                 e.preventDefault();
                 this.animateTransform();
                 this.zoomAt(e.clientX, e.clientY, this.scale + (e.deltaY > 0 ? -SCALE_STEP : SCALE_STEP));
             }, { passive: false });
 
-            this.el.imgContainer.addEventListener('dblclick', (e) => {
+            on(this.el.imgContainer, 'dblclick', (e) => {
                 e.preventDefault();
                 this.animateTransform(220);
                 if (Math.abs(this.scale - 1) < 0.05) {
@@ -513,7 +510,7 @@
                 this.resetScaleAndPan();
             });
 
-            this.el.imgContainer.addEventListener('mousedown', (e) => {
+            on(this.el.imgContainer, 'mousedown', (e) => {
                 if (e.button !== 0) return;
                 e.preventDefault();
                 this.setTransformTransition('none');
@@ -525,23 +522,23 @@
                 this.el.imgContainer.classList.add('is-grabbing');
             });
 
-            this.el.imgContainer.addEventListener('mouseleave', () => {
+            on(this.el.imgContainer, 'mouseleave', () => {
                 this.isDragging = false;
                 this.el.imgContainer.classList.remove('is-grabbing');
             });
 
             // 注册全局事件（需要在退出时清理）
-            document.addEventListener('mousemove', this.handleMouseMove);
-            document.addEventListener('mouseup', this.handleMouseUp);
-            document.addEventListener('fullscreenchange', this.handleFullscreenChange);
-            window.addEventListener('keydown', this.handleKeyDown);
-            window.addEventListener('resize', this.handleResize);
+            on(document, 'mousemove', this.handleMouseMove);
+            on(document, 'mouseup', this.handleMouseUp);
+            on(document, 'fullscreenchange', this.handleFullscreenChange);
+            on(window, 'keydown', this.handleKeyDown);
+            on(window, 'resize', this.handleResize);
 
             // 触摸滑动事件（使用已经绑定的函数引用，便于后续解绑）
-            this.el.reader.addEventListener('touchstart', this.boundHandleTouchStart, { passive: false });
-            this.el.reader.addEventListener('touchmove', this.boundHandleTouchMove, { passive: false });
-            this.el.reader.addEventListener('touchend', this.boundHandleTouchEnd, { passive: false });
-            this.el.reader.addEventListener('touchcancel', this.boundHandleTouchEnd, { passive: false });
+            on(this.el.reader, 'touchstart', this.boundHandleTouchStart, { passive: false });
+            on(this.el.reader, 'touchmove', this.boundHandleTouchMove, { passive: false });
+            on(this.el.reader, 'touchend', this.boundHandleTouchEnd, { passive: false });
+            on(this.el.reader, 'touchcancel', this.boundHandleTouchEnd, { passive: false });
             this.showControls();
         }
 
@@ -1819,22 +1816,12 @@
             this.cancelScreenshotSelection(false, false);
             this.hideSettingsPanel();
 
-            document.removeEventListener('mousemove', this.handleMouseMove);
-            document.removeEventListener('mouseup', this.handleMouseUp);
-            document.removeEventListener('fullscreenchange', this.handleFullscreenChange);
-            window.removeEventListener('keydown', this.handleKeyDown);
-            window.removeEventListener('resize', this.handleResize);
+            if (this.eventBag) {
+                this.eventBag.cleanup();
+                this.eventBag = null;
+            }
 
             if (this.el.reader) {
-                this.el.reader.removeEventListener('touchstart', this.boundHandleTouchStart);
-                this.el.reader.removeEventListener('touchmove', this.boundHandleTouchMove);
-                this.el.reader.removeEventListener('touchend', this.boundHandleTouchEnd);
-                this.el.reader.removeEventListener('touchcancel', this.boundHandleTouchEnd);
-                this.el.reader.removeEventListener('pointerdown', this.handleSettingsOutsidePointerDown, true);
-                this.el.selectionOverlay.removeEventListener('pointerdown', this.handleSelectionPointerDown);
-                this.el.selectionOverlay.removeEventListener('pointermove', this.handleSelectionPointerMove);
-                this.el.selectionOverlay.removeEventListener('pointerup', this.handleSelectionPointerUp);
-                this.el.selectionOverlay.removeEventListener('pointercancel', this.handleSelectionPointerUp);
                 this.el.reader.remove();
                 this.el = {};
             }

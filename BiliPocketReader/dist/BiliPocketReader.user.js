@@ -2,7 +2,7 @@
 // @name         BiliPocketReader
 // @namespace    https://local/bilibili-toolbox
 // @version      1.0
-// @description  Bilibili comic reader and favorites shortcut
+// @description  B站漫画模式阅读器 + 收藏夹快捷跳转
 // @match        *://bilibili.com/*
 // @match        *://*.bilibili.com/*
 // @run-at       document-start
@@ -62,7 +62,7 @@
     };
     window.chrome = chromeShim;
 
-    const css = "/* ===== content.css ===== */\n/* Bilibili Toolbox — Spotify-inspired dark theme */\r\n\r\n:root {\r\n    --acc: #fb7299;\r\n    --acc-hover: #fc8bab;\r\n    --acc-active: #e86288;\r\n    --bg-deepest: #0a0a0a;\r\n    --bg-surface: #181818;\r\n    --bg-elevated: #1f1f1f;\r\n    --bg-overlay: rgba(20, 20, 20, 0.94);\r\n    --text-primary: #ffffff;\r\n    --text-secondary: #b3b3b3;\r\n    --text-muted: #7c7c7c;\r\n    --border-subtle: rgba(255, 255, 255, 0.12);\r\n    --border-strong: #4d4d4d;\r\n    --error: #f3727f;\r\n    --error-hover: #e86a77;\r\n    --shadow-heavy: 0 8px 24px rgba(0, 0, 0, 0.5);\r\n    --shadow-card: 0 4px 8px rgba(0, 0, 0, 0.3);\r\n    --shadow-float: 0 4px 16px rgba(251, 114, 153, 0.25);\r\n    --radius-sm: 6px;\r\n    --radius-md: 8px;\r\n    --radius-lg: 12px;\r\n    --radius-pill: 9999px;\r\n    --font: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif;\r\n}\r\n\r\n/* ===== Floating star button ===== */\r\n#bilibili-fav-float-btn {\r\n    position: fixed;\r\n    bottom: 80px;\r\n    right: 20px;\r\n    width: 50px;\r\n    height: 50px;\r\n    background: var(--acc);\r\n    border-radius: 50%;\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    font-size: 24px;\r\n    cursor: pointer;\n    box-shadow: var(--shadow-float);\n    z-index: 999999;\n    transition: transform 0.2s, box-shadow 0.2s, opacity 0.3s, visibility 0.3s;\r\n    line-height: 1;\r\n    text-align: center;\r\n}\r\n\r\n#bilibili-fav-float-btn:hover {\r\n    transform: scale(1.1);\r\n    box-shadow: 0 6px 20px rgba(251, 114, 153, 0.4);\r\n}\r\n\r\n#bilibili-fav-float-btn.hide-forward-active {\r\n    border-radius: var(--radius-sm);\r\n}\r\n\r\n/* ===== Shared panel base ===== */\r\n#bilibili-fav-panel,\r\n#bilibili-fav-controls-panel {\r\n    position: fixed;\r\n    bottom: 140px;\r\n    right: 20px;\r\n    width: 280px;\r\n    background: var(--bg-overlay);\r\n    backdrop-filter: blur(20px);\r\n    -webkit-backdrop-filter: blur(20px);\r\n    border-radius: var(--radius-lg);\r\n    box-shadow: var(--shadow-heavy);\r\n    z-index: 1000000;\n    opacity: 0;\r\n    visibility: hidden;\r\n    transition: opacity 0.2s, transform 0.2s, visibility 0.2s;\r\n    font-family: var(--font);\r\n    transform: translateY(10px);\r\n    color: var(--text-primary);\r\n    border: 1px solid var(--border-subtle);\r\n}\r\n\r\n#bilibili-fav-controls-panel { z-index: 1000001; }\n\r\n#bilibili-fav-panel.show,\r\n#bilibili-fav-controls-panel.show {\r\n    opacity: 1;\r\n    visibility: visible;\r\n    transform: translateY(0);\r\n}\r\n\r\n/* ===== Panel header ===== */\r\n.bilibili-fav-header {\n    display: flex;\n    justify-content: space-between;\n    align-items: center;\n    padding: 10px 16px;\r\n    border-bottom: 1px solid var(--border-subtle);\r\n    background: var(--bg-elevated);\r\n    color: var(--text-primary);\r\n    border-radius: var(--radius-lg) var(--radius-lg) 0 0;\r\n    font-weight: 600;\r\n    font-size: 14px;\n    letter-spacing: 0.3px;\n}\n\n.bilibili-fav-header-actions {\n    display: flex;\n    align-items: center;\n    gap: 6px;\n}\n\r\n/* ===== Panel content ===== */\r\n.bilibili-fav-content { max-height: 400px; overflow-y: auto; }\r\n\r\n.bilibili-fav-list {\r\n    padding: 8px 10px;\r\n    display: flex;\r\n    flex-wrap: wrap;\r\n    justify-content: space-between;\r\n    gap: 4px;\r\n}\r\n\r\n.bilibili-fav-content::-webkit-scrollbar { width: 5px; }\r\n.bilibili-fav-content::-webkit-scrollbar-track { background: transparent; }\r\n.bilibili-fav-content::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 3px; }\r\n.bilibili-fav-content::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.25); }\r\n\r\n/* ===== Dynamic controls content ===== */\r\n.bilibili-toolbox-control-content {\r\n    padding: 16px;\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: 12px;\r\n}\r\n\r\n.bilibili-toolbox-control-row {\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: space-between;\r\n    gap: 12px;\r\n    padding: 12px 14px;\r\n    border-radius: var(--radius-md);\r\n    background: var(--bg-surface);\r\n    cursor: pointer;\r\n    border: 1px solid var(--border-subtle);\r\n}\r\n\r\n.bilibili-toolbox-control-copy {\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: 4px;\r\n    min-width: 0;\r\n}\r\n\r\n.bilibili-toolbox-control-title {\r\n    font-size: 14px;\r\n    font-weight: 600;\r\n    color: var(--text-primary);\r\n}\r\n\r\n.bilibili-toolbox-control-desc {\r\n    font-size: 12px;\r\n    color: var(--text-secondary);\r\n    line-height: 1.4;\r\n}\r\n\r\n.bilibili-toolbox-control-status {\r\n    font-size: 12px;\r\n    line-height: 1.4;\r\n    padding: 8px 12px;\r\n    border-radius: var(--radius-sm);\r\n    background: var(--bg-surface);\r\n    color: var(--text-secondary);\r\n}\r\n\r\n/* ===== Toggle switch ===== */\r\n.bilibili-toolbox-switch {\r\n    position: relative;\r\n    width: 46px;\r\n    height: 28px;\r\n    flex-shrink: 0;\r\n}\r\n\r\n.bilibili-toolbox-switch input {\r\n    position: absolute;\r\n    inset: 0;\r\n    opacity: 0;\r\n    cursor: pointer;\r\n    margin: 0;\r\n}\r\n\r\n.bilibili-toolbox-switch-slider {\r\n    position: absolute;\r\n    inset: 0;\r\n    border-radius: var(--radius-pill);\r\n    background: rgba(255, 255, 255, 0.2);\r\n    transition: background 0.2s;\r\n}\r\n\r\n.bilibili-toolbox-switch-slider::before {\r\n    content: \"\";\r\n    position: absolute;\r\n    top: 3px;\r\n    left: 3px;\r\n    width: 22px;\r\n    height: 22px;\r\n    border-radius: 50%;\r\n    background: #fff;\r\n    transition: transform 0.2s;\r\n    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);\r\n}\r\n\r\n.bilibili-toolbox-switch input:checked + .bilibili-toolbox-switch-slider {\r\n    background: var(--acc);\r\n}\r\n\r\n.bilibili-toolbox-switch input:checked + .bilibili-toolbox-switch-slider::before {\r\n    transform: translateX(18px);\r\n}\r\n\r\n/* ===== Empty state ===== */\r\n.bilibili-fav-empty { text-align: center; color: var(--text-muted); padding: 40px 20px; font-size: 14px; }\r\n\r\n/* ===== Toast message ===== */\r\n.bilibili-fav-msg { padding: 8px; text-align: center; font-size: 12px; display: none; }\r\n\r\n/* ===== Pill buttons (global) ===== */\r\n.bilibili-fav-add-btn,\n.bilibili-fav-control-btn,\n.bilibili-toolbox-export-btn,\n.bilibili-toolbox-import-btn {\n    padding: 10px 0;\r\n    font-size: 13px;\r\n    font-weight: 600;\r\n    border: none;\r\n    border-radius: var(--radius-pill);\r\n    cursor: pointer;\r\n    transition: all 0.2s;\r\n    color: var(--text-primary);\r\n    letter-spacing: 0.3px;\r\n    flex: 1;\r\n}\r\n\r\n.bilibili-fav-add-btn {\n    padding: 8px 16px;\n    flex: none;\n}\n\n.bilibili-fav-control-btn {\n    display: none;\n    padding: 8px 12px;\n    flex: none;\n}\n\r\n/* Primary pill — accent fill */\r\n.bilibili-fav-add-btn,\n.bilibili-fav-control-btn,\n.bilibili-toolbox-export-btn {\n    background: var(--acc);\r\n    color: #fff;\r\n}\r\n\r\n.bilibili-fav-add-btn:hover,\n.bilibili-fav-control-btn:hover,\n.bilibili-toolbox-export-btn:hover {\n    background: var(--acc-hover);\r\n}\r\n\r\n/* Secondary pill — dark fill */\r\n.bilibili-toolbox-import-btn {\r\n    background: var(--bg-elevated);\r\n    border: 1px solid var(--border-strong);\r\n}\r\n\r\n.bilibili-toolbox-import-btn:hover {\r\n    background: #2a2a2a;\r\n}\r\n\r\n/* ===== Button group layout ===== */\r\n.bilibili-toolbox-control-actions {\n    display: flex;\n    gap: 8px;\n    padding: 0 16px 16px;\n}\n\n/* ===== Export text document ===== */\n.bilibili-toolbox-export-dialog {\n    position: fixed;\n    inset: 0;\n    z-index: 1000002;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    padding: 16px;\n    background: rgba(0, 0, 0, 0.72);\n}\n\n.bilibili-toolbox-export-document {\n    display: flex;\n    width: min(640px, 100%);\n    max-height: min(720px, 86vh);\n    flex-direction: column;\n    overflow: hidden;\n    background: var(--bg-elevated);\n    border: 1px solid var(--border-subtle);\n    border-radius: var(--radius-md);\n    box-shadow: var(--shadow-heavy);\n}\n\n.bilibili-toolbox-export-header {\n    display: flex;\n    min-height: 44px;\n    align-items: center;\n    justify-content: space-between;\n    padding: 0 14px;\n    color: var(--text-primary);\n    font-size: 14px;\n    font-weight: 600;\n    border-bottom: 1px solid var(--border-subtle);\n}\n\n.bilibili-toolbox-export-close {\n    display: inline-flex;\n    width: 30px;\n    height: 30px;\n    align-items: center;\n    justify-content: center;\n    padding: 0;\n    color: var(--text-secondary);\n    background: transparent;\n    border: none;\n    border-radius: 50%;\n    cursor: pointer;\n    font-size: 22px;\n    line-height: 1;\n}\n\n.bilibili-toolbox-export-close:hover {\n    color: var(--text-primary);\n    background: rgba(255, 255, 255, 0.1);\n}\n\n.bilibili-toolbox-export-text {\n    width: 100%;\n    min-height: min(560px, 72vh);\n    padding: 14px;\n    resize: vertical;\n    box-sizing: border-box;\n    color: var(--text-primary);\n    background: var(--bg-deepest);\n    border: none;\n    outline: none;\n    font-family: Consolas, \"Courier New\", monospace;\n    font-size: 13px;\n    line-height: 1.5;\n}\n\n.bilibili-toolbox-export-footer {\n    display: flex;\n    min-height: 52px;\n    align-items: center;\n    justify-content: space-between;\n    gap: 12px;\n    padding: 8px 12px;\n    border-top: 1px solid var(--border-subtle);\n}\n\n.bilibili-toolbox-export-status {\n    color: var(--text-secondary);\n    font-size: 12px;\n    line-height: 1.4;\n}\n\n.bilibili-toolbox-export-status.is-error {\n    color: var(--error);\n}\n\n.bilibili-toolbox-export-actions {\n    display: flex;\n    flex-shrink: 0;\n    align-items: center;\n    gap: 8px;\n}\n\n.bilibili-toolbox-export-clipboard,\n.bilibili-toolbox-export-confirm {\n    flex-shrink: 0;\n    padding: 8px 18px;\n    color: #fff;\n    background: var(--acc);\n    border: none;\n    border-radius: var(--radius-pill);\n    cursor: pointer;\n    font-size: 13px;\n    font-weight: 600;\n}\n\n.bilibili-toolbox-export-clipboard:hover,\n.bilibili-toolbox-export-confirm:hover {\n    background: var(--acc-hover);\n}\n\n/* ===== Favorite list items ===== */\n.bilibili-fav-item-link {\r\n    display: block;\r\n    text-decoration: none;\r\n    color: inherit;\r\n    width: calc(50% - 2px);\r\n    position: relative;\r\n}\r\n\r\n.bilibili-fav-item {\r\n    display: flex;\r\n    flex-direction: column;\r\n    align-items: center;\r\n    padding: 8px 6px 10px;\r\n    border-radius: var(--radius-md);\r\n    transition: background 0.2s;\r\n    text-align: center;\r\n    position: relative;\r\n    overflow: hidden;\r\n    height: 88px;\r\n    box-sizing: border-box;\r\n    background: transparent;\r\n}\r\n\r\n.bilibili-fav-item[data-readlist=\"true\"] { padding: 0; }\r\n\r\n.bilibili-fav-item-link:hover .bilibili-fav-item {\r\n    background: var(--bg-surface);\r\n}\r\n\r\n.bilibili-fav-item-info {\r\n    display: flex;\r\n    flex-direction: column;\r\n    align-items: center;\r\n    width: 100%;\r\n    height: 100%;\r\n    position: relative;\r\n    z-index: 1;\r\n}\r\n\r\n.bilibili-fav-item[data-readlist=\"true\"] .bilibili-fav-item-info {\r\n    padding: 0;\r\n    overflow: hidden;\r\n    border-radius: inherit;\r\n}\r\n\r\n/* ===== Avatar — round, no border ===== */\r\n.bilibili-fav-avatar {\r\n    width: 44px;\r\n    height: 44px;\r\n    border-radius: 50%;\r\n    object-fit: cover;\r\n    position: relative;\r\n    z-index: 1;\r\n    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);\r\n}\r\n\r\n.bilibili-fav-avatar.cover {\r\n    display: block;\r\n    width: 100%;\r\n    height: 100%;\r\n    border-radius: var(--radius-md);\r\n    box-shadow: none;\r\n    position: absolute;\r\n    inset: 0;\r\n}\r\n\r\n/* ===== Name label ===== */\r\n.bilibili-fav-name {\r\n    font-size: 12px;\r\n    color: var(--text-primary);\r\n    font-weight: 500;\r\n    max-width: 100%;\r\n    overflow: hidden;\r\n    text-overflow: ellipsis;\r\n    white-space: nowrap;\r\n    position: relative;\r\n    z-index: 1;\r\n    margin-top: 6px;\r\n}\r\n\r\n.bilibili-fav-item[data-readlist=\"true\"] .bilibili-fav-name {\r\n    position: absolute;\r\n    bottom: 0;\r\n    left: 0;\r\n    right: 0;\r\n    color: #fff;\r\n    background: linear-gradient(transparent, rgba(0, 0, 0, 0.75));\r\n    padding: 20px 8px 8px;\r\n    border-radius: 0 0 var(--radius-md) var(--radius-md);\r\n    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);\r\n    font-weight: 600;\r\n}\r\n\r\n/* ===== Delete button — ghost pill ===== */\r\n.bilibili-fav-delete {\n    position: absolute;\n    top: 4px;\n    right: 4px;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    width: 20px;\n    height: 20px;\n    padding: 0;\n    font-size: 14px;\n    line-height: 1;\n    color: var(--text-primary);\n    background: rgba(0, 0, 0, 0.5);\n    border: none;\n    border-radius: 50%;\n    appearance: none;\n    cursor: pointer;\n    transition: all 0.2s;\r\n    z-index: 2;\r\n    opacity: 0;\r\n}\r\n\r\n.bilibili-fav-item:hover .bilibili-fav-delete { opacity: 1; }\r\n.bilibili-fav-delete:hover { background: var(--error); }\r\n\r\n/* ===== Hidden forward dynamic ===== */\r\n.bilibili-toolbox-hide-forward-dynamic { display: none !important; }\r\n\r\n/* ══════════════════════════════════════ */\r\n/*  Comic Reader — Spotify dark theme   */\r\n/* ══════════════════════════════════════ */\r\n\r\n.comic-entry-btn {\n    position: fixed;\n    bottom: 24px;\n    right: 24px;\n    z-index: 9999;\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    padding: 10px 18px;\n    cursor: pointer;\n    background: var(--acc);\n    color: #fff;\n    border: none;\n    border-radius: 24px;\n    font-size: 20px;\n    line-height: 1;\n    box-shadow: 0 4px 16px rgba(251,114,153,0.3);\n}\n\n.comic-entry-btn-touch {\n    bottom: 16px;\n    right: 16px;\n    padding: 12px 16px;\n    font-size: 18px;\n}\n\n#comic-reader-overlay {\n    position: fixed;\r\n    inset: 0;\r\n    background: var(--bg-deepest);\r\n    z-index: 10000;\r\n    display: flex;\r\n    flex-direction: column;\r\n    align-items: center;\r\n    justify-content: center;\r\n    overflow: hidden;\r\n    touch-action: none;\r\n    overscroll-behavior: none;\r\n    isolation: isolate;\n}\n\n.comic-img-container {\n    display: flex;\n    width: 100%;\n    height: 100%;\n    align-items: center;\n    justify-content: center;\r\n    gap: 4px;\r\n    padding: 0;\r\n    margin: 0;\r\n    cursor: grab;\n    touch-action: none;\n    transform-origin: center center;\n    will-change: transform;\n}\n\n.comic-img-container.is-grabbing,\n.comic-img-container.is-grabbing img { cursor: grabbing; }\n\n/* ===== Reader control panels ===== */\n.comic-controls,\r\n.comic-settings-controls {\r\n    position: fixed;\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: 6px;\r\n    background: var(--bg-overlay);\r\n    padding: 8px 10px;\r\n    border-radius: var(--radius-lg);\r\n    backdrop-filter: blur(20px);\r\n    -webkit-backdrop-filter: blur(20px);\r\n    border: 1px solid var(--border-subtle);\r\n    color: var(--text-primary);\r\n    z-index: 10001;\r\n    transition: opacity 0.5s;\r\n    opacity: 1;\n    box-shadow: var(--shadow-heavy);\n}\n\n.comic-controls.is-hidden,\n.comic-settings-controls.is-hidden { opacity: 0; }\n\n.comic-controls { bottom: 24px; right: 24px; }\n.comic-settings-controls { top: 24px; right: 24px; }\n\n.comic-settings-panel {\n    position: fixed;\n    left: 50%;\n    top: 50%;\n    z-index: 10002;\n    display: flex;\n    flex-direction: column;\n    gap: 8px;\n    width: min(460px, calc(100vw - 32px));\n    max-height: min(76vh, 560px);\n    overflow-y: auto;\n    padding: 14px;\n    color: var(--text-primary);\n    background: var(--bg-overlay);\n    border: 1px solid var(--border-subtle);\n    border-radius: var(--radius-md);\n    box-shadow: var(--shadow-heavy);\n    backdrop-filter: blur(20px);\n    -webkit-backdrop-filter: blur(20px);\n    opacity: 0;\n    visibility: hidden;\n    pointer-events: none;\n    transform: translate(-50%, -50%) scale(0.96);\n    transition: opacity 0.18s ease-out, transform 0.18s ease-out, visibility 0.18s;\n}\n\n.comic-settings-panel.show {\n    opacity: 1;\n    visibility: visible;\n    pointer-events: auto;\n    transform: translate(-50%, -50%) scale(1);\n}\n\n.comic-settings-panel .comic-btn {\n    min-width: 96px;\n    padding: 8px 12px;\n    border-radius: var(--radius-md);\n    white-space: nowrap;\n}\n\n.comic-settings-panel-header {\n    padding: 2px 2px 10px;\n    border-bottom: 1px solid var(--border-subtle);\n}\n\n.comic-settings-panel-title {\n    font-size: 15px;\n    font-weight: 700;\n    color: var(--text-primary);\n}\n\n.comic-settings-panel-desc {\n    margin-top: 4px;\n    font-size: 12px;\n    line-height: 1.5;\n    color: var(--text-secondary);\n}\n\n.comic-settings-item {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    gap: 14px;\n    padding: 12px;\n    border: 1px solid var(--border-subtle);\n    border-radius: var(--radius-md);\n    background: rgba(255, 255, 255, 0.035);\n}\n\n.comic-settings-copy {\n    min-width: 0;\n}\n\n.comic-settings-title {\n    font-size: 13px;\n    font-weight: 700;\n    color: var(--text-primary);\n}\n\n.comic-settings-desc {\n    margin-top: 4px;\n    font-size: 12px;\n    line-height: 1.45;\n    color: var(--text-secondary);\n}\n\n.comic-settings-action {\n    display: flex;\n    flex-shrink: 0;\n    align-items: center;\n    justify-content: flex-end;\n}\n\n.comic-reader-row {\n    display: flex;\n    gap: 6px;\n    align-items: center;\n    justify-content: center;\n}\n\n.comic-reader-row-wrap { flex-wrap: wrap; }\n\n.comic-page-info {\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    gap: 4px;\n    font-size: 14px;\n    min-width: 68px;\n    min-height: 32px;\n    padding: 0 2px;\n    color: var(--text-primary);\n    cursor: pointer;\n    white-space: nowrap;\n}\n\n.comic-page-display {\n    display: inline;\n}\n\n.comic-page-input {\n    display: none;\n    width: 44px;\n    height: 32px;\n    padding: 0 8px;\n    color: var(--text-primary);\n    background: var(--bg-deepest);\n    border: 1px solid var(--border-subtle);\n    border-radius: var(--radius-pill);\n    font: inherit;\n    text-align: center;\n    outline: none;\n}\n\n.comic-page-input:focus {\n    border-color: var(--acc);\n    box-shadow: 0 0 0 2px rgba(251, 114, 153, 0.18);\n}\n\n.comic-page-range {\n    display: none;\n    color: var(--text-secondary);\n}\n\n.comic-page-info.is-editing {\n    cursor: text;\n    justify-content: flex-start;\n}\n\n.comic-page-info.is-editing .comic-page-display {\n    display: none;\n}\n\n.comic-page-info.is-editing .comic-page-input,\n.comic-page-info.is-editing .comic-page-range {\n    display: inline-flex;\n}\n\n/* ===== Reader pill buttons ===== */\n.comic-btn {\r\n    padding: 8px 16px;\r\n    cursor: pointer;\r\n    background: var(--bg-elevated);\r\n    color: var(--text-primary);\r\n    border: 1px solid var(--border-strong);\r\n    border-radius: var(--radius-pill);\r\n    font-size: 13px;\r\n    font-weight: 500;\r\n    letter-spacing: 0.3px;\r\n    transition: background 0.15s, border-color 0.15s;\r\n}\r\n\r\n.comic-btn-alt {\r\n    background: transparent;\r\n    border-color: var(--border-subtle);\r\n}\r\n\r\n.comic-btn:hover { background: #2a2a2a; }\r\n\r\n.comic-btn-alt:hover { background: var(--bg-elevated); }\r\n\r\n.comic-btn.active {\r\n    background: var(--acc);\r\n    border-color: var(--acc);\r\n    color: #fff;\r\n}\r\n.comic-btn.active:hover { background: var(--acc-hover); }\r\n\r\n/* ===== Reader toast ===== */\r\n.comic-toast {\r\n    position: fixed;\r\n    left: 50%;\r\n    transform: translateX(-50%);\r\n    padding: 8px 16px;\r\n    border-radius: var(--radius-pill);\r\n    font-size: 13px;\r\n    font-weight: 500;\r\n    color: var(--text-primary);\r\n    z-index: 10004;\r\n    opacity: 0;\r\n    transition: opacity 0.2s;\r\n    pointer-events: none;\r\n    background: var(--bg-overlay);\r\n    backdrop-filter: blur(12px);\r\n    -webkit-backdrop-filter: blur(12px);\r\n    border: 1px solid var(--border-subtle);\n    box-shadow: var(--shadow-card);\n    top: 18px;\n}\n\n.comic-toast.is-visible { opacity: 1; }\n\n.comic-toast.is-error { background: rgba(180, 40, 40, 0.94); }\n\n/* ===== Reader images ===== */\n#comic-reader-overlay img {\n    cursor: grab;\n    display: block;\n    max-width: none;\n    max-height: none;\n    object-fit: contain;\n    box-shadow: 0 0 30px rgba(0, 0, 0, 0.4);\n    touch-action: none;\n    user-select: none;\n    -webkit-user-drag: none;\n    flex-shrink: 0;\n}\n\n#comic-reader-overlay .comic-img-full,\n#comic-reader-overlay .comic-img-half {\n    max-width: none;\n    max-height: none;\n}\n\n/* ===== Screenshot selection ===== */\n.comic-selection-overlay {\n    position: fixed;\n    inset: 0;\n    z-index: 10003;\n    display: none;\n    cursor: crosshair;\n    touch-action: none;\n    background: rgba(10,10,10,0.01);\n}\n\n.comic-selection-hint {\n    position: fixed;\n    top: 66px;\n    right: 18px;\n    width: 236px;\n    max-width: calc(100vw - 36px);\n    padding: 10px 12px;\n    border-radius: var(--radius-md);\n    background: rgba(15,15,15,0.92);\n    color: #fff;\n    font-size: 13px;\n    line-height: 1.45;\n    text-align: left;\n    pointer-events: none;\n    border: 1px solid var(--border-subtle);\n    box-shadow: var(--shadow-card);\n}\n\n.comic-selection-toolbar {\n    position: fixed;\n    top: 18px;\n    right: 18px;\n    display: flex;\n    gap: 10px;\n    align-items: center;\n}\n\n.comic-selection-action {\n    padding: 10px 14px;\n    border: none;\n    border-radius: var(--radius-pill);\n    color: #fff;\n    font-size: 13px;\n    cursor: pointer;\n    box-shadow: 0 4px 12px rgba(0,0,0,0.25);\n}\n\n.comic-selection-save { background: var(--acc); }\n.comic-selection-full { background: #3467a8; }\n.comic-selection-cancel { background: #d33; }\n\n.comic-selection-action.is-disabled {\n    opacity: 0.45;\n    cursor: not-allowed;\n}\n\n.comic-selection-box {\n    position: absolute;\n    display: none;\n    border: 2px dashed var(--acc);\n    background: rgba(251,114,153,0.18);\n    box-shadow: 0 0 0 1px rgba(255,255,255,0.25) inset;\n    pointer-events: none;\n}\n\n.comic-sel-handle {\n    position: absolute;\n    width: 28px;\n    height: 28px;\n    pointer-events: auto;\n    display: none;\n    z-index: 2;\n    transform: translate(-50%,-50%);\n    touch-action: none;\n}\n\n.comic-sel-handle::after {\n    content: \"\";\n    position: absolute;\n    left: 50%;\n    top: 50%;\n    width: 12px;\n    height: 12px;\n    background: var(--acc);\n    border: 2px solid #fff;\n    border-radius: 50%;\n    box-shadow: 0 1px 4px rgba(0,0,0,0.4);\n    transform: translate(-50%,-50%);\n}\n\n.comic-sel-handle[data-dir=\"n\"],\n.comic-sel-handle[data-dir=\"s\"] {\n    width: max(28px, calc(100% - 40px));\n}\n\n.comic-sel-handle[data-dir=\"e\"],\n.comic-sel-handle[data-dir=\"w\"] {\n    height: max(28px, calc(100% - 40px));\n}\n\n.comic-sel-handle[data-dir=\"nw\"],\n.comic-sel-handle[data-dir=\"ne\"],\n.comic-sel-handle[data-dir=\"se\"],\n.comic-sel-handle[data-dir=\"sw\"] {\n    width: 34px;\n    height: 34px;\n    z-index: 3;\n}\n\n/* ===== Compact layout (mobile) ===== */\n#comic-reader-overlay.reader-compact .comic-btn {\n    min-width: 54px;\n    min-height: 44px;\n    padding: 10px 12px;\n    font-size: 14px;\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-controls {\n    left: auto;\n    right: max(12px, env(safe-area-inset-right));\n    bottom: max(12px, env(safe-area-inset-bottom));\n    width: fit-content;\n    max-width: calc(100vw - 24px);\n    padding: 8px 12px;\n}\n\n#comic-reader-overlay.reader-compact .comic-settings-controls {\n    top: max(12px, env(safe-area-inset-top));\n    left: auto;\n    right: max(12px, env(safe-area-inset-right));\n    width: fit-content;\n    max-width: 96px;\n    flex-direction: column;\n    flex-wrap: nowrap;\n    justify-content: center;\n    max-height: 40vh;\n    overflow-y: auto;\n    padding: 8px 12px;\n}\n\n#comic-reader-overlay.reader-compact .comic-settings-panel {\n    width: min(360px, calc(100vw - 24px));\n    padding: 12px;\n    gap: 8px;\n}\n\n#comic-reader-overlay.reader-compact .comic-settings-item {\n    align-items: center;\n    flex-direction: row;\n    gap: 14px;\n}\n\n#comic-reader-overlay.reader-compact .comic-settings-action {\n    justify-content: flex-end;\n}\n\n#comic-reader-overlay.reader-compact .comic-settings-action .comic-btn {\n    width: auto;\n}\n\n#comic-reader-overlay.reader-compact .comic-toast {\n    top: 12px;\n    max-width: calc(100vw - 24px);\n}\n\n#comic-reader-overlay.reader-compact .comic-selection-hint {\n    top: 62px;\n    right: 12px;\n    width: min(236px, calc(100vw - 24px));\n    max-width: calc(100vw - 24px);\n    font-size: 12px;\n}\n\n#comic-reader-overlay.reader-compact .comic-selection-toolbar {\n    top: 12px;\n    right: 12px;\n}\n\n#comic-reader-overlay.reader-compact .comic-selection-action {\n    padding: 10px 12px;\n    font-size: 12px;\n}\n\n@media (hover: none), (pointer: coarse) {\n    #bilibili-fav-float-btn.bilibili-fav-touch {\n        bottom: max(76px, env(safe-area-inset-bottom));\n        right: max(16px, env(safe-area-inset-right));\n        width: 54px;\n        height: 54px;\n        font-size: 24px;\n        opacity: 1 !important;\n        visibility: visible !important;\n    }\n\n    #bilibili-fav-panel,\n    #bilibili-fav-controls-panel {\n        right: max(12px, env(safe-area-inset-right));\n        bottom: max(140px, calc(env(safe-area-inset-bottom) + 84px));\n        width: min(320px, calc(100vw - 24px));\n        max-height: min(70vh, 560px);\n        overflow: hidden;\n    }\n\n    .bilibili-fav-header {\n        gap: 8px;\n        padding: 10px 12px;\n    }\n\n    .bilibili-fav-header-actions {\n        flex-shrink: 0;\n    }\n\n    .bilibili-fav-control-btn {\n        display: inline-flex;\n        align-items: center;\n        justify-content: center;\n    }\n\n    .bilibili-fav-add-btn,\n    .bilibili-fav-control-btn,\n    .bilibili-toolbox-export-btn,\n    .bilibili-toolbox-import-btn {\n        min-height: 42px;\n    }\n\n    .bilibili-fav-content {\n        max-height: min(52vh, 420px);\n    }\n\n    .bilibili-fav-delete {\n        width: 26px;\n        height: 26px;\n        font-size: 16px;\n        opacity: 1;\n    }\n\n    .bilibili-fav-item-link {\n        touch-action: manipulation;\n    }\n\n    .comic-sel-handle {\n        width: 36px;\n        height: 36px;\n    }\n\n    .comic-sel-handle[data-dir=\"n\"],\n    .comic-sel-handle[data-dir=\"s\"] {\n        width: max(36px, calc(100% - 48px));\n    }\n\n    .comic-sel-handle[data-dir=\"e\"],\n    .comic-sel-handle[data-dir=\"w\"] {\n        height: max(36px, calc(100% - 48px));\n    }\n\n    .comic-sel-handle[data-dir=\"nw\"],\n    .comic-sel-handle[data-dir=\"ne\"],\n    .comic-sel-handle[data-dir=\"se\"],\n    .comic-sel-handle[data-dir=\"sw\"] {\n        width: 44px;\n        height: 44px;\n    }\n\n    #comic-reader-overlay.reader-compact .comic-reader-row {\n        gap: 6px;\n        flex-wrap: wrap;\n    }\n\n    #comic-reader-overlay.reader-compact .comic-settings-controls { gap: 8px; }\n\n    #comic-reader-overlay.reader-compact .comic-selection-hint { text-align: left; }\n}\n\n";
+    const css = "/* ===== content.css ===== */\n/* Bilibili Toolbox — Spotify-inspired dark theme */\r\n\r\n:root {\r\n    --acc: #fb7299;\r\n    --acc-hover: #fc8bab;\r\n    --acc-active: #e86288;\r\n    --bg-deepest: #0a0a0a;\r\n    --bg-surface: #181818;\r\n    --bg-elevated: #1f1f1f;\r\n    --bg-overlay: rgba(20, 20, 20, 0.94);\r\n    --text-primary: #ffffff;\r\n    --text-secondary: #b3b3b3;\r\n    --text-muted: #7c7c7c;\r\n    --border-subtle: rgba(255, 255, 255, 0.12);\r\n    --border-strong: #4d4d4d;\r\n    --error: #f3727f;\r\n    --error-hover: #e86a77;\r\n    --shadow-heavy: 0 8px 24px rgba(0, 0, 0, 0.5);\r\n    --shadow-card: 0 4px 8px rgba(0, 0, 0, 0.3);\r\n    --shadow-float: 0 4px 16px rgba(251, 114, 153, 0.25);\r\n    --radius-sm: 6px;\r\n    --radius-md: 8px;\r\n    --radius-lg: 12px;\r\n    --radius-pill: 9999px;\r\n    --font: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif;\r\n}\r\n\r\n/* ===== Floating star button ===== */\r\n#bilibili-fav-float-btn {\r\n    position: fixed;\r\n    bottom: 80px;\r\n    right: 20px;\r\n    width: 50px;\r\n    height: 50px;\r\n    background: var(--acc);\r\n    border-radius: 50%;\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    font-size: 24px;\r\n    cursor: pointer;\r\n    box-shadow: var(--shadow-float);\r\n    z-index: 999999;\r\n    transition: transform 0.2s, box-shadow 0.2s, opacity 0.3s, visibility 0.3s;\r\n    line-height: 1;\r\n    text-align: center;\r\n}\r\n\r\n#bilibili-fav-float-btn:hover {\r\n    transform: scale(1.1);\r\n    box-shadow: 0 6px 20px rgba(251, 114, 153, 0.4);\r\n}\r\n\r\n#bilibili-fav-float-btn.hide-forward-active {\r\n    border-radius: var(--radius-sm);\r\n}\r\n\r\n/* ===== Shared panel base ===== */\r\n#bilibili-fav-panel,\r\n#bilibili-fav-controls-panel {\r\n    position: fixed;\r\n    bottom: 140px;\r\n    right: 20px;\r\n    width: 280px;\r\n    background: var(--bg-overlay);\r\n    backdrop-filter: blur(20px);\r\n    -webkit-backdrop-filter: blur(20px);\r\n    border-radius: var(--radius-lg);\r\n    box-shadow: var(--shadow-heavy);\r\n    z-index: 1000000;\r\n    opacity: 0;\r\n    visibility: hidden;\r\n    transition: opacity 0.2s, transform 0.2s, visibility 0.2s;\r\n    font-family: var(--font);\r\n    transform: translateY(10px);\r\n    color: var(--text-primary);\r\n    border: 1px solid var(--border-subtle);\r\n}\r\n\r\n#bilibili-fav-controls-panel { z-index: 1000001; }\r\n\r\n#bilibili-fav-panel.show,\r\n#bilibili-fav-controls-panel.show {\r\n    opacity: 1;\r\n    visibility: visible;\r\n    transform: translateY(0);\r\n}\r\n\r\n/* ===== Panel header ===== */\r\n.bilibili-fav-header {\r\n    display: flex;\r\n    justify-content: space-between;\r\n    align-items: center;\r\n    padding: 10px 16px;\r\n    border-bottom: 1px solid var(--border-subtle);\r\n    background: var(--bg-elevated);\r\n    color: var(--text-primary);\r\n    border-radius: var(--radius-lg) var(--radius-lg) 0 0;\r\n    font-weight: 600;\r\n    font-size: 14px;\r\n    letter-spacing: 0.3px;\r\n}\r\n\r\n.bilibili-fav-header-actions {\r\n    display: flex;\r\n    align-items: center;\r\n    gap: 6px;\r\n}\r\n\r\n/* ===== Panel content ===== */\r\n.bilibili-fav-content { max-height: 400px; overflow-y: auto; }\r\n\r\n.bilibili-fav-list {\r\n    padding: 8px 10px;\r\n    display: flex;\r\n    flex-wrap: wrap;\r\n    justify-content: space-between;\r\n    gap: 4px;\r\n}\r\n\r\n.bilibili-fav-content::-webkit-scrollbar { width: 5px; }\r\n.bilibili-fav-content::-webkit-scrollbar-track { background: transparent; }\r\n.bilibili-fav-content::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 3px; }\r\n.bilibili-fav-content::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.25); }\r\n\r\n/* ===== Dynamic controls content ===== */\r\n.bilibili-toolbox-control-content {\r\n    padding: 16px;\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: 12px;\r\n}\r\n\r\n.bilibili-toolbox-control-row {\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: space-between;\r\n    gap: 12px;\r\n    padding: 12px 14px;\r\n    border-radius: var(--radius-md);\r\n    background: var(--bg-surface);\r\n    cursor: pointer;\r\n    border: 1px solid var(--border-subtle);\r\n}\r\n\r\n.bilibili-toolbox-control-copy {\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: 4px;\r\n    min-width: 0;\r\n}\r\n\r\n.bilibili-toolbox-control-title {\r\n    font-size: 14px;\r\n    font-weight: 600;\r\n    color: var(--text-primary);\r\n}\r\n\r\n.bilibili-toolbox-control-desc {\r\n    font-size: 12px;\r\n    color: var(--text-secondary);\r\n    line-height: 1.4;\r\n}\r\n\r\n.bilibili-toolbox-control-status {\n    font-size: 12px;\n    line-height: 1.4;\n    padding: 8px 12px;\n    border-radius: var(--radius-sm);\n    background: var(--bg-surface);\n    color: var(--text-secondary);\n}\n\n.bilibili-toolbox-keyword-input {\n    width: 100%;\n    min-height: 38px;\n    padding: 0 12px;\n    box-sizing: border-box;\n    color: var(--text-primary);\n    background: var(--bg-deepest);\n    border: 1px solid var(--border-subtle);\n    border-radius: var(--radius-md);\n    font-family: var(--font);\n    font-size: 13px;\n    outline: none;\n    transition: border-color 0.2s, box-shadow 0.2s, opacity 0.2s;\n}\n\n.bilibili-toolbox-keyword-input::placeholder {\n    color: var(--text-muted);\n}\n\n.bilibili-toolbox-keyword-input:focus {\n    border-color: var(--acc);\n    box-shadow: 0 0 0 2px rgba(251, 114, 153, 0.18);\n}\n\n/* ===== Toggle switch ===== */\n.bilibili-toolbox-switch {\n    position: relative;\n    width: 46px;\n    height: 28px;\n    flex-shrink: 0;\r\n}\r\n\r\n.bilibili-toolbox-switch input {\r\n    position: absolute;\r\n    inset: 0;\r\n    opacity: 0;\r\n    cursor: pointer;\r\n    margin: 0;\r\n}\r\n\r\n.bilibili-toolbox-switch-slider {\r\n    position: absolute;\r\n    inset: 0;\r\n    border-radius: var(--radius-pill);\r\n    background: rgba(255, 255, 255, 0.2);\r\n    transition: background 0.2s;\r\n}\r\n\r\n.bilibili-toolbox-switch-slider::before {\r\n    content: \"\";\r\n    position: absolute;\r\n    top: 3px;\r\n    left: 3px;\r\n    width: 22px;\r\n    height: 22px;\r\n    border-radius: 50%;\r\n    background: #fff;\r\n    transition: transform 0.2s;\r\n    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);\r\n}\r\n\r\n.bilibili-toolbox-switch input:checked + .bilibili-toolbox-switch-slider {\r\n    background: var(--acc);\r\n}\r\n\r\n.bilibili-toolbox-switch input:checked + .bilibili-toolbox-switch-slider::before {\r\n    transform: translateX(18px);\r\n}\r\n\r\n/* ===== Empty state ===== */\r\n.bilibili-fav-empty { text-align: center; color: var(--text-muted); padding: 40px 20px; font-size: 14px; }\r\n\r\n/* ===== Toast message ===== */\r\n.bilibili-fav-msg { padding: 8px; text-align: center; font-size: 12px; display: none; }\r\n\r\n/* ===== Pill buttons (global) ===== */\r\n.bilibili-fav-add-btn,\r\n.bilibili-fav-control-btn,\r\n.bilibili-toolbox-export-btn,\r\n.bilibili-toolbox-import-btn {\r\n    padding: 10px 0;\r\n    font-size: 13px;\r\n    font-weight: 600;\r\n    border: none;\r\n    border-radius: var(--radius-pill);\r\n    cursor: pointer;\r\n    transition: all 0.2s;\r\n    color: var(--text-primary);\r\n    letter-spacing: 0.3px;\r\n    flex: 1;\r\n}\r\n\r\n.bilibili-fav-add-btn {\r\n    padding: 8px 16px;\r\n    flex: none;\r\n}\r\n\r\n.bilibili-fav-control-btn {\r\n    display: none;\r\n    padding: 8px 12px;\r\n    flex: none;\r\n}\r\n\r\n/* Primary pill — accent fill */\r\n.bilibili-fav-add-btn,\r\n.bilibili-fav-control-btn,\r\n.bilibili-toolbox-export-btn {\r\n    background: var(--acc);\r\n    color: #fff;\r\n}\r\n\r\n.bilibili-fav-add-btn:hover,\r\n.bilibili-fav-control-btn:hover,\r\n.bilibili-toolbox-export-btn:hover {\r\n    background: var(--acc-hover);\r\n}\r\n\r\n/* Secondary pill — dark fill */\r\n.bilibili-toolbox-import-btn {\r\n    background: var(--bg-elevated);\r\n    border: 1px solid var(--border-strong);\r\n}\r\n\r\n.bilibili-toolbox-import-btn:hover {\r\n    background: #2a2a2a;\r\n}\r\n\r\n/* ===== Button group layout ===== */\r\n.bilibili-toolbox-control-actions {\r\n    display: flex;\r\n    gap: 8px;\r\n    padding: 0 16px 16px;\r\n}\r\n\r\n/* ===== Export text document ===== */\r\n.bilibili-toolbox-export-dialog {\r\n    position: fixed;\r\n    inset: 0;\r\n    z-index: 1000002;\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    padding: 16px;\r\n    background: rgba(0, 0, 0, 0.72);\r\n}\r\n\r\n.bilibili-toolbox-export-document {\r\n    display: flex;\r\n    width: min(640px, 100%);\r\n    max-height: min(720px, 86vh);\r\n    flex-direction: column;\r\n    overflow: hidden;\r\n    background: var(--bg-elevated);\r\n    border: 1px solid var(--border-subtle);\r\n    border-radius: var(--radius-md);\r\n    box-shadow: var(--shadow-heavy);\r\n}\r\n\r\n.bilibili-toolbox-export-header {\r\n    display: flex;\r\n    min-height: 44px;\r\n    align-items: center;\r\n    justify-content: space-between;\r\n    padding: 0 14px;\r\n    color: var(--text-primary);\r\n    font-size: 14px;\r\n    font-weight: 600;\r\n    border-bottom: 1px solid var(--border-subtle);\r\n}\r\n\r\n.bilibili-toolbox-export-close {\r\n    display: inline-flex;\r\n    width: 30px;\r\n    height: 30px;\r\n    align-items: center;\r\n    justify-content: center;\r\n    padding: 0;\r\n    color: var(--text-secondary);\r\n    background: transparent;\r\n    border: none;\r\n    border-radius: 50%;\r\n    cursor: pointer;\r\n    font-size: 22px;\r\n    line-height: 1;\r\n}\r\n\r\n.bilibili-toolbox-export-close:hover {\r\n    color: var(--text-primary);\r\n    background: rgba(255, 255, 255, 0.1);\r\n}\r\n\r\n.bilibili-toolbox-export-text {\r\n    width: 100%;\r\n    min-height: min(560px, 72vh);\r\n    padding: 14px;\r\n    resize: vertical;\r\n    box-sizing: border-box;\r\n    color: var(--text-primary);\r\n    background: var(--bg-deepest);\r\n    border: none;\r\n    outline: none;\r\n    font-family: Consolas, \"Courier New\", monospace;\r\n    font-size: 13px;\r\n    line-height: 1.5;\r\n}\r\n\r\n.bilibili-toolbox-export-footer {\r\n    display: flex;\r\n    min-height: 52px;\r\n    align-items: center;\r\n    justify-content: space-between;\r\n    gap: 12px;\r\n    padding: 8px 12px;\r\n    border-top: 1px solid var(--border-subtle);\r\n}\r\n\r\n.bilibili-toolbox-export-status {\r\n    color: var(--text-secondary);\r\n    font-size: 12px;\r\n    line-height: 1.4;\r\n}\r\n\r\n.bilibili-toolbox-export-status.is-error {\r\n    color: var(--error);\r\n}\r\n\r\n.bilibili-toolbox-export-actions {\r\n    display: flex;\r\n    flex-shrink: 0;\r\n    align-items: center;\r\n    gap: 8px;\r\n}\r\n\r\n.bilibili-toolbox-export-clipboard,\r\n.bilibili-toolbox-export-confirm {\r\n    flex-shrink: 0;\r\n    padding: 8px 18px;\r\n    color: #fff;\r\n    background: var(--acc);\r\n    border: none;\r\n    border-radius: var(--radius-pill);\r\n    cursor: pointer;\r\n    font-size: 13px;\r\n    font-weight: 600;\r\n}\r\n\r\n.bilibili-toolbox-export-clipboard:hover,\r\n.bilibili-toolbox-export-confirm:hover {\r\n    background: var(--acc-hover);\r\n}\r\n\r\n/* ===== Favorite list items ===== */\r\n.bilibili-fav-item-link {\r\n    display: block;\r\n    text-decoration: none;\r\n    color: inherit;\r\n    width: calc(50% - 2px);\r\n    position: relative;\r\n}\r\n\r\n.bilibili-fav-item {\r\n    display: flex;\r\n    flex-direction: column;\r\n    align-items: center;\r\n    padding: 8px 6px 10px;\r\n    border-radius: var(--radius-md);\r\n    transition: background 0.2s;\r\n    text-align: center;\r\n    position: relative;\r\n    overflow: hidden;\r\n    height: 88px;\r\n    box-sizing: border-box;\r\n    background: transparent;\r\n}\r\n\r\n.bilibili-fav-item[data-readlist=\"true\"] { padding: 0; }\r\n\r\n.bilibili-fav-item-link:hover .bilibili-fav-item {\r\n    background: var(--bg-surface);\r\n}\r\n\r\n.bilibili-fav-item-info {\r\n    display: flex;\r\n    flex-direction: column;\r\n    align-items: center;\r\n    width: 100%;\r\n    height: 100%;\r\n    position: relative;\r\n    z-index: 1;\r\n}\r\n\r\n.bilibili-fav-item[data-readlist=\"true\"] .bilibili-fav-item-info {\r\n    padding: 0;\r\n    overflow: hidden;\r\n    border-radius: inherit;\r\n}\r\n\r\n/* ===== Avatar — round, no border ===== */\r\n.bilibili-fav-avatar {\r\n    width: 44px;\r\n    height: 44px;\r\n    border-radius: 50%;\r\n    object-fit: cover;\r\n    position: relative;\r\n    z-index: 1;\r\n    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);\r\n}\r\n\r\n.bilibili-fav-avatar.cover {\r\n    display: block;\r\n    width: 100%;\r\n    height: 100%;\r\n    border-radius: var(--radius-md);\r\n    box-shadow: none;\r\n    position: absolute;\r\n    inset: 0;\r\n}\r\n\r\n/* ===== Name label ===== */\r\n.bilibili-fav-name {\r\n    font-size: 12px;\r\n    color: var(--text-primary);\r\n    font-weight: 500;\r\n    max-width: 100%;\r\n    overflow: hidden;\r\n    text-overflow: ellipsis;\r\n    white-space: nowrap;\r\n    position: relative;\r\n    z-index: 1;\r\n    margin-top: 6px;\r\n}\r\n\r\n.bilibili-fav-item[data-readlist=\"true\"] .bilibili-fav-name {\r\n    position: absolute;\r\n    bottom: 0;\r\n    left: 0;\r\n    right: 0;\r\n    color: #fff;\r\n    background: linear-gradient(transparent, rgba(0, 0, 0, 0.75));\r\n    padding: 20px 8px 8px;\r\n    border-radius: 0 0 var(--radius-md) var(--radius-md);\r\n    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);\r\n    font-weight: 600;\r\n}\r\n\r\n/* ===== Delete button — ghost pill ===== */\r\n.bilibili-fav-delete {\r\n    position: absolute;\r\n    top: 4px;\r\n    right: 4px;\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    width: 20px;\r\n    height: 20px;\r\n    padding: 0;\r\n    font-size: 14px;\r\n    line-height: 1;\r\n    color: var(--text-primary);\r\n    background: rgba(0, 0, 0, 0.5);\r\n    border: none;\r\n    border-radius: 50%;\r\n    appearance: none;\r\n    cursor: pointer;\r\n    transition: all 0.2s;\r\n    z-index: 2;\r\n    opacity: 0;\r\n}\r\n\r\n.bilibili-fav-item:hover .bilibili-fav-delete { opacity: 1; }\r\n.bilibili-fav-delete:hover { background: var(--error); }\r\n\r\n/* ===== Dynamic filter visibility ===== */\n.bilibili-toolbox-dynamic-filter-active .bili-dyn-list__item:not(.bilibili-toolbox-dynamic-filter-ready),\n.bilibili-toolbox-dynamic-filter-active .bili-dyn-item:not(.bilibili-toolbox-dynamic-filter-ready),\n.bilibili-toolbox-dynamic-filter-active .bili-opus-view:not(.bilibili-toolbox-dynamic-filter-ready),\n.bilibili-toolbox-hide-forward-dynamic { display: none !important; }\n\r\n/* ══════════════════════════════════════ */\r\n/*  Comic Reader — Spotify dark theme   */\r\n/* ══════════════════════════════════════ */\r\n\r\n.comic-entry-btn {\r\n    position: fixed;\r\n    bottom: 24px;\r\n    right: 24px;\r\n    z-index: 9999;\r\n    display: inline-flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    padding: 10px 18px;\r\n    cursor: pointer;\r\n    background: var(--acc);\r\n    color: #fff;\r\n    border: none;\r\n    border-radius: 24px;\r\n    font-size: 20px;\r\n    line-height: 1;\r\n    box-shadow: 0 4px 16px rgba(251,114,153,0.3);\r\n}\r\n\r\n.comic-entry-btn-touch {\r\n    bottom: 16px;\r\n    right: 16px;\r\n    padding: 12px 16px;\r\n    font-size: 18px;\r\n}\r\n\r\n#comic-reader-overlay {\r\n    position: fixed;\r\n    inset: 0;\r\n    background: var(--bg-deepest);\r\n    z-index: 10000;\r\n    display: flex;\r\n    flex-direction: column;\r\n    align-items: center;\r\n    justify-content: center;\r\n    overflow: hidden;\r\n    touch-action: none;\r\n    overscroll-behavior: none;\r\n    isolation: isolate;\r\n}\r\n\r\n.comic-img-container {\r\n    display: flex;\r\n    width: 100%;\r\n    height: 100%;\r\n    align-items: center;\r\n    justify-content: center;\r\n    gap: 4px;\r\n    padding: 0;\r\n    margin: 0;\r\n    cursor: grab;\r\n    touch-action: none;\r\n    transform-origin: center center;\r\n    will-change: transform;\r\n}\r\n\r\n.comic-img-container.is-grabbing,\r\n.comic-img-container.is-grabbing img { cursor: grabbing; }\r\n\r\n/* ===== Reader control panels ===== */\r\n.comic-controls,\r\n.comic-settings-controls {\r\n    position: fixed;\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: 6px;\r\n    background: var(--bg-overlay);\r\n    padding: 8px 10px;\r\n    border-radius: var(--radius-lg);\r\n    backdrop-filter: blur(20px);\r\n    -webkit-backdrop-filter: blur(20px);\r\n    border: 1px solid var(--border-subtle);\r\n    color: var(--text-primary);\r\n    z-index: 10001;\r\n    transition: opacity 0.5s;\r\n    opacity: 1;\r\n    box-shadow: var(--shadow-heavy);\r\n}\r\n\r\n.comic-controls.is-hidden,\r\n.comic-settings-controls.is-hidden { opacity: 0; }\r\n\r\n.comic-controls { bottom: 24px; right: 24px; }\r\n.comic-settings-controls { top: 24px; right: 24px; }\r\n\r\n.comic-settings-panel {\r\n    position: fixed;\r\n    left: 50%;\r\n    top: 50%;\r\n    z-index: 10002;\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: 8px;\r\n    width: min(460px, calc(100vw - 32px));\r\n    max-height: min(76vh, 560px);\r\n    overflow-y: auto;\r\n    padding: 14px;\r\n    color: var(--text-primary);\r\n    background: var(--bg-overlay);\r\n    border: 1px solid var(--border-subtle);\r\n    border-radius: var(--radius-md);\r\n    box-shadow: var(--shadow-heavy);\r\n    backdrop-filter: blur(20px);\r\n    -webkit-backdrop-filter: blur(20px);\r\n    opacity: 0;\r\n    visibility: hidden;\r\n    pointer-events: none;\r\n    transform: translate(-50%, -50%) scale(0.96);\r\n    transition: opacity 0.18s ease-out, transform 0.18s ease-out, visibility 0.18s;\r\n}\r\n\r\n.comic-settings-panel.show {\r\n    opacity: 1;\r\n    visibility: visible;\r\n    pointer-events: auto;\r\n    transform: translate(-50%, -50%) scale(1);\r\n}\r\n\r\n.comic-settings-panel .comic-btn {\r\n    min-width: 96px;\r\n    padding: 8px 12px;\r\n    border-radius: var(--radius-md);\r\n    white-space: nowrap;\r\n}\r\n\r\n.comic-settings-panel-header {\r\n    padding: 2px 2px 10px;\r\n    border-bottom: 1px solid var(--border-subtle);\r\n}\r\n\r\n.comic-settings-panel-title {\r\n    font-size: 15px;\r\n    font-weight: 700;\r\n    color: var(--text-primary);\r\n}\r\n\r\n.comic-settings-panel-desc {\r\n    margin-top: 4px;\r\n    font-size: 12px;\r\n    line-height: 1.5;\r\n    color: var(--text-secondary);\r\n}\r\n\r\n.comic-settings-item {\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: space-between;\r\n    gap: 14px;\r\n    padding: 12px;\r\n    border: 1px solid var(--border-subtle);\r\n    border-radius: var(--radius-md);\r\n    background: rgba(255, 255, 255, 0.035);\r\n}\r\n\r\n.comic-settings-copy {\r\n    min-width: 0;\r\n}\r\n\r\n.comic-settings-title {\r\n    font-size: 13px;\r\n    font-weight: 700;\r\n    color: var(--text-primary);\r\n}\r\n\r\n.comic-settings-desc {\r\n    margin-top: 4px;\r\n    font-size: 12px;\r\n    line-height: 1.45;\r\n    color: var(--text-secondary);\r\n}\r\n\r\n.comic-settings-action {\r\n    display: flex;\r\n    flex-shrink: 0;\r\n    align-items: center;\r\n    justify-content: flex-end;\r\n}\r\n\r\n.comic-reader-row {\r\n    display: flex;\r\n    gap: 6px;\r\n    align-items: center;\r\n    justify-content: center;\r\n}\r\n\r\n.comic-reader-row-wrap { flex-wrap: wrap; }\r\n\r\n.comic-page-info {\r\n    display: inline-flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    gap: 4px;\r\n    font-size: 14px;\r\n    min-width: 68px;\r\n    min-height: 32px;\r\n    padding: 0 2px;\r\n    color: var(--text-primary);\r\n    cursor: pointer;\r\n    white-space: nowrap;\r\n}\r\n\r\n.comic-page-display {\r\n    display: inline;\r\n}\r\n\r\n.comic-page-input {\r\n    display: none;\r\n    width: 44px;\r\n    height: 32px;\r\n    padding: 0 8px;\r\n    color: var(--text-primary);\r\n    background: var(--bg-deepest);\r\n    border: 1px solid var(--border-subtle);\r\n    border-radius: var(--radius-pill);\r\n    font: inherit;\r\n    text-align: center;\r\n    outline: none;\r\n}\r\n\r\n.comic-page-input:focus {\r\n    border-color: var(--acc);\r\n    box-shadow: 0 0 0 2px rgba(251, 114, 153, 0.18);\r\n}\r\n\r\n.comic-page-range {\r\n    display: none;\r\n    color: var(--text-secondary);\r\n}\r\n\r\n.comic-page-info.is-editing {\r\n    cursor: text;\r\n    justify-content: flex-start;\r\n}\r\n\r\n.comic-page-info.is-editing .comic-page-display {\r\n    display: none;\r\n}\r\n\r\n.comic-page-info.is-editing .comic-page-input,\r\n.comic-page-info.is-editing .comic-page-range {\r\n    display: inline-flex;\r\n}\r\n\r\n/* ===== Reader pill buttons ===== */\r\n.comic-btn {\r\n    padding: 8px 16px;\r\n    cursor: pointer;\r\n    background: var(--bg-elevated);\r\n    color: var(--text-primary);\r\n    border: 1px solid var(--border-strong);\r\n    border-radius: var(--radius-pill);\r\n    font-size: 13px;\r\n    font-weight: 500;\r\n    letter-spacing: 0.3px;\r\n    transition: background 0.15s, border-color 0.15s;\r\n}\r\n\r\n.comic-btn-alt {\r\n    background: transparent;\r\n    border-color: var(--border-subtle);\r\n}\r\n\r\n.comic-btn:hover { background: #2a2a2a; }\r\n\r\n.comic-btn-alt:hover { background: var(--bg-elevated); }\r\n\r\n.comic-btn.active {\r\n    background: var(--acc);\r\n    border-color: var(--acc);\r\n    color: #fff;\r\n}\r\n.comic-btn.active:hover { background: var(--acc-hover); }\r\n\r\n/* ===== Reader toast ===== */\r\n.comic-toast {\r\n    position: fixed;\r\n    left: 50%;\r\n    transform: translateX(-50%);\r\n    padding: 8px 16px;\r\n    border-radius: var(--radius-pill);\r\n    font-size: 13px;\r\n    font-weight: 500;\r\n    color: var(--text-primary);\r\n    z-index: 10004;\r\n    opacity: 0;\r\n    transition: opacity 0.2s;\r\n    pointer-events: none;\r\n    background: var(--bg-overlay);\r\n    backdrop-filter: blur(12px);\r\n    -webkit-backdrop-filter: blur(12px);\r\n    border: 1px solid var(--border-subtle);\r\n    box-shadow: var(--shadow-card);\r\n    top: 18px;\r\n}\r\n\r\n.comic-toast.is-visible { opacity: 1; }\r\n\r\n.comic-toast.is-error { background: rgba(180, 40, 40, 0.94); }\r\n\r\n/* ===== Reader images ===== */\r\n#comic-reader-overlay img {\r\n    cursor: grab;\r\n    display: block;\r\n    max-width: none;\r\n    max-height: none;\r\n    object-fit: contain;\r\n    box-shadow: 0 0 30px rgba(0, 0, 0, 0.4);\r\n    touch-action: none;\r\n    user-select: none;\r\n    -webkit-user-drag: none;\r\n    flex-shrink: 0;\r\n}\r\n\r\n#comic-reader-overlay .comic-img-full,\r\n#comic-reader-overlay .comic-img-half {\r\n    max-width: none;\r\n    max-height: none;\r\n}\r\n\r\n/* ===== Screenshot selection ===== */\r\n.comic-selection-overlay {\r\n    position: fixed;\r\n    inset: 0;\r\n    z-index: 10003;\r\n    display: none;\r\n    cursor: crosshair;\r\n    touch-action: none;\r\n    background: rgba(10,10,10,0.01);\r\n}\r\n\r\n.comic-selection-hint {\r\n    position: fixed;\r\n    top: 66px;\r\n    right: 18px;\r\n    width: 236px;\r\n    max-width: calc(100vw - 36px);\r\n    padding: 10px 12px;\r\n    border-radius: var(--radius-md);\r\n    background: rgba(15,15,15,0.92);\r\n    color: #fff;\r\n    font-size: 13px;\r\n    line-height: 1.45;\r\n    text-align: left;\r\n    pointer-events: none;\r\n    border: 1px solid var(--border-subtle);\r\n    box-shadow: var(--shadow-card);\r\n}\r\n\r\n.comic-selection-toolbar {\r\n    position: fixed;\r\n    top: 18px;\r\n    right: 18px;\r\n    display: flex;\r\n    gap: 10px;\r\n    align-items: center;\r\n}\r\n\r\n.comic-selection-action {\r\n    padding: 10px 14px;\r\n    border: none;\r\n    border-radius: var(--radius-pill);\r\n    color: #fff;\r\n    font-size: 13px;\r\n    cursor: pointer;\r\n    box-shadow: 0 4px 12px rgba(0,0,0,0.25);\r\n}\r\n\r\n.comic-selection-save { background: var(--acc); }\r\n.comic-selection-full { background: #3467a8; }\r\n.comic-selection-cancel { background: #d33; }\r\n\r\n.comic-selection-action.is-disabled {\r\n    opacity: 0.45;\r\n    cursor: not-allowed;\r\n}\r\n\r\n.comic-selection-box {\r\n    position: absolute;\r\n    display: none;\r\n    border: 2px dashed var(--acc);\r\n    background: rgba(251,114,153,0.18);\r\n    box-shadow: 0 0 0 1px rgba(255,255,255,0.25) inset;\r\n    pointer-events: none;\r\n}\r\n\r\n.comic-sel-handle {\r\n    position: absolute;\r\n    width: 28px;\r\n    height: 28px;\r\n    pointer-events: auto;\r\n    display: none;\r\n    z-index: 2;\r\n    transform: translate(-50%,-50%);\r\n    touch-action: none;\r\n}\r\n\r\n.comic-sel-handle::after {\r\n    content: \"\";\r\n    position: absolute;\r\n    left: 50%;\r\n    top: 50%;\r\n    width: 12px;\r\n    height: 12px;\r\n    background: var(--acc);\r\n    border: 2px solid #fff;\r\n    border-radius: 50%;\r\n    box-shadow: 0 1px 4px rgba(0,0,0,0.4);\r\n    transform: translate(-50%,-50%);\r\n}\r\n\r\n.comic-sel-handle[data-dir=\"n\"],\r\n.comic-sel-handle[data-dir=\"s\"] {\r\n    width: max(28px, calc(100% - 40px));\r\n}\r\n\r\n.comic-sel-handle[data-dir=\"e\"],\r\n.comic-sel-handle[data-dir=\"w\"] {\r\n    height: max(28px, calc(100% - 40px));\r\n}\r\n\r\n.comic-sel-handle[data-dir=\"nw\"],\r\n.comic-sel-handle[data-dir=\"ne\"],\r\n.comic-sel-handle[data-dir=\"se\"],\r\n.comic-sel-handle[data-dir=\"sw\"] {\r\n    width: 34px;\r\n    height: 34px;\r\n    z-index: 3;\r\n}\r\n\r\n/* ===== Compact layout (mobile) ===== */\r\n#comic-reader-overlay.reader-compact .comic-btn {\r\n    min-width: 54px;\r\n    min-height: 44px;\r\n    padding: 10px 12px;\r\n    font-size: 14px;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-controls {\r\n    left: auto;\r\n    right: max(12px, env(safe-area-inset-right));\r\n    bottom: max(12px, env(safe-area-inset-bottom));\r\n    width: fit-content;\r\n    max-width: calc(100vw - 24px);\r\n    padding: 8px 12px;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-settings-controls {\r\n    top: max(12px, env(safe-area-inset-top));\r\n    left: auto;\r\n    right: max(12px, env(safe-area-inset-right));\r\n    width: fit-content;\r\n    max-width: 96px;\r\n    flex-direction: column;\r\n    flex-wrap: nowrap;\r\n    justify-content: center;\r\n    max-height: 40vh;\r\n    overflow-y: auto;\r\n    padding: 8px 12px;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-settings-panel {\r\n    width: min(360px, calc(100vw - 24px));\r\n    padding: 12px;\r\n    gap: 8px;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-settings-item {\r\n    align-items: center;\r\n    flex-direction: row;\r\n    gap: 14px;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-settings-action {\r\n    justify-content: flex-end;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-settings-action .comic-btn {\r\n    width: auto;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-toast {\r\n    top: 12px;\r\n    max-width: calc(100vw - 24px);\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-selection-hint {\r\n    top: 62px;\r\n    right: 12px;\r\n    width: min(236px, calc(100vw - 24px));\r\n    max-width: calc(100vw - 24px);\r\n    font-size: 12px;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-selection-toolbar {\r\n    top: 12px;\r\n    right: 12px;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-selection-action {\r\n    padding: 10px 12px;\r\n    font-size: 12px;\r\n}\r\n\r\n@media (hover: none), (pointer: coarse) {\r\n    #bilibili-fav-float-btn.bilibili-fav-touch {\r\n        bottom: max(76px, env(safe-area-inset-bottom));\r\n        right: max(16px, env(safe-area-inset-right));\r\n        width: 54px;\r\n        height: 54px;\r\n        font-size: 24px;\r\n        opacity: 1 !important;\r\n        visibility: visible !important;\r\n    }\r\n\r\n    #bilibili-fav-panel,\r\n    #bilibili-fav-controls-panel {\r\n        right: max(12px, env(safe-area-inset-right));\r\n        bottom: max(140px, calc(env(safe-area-inset-bottom) + 84px));\r\n        width: min(320px, calc(100vw - 24px));\r\n        max-height: min(70vh, 560px);\r\n        overflow: hidden;\r\n    }\r\n\r\n    .bilibili-fav-header {\r\n        gap: 8px;\r\n        padding: 10px 12px;\r\n    }\r\n\r\n    .bilibili-fav-header-actions {\r\n        flex-shrink: 0;\r\n    }\r\n\r\n    .bilibili-fav-control-btn {\r\n        display: inline-flex;\r\n        align-items: center;\r\n        justify-content: center;\r\n    }\r\n\r\n    .bilibili-fav-add-btn,\r\n    .bilibili-fav-control-btn,\r\n    .bilibili-toolbox-export-btn,\r\n    .bilibili-toolbox-import-btn {\r\n        min-height: 42px;\r\n    }\r\n\r\n    .bilibili-fav-content {\r\n        max-height: min(52vh, 420px);\r\n    }\r\n\r\n    .bilibili-fav-delete {\r\n        width: 26px;\r\n        height: 26px;\r\n        font-size: 16px;\r\n        opacity: 1;\r\n    }\r\n\r\n    .bilibili-fav-item-link {\r\n        touch-action: manipulation;\r\n    }\r\n\r\n    .comic-sel-handle {\r\n        width: 36px;\r\n        height: 36px;\r\n    }\r\n\r\n    .comic-sel-handle[data-dir=\"n\"],\r\n    .comic-sel-handle[data-dir=\"s\"] {\r\n        width: max(36px, calc(100% - 48px));\r\n    }\r\n\r\n    .comic-sel-handle[data-dir=\"e\"],\r\n    .comic-sel-handle[data-dir=\"w\"] {\r\n        height: max(36px, calc(100% - 48px));\r\n    }\r\n\r\n    .comic-sel-handle[data-dir=\"nw\"],\r\n    .comic-sel-handle[data-dir=\"ne\"],\r\n    .comic-sel-handle[data-dir=\"se\"],\r\n    .comic-sel-handle[data-dir=\"sw\"] {\r\n        width: 44px;\r\n        height: 44px;\r\n    }\r\n\r\n    #comic-reader-overlay.reader-compact .comic-reader-row {\r\n        gap: 6px;\r\n        flex-wrap: wrap;\r\n    }\r\n\r\n    #comic-reader-overlay.reader-compact .comic-settings-controls { gap: 8px; }\r\n\r\n    #comic-reader-overlay.reader-compact .comic-selection-hint { text-align: left; }\r\n}\r\n\n";
     function injectStyle() {
         if (document.getElementById('bilibili-toolbox-userscript-style')) return;
         const style = document.createElement('style');
@@ -197,6 +197,13 @@
         return null;
     }
 
+    function isTouchLikeDevice() {
+        const coarsePointer = window.matchMedia?.('(pointer: coarse)').matches;
+        const noHover = window.matchMedia?.('(hover: none)').matches;
+        const nav = window.navigator || {};
+        return Boolean(coarsePointer || noHover || nav.maxTouchPoints > 0);
+    }
+
     const $ = (selector, fallback = '') => document.querySelector(selector)?.textContent.trim() || fallback;
     const $src = (selector) => document.querySelector(selector)?.src || '';
 
@@ -249,6 +256,7 @@
         getFavoriteLink,
         escapeHtml,
         extractUidFromUrl,
+        isTouchLikeDevice,
         $,
         $src
     };
@@ -339,26 +347,46 @@
         changeListeners = new Set();
     }
 
-    function parseFavoriteTextLine(line) {
-        const [key, name, image] = line.split('\t');
-        if (!key || !name || !image) return null;
+    function parseFavoriteBlockContent(content) {
+        if (typeof content !== 'string') return null;
+
+        const firstSeparator = content.indexOf('==');
+        if (firstSeparator < 0) return null;
+        const secondSeparator = content.indexOf('==', firstSeparator + 2);
+        if (secondSeparator < 0) return null;
+
+        const key = content.slice(0, firstSeparator).trim();
+        const name = content.slice(firstSeparator + 2, secondSeparator).replace(/\s+/g, ' ').trim();
+        const image = content.slice(secondSeparator + 2).replace(/\s+/g, '').trim();
         const match = key.match(/^(user|readlist):(\d+)$/);
         if (!match) return null;
-        const cleanName = name.trim();
-        const cleanImage = image.trim();
-        if (!cleanName || !cleanImage) return null;
+        if (!name || !image) return null;
+
         const isReadlist = match[1].toLowerCase() === window.Shared.READLIST_TYPE;
         return {
             type: isReadlist ? window.Shared.READLIST_TYPE : window.Shared.USER_TYPE,
             [isReadlist ? 'id' : 'uid']: match[2],
-            [isReadlist ? 'title' : 'uname']: cleanName,
-            [isReadlist ? 'cover' : 'face']: cleanImage
+            [isReadlist ? 'title' : 'uname']: name,
+            [isReadlist ? 'cover' : 'face']: image
         };
+    }
+
+    function parseFavoriteText(text) {
+        const favorites = [];
+        const pattern = /\[([\s\S]*?)\]/g;
+        let match;
+
+        while ((match = pattern.exec(text)) !== null) {
+            const favorite = parseFavoriteBlockContent(match[1]);
+            if (favorite) favorites.push(favorite);
+        }
+
+        return favorites;
     }
 
     function normalizeImportedFavorites(data) {
         if (typeof data === 'string') {
-            return window.Shared.normalizeFavoriteList(data.trim().split(/\r?\n/).map(parseFavoriteTextLine));
+            return window.Shared.normalizeFavoriteList(parseFavoriteText(data));
         }
 
         return window.Shared.normalizeFavoriteList(data);
@@ -424,8 +452,12 @@
         return { ...merged, data };
     }
 
-    function cleanExportField(value) {
-        return typeof value === 'string' ? value.replace(/[\t\r\n]+/g, ' ').trim() : '';
+    function cleanExportName(value) {
+        return typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : '';
+    }
+
+    function cleanExportImage(value) {
+        return typeof value === 'string' ? value.replace(/\s+/g, '').trim() : '';
     }
 
     function createExportText(data = dataCache) {
@@ -433,13 +465,9 @@
             .map(item => {
                 const key = window.Shared.getFavoriteKey(item);
                 if (!key) return '';
-                const isReadlist = window.Shared.isReadlistFavorite(item);
-                const fields = [
-                    key,
-                    cleanExportField(window.Shared.getFavoriteName(item)),
-                    cleanExportField(window.Shared.getFavoriteImage(item))
-                ];
-                return fields.every(Boolean) ? fields.join('\t') : '';
+                const name = cleanExportName(window.Shared.getFavoriteName(item));
+                const image = cleanExportImage(window.Shared.getFavoriteImage(item));
+                return name && image ? `[${key}==${name}==${image}]` : '';
             })
             .filter(Boolean)
             .join('\n');
@@ -475,14 +503,12 @@
     const FADE_SETTLE_DURATION = 300;
     const FADE_SHIFT_DISTANCE = 60;
     const SMOOTH_SCALE_START = 0.95;
-    const BOOK_ANIMATION_DURATION = 500;
     const DEFAULT_ANIMATION_MODE = 'smooth';
     const ANIMATION_MODES = ['none', 'smooth', 'fade'];
     const ANIMATION_BUTTON_MAP = {
         none: ['\u65e0', '\u7ffb\u9875\u52a8\u753b\uff1a\u5173\u95ed', '#333'],
         smooth: ['\u5e73\u6ed1', '\u7ffb\u9875\u52a8\u753b\uff1a\u6de1\u5165 + \u5e73\u79fb + \u7ec6\u5fae\u7f29\u653e', '#4b5563'],
-        fade: ['\u6de1\u5165', '\u7ffb\u9875\u52a8\u753b\uff1a\u6de1\u5165\u6de1\u51fa', '#4b5563'],
-        book: ['\u4e66\u672c', '\u7ffb\u9875\u52a8\u753b\uff1a\u4e66\u672c\u5377\u66f2', '#4b5563']
+        fade: ['\u6de1\u5165', '\u7ffb\u9875\u52a8\u753b\uff1a\u6de1\u5165\u6de1\u51fa', '#4b5563']
     };
 
     function normalizeMode(animationMode) {
@@ -551,20 +577,6 @@
         }, FADE_ANIMATION_DURATION);
     }
 
-    // =====================================================================
-    // 书本翻页动画（占位，待实现）
-    // =====================================================================
-    function playBookTransition(imgContainer, renderIndex, getCurrentIndex, transitionToken, getTransitionToken, loadImages, direction) {
-        // TODO: 实现书本3D翻页动画
-        // 提示：可参考 StPageFlip-master 的几何交点算法
-        console.warn('[BilibiliToolbox] book transition not implemented yet, falling back to fade');
-        playFadeTransition(imgContainer, renderIndex, getCurrentIndex, transitionToken, getTransitionToken, loadImages, direction);
-    }
-
-    // =====================================================================
-    // 动画流程编排
-    // =====================================================================
-
     function runTransitionFlow(options) {
         const {
             animate, imgContainer, animationMode, step, isRightToLeft, lastStep,
@@ -582,10 +594,6 @@
             playFadeTransition(imgContainer, renderIndex, getCurrentIndex, transitionToken, getTransitionToken, loadImages, direction);
             return;
         }
-        if (renderMode === 'book') {
-            playBookTransition(imgContainer, renderIndex, getCurrentIndex, transitionToken, getTransitionToken, loadImages, direction);
-            return;
-        }
         loadImages(renderIndex, 'none', direction);
     }
 
@@ -597,7 +605,8 @@
         if (mode === 'smooth') {
             Object.assign(imgContainer.style, {
                 transform: withSubtleScale(getShiftedTransform(getShiftedTransformFn, getTransform, -transitionDirection * FADE_SHIFT_DISTANCE)),
-                opacity: '0', filter: 'none'
+                opacity: '0',
+                filter: 'none'
             });
         } else if (mode === 'fade') {
             Object.assign(imgContainer.style, { opacity: '0', filter: 'none' });
@@ -618,17 +627,17 @@
             imgContainer.getBoundingClientRect();
             Object.assign(imgContainer.style, {
                 transition: `transform ${FADE_SETTLE_DURATION}ms ease-out, opacity ${FADE_SETTLE_DURATION}ms ease-out`,
-                opacity: '1', filter: 'none', transform: getBaseTransform(getTransform)
+                opacity: '1',
+                filter: 'none',
+                transform: getBaseTransform(getTransform)
             });
         } else if (mode === 'fade') {
             imgContainer.getBoundingClientRect();
             Object.assign(imgContainer.style, {
                 transition: `opacity ${FADE_SETTLE_DURATION}ms ease-out`,
-                opacity: '1', filter: 'none'
+                opacity: '1',
+                filter: 'none'
             });
-        } else if (mode === 'book') {
-            // TODO: 实现书本动画结束时的处理
-            Object.assign(imgContainer.style, { transition: 'none', opacity: '1', filter: 'none' });
         } else {
             Object.assign(imgContainer.style, { transition: 'none', opacity: '1', filter: 'none' });
         }
@@ -639,7 +648,6 @@
         FADE_ANIMATION_DURATION,
         FADE_SETTLE_DURATION,
         FADE_SHIFT_DISTANCE,
-        BOOK_ANIMATION_DURATION,
         DEFAULT_ANIMATION_MODE,
         ANIMATION_MODES,
         normalizeAnimationMode: normalizeMode,
@@ -892,12 +900,6 @@
         return IMAGE_RENDER_MODES.includes(mode) ? mode : DEFAULT_READER_PREFERENCES.imageRenderMode;
     }
 
-    function isTouchLikeDevice() {
-        const coarsePointer = window.matchMedia?.('(pointer: coarse)').matches;
-        const noHover = window.matchMedia?.('(hover: none)').matches;
-        return Boolean(coarsePointer || noHover || navigator.maxTouchPoints > 0);
-    }
-
     // ============ 漫画模式功能 ============
 
     class BiliComicReader {
@@ -955,7 +957,7 @@
             this.rotation = 0;
             this.activePageCount = 1;
             this.controlsVisible = true;
-            this.isTouchDevice = isTouchLikeDevice();
+            this.isTouchDevice = Shared.isTouchLikeDevice();
             this.isCompactLayout = false;
             this.isSelectingScreenshot = false;
             this.isDraggingSelection = false;
@@ -1007,6 +1009,7 @@
 
             // DOM 元素引用
             this.el = {};
+            this.eventBag = null;
 
             // 绑定全局事件的 this 指向，便于后续解绑
             this.handleKeyDown = this.handleKeyDown.bind(this);
@@ -1048,6 +1051,7 @@
             const favBtn = document.getElementById('bilibili-fav-float-btn');
             if (favBtn) favBtn.style.display = 'none';
 
+            this.eventBag = Toolbox.createEventBag();
             this.createUI();
             this.bindEvents();
             this.render();
@@ -1232,19 +1236,20 @@
 
         // 4. 缁戝畾浜嬩欢
         bindEvents() {
+            const on = (...args) => this.eventBag.on(...args);
             const stop = (handler) => (e) => {
                 e.stopPropagation();
                 handler();
             };
 
             // Controls visibility 鈥?only the panels trigger show/hide, images don't
-            this.el.controls.addEventListener('mouseenter', () => this.showControls());
-            this.el.settingsControls.addEventListener('mouseenter', () => this.showControls());
-            this.el.settingsPanel.addEventListener('mouseenter', () => this.showControls());
-            this.el.controls.addEventListener('mouseleave', () => this.scheduleHideControls());
-            this.el.settingsControls.addEventListener('mouseleave', () => this.scheduleHideControls());
-            this.el.settingsPanel.addEventListener('mouseleave', () => this.scheduleHideControls());
-            this.el.reader.addEventListener('mouseleave', () => this.scheduleHideControls());
+            on(this.el.controls, 'mouseenter', () => this.showControls());
+            on(this.el.settingsControls, 'mouseenter', () => this.showControls());
+            on(this.el.settingsPanel, 'mouseenter', () => this.showControls());
+            on(this.el.controls, 'mouseleave', () => this.scheduleHideControls());
+            on(this.el.settingsControls, 'mouseleave', () => this.scheduleHideControls());
+            on(this.el.settingsPanel, 'mouseleave', () => this.scheduleHideControls());
+            on(this.el.reader, 'mouseleave', () => this.scheduleHideControls());
 
             this.el.leftBtn.onclick = (e) => this.turnPage(e, this.isRightToLeft ? this.lastStep : -this.lastStep);
             this.el.rightBtn.onclick = (e) => this.turnPage(e, this.isRightToLeft ? -this.lastStep : this.lastStep);
@@ -1305,12 +1310,12 @@
             this.el.closeBtn.onclick = () => this.close();
 
             // 椤电爜璺宠浆
-            this.el.pageInfo.addEventListener('click', (e) => {
+            on(this.el.pageInfo, 'click', (e) => {
                 e.stopPropagation();
                 this.showPageInput();
             });
-            this.el.pageInput.addEventListener('focus', () => this.el.pageInput.select());
-            this.el.pageInput.addEventListener('keydown', (e) => {
+            on(this.el.pageInput, 'focus', () => this.el.pageInput.select());
+            on(this.el.pageInput, 'keydown', (e) => {
                 e.stopPropagation();
                 if (e.key === 'Enter') {
                     e.preventDefault();
@@ -1322,24 +1327,24 @@
                     this.el.pageInput.blur();
                 }
             });
-            this.el.pageInput.addEventListener('blur', () => this.jumpToPageFromInput());
+            on(this.el.pageInput, 'blur', () => this.jumpToPageFromInput());
             this.el.selectionCancelBtn.onclick = () => this.cancelScreenshotSelection(true);
             this.el.selectionFullBtn.onclick = () => { void this.saveFullScreenshot(); };
             this.el.selectionSaveBtn.onclick = () => { void this.saveSelectionScreenshot(); };
-            this.el.selectionOverlay.addEventListener('pointerdown', this.handleSelectionPointerDown);
-            this.el.selectionOverlay.addEventListener('pointermove', this.handleSelectionPointerMove);
-            this.el.selectionOverlay.addEventListener('pointerup', this.handleSelectionPointerUp);
-            this.el.selectionOverlay.addEventListener('pointercancel', this.handleSelectionPointerUp);
-            this.el.reader.addEventListener('pointerdown', this.handleSettingsOutsidePointerDown, true);
+            on(this.el.selectionOverlay, 'pointerdown', this.handleSelectionPointerDown);
+            on(this.el.selectionOverlay, 'pointermove', this.handleSelectionPointerMove);
+            on(this.el.selectionOverlay, 'pointerup', this.handleSelectionPointerUp);
+            on(this.el.selectionOverlay, 'pointercancel', this.handleSelectionPointerUp);
+            on(this.el.reader, 'pointerdown', this.handleSettingsOutsidePointerDown, true);
 
             // 图片容器事件（翻页与拖拽起冲突）
-            this.el.imgContainer.addEventListener('wheel', (e) => {
+            on(this.el.imgContainer, 'wheel', (e) => {
                 e.preventDefault();
                 this.animateTransform();
                 this.zoomAt(e.clientX, e.clientY, this.scale + (e.deltaY > 0 ? -SCALE_STEP : SCALE_STEP));
             }, { passive: false });
 
-            this.el.imgContainer.addEventListener('dblclick', (e) => {
+            on(this.el.imgContainer, 'dblclick', (e) => {
                 e.preventDefault();
                 this.animateTransform(220);
                 if (Math.abs(this.scale - 1) < 0.05) {
@@ -1349,7 +1354,7 @@
                 this.resetScaleAndPan();
             });
 
-            this.el.imgContainer.addEventListener('mousedown', (e) => {
+            on(this.el.imgContainer, 'mousedown', (e) => {
                 if (e.button !== 0) return;
                 e.preventDefault();
                 this.setTransformTransition('none');
@@ -1361,23 +1366,23 @@
                 this.el.imgContainer.classList.add('is-grabbing');
             });
 
-            this.el.imgContainer.addEventListener('mouseleave', () => {
+            on(this.el.imgContainer, 'mouseleave', () => {
                 this.isDragging = false;
                 this.el.imgContainer.classList.remove('is-grabbing');
             });
 
             // 注册全局事件（需要在退出时清理）
-            document.addEventListener('mousemove', this.handleMouseMove);
-            document.addEventListener('mouseup', this.handleMouseUp);
-            document.addEventListener('fullscreenchange', this.handleFullscreenChange);
-            window.addEventListener('keydown', this.handleKeyDown);
-            window.addEventListener('resize', this.handleResize);
+            on(document, 'mousemove', this.handleMouseMove);
+            on(document, 'mouseup', this.handleMouseUp);
+            on(document, 'fullscreenchange', this.handleFullscreenChange);
+            on(window, 'keydown', this.handleKeyDown);
+            on(window, 'resize', this.handleResize);
 
             // 触摸滑动事件（使用已经绑定的函数引用，便于后续解绑）
-            this.el.reader.addEventListener('touchstart', this.boundHandleTouchStart, { passive: false });
-            this.el.reader.addEventListener('touchmove', this.boundHandleTouchMove, { passive: false });
-            this.el.reader.addEventListener('touchend', this.boundHandleTouchEnd, { passive: false });
-            this.el.reader.addEventListener('touchcancel', this.boundHandleTouchEnd, { passive: false });
+            on(this.el.reader, 'touchstart', this.boundHandleTouchStart, { passive: false });
+            on(this.el.reader, 'touchmove', this.boundHandleTouchMove, { passive: false });
+            on(this.el.reader, 'touchend', this.boundHandleTouchEnd, { passive: false });
+            on(this.el.reader, 'touchcancel', this.boundHandleTouchEnd, { passive: false });
             this.showControls();
         }
 
@@ -2655,22 +2660,12 @@
             this.cancelScreenshotSelection(false, false);
             this.hideSettingsPanel();
 
-            document.removeEventListener('mousemove', this.handleMouseMove);
-            document.removeEventListener('mouseup', this.handleMouseUp);
-            document.removeEventListener('fullscreenchange', this.handleFullscreenChange);
-            window.removeEventListener('keydown', this.handleKeyDown);
-            window.removeEventListener('resize', this.handleResize);
+            if (this.eventBag) {
+                this.eventBag.cleanup();
+                this.eventBag = null;
+            }
 
             if (this.el.reader) {
-                this.el.reader.removeEventListener('touchstart', this.boundHandleTouchStart);
-                this.el.reader.removeEventListener('touchmove', this.boundHandleTouchMove);
-                this.el.reader.removeEventListener('touchend', this.boundHandleTouchEnd);
-                this.el.reader.removeEventListener('touchcancel', this.boundHandleTouchEnd);
-                this.el.reader.removeEventListener('pointerdown', this.handleSettingsOutsidePointerDown, true);
-                this.el.selectionOverlay.removeEventListener('pointerdown', this.handleSelectionPointerDown);
-                this.el.selectionOverlay.removeEventListener('pointermove', this.handleSelectionPointerMove);
-                this.el.selectionOverlay.removeEventListener('pointerup', this.handleSelectionPointerUp);
-                this.el.selectionOverlay.removeEventListener('pointercancel', this.handleSelectionPointerUp);
                 this.el.reader.remove();
                 this.el = {};
             }
@@ -2723,6 +2718,8 @@
         '.bili-dyn-author__action',
         '.opus-module-author__action'
     ];
+    const FILTER_ACTIVE_CLASS = 'bilibili-toolbox-dynamic-filter-active';
+    const FILTER_READY_CLASS = 'bilibili-toolbox-dynamic-filter-ready';
     const HIDDEN_FORWARD_CLASS = 'bilibili-toolbox-hide-forward-dynamic';
     const FORWARD_TYPE_PATTERN = /(^|[\s:_-])(forward|repost)([\s:_-]|$)/i;
     const FORWARD_TEXT_MARKERS = [
@@ -2903,6 +2900,8 @@
     let dynamicFilterObserver = null;
     let debounceFilterTimer = 0;
     let dynamicFilterBurstTimers = [];
+    let keywordFilterEnabled = false;
+    let keywordFilterText = '';
 
     function isSpaceDynamicPage(url = window.location.href) {
         return SPACE_DYNAMIC_URL_PATTERN.test(url);
@@ -2939,19 +2938,74 @@
             || Boolean(card.querySelector(FORWARD_DYNAMIC_SELECTOR));
     }
 
+    function normalizeDynamicText(value) {
+        return String(value || '').replace(/\s+/g, ' ').trim().toLowerCase();
+    }
+
+    function getDynamicCardText(card) {
+        return normalizeDynamicText(card.innerText || card.textContent || '');
+    }
+
+    function getKeywordFilterState() {
+        const displayText = String(keywordFilterText || '').replace(/\s+/g, ' ').trim();
+        const normalizedText = normalizeDynamicText(keywordFilterText);
+        return {
+            enabled: keywordFilterEnabled,
+            text: keywordFilterText,
+            displayText,
+            normalizedText,
+            hasKeyword: Boolean(normalizedText),
+            isActive: keywordFilterEnabled && Boolean(normalizedText)
+        };
+    }
+
+    function setKeywordFilterState(state = {}) {
+        if (Object.prototype.hasOwnProperty.call(state, 'enabled')) {
+            keywordFilterEnabled = Boolean(state.enabled);
+        }
+        if (typeof state.text === 'string') {
+            keywordFilterText = state.text;
+        }
+        onSyncFloatButton();
+        scheduleDynamicFilterApply(0);
+    }
+
+    function setDynamicFilterActive(active) {
+        document.documentElement?.classList.toggle(FILTER_ACTIVE_CLASS, Boolean(active));
+    }
+
+    function clearDynamicFilterCardClasses() {
+        document.querySelectorAll(`.${HIDDEN_FORWARD_CLASS}, .${FILTER_READY_CLASS}`).forEach(card => {
+            card.classList.remove(HIDDEN_FORWARD_CLASS, FILTER_READY_CLASS);
+        });
+    }
+
+    function markDynamicCardReady(card) {
+        card.classList.add(FILTER_READY_CLASS);
+        card.querySelectorAll(DYNAMIC_CARD_SELECTOR).forEach(child => child.classList.add(FILTER_READY_CLASS));
+    }
+
     function applyDynamicFilter() {
         onRenderControls();
 
-        const shouldHide = isSpaceDynamicPage()
+        const dynamicPage = isSpaceDynamicPage();
+        const shouldHideForward = dynamicPage
             && Boolean(getSettingValue(TOOLBOX_SETTINGS.hideForwardDynamics, false));
+        const keywordState = getKeywordFilterState();
+        const shouldFilterKeyword = dynamicPage && keywordState.isActive;
 
-        if (!shouldHide) {
-            document.querySelectorAll(`.${HIDDEN_FORWARD_CLASS}`).forEach(card => card.classList.remove(HIDDEN_FORWARD_CLASS));
+        if (!shouldHideForward && !shouldFilterKeyword) {
+            setDynamicFilterActive(false);
+            clearDynamicFilterCardClasses();
             return;
         }
 
+        setDynamicFilterActive(true);
         getDynamicCardElements().forEach(card => {
-            card.classList.toggle(HIDDEN_FORWARD_CLASS, isForwardDynamic(card));
+            const hideForward = shouldHideForward && isForwardDynamic(card);
+            const hideKeyword = shouldFilterKeyword && !getDynamicCardText(card).includes(keywordState.normalizedText);
+            card.classList.toggle(HIDDEN_FORWARD_CLASS, hideForward || hideKeyword);
+            markDynamicCardReady(card);
         });
     }
 
@@ -3028,6 +3082,10 @@
         clearDynamicFilterBurstTimers();
         dynamicFilterObserver = null;
         debounceFilterTimer = 0;
+        keywordFilterEnabled = false;
+        keywordFilterText = '';
+        setDynamicFilterActive(false);
+        clearDynamicFilterCardClasses();
     }
 
     let storage = null;
@@ -3039,16 +3097,14 @@
     let isTouchDevice = false;
     let messageTimer = 0;
 
-    function isTouchLikeDevice() {
-        const coarsePointer = window.matchMedia?.('(pointer: coarse)').matches;
-        const noHover = window.matchMedia?.('(hover: none)').matches;
-        return Boolean(coarsePointer || noHover || navigator.maxTouchPoints > 0);
-    }
-
     function syncFloatBtnHideState() {
         const btn = document.getElementById('bilibili-fav-float-btn');
         if (!btn) return;
-        btn.classList.toggle('hide-forward-active', Boolean(getSettingValue(TOOLBOX_SETTINGS.hideForwardDynamics)));
+        const keywordActive = Boolean(dynamicFilter?.getKeywordFilterState?.().isActive);
+        btn.classList.toggle(
+            'hide-forward-active',
+            Boolean(getSettingValue(TOOLBOX_SETTINGS.hideForwardDynamics)) || keywordActive
+        );
     }
 
     function showMessage(text, isError = false, duration = 2200) {
@@ -3224,6 +3280,17 @@
                         <span class="bilibili-toolbox-switch-slider"></span>
                     </span>
                 </label>
+                <label class="bilibili-toolbox-control-row">
+                    <span class="bilibili-toolbox-control-copy">
+                        <span class="bilibili-toolbox-control-title">\u5173\u952e\u8bcd\u7b5b\u9009\u52a8\u6001</span>
+                        <span class="bilibili-toolbox-control-desc">\u4ec5\u663e\u793a\u5305\u542b\u8f93\u5165\u5185\u5bb9\u7684\u52a8\u6001</span>
+                    </span>
+                    <span class="bilibili-toolbox-switch">
+                        <input type="checkbox" class="bilibili-toolbox-keyword-toggle">
+                        <span class="bilibili-toolbox-switch-slider"></span>
+                    </span>
+                </label>
+                <input type="text" class="bilibili-toolbox-keyword-input" placeholder="\u8f93\u5165\u8981\u5305\u542b\u7684\u5185\u5bb9" autocomplete="off" spellcheck="false">
                 <div class="bilibili-toolbox-control-status"></div>
             </div>
             <div class="bilibili-toolbox-control-actions">
@@ -3238,6 +3305,17 @@
             syncFloatBtnHideState();
             dynamicFilter.sync();
         });
+        eventBag.on(panel.querySelector('.bilibili-toolbox-keyword-toggle'), 'change', (event) => {
+            const enabled = Boolean(event.target.checked);
+            dynamicFilter.setKeywordFilterState({ enabled });
+            renderDynamicControlsPanel();
+            if (enabled) {
+                window.setTimeout(() => panel.querySelector('.bilibili-toolbox-keyword-input')?.focus(), 0);
+            }
+        });
+        eventBag.on(panel.querySelector('.bilibili-toolbox-keyword-input'), 'input', (event) => {
+            dynamicFilter.setKeywordFilterState({ text: event.target.value });
+        });
         eventBag.on(panel.querySelector('.bilibili-toolbox-export-btn'), 'click', exportFavorites);
         eventBag.on(panel.querySelector('.bilibili-toolbox-import-btn'), 'click', importFavorites);
 
@@ -3248,15 +3326,27 @@
         return document.getElementById('bilibili-fav-controls-panel')?.classList.contains('show');
     }
 
+    function getDynamicControlsStatus(forwardEnabled, keywordState) {
+        if (!dynamicFilter.isSpaceDynamicPage()) return '\u5728\u7528\u6237\u52a8\u6001\u9875\u751f\u6548';
+
+        const states = [];
+        if (forwardEnabled) states.push('\u5df2\u9690\u85cf\u8f6c\u53d1\u52a8\u6001');
+        if (keywordState.enabled && !keywordState.hasKeyword) states.push('\u8bf7\u8f93\u5165\u5173\u952e\u8bcd\u540e\u5f00\u59cb\u7b5b\u9009');
+        if (keywordState.isActive) states.push(`\u4ec5\u663e\u793a\u5305\u542b\u201c${keywordState.displayText}\u201d\u7684\u52a8\u6001`);
+        return states.length ? states.join('\uff1b') : '\u5df2\u663e\u793a\u5168\u90e8\u52a8\u6001';
+    }
+
     function renderDynamicControlsPanel() {
         const panel = document.getElementById('bilibili-fav-controls-panel');
         if (!panel) return;
 
-        const enabled = Boolean(getSettingValue(TOOLBOX_SETTINGS.hideForwardDynamics));
-        panel.querySelector('.bilibili-toolbox-forward-toggle').checked = enabled;
-        panel.querySelector('.bilibili-toolbox-control-status').textContent = !dynamicFilter.isSpaceDynamicPage()
-            ? '\u5728\u7528\u6237\u52a8\u6001\u9875\u751f\u6548'
-            : (enabled ? '\u5df2\u9690\u85cf\u8f6c\u53d1\u52a8\u6001' : '\u5df2\u663e\u793a\u5168\u90e8\u52a8\u6001');
+        const forwardEnabled = Boolean(getSettingValue(TOOLBOX_SETTINGS.hideForwardDynamics));
+        const keywordState = dynamicFilter.getKeywordFilterState();
+        const keywordInput = panel.querySelector('.bilibili-toolbox-keyword-input');
+        panel.querySelector('.bilibili-toolbox-forward-toggle').checked = forwardEnabled;
+        panel.querySelector('.bilibili-toolbox-keyword-toggle').checked = keywordState.enabled;
+        if (keywordInput.value !== keywordState.text) keywordInput.value = keywordState.text;
+        panel.querySelector('.bilibili-toolbox-control-status').textContent = getDynamicControlsStatus(forwardEnabled, keywordState);
         syncFloatBtnHideState();
     }
 
@@ -3487,7 +3577,7 @@
         dynamicFilter = options.dynamicFilter;
         setDataProvider(options.getData);
         eventBag = Toolbox.createEventBag();
-        isTouchDevice = isTouchLikeDevice();
+        isTouchDevice = Shared.isTouchLikeDevice();
 
         createFloatingButton();
         createDynamicControlsPanel();
@@ -3531,6 +3621,10 @@
         scheduleApply: scheduleDynamicFilterApply,
         isSpaceDynamicPage,
         getSettingValue,
+        setKeywordFilterState,
+        getKeywordFilterState,
+        FILTER_ACTIVE_CLASS,
+        FILTER_READY_CLASS,
         HIDDEN_FORWARD_CLASS
     };
 

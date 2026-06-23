@@ -6,14 +6,12 @@
     const FADE_SETTLE_DURATION = 300;
     const FADE_SHIFT_DISTANCE = 60;
     const SMOOTH_SCALE_START = 0.95;
-    const BOOK_ANIMATION_DURATION = 500;
     const DEFAULT_ANIMATION_MODE = 'smooth';
     const ANIMATION_MODES = ['none', 'smooth', 'fade'];
     const ANIMATION_BUTTON_MAP = {
         none: ['\u65e0', '\u7ffb\u9875\u52a8\u753b\uff1a\u5173\u95ed', '#333'],
         smooth: ['\u5e73\u6ed1', '\u7ffb\u9875\u52a8\u753b\uff1a\u6de1\u5165 + \u5e73\u79fb + \u7ec6\u5fae\u7f29\u653e', '#4b5563'],
-        fade: ['\u6de1\u5165', '\u7ffb\u9875\u52a8\u753b\uff1a\u6de1\u5165\u6de1\u51fa', '#4b5563'],
-        book: ['\u4e66\u672c', '\u7ffb\u9875\u52a8\u753b\uff1a\u4e66\u672c\u5377\u66f2', '#4b5563']
+        fade: ['\u6de1\u5165', '\u7ffb\u9875\u52a8\u753b\uff1a\u6de1\u5165\u6de1\u51fa', '#4b5563']
     };
 
     function normalizeMode(animationMode) {
@@ -82,20 +80,6 @@
         }, FADE_ANIMATION_DURATION);
     }
 
-    // =====================================================================
-    // 书本翻页动画（占位，待实现）
-    // =====================================================================
-    function playBookTransition(imgContainer, renderIndex, getCurrentIndex, transitionToken, getTransitionToken, loadImages, direction) {
-        // TODO: 实现书本3D翻页动画
-        // 提示：可参考 StPageFlip-master 的几何交点算法
-        console.warn('[BilibiliToolbox] book transition not implemented yet, falling back to fade');
-        playFadeTransition(imgContainer, renderIndex, getCurrentIndex, transitionToken, getTransitionToken, loadImages, direction);
-    }
-
-    // =====================================================================
-    // 动画流程编排
-    // =====================================================================
-
     function runTransitionFlow(options) {
         const {
             animate, imgContainer, animationMode, step, isRightToLeft, lastStep,
@@ -113,10 +97,6 @@
             playFadeTransition(imgContainer, renderIndex, getCurrentIndex, transitionToken, getTransitionToken, loadImages, direction);
             return;
         }
-        if (renderMode === 'book') {
-            playBookTransition(imgContainer, renderIndex, getCurrentIndex, transitionToken, getTransitionToken, loadImages, direction);
-            return;
-        }
         loadImages(renderIndex, 'none', direction);
     }
 
@@ -128,7 +108,8 @@
         if (mode === 'smooth') {
             Object.assign(imgContainer.style, {
                 transform: withSubtleScale(getShiftedTransform(getShiftedTransformFn, getTransform, -transitionDirection * FADE_SHIFT_DISTANCE)),
-                opacity: '0', filter: 'none'
+                opacity: '0',
+                filter: 'none'
             });
         } else if (mode === 'fade') {
             Object.assign(imgContainer.style, { opacity: '0', filter: 'none' });
@@ -149,17 +130,17 @@
             imgContainer.getBoundingClientRect();
             Object.assign(imgContainer.style, {
                 transition: `transform ${FADE_SETTLE_DURATION}ms ease-out, opacity ${FADE_SETTLE_DURATION}ms ease-out`,
-                opacity: '1', filter: 'none', transform: getBaseTransform(getTransform)
+                opacity: '1',
+                filter: 'none',
+                transform: getBaseTransform(getTransform)
             });
         } else if (mode === 'fade') {
             imgContainer.getBoundingClientRect();
             Object.assign(imgContainer.style, {
                 transition: `opacity ${FADE_SETTLE_DURATION}ms ease-out`,
-                opacity: '1', filter: 'none'
+                opacity: '1',
+                filter: 'none'
             });
-        } else if (mode === 'book') {
-            // TODO: 实现书本动画结束时的处理
-            Object.assign(imgContainer.style, { transition: 'none', opacity: '1', filter: 'none' });
         } else {
             Object.assign(imgContainer.style, { transition: 'none', opacity: '1', filter: 'none' });
         }
@@ -170,7 +151,6 @@
         FADE_ANIMATION_DURATION,
         FADE_SETTLE_DURATION,
         FADE_SHIFT_DISTANCE,
-        BOOK_ANIMATION_DURATION,
         DEFAULT_ANIMATION_MODE,
         ANIMATION_MODES,
         normalizeAnimationMode: normalizeMode,

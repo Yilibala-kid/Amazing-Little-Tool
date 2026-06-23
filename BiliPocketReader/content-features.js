@@ -26,6 +26,8 @@
         '.bili-dyn-author__action',
         '.opus-module-author__action'
     ];
+    const FILTER_ACTIVE_CLASS = 'bilibili-toolbox-dynamic-filter-active';
+    const FILTER_READY_CLASS = 'bilibili-toolbox-dynamic-filter-ready';
     const HIDDEN_FORWARD_CLASS = 'bilibili-toolbox-hide-forward-dynamic';
     const FORWARD_TYPE_PATTERN = /(^|[\s:_-])(forward|repost)([\s:_-]|$)/i;
     const FORWARD_TEXT_MARKERS = [
@@ -206,6 +208,8 @@
     let dynamicFilterObserver = null;
     let debounceFilterTimer = 0;
     let dynamicFilterBurstTimers = [];
+    let keywordFilterEnabled = false;
+    let keywordFilterText = '';
 
     function isSpaceDynamicPage(url = window.location.href) {
         return SPACE_DYNAMIC_URL_PATTERN.test(url);
@@ -242,19 +246,74 @@
             || Boolean(card.querySelector(FORWARD_DYNAMIC_SELECTOR));
     }
 
+    function normalizeDynamicText(value) {
+        return String(value || '').replace(/\s+/g, ' ').trim().toLowerCase();
+    }
+
+    function getDynamicCardText(card) {
+        return normalizeDynamicText(card.innerText || card.textContent || '');
+    }
+
+    function getKeywordFilterState() {
+        const displayText = String(keywordFilterText || '').replace(/\s+/g, ' ').trim();
+        const normalizedText = normalizeDynamicText(keywordFilterText);
+        return {
+            enabled: keywordFilterEnabled,
+            text: keywordFilterText,
+            displayText,
+            normalizedText,
+            hasKeyword: Boolean(normalizedText),
+            isActive: keywordFilterEnabled && Boolean(normalizedText)
+        };
+    }
+
+    function setKeywordFilterState(state = {}) {
+        if (Object.prototype.hasOwnProperty.call(state, 'enabled')) {
+            keywordFilterEnabled = Boolean(state.enabled);
+        }
+        if (typeof state.text === 'string') {
+            keywordFilterText = state.text;
+        }
+        onSyncFloatButton();
+        scheduleDynamicFilterApply(0);
+    }
+
+    function setDynamicFilterActive(active) {
+        document.documentElement?.classList.toggle(FILTER_ACTIVE_CLASS, Boolean(active));
+    }
+
+    function clearDynamicFilterCardClasses() {
+        document.querySelectorAll(`.${HIDDEN_FORWARD_CLASS}, .${FILTER_READY_CLASS}`).forEach(card => {
+            card.classList.remove(HIDDEN_FORWARD_CLASS, FILTER_READY_CLASS);
+        });
+    }
+
+    function markDynamicCardReady(card) {
+        card.classList.add(FILTER_READY_CLASS);
+        card.querySelectorAll(DYNAMIC_CARD_SELECTOR).forEach(child => child.classList.add(FILTER_READY_CLASS));
+    }
+
     function applyDynamicFilter() {
         onRenderControls();
 
-        const shouldHide = isSpaceDynamicPage()
+        const dynamicPage = isSpaceDynamicPage();
+        const shouldHideForward = dynamicPage
             && Boolean(getSettingValue(TOOLBOX_SETTINGS.hideForwardDynamics, false));
+        const keywordState = getKeywordFilterState();
+        const shouldFilterKeyword = dynamicPage && keywordState.isActive;
 
-        if (!shouldHide) {
-            document.querySelectorAll(`.${HIDDEN_FORWARD_CLASS}`).forEach(card => card.classList.remove(HIDDEN_FORWARD_CLASS));
+        if (!shouldHideForward && !shouldFilterKeyword) {
+            setDynamicFilterActive(false);
+            clearDynamicFilterCardClasses();
             return;
         }
 
+        setDynamicFilterActive(true);
         getDynamicCardElements().forEach(card => {
-            card.classList.toggle(HIDDEN_FORWARD_CLASS, isForwardDynamic(card));
+            const hideForward = shouldHideForward && isForwardDynamic(card);
+            const hideKeyword = shouldFilterKeyword && !getDynamicCardText(card).includes(keywordState.normalizedText);
+            card.classList.toggle(HIDDEN_FORWARD_CLASS, hideForward || hideKeyword);
+            markDynamicCardReady(card);
         });
     }
 
@@ -331,6 +390,10 @@
         clearDynamicFilterBurstTimers();
         dynamicFilterObserver = null;
         debounceFilterTimer = 0;
+        keywordFilterEnabled = false;
+        keywordFilterText = '';
+        setDynamicFilterActive(false);
+        clearDynamicFilterCardClasses();
     }
 
     let storage = null;
@@ -342,16 +405,14 @@
     let isTouchDevice = false;
     let messageTimer = 0;
 
-    function isTouchLikeDevice() {
-        const coarsePointer = window.matchMedia?.('(pointer: coarse)').matches;
-        const noHover = window.matchMedia?.('(hover: none)').matches;
-        return Boolean(coarsePointer || noHover || navigator.maxTouchPoints > 0);
-    }
-
     function syncFloatBtnHideState() {
         const btn = document.getElementById('bilibili-fav-float-btn');
         if (!btn) return;
-        btn.classList.toggle('hide-forward-active', Boolean(getSettingValue(TOOLBOX_SETTINGS.hideForwardDynamics)));
+        const keywordActive = Boolean(dynamicFilter?.getKeywordFilterState?.().isActive);
+        btn.classList.toggle(
+            'hide-forward-active',
+            Boolean(getSettingValue(TOOLBOX_SETTINGS.hideForwardDynamics)) || keywordActive
+        );
     }
 
     function showMessage(text, isError = false, duration = 2200) {
@@ -527,6 +588,17 @@
                         <span class="bilibili-toolbox-switch-slider"></span>
                     </span>
                 </label>
+                <label class="bilibili-toolbox-control-row">
+                    <span class="bilibili-toolbox-control-copy">
+                        <span class="bilibili-toolbox-control-title">\u5173\u952e\u8bcd\u7b5b\u9009\u52a8\u6001</span>
+                        <span class="bilibili-toolbox-control-desc">\u4ec5\u663e\u793a\u5305\u542b\u8f93\u5165\u5185\u5bb9\u7684\u52a8\u6001</span>
+                    </span>
+                    <span class="bilibili-toolbox-switch">
+                        <input type="checkbox" class="bilibili-toolbox-keyword-toggle">
+                        <span class="bilibili-toolbox-switch-slider"></span>
+                    </span>
+                </label>
+                <input type="text" class="bilibili-toolbox-keyword-input" placeholder="\u8f93\u5165\u8981\u5305\u542b\u7684\u5185\u5bb9" autocomplete="off" spellcheck="false">
                 <div class="bilibili-toolbox-control-status"></div>
             </div>
             <div class="bilibili-toolbox-control-actions">
@@ -541,6 +613,17 @@
             syncFloatBtnHideState();
             dynamicFilter.sync();
         });
+        eventBag.on(panel.querySelector('.bilibili-toolbox-keyword-toggle'), 'change', (event) => {
+            const enabled = Boolean(event.target.checked);
+            dynamicFilter.setKeywordFilterState({ enabled });
+            renderDynamicControlsPanel();
+            if (enabled) {
+                window.setTimeout(() => panel.querySelector('.bilibili-toolbox-keyword-input')?.focus(), 0);
+            }
+        });
+        eventBag.on(panel.querySelector('.bilibili-toolbox-keyword-input'), 'input', (event) => {
+            dynamicFilter.setKeywordFilterState({ text: event.target.value });
+        });
         eventBag.on(panel.querySelector('.bilibili-toolbox-export-btn'), 'click', exportFavorites);
         eventBag.on(panel.querySelector('.bilibili-toolbox-import-btn'), 'click', importFavorites);
 
@@ -551,15 +634,27 @@
         return document.getElementById('bilibili-fav-controls-panel')?.classList.contains('show');
     }
 
+    function getDynamicControlsStatus(forwardEnabled, keywordState) {
+        if (!dynamicFilter.isSpaceDynamicPage()) return '\u5728\u7528\u6237\u52a8\u6001\u9875\u751f\u6548';
+
+        const states = [];
+        if (forwardEnabled) states.push('\u5df2\u9690\u85cf\u8f6c\u53d1\u52a8\u6001');
+        if (keywordState.enabled && !keywordState.hasKeyword) states.push('\u8bf7\u8f93\u5165\u5173\u952e\u8bcd\u540e\u5f00\u59cb\u7b5b\u9009');
+        if (keywordState.isActive) states.push(`\u4ec5\u663e\u793a\u5305\u542b\u201c${keywordState.displayText}\u201d\u7684\u52a8\u6001`);
+        return states.length ? states.join('\uff1b') : '\u5df2\u663e\u793a\u5168\u90e8\u52a8\u6001';
+    }
+
     function renderDynamicControlsPanel() {
         const panel = document.getElementById('bilibili-fav-controls-panel');
         if (!panel) return;
 
-        const enabled = Boolean(getSettingValue(TOOLBOX_SETTINGS.hideForwardDynamics));
-        panel.querySelector('.bilibili-toolbox-forward-toggle').checked = enabled;
-        panel.querySelector('.bilibili-toolbox-control-status').textContent = !dynamicFilter.isSpaceDynamicPage()
-            ? '\u5728\u7528\u6237\u52a8\u6001\u9875\u751f\u6548'
-            : (enabled ? '\u5df2\u9690\u85cf\u8f6c\u53d1\u52a8\u6001' : '\u5df2\u663e\u793a\u5168\u90e8\u52a8\u6001');
+        const forwardEnabled = Boolean(getSettingValue(TOOLBOX_SETTINGS.hideForwardDynamics));
+        const keywordState = dynamicFilter.getKeywordFilterState();
+        const keywordInput = panel.querySelector('.bilibili-toolbox-keyword-input');
+        panel.querySelector('.bilibili-toolbox-forward-toggle').checked = forwardEnabled;
+        panel.querySelector('.bilibili-toolbox-keyword-toggle').checked = keywordState.enabled;
+        if (keywordInput.value !== keywordState.text) keywordInput.value = keywordState.text;
+        panel.querySelector('.bilibili-toolbox-control-status').textContent = getDynamicControlsStatus(forwardEnabled, keywordState);
         syncFloatBtnHideState();
     }
 
@@ -790,7 +885,7 @@
         dynamicFilter = options.dynamicFilter;
         setDataProvider(options.getData);
         eventBag = Toolbox.createEventBag();
-        isTouchDevice = isTouchLikeDevice();
+        isTouchDevice = Shared.isTouchLikeDevice();
 
         createFloatingButton();
         createDynamicControlsPanel();
@@ -834,6 +929,10 @@
         scheduleApply: scheduleDynamicFilterApply,
         isSpaceDynamicPage,
         getSettingValue,
+        setKeywordFilterState,
+        getKeywordFilterState,
+        FILTER_ACTIVE_CLASS,
+        FILTER_READY_CLASS,
         HIDDEN_FORWARD_CLASS
     };
 

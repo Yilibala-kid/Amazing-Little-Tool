@@ -121,6 +121,13 @@
         return null;
     }
 
+    function isTouchLikeDevice() {
+        const coarsePointer = window.matchMedia?.('(pointer: coarse)').matches;
+        const noHover = window.matchMedia?.('(hover: none)').matches;
+        const nav = window.navigator || {};
+        return Boolean(coarsePointer || noHover || nav.maxTouchPoints > 0);
+    }
+
     const $ = (selector, fallback = '') => document.querySelector(selector)?.textContent.trim() || fallback;
     const $src = (selector) => document.querySelector(selector)?.src || '';
 
@@ -173,6 +180,7 @@
         getFavoriteLink,
         escapeHtml,
         extractUidFromUrl,
+        isTouchLikeDevice,
         $,
         $src
     };
