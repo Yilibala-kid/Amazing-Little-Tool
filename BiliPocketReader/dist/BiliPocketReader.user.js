@@ -644,7 +644,7 @@
         applyTransform();
     }
 
-    window.BiliAnimations = {
+    const animationsApi = {
         FADE_ANIMATION_DURATION,
         FADE_SETTLE_DURATION,
         FADE_SHIFT_DISTANCE,
@@ -657,6 +657,8 @@
         resetImageContainer: resetAnimatedContainer,
         finishRender: finishAnimatedRender
     };
+
+    window.BilibiliToolbox.animations = animationsApi;
 })();
 
 // ===== comic-reader-images.js =====
@@ -841,15 +843,246 @@
     };
 })();
 
+// ===== reader-preferences.js =====
+// Bilibili Toolbox - reader preferences
+(function() {
+    'use strict';
+
+    if (!window.Shared) throw new Error('BilibiliToolbox: shared.js not loaded');
+    if (!window.BilibiliToolbox?.storage) throw new Error('BilibiliToolbox: storage-service.js not loaded');
+    if (!window.BilibiliToolbox?.animations) throw new Error('BilibiliToolbox: animations.js not loaded');
+
+    const Shared = window.Shared;
+    const Toolbox = window.BilibiliToolbox;
+    const storage = Toolbox.storage;
+    const VIEW_MODES = Object.freeze(['auto', 'single', 'double']);
+    const IMAGE_RENDER_MODES = Object.freeze(['sharp', 'smooth']);
+    const DEFAULT_READER_PREFERENCES = Object.freeze({
+        isRightToLeft: true,
+        viewMode: 'auto',
+        animationMode: 'smooth',
+        imageRenderMode: 'smooth',
+        tapPageNavigation: true
+    });
+
+    function normalizeAnimationMode(mode) {
+        return Toolbox.animations.normalizeAnimationMode(mode);
+    }
+
+    function normalizeImageRenderMode(mode) {
+        return IMAGE_RENDER_MODES.includes(mode) ? mode : DEFAULT_READER_PREFERENCES.imageRenderMode;
+    }
+
+    function normalizePreferences(value = {}) {
+        const input = value && typeof value === 'object' ? value : {};
+        return {
+            isRightToLeft: typeof input.isRightToLeft === 'boolean'
+                ? input.isRightToLeft
+                : DEFAULT_READER_PREFERENCES.isRightToLeft,
+            viewMode: VIEW_MODES.includes(input.viewMode)
+                ? input.viewMode
+                : DEFAULT_READER_PREFERENCES.viewMode,
+            animationMode: normalizeAnimationMode(input.animationMode || DEFAULT_READER_PREFERENCES.animationMode),
+            imageRenderMode: normalizeImageRenderMode(input.imageRenderMode || DEFAULT_READER_PREFERENCES.imageRenderMode),
+            tapPageNavigation: typeof input.tapPageNavigation === 'boolean'
+                ? input.tapPageNavigation
+                : DEFAULT_READER_PREFERENCES.tapPageNavigation
+        };
+    }
+
+    function loadPreferences() {
+        return normalizePreferences(storage.getSetting(Shared.TOOLBOX_SETTINGS.readerPreferences, DEFAULT_READER_PREFERENCES));
+    }
+
+    async function savePreferences(value) {
+        await storage.setSetting(Shared.TOOLBOX_SETTINGS.readerPreferences, normalizePreferences(value));
+    }
+
+    Toolbox.readerPreferences = {
+        VIEW_MODES,
+        IMAGE_RENDER_MODES,
+        DEFAULT_READER_PREFERENCES,
+        normalizeAnimationMode,
+        normalizeImageRenderMode,
+        normalize: normalizePreferences,
+        load: loadPreferences,
+        save: savePreferences
+    };
+})();
+
+// ===== reader-screenshot.js =====
+// Bilibili Toolbox - reader screenshot helpers
+(function() {
+    'use strict';
+
+    if (!window.BilibiliToolbox) throw new Error('BilibiliToolbox: shared.js not loaded');
+
+    const Toolbox = window.BilibiliToolbox;
+    const READER_BACKGROUND = '#0a0a0a';
+
+    function getBounds(descriptors) {
+        if (!descriptors.length) return null;
+        const left = Math.min(...descriptors.map(item => item.x));
+        const right = Math.max(...descriptors.map(item => item.x + item.width));
+        const top = Math.min(...descriptors.map(item => item.y));
+        const bottom = Math.max(...descriptors.map(item => item.y + item.height));
+        return { x: left, y: top, width: right - left, height: bottom - top };
+    }
+
+    function drawImage(ctx, img, descriptor, selectionRect, rotation = 0) {
+        const x = descriptor.x - selectionRect.x;
+        const y = descriptor.y - selectionRect.y;
+        const swap = rotation === 90 || rotation === 270;
+        const dw = swap ? descriptor.height : descriptor.width;
+        const dh = swap ? descriptor.width : descriptor.height;
+
+        ctx.save();
+        ctx.translate(x + descriptor.width / 2, y + descriptor.height / 2);
+        if (rotation) ctx.rotate(rotation * Math.PI / 180);
+        ctx.drawImage(img, -dw / 2, -dh / 2, dw, dh);
+        ctx.restore();
+    }
+
+    function canvasToBlob(canvas) {
+        return new Promise((resolve, reject) => {
+            canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('EMPTY_BLOB')), 'image/png');
+        });
+    }
+
+    function shouldCopyToClipboard() {
+        return window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    }
+
+    async function copyBlobToClipboard(blob) {
+        if (!navigator.clipboard?.write || typeof ClipboardItem === 'undefined') {
+            throw new Error('CLIPBOARD_UNAVAILABLE');
+        }
+
+        await navigator.clipboard.write([
+            new ClipboardItem({
+                [blob.type || 'image/png']: blob
+            })
+        ]);
+    }
+
+    async function share(blob, filename) {
+        if (typeof File === 'undefined' || !navigator.share) {
+            throw new Error('SHARE_UNAVAILABLE');
+        }
+
+        const file = new File([blob], filename, { type: blob.type || 'image/png' });
+        const data = {
+            files: [file],
+            title: filename
+        };
+
+        if (navigator.canShare && !navigator.canShare(data)) {
+            throw new Error('SHARE_UNAVAILABLE');
+        }
+
+        await navigator.share(data);
+    }
+
+    function download(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    async function output(reader, blob, filename) {
+        if (shouldCopyToClipboard()) {
+            try {
+                await copyBlobToClipboard(blob);
+                reader.showReaderMessage('\u622a\u56fe\u5df2\u590d\u5236\u5230\u526a\u8d34\u677f');
+                return;
+            } catch (_) {
+                download(blob, filename);
+                reader.showReaderMessage('\u526a\u8d34\u677f\u4e0d\u53ef\u7528\uff0c\u5df2\u6539\u4e3a\u4fdd\u5b58\u6587\u4ef6', true, 2600);
+                return;
+            }
+        }
+
+        if (navigator.share) {
+            try {
+                await share(blob, filename);
+                reader.showReaderMessage('\u622a\u56fe\u5df2\u6253\u5f00\u7cfb\u7edf\u5206\u4eab');
+                return;
+            } catch (_) {}
+        }
+
+        download(blob, filename);
+        reader.showReaderMessage('\u622a\u56fe\u5df2\u4fdd\u5b58');
+    }
+
+    function getFileName(currentIndex, count, now = new Date()) {
+        const start = currentIndex + 1;
+        const end = currentIndex + count;
+        const range = count === 1 ? `${start}` : `${start}-${end}`;
+        const stamp = now.toISOString().replace(/[:.]/g, '-');
+        return `bilibili-reader-${range}-${stamp}.png`;
+    }
+
+    async function capture(reader, selectionRect, descriptors = reader.getVisibleImageDescriptors()) {
+        if (descriptors.length === 0) {
+            reader.showReaderMessage('\u5f53\u524d\u6ca1\u6709\u53ef\u622a\u56fe\u7684\u9875\u9762', true);
+            return false;
+        }
+
+        reader.showReaderMessage('\u6b63\u5728\u751f\u6210\u622a\u56fe...', false, 3000);
+
+        try {
+            const loadedImages = await Promise.all(descriptors.map(async descriptor => {
+                const image = await reader.loadExportImageSafe(descriptor.src);
+                if (!image) throw new Error('LOAD_FAILED');
+                return { descriptor, image };
+            }));
+
+            const dpr = window.devicePixelRatio || 1;
+            const outputCanvas = document.createElement('canvas');
+            outputCanvas.width = Math.max(1, Math.round(selectionRect.width * dpr));
+            outputCanvas.height = Math.max(1, Math.round(selectionRect.height * dpr));
+
+            const ctx = outputCanvas.getContext('2d');
+            if (!ctx) throw new Error('CANVAS_CONTEXT_FAILED');
+            ctx.scale(dpr, dpr);
+            ctx.fillStyle = READER_BACKGROUND;
+            ctx.fillRect(0, 0, selectionRect.width, selectionRect.height);
+
+            loadedImages.forEach(({ descriptor, image }) => {
+                drawImage(ctx, image, descriptor, selectionRect, reader.rotation);
+            });
+
+            try {
+                const blob = await canvasToBlob(outputCanvas);
+                await output(reader, blob, getFileName(reader.currentIndex, reader.activePageCount));
+                return true;
+            } catch (_) {
+                reader.showReaderMessage('\u56fe\u7247\u53d7\u8de8\u57df\u9650\u5236\uff0c\u65e0\u6cd5\u5408\u6210\u622a\u56fe', true, 3000);
+                return false;
+            }
+        } catch (_) {
+            reader.showReaderMessage('\u622a\u56fe\u5931\u8d25\uff0c\u8bf7\u91cd\u8bd5', true, 2800);
+            return false;
+        }
+    }
+
+    Toolbox.readerScreenshot = {
+        getBounds,
+        capture
+    };
+})();
+
 // ===== comic-reader.js =====
 // Bilibili Toolbox - Comic Reader
 (function() {
     'use strict';
 
     // ============ 常量定义 ============
-    const VIEW_MODES = ['auto', 'single', 'double'];
-
-    // 漫画模式常量
     const COMIC_URL_PATTERNS = [
         'bilibili.com/read/',
         'bilibili.com/opus/',
@@ -860,7 +1093,6 @@
     const SCALE_STEP = 0.1;
     const DOUBLE_CLICK_SCALE = 2;
     const MAX_RENDER_SCALE = 2;
-    const IMAGE_RENDER_MODES = ['sharp', 'smooth'];
     const CONTROLS_HIDE_DELAY = 500;
     const SWIPE_THRESHOLD = 50;
     const TAP_DELAY = 220;
@@ -871,57 +1103,31 @@
     const PAN_EDGE_ALLOWANCE = 72;
     const PRELOAD_COUNT = 4;
     const MOBILE_BREAKPOINT = 768;
-    const DEFAULT_READER_PREFERENCES = Object.freeze({
-        isRightToLeft: true,
-        viewMode: 'auto',
-        animationMode: 'smooth',
-        imageRenderMode: 'smooth',
-        tapPageNavigation: true
-    });
-
-    const READER_BACKGROUND = '#0a0a0a';
     if (!window.Shared) throw new Error('BilibiliToolbox: shared.js not loaded');
     if (!window.BilibiliToolbox?.storage) throw new Error('BilibiliToolbox: storage-service.js not loaded');
     if (!window.BilibiliToolbox?.comicImages) throw new Error('BilibiliToolbox: comic-reader-images.js not loaded');
-    if (!window.BiliAnimations) throw new Error('BilibiliToolbox: animations.js not loaded');
+    if (!window.BilibiliToolbox?.animations) throw new Error('BilibiliToolbox: animations.js not loaded');
+    if (!window.BilibiliToolbox?.readerPreferences) throw new Error('BilibiliToolbox: reader-preferences.js not loaded');
+    if (!window.BilibiliToolbox?.readerScreenshot) throw new Error('BilibiliToolbox: reader-screenshot.js not loaded');
 
     const Toolbox = window.BilibiliToolbox;
     const Shared = window.Shared;
-    const storage = Toolbox.storage;
-    const TOOLBOX_SETTINGS = Shared.TOOLBOX_SETTINGS;
-    const animations = window.BiliAnimations;
+    const animations = Toolbox.animations;
     const comicImages = Toolbox.comicImages;
-
-    function normalizeAnimationMode(mode) {
-        return animations.normalizeAnimationMode(mode);
-    }
-
-    function normalizeImageRenderMode(mode) {
-        return IMAGE_RENDER_MODES.includes(mode) ? mode : DEFAULT_READER_PREFERENCES.imageRenderMode;
-    }
+    const readerPreferences = Toolbox.readerPreferences;
+    const readerScreenshot = Toolbox.readerScreenshot;
+    const VIEW_MODES = readerPreferences.VIEW_MODES;
+    const IMAGE_RENDER_MODES = readerPreferences.IMAGE_RENDER_MODES;
 
     // ============ 漫画模式功能 ============
 
     class BiliComicReader {
         normalizePreferences(value = {}) {
-            const input = value && typeof value === 'object' ? value : {};
-            return {
-                isRightToLeft: typeof input.isRightToLeft === 'boolean'
-                    ? input.isRightToLeft
-                    : DEFAULT_READER_PREFERENCES.isRightToLeft,
-                viewMode: VIEW_MODES.includes(input.viewMode)
-                    ? input.viewMode
-                    : DEFAULT_READER_PREFERENCES.viewMode,
-                animationMode: normalizeAnimationMode(input.animationMode || DEFAULT_READER_PREFERENCES.animationMode),
-                imageRenderMode: normalizeImageRenderMode(input.imageRenderMode || DEFAULT_READER_PREFERENCES.imageRenderMode),
-                tapPageNavigation: typeof input.tapPageNavigation === 'boolean'
-                    ? input.tapPageNavigation
-                    : DEFAULT_READER_PREFERENCES.tapPageNavigation
-            };
+            return readerPreferences.normalize(value);
         }
 
         loadPreferences() {
-            return this.normalizePreferences(storage.getSetting(TOOLBOX_SETTINGS.readerPreferences, DEFAULT_READER_PREFERENCES));
+            return readerPreferences.load();
         }
 
         savePreferences() {
@@ -932,7 +1138,7 @@
                 imageRenderMode: this.imageRenderMode,
                 tapPageNavigation: this.tapPageNavigation
             });
-            void storage.setSetting(TOOLBOX_SETTINGS.readerPreferences, preferences).catch(() => {});
+            void readerPreferences.save(preferences).catch(() => {});
         }
 
         constructor() {
@@ -1045,7 +1251,7 @@
             this.currentIndex = 0;
             this.lastStep = 2;
             this.isDragging = false;
-            this.animationMode = normalizeAnimationMode(this.animationMode);
+            this.animationMode = readerPreferences.normalizeAnimationMode(this.animationMode);
 
             // 隐藏收藏夹悬浮按钮
             const favBtn = document.getElementById('bilibili-fav-float-btn');
@@ -1666,7 +1872,7 @@
 
         async saveFullScreenshot() {
             const descriptors = this.getVisibleImageDescriptors();
-            const rect = this.getScreenshotBounds(descriptors);
+            const rect = readerScreenshot.getBounds(descriptors);
             if (!rect) {
                 this.showReaderMessage('\u5f53\u524d\u6ca1\u6709\u53ef\u622a\u56fe\u7684\u9875\u9762', true);
                 return;
@@ -2016,142 +2222,8 @@
                 .filter(item => item.src && item.width > 0 && item.height > 0);
         }
 
-        getScreenshotBounds(descriptors) {
-            if (!descriptors.length) return null;
-            const left = Math.min(...descriptors.map(item => item.x));
-            const right = Math.max(...descriptors.map(item => item.x + item.width));
-            const top = Math.min(...descriptors.map(item => item.y));
-            const bottom = Math.max(...descriptors.map(item => item.y + item.height));
-            return { x: left, y: top, width: right - left, height: bottom - top };
-        }
-
-        drawScreenshotImage(ctx, img, descriptor, selectionRect) {
-            const x = descriptor.x - selectionRect.x;
-            const y = descriptor.y - selectionRect.y;
-            const rot = this.rotation;
-            const swap = rot === 90 || rot === 270;
-            const dw = swap ? descriptor.height : descriptor.width;
-            const dh = swap ? descriptor.width : descriptor.height;
-
-            ctx.save();
-            ctx.translate(x + descriptor.width / 2, y + descriptor.height / 2);
-            if (rot) ctx.rotate(rot * Math.PI / 180);
-            ctx.drawImage(img, -dw / 2, -dh / 2, dw, dh);
-            ctx.restore();
-        }
-
-        canvasToBlob(canvas) {
-            return new Promise((resolve, reject) => {
-                canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('EMPTY_BLOB')), 'image/png');
-            });
-        }
-
-        shouldCopyScreenshotToClipboard() {
-            return window.matchMedia('(hover: hover) and (pointer: fine)').matches;
-        }
-
-        async copyBlobToClipboard(blob) {
-            if (!navigator.clipboard?.write || typeof ClipboardItem === 'undefined') {
-                throw new Error('CLIPBOARD_UNAVAILABLE');
-            }
-
-            await navigator.clipboard.write([
-                new ClipboardItem({
-                    [blob.type || 'image/png']: blob
-                })
-            ]);
-        }
-
-        async shareScreenshot(blob, filename) {
-            if (typeof File === 'undefined' || !navigator.share) {
-                throw new Error('SHARE_UNAVAILABLE');
-            }
-
-            const file = new File([blob], filename, { type: blob.type || 'image/png' });
-            const data = {
-                files: [file],
-                title: filename
-            };
-
-            if (navigator.canShare && !navigator.canShare(data)) {
-                throw new Error('SHARE_UNAVAILABLE');
-            }
-
-            await navigator.share(data);
-        }
-
-        downloadBlob(blob, filename) {
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = filename;
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            setTimeout(() => URL.revokeObjectURL(url), 1000);
-        }
-
-        async outputScreenshot(blob, filename) {
-            if (this.shouldCopyScreenshotToClipboard()) {
-                try { await this.copyBlobToClipboard(blob); this.showReaderMessage('\u622a\u56fe\u5df2\u590d\u5236\u5230\u526a\u8d34\u677f'); return; } catch (_) { this.downloadBlob(blob, filename); this.showReaderMessage('\u526a\u8d34\u677f\u4e0d\u53ef\u7528\uff0c\u5df2\u6539\u4e3a\u4fdd\u5b58\u6587\u4ef6', true, 2600); return; }
-            }
-            if (navigator.share) {
-                try { await this.shareScreenshot(blob, filename); this.showReaderMessage('\u622a\u56fe\u5df2\u6253\u5f00\u7cfb\u7edf\u5206\u4eab'); return; } catch (_) { }
-            }
-            this.downloadBlob(blob, filename);
-            this.showReaderMessage('\u622a\u56fe\u5df2\u4fdd\u5b58');
-        }
-
-        getScreenshotFileName(count) {
-            const start = this.currentIndex + 1;
-            const end = this.currentIndex + count;
-            const range = count === 1 ? `${start}` : `${start}-${end}`;
-            const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-            return `bilibili-reader-${range}-${stamp}.png`;
-        }
-
         async captureScreenshot(selectionRect, descriptors = this.getVisibleImageDescriptors()) {
-            if (descriptors.length === 0) {
-                this.showReaderMessage('\u5f53\u524d\u6ca1\u6709\u53ef\u622a\u56fe\u7684\u9875\u9762', true);
-                return false;
-            }
-
-            this.showReaderMessage('\u6b63\u5728\u751f\u6210\u622a\u56fe...', false, 3000);
-
-            try {
-                const loadedImages = await Promise.all(descriptors.map(async descriptor => {
-                    const image = await this.loadExportImageSafe(descriptor.src);
-                    if (!image) throw new Error('LOAD_FAILED');
-                    return { descriptor, image };
-                }));
-
-                const dpr = window.devicePixelRatio || 1;
-                const output = document.createElement('canvas');
-                output.width = Math.max(1, Math.round(selectionRect.width * dpr));
-                output.height = Math.max(1, Math.round(selectionRect.height * dpr));
-
-                const ctx = output.getContext('2d');
-                if (!ctx) throw new Error('CANVAS_CONTEXT_FAILED');
-                ctx.scale(dpr, dpr);
-                ctx.fillStyle = READER_BACKGROUND;
-                ctx.fillRect(0, 0, selectionRect.width, selectionRect.height);
-
-                loadedImages.forEach(({ descriptor, image }) => {
-                    this.drawScreenshotImage(ctx, image, descriptor, selectionRect);
-                });
-
-                try {
-                    const blob = await this.canvasToBlob(output);
-                    await this.outputScreenshot(blob, this.getScreenshotFileName(this.activePageCount));
-                    return true;
-                } catch (_) {
-                    this.showReaderMessage('\u56fe\u7247\u53d7\u8de8\u57df\u9650\u5236\uff0c\u65e0\u6cd5\u5408\u6210\u622a\u56fe', true, 3000);
-                    return false;
-                }
-            } catch (error) {
-                this.showReaderMessage('\u622a\u56fe\u5931\u8d25\uff0c\u8bf7\u91cd\u8bd5', true, 2800);
-                return false;
-            }
+            return readerScreenshot.capture(this, selectionRect, descriptors);
         }
 
         // 触摸事件处理
@@ -2684,13 +2756,14 @@
         return COMIC_URL_PATTERNS.some(pattern => url.includes(pattern));
     }
 
-    // Expose
-    window.BiliComicReader = BiliComicReader;
-    window.shouldInitComicReader = shouldInitComicReader;
+    Toolbox.reader = {
+        BiliComicReader,
+        shouldInitComicReader
+    };
 })();
 
-// ===== content-features.js =====
-// Bilibili Toolbox - content page features
+// ===== content-page-info.js =====
+// Bilibili Toolbox - page information extraction
 (function() {
     'use strict';
 
@@ -2698,57 +2771,7 @@
 
     const Shared = window.Shared;
     const Toolbox = window.BilibiliToolbox;
-    const TOOLBOX_SETTINGS = Shared.TOOLBOX_SETTINGS;
-    const URL_CHANGE_EVENT = 'bilibili-toolbox:urlchange';
-    const SPACE_DYNAMIC_URL_PATTERN = /^https?:\/\/space\.bilibili\.com\/\d+\/dynamic(?:[/?#]|$)/i;
     const ARTICLE_URL_PATTERN = /^https?:\/\/(?:www\.|m\.)?bilibili\.com\/read\/(?:cv\d+|mobile|native)(?:[/?#]|$)/i;
-    const DYNAMIC_CARD_SELECTOR = '.bili-dyn-list__item, .bili-dyn-item, .bili-opus-view';
-    const FORWARD_DYNAMIC_SELECTOR = [
-        '.bili-dyn-content__forw__desc',
-        '.bili-dyn-content__orig.reference',
-        '.bili-dyn-content__orig__author',
-        '.dyn-orig-author',
-        '[class*="opus-module-top__forward"]',
-        '[class*="module-top-forward"]'
-    ].join(', ');
-    const FORWARD_ACTION_SELECTORS = [
-        '.module-author__action',
-        '.bili-dyn-item__action',
-        '.bili-dyn-title__action',
-        '.bili-dyn-author__action',
-        '.opus-module-author__action'
-    ];
-    const FILTER_ACTIVE_CLASS = 'bilibili-toolbox-dynamic-filter-active';
-    const FILTER_READY_CLASS = 'bilibili-toolbox-dynamic-filter-ready';
-    const HIDDEN_FORWARD_CLASS = 'bilibili-toolbox-hide-forward-dynamic';
-    const FORWARD_TYPE_PATTERN = /(^|[\s:_-])(forward|repost)([\s:_-]|$)/i;
-    const FORWARD_TEXT_MARKERS = [
-        '\u8f6c\u53d1\u4e86\u52a8\u6001',
-        '\u8f6c\u53d1\u4e86\u89c6\u9891',
-        '\u8f6c\u53d1\u4e86\u4e13\u680f',
-        '\u8f6c\u53d1\u4e86'
-    ];
-
-    let dataProvider = () => Shared.createDefaultData();
-
-    function setDataProvider(provider) {
-        if (typeof provider === 'function') dataProvider = provider;
-    }
-
-    function getSettingValue(key, fallback = false) {
-        const data = Shared.normalizeToolboxData(dataProvider());
-        return Object.prototype.hasOwnProperty.call(data.settings, key)
-            ? data.settings[key]
-            : fallback;
-    }
-
-    function hidePanel(id) {
-        document.getElementById(id)?.classList.remove('show');
-    }
-
-    function sortFavorites(favorites) {
-        return [...favorites].sort((a, b) => Shared.isReadlistFavorite(a) - Shared.isReadlistFavorite(b));
-    }
 
     function extractUserNameFromMeta() {
         const title = document.title || '';
@@ -2872,6 +2895,23 @@
         };
     }
 
+    Toolbox.pageInfo = {
+        getCurrentPageInfo,
+        extractPageInfoForFavorite,
+        getCurrentFavoriteData: () => extractPageInfoForFavorite(getCurrentPageInfo())
+    };
+})();
+
+// ===== content-url.js =====
+// Bilibili Toolbox - URL change bridge
+(function() {
+    'use strict';
+
+    if (!window.BilibiliToolbox) throw new Error('BilibiliToolbox: shared.js not loaded');
+
+    const Toolbox = window.BilibiliToolbox;
+    const URL_CHANGE_EVENT = 'bilibili-toolbox:urlchange';
+
     function notifyUrlChange() {
         window.dispatchEvent(new Event(URL_CHANGE_EVENT));
     }
@@ -2895,6 +2935,52 @@
         window.addEventListener('hashchange', notifyUrlChange);
     }
 
+    Toolbox.url = {
+        URL_CHANGE_EVENT,
+        init: initUrlBridge,
+        notifyUrlChange
+    };
+})();
+
+// ===== dynamic-filter.js =====
+// Bilibili Toolbox - dynamic feed filtering
+(function() {
+    'use strict';
+
+    if (!window.Shared) throw new Error('BilibiliToolbox: shared.js not loaded');
+
+    const Shared = window.Shared;
+    const Toolbox = window.BilibiliToolbox;
+    const TOOLBOX_SETTINGS = Shared.TOOLBOX_SETTINGS;
+    const SPACE_DYNAMIC_URL_PATTERN = /^https?:\/\/space\.bilibili\.com\/\d+\/dynamic(?:[/?#]|$)/i;
+    const DYNAMIC_CARD_SELECTOR = '.bili-dyn-list__item, .bili-dyn-item, .bili-opus-view';
+    const FORWARD_DYNAMIC_SELECTOR = [
+        '.bili-dyn-content__forw__desc',
+        '.bili-dyn-content__orig.reference',
+        '.bili-dyn-content__orig__author',
+        '.dyn-orig-author',
+        '[class*="opus-module-top__forward"]',
+        '[class*="module-top-forward"]'
+    ].join(', ');
+    const FORWARD_ACTION_SELECTORS = [
+        '.module-author__action',
+        '.bili-dyn-item__action',
+        '.bili-dyn-title__action',
+        '.bili-dyn-author__action',
+        '.opus-module-author__action'
+    ];
+    const FILTER_ACTIVE_CLASS = 'bilibili-toolbox-dynamic-filter-active';
+    const FILTER_READY_CLASS = 'bilibili-toolbox-dynamic-filter-ready';
+    const HIDDEN_FORWARD_CLASS = 'bilibili-toolbox-hide-forward-dynamic';
+    const FORWARD_TYPE_PATTERN = /(^|[\s:_-])(forward|repost)([\s:_-]|$)/i;
+    const FORWARD_TEXT_MARKERS = [
+        '\u8f6c\u53d1\u4e86\u52a8\u6001',
+        '\u8f6c\u53d1\u4e86\u89c6\u9891',
+        '\u8f6c\u53d1\u4e86\u4e13\u680f',
+        '\u8f6c\u53d1\u4e86'
+    ];
+
+    let dataProvider = () => Shared.createDefaultData();
     let onRenderControls = () => {};
     let onSyncFloatButton = () => {};
     let dynamicFilterObserver = null;
@@ -2902,6 +2988,17 @@
     let dynamicFilterBurstTimers = [];
     let keywordFilterEnabled = false;
     let keywordFilterText = '';
+
+    function setDataProvider(provider) {
+        if (typeof provider === 'function') dataProvider = provider;
+    }
+
+    function getSettingValue(key, fallback = false) {
+        const data = Shared.normalizeToolboxData(dataProvider());
+        return Object.prototype.hasOwnProperty.call(data.settings, key)
+            ? data.settings[key]
+            : fallback;
+    }
 
     function isSpaceDynamicPage(url = window.location.href) {
         return SPACE_DYNAMIC_URL_PATTERN.test(url);
@@ -3088,6 +3185,360 @@
         clearDynamicFilterCardClasses();
     }
 
+    Toolbox.dynamicFilter = {
+        init: initDynamicFilter,
+        destroy: destroyDynamicFilter,
+        sync: syncDynamicFilter,
+        apply: applyDynamicFilter,
+        scheduleApply: scheduleDynamicFilterApply,
+        isSpaceDynamicPage,
+        getSettingValue,
+        setKeywordFilterState,
+        getKeywordFilterState,
+        normalizeDynamicText,
+        isForwardDynamic,
+        FILTER_ACTIVE_CLASS,
+        FILTER_READY_CLASS,
+        HIDDEN_FORWARD_CLASS
+    };
+})();
+
+// ===== favorites-text-dialog.js =====
+// Bilibili Toolbox - favorites import/export text dialog
+(function() {
+    'use strict';
+
+    if (!window.BilibiliToolbox) throw new Error('BilibiliToolbox: shared.js not loaded');
+
+    const Toolbox = window.BilibiliToolbox;
+    let activeClose = null;
+
+    function closeFavoritesTextDialog() {
+        if (activeClose) {
+            activeClose();
+            return;
+        }
+        document.querySelector('#bilibili-toolbox-export-dialog .bilibili-toolbox-export-close')?.click();
+    }
+
+    function showFavoritesTextDialog({ title, text = '', readOnly = false, clipboardAction = '', confirmText = '', onConfirm = null }) {
+        closeFavoritesTextDialog();
+        const dialog = document.createElement('div');
+        dialog.id = 'bilibili-toolbox-export-dialog';
+        dialog.className = 'bilibili-toolbox-export-dialog';
+        dialog.innerHTML = `
+            <div class="bilibili-toolbox-export-document" role="dialog" aria-modal="true" aria-labelledby="bilibili-toolbox-export-title">
+                <div class="bilibili-toolbox-export-header">
+                    <span id="bilibili-toolbox-export-title"></span>
+                    <button class="bilibili-toolbox-export-close" type="button" aria-label="\u5173\u95ed">&times;</button>
+                </div>
+                <textarea class="bilibili-toolbox-export-text" aria-label="\u6536\u85cf\u6587\u672c" spellcheck="false"></textarea>
+                ${clipboardAction || onConfirm ? `
+                    <div class="bilibili-toolbox-export-footer">
+                        <span class="bilibili-toolbox-export-status" role="status"></span>
+                        <div class="bilibili-toolbox-export-actions">
+                            ${clipboardAction ? '<button class="bilibili-toolbox-export-clipboard" type="button"></button>' : ''}
+                            ${onConfirm ? '<button class="bilibili-toolbox-export-confirm" type="button"></button>' : ''}
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+
+        const handleKeyDown = event => {
+            if (event.key === 'Escape') closeDialog();
+        };
+        const closeDialog = () => {
+            document.removeEventListener('keydown', handleKeyDown);
+            dialog.remove();
+            if (activeClose === closeDialog) activeClose = null;
+        };
+        activeClose = closeDialog;
+
+        dialog.querySelector('.bilibili-toolbox-export-close').addEventListener('click', closeDialog);
+        dialog.addEventListener('click', event => {
+            if (event.target === dialog) closeDialog();
+        });
+        document.addEventListener('keydown', handleKeyDown);
+        document.body.appendChild(dialog);
+
+        dialog.querySelector('#bilibili-toolbox-export-title').textContent = title;
+        const textarea = dialog.querySelector('.bilibili-toolbox-export-text');
+        textarea.value = text;
+        textarea.readOnly = readOnly;
+        const status = dialog.querySelector('.bilibili-toolbox-export-status');
+        const setStatus = (message, isError = false) => {
+            if (!status) return;
+            status.textContent = message;
+            status.classList.toggle('is-error', isError);
+        };
+
+        if (clipboardAction) {
+            const clipboard = dialog.querySelector('.bilibili-toolbox-export-clipboard');
+            clipboard.textContent = clipboardAction === 'copy' ? '\u4e00\u952e\u590d\u5236' : '\u4e00\u952e\u7c98\u8d34';
+            clipboard.addEventListener('click', async () => {
+                try {
+                    if (clipboardAction === 'copy') {
+                        await navigator.clipboard.writeText(textarea.value);
+                        setStatus('\u5df2\u590d\u5236\u5230\u526a\u8d34\u677f');
+                    } else {
+                        textarea.value = await navigator.clipboard.readText();
+                        textarea.focus();
+                        setStatus('\u5df2\u7c98\u8d34\u526a\u8d34\u677f\u5185\u5bb9');
+                    }
+                } catch (_) {
+                    textarea.focus();
+                    if (clipboardAction === 'copy') textarea.select();
+                    setStatus(
+                        clipboardAction === 'copy'
+                            ? '\u65e0\u6cd5\u8bbf\u95ee\u526a\u8d34\u677f\uff0c\u8bf7\u6309 Ctrl+C \u624b\u52a8\u590d\u5236'
+                            : '\u65e0\u6cd5\u8bbf\u95ee\u526a\u8d34\u677f\uff0c\u8bf7\u6309 Ctrl+V \u624b\u52a8\u7c98\u8d34',
+                        true
+                    );
+                }
+            });
+        }
+
+        if (onConfirm) {
+            const confirm = dialog.querySelector('.bilibili-toolbox-export-confirm');
+            confirm.textContent = confirmText;
+            confirm.addEventListener('click', () => onConfirm({ text: textarea.value, close: closeDialog, setStatus }));
+        }
+
+        textarea.focus();
+        if (readOnly) textarea.select();
+        return dialog;
+    }
+
+    Toolbox.favoritesTextDialog = {
+        show: showFavoritesTextDialog,
+        close: closeFavoritesTextDialog
+    };
+})();
+
+// ===== dynamic-controls-ui.js =====
+// Bilibili Toolbox - dynamic filtering controls UI
+(function() {
+    'use strict';
+
+    if (!window.Shared) throw new Error('BilibiliToolbox: shared.js not loaded');
+    if (!window.BilibiliToolbox?.favoritesTextDialog) throw new Error('BilibiliToolbox: favorites-text-dialog.js not loaded');
+
+    const Shared = window.Shared;
+    const Toolbox = window.BilibiliToolbox;
+    const TOOLBOX_SETTINGS = Shared.TOOLBOX_SETTINGS;
+
+    let dataProvider = () => Shared.createDefaultData();
+    let storage = null;
+    let favoritesService = null;
+    let dynamicFilter = null;
+    let eventBag = null;
+    let showMessage = () => {};
+    let renderFavoriteList = () => {};
+    let syncFloatButton = () => {};
+
+    function getSettingValue(key, fallback = false) {
+        const data = Shared.normalizeToolboxData(dataProvider());
+        return Object.prototype.hasOwnProperty.call(data.settings, key)
+            ? data.settings[key]
+            : fallback;
+    }
+
+    function hidePanel(id) {
+        document.getElementById(id)?.classList.remove('show');
+    }
+
+    function exportFavorites() {
+        const data = Shared.normalizeToolboxData(dataProvider());
+        if (!data.favorites.length) {
+            showMessage('\u6682\u65e0\u53ef\u5bfc\u51fa\u7684\u6536\u85cf', true);
+            return;
+        }
+
+        Toolbox.favoritesTextDialog.show({
+            title: '\u5bfc\u51fa\u6536\u85cf\u6587\u672c',
+            text: favoritesService.createExportText(data),
+            readOnly: true,
+            clipboardAction: 'copy'
+        });
+    }
+
+    function importFavorites() {
+        Toolbox.favoritesTextDialog.show({
+            title: '\u5bfc\u5165\u6536\u85cf\u6587\u672c',
+            clipboardAction: 'paste',
+            confirmText: '\u5bfc\u5165',
+            onConfirm: async ({ text, close, setStatus }) => {
+                const imported = favoritesService.normalizeImportedFavorites(text);
+
+                if (!imported?.length) {
+                    setStatus('\u672a\u8bfb\u53d6\u5230\u6709\u6548\u6536\u85cf', true);
+                    return;
+                }
+
+                try {
+                    const result = await favoritesService.importFavorites(imported);
+                    renderFavoriteList();
+                    close();
+                    showMessage(`\u5bfc\u5165 ${result.added} \u6761\uff0c\u66f4\u65b0 ${result.updated} \u6761\uff0c\u8df3\u8fc7 ${result.skipped} \u6761`);
+                } catch (_) {
+                    setStatus('\u5bfc\u5165\u5931\u8d25\uff0c\u8bf7\u7a0d\u540e\u91cd\u8bd5', true);
+                }
+            }
+        });
+    }
+
+    function getDynamicControlsStatus(forwardEnabled, keywordState, isDynamicPage = dynamicFilter?.isSpaceDynamicPage?.()) {
+        if (!isDynamicPage) return '\u5728\u7528\u6237\u52a8\u6001\u9875\u751f\u6548';
+
+        const states = [];
+        if (forwardEnabled) states.push('\u5df2\u9690\u85cf\u8f6c\u53d1\u52a8\u6001');
+        if (keywordState.enabled && !keywordState.hasKeyword) states.push('\u8bf7\u8f93\u5165\u5173\u952e\u8bcd\u540e\u5f00\u59cb\u7b5b\u9009');
+        if (keywordState.isActive) states.push(`\u4ec5\u663e\u793a\u5305\u542b\u201c${keywordState.displayText}\u201d\u7684\u52a8\u6001`);
+        return states.length ? states.join('\uff1b') : '\u5df2\u663e\u793a\u5168\u90e8\u52a8\u6001';
+    }
+
+    function createDynamicControlsPanel() {
+        if (document.getElementById('bilibili-fav-controls-panel')) return;
+
+        const panel = document.createElement('div');
+        panel.id = 'bilibili-fav-controls-panel';
+        panel.innerHTML = `
+            <div class="bilibili-fav-header"><span>\u52a8\u6001\u63a7\u5236</span></div>
+            <div class="bilibili-toolbox-control-content">
+                <label class="bilibili-toolbox-control-row">
+                    <span class="bilibili-toolbox-control-copy">
+                        <span class="bilibili-toolbox-control-title">\u9690\u85cf\u8f6c\u53d1\u52a8\u6001</span>
+                        <span class="bilibili-toolbox-control-desc">\u4ec5\u5728\u7528\u6237\u52a8\u6001\u9875\u751f\u6548</span>
+                    </span>
+                    <span class="bilibili-toolbox-switch">
+                        <input type="checkbox" class="bilibili-toolbox-forward-toggle">
+                        <span class="bilibili-toolbox-switch-slider"></span>
+                    </span>
+                </label>
+                <label class="bilibili-toolbox-control-row">
+                    <span class="bilibili-toolbox-control-copy">
+                        <span class="bilibili-toolbox-control-title">\u5173\u952e\u8bcd\u7b5b\u9009\u52a8\u6001</span>
+                        <span class="bilibili-toolbox-control-desc">\u4ec5\u663e\u793a\u5305\u542b\u8f93\u5165\u5185\u5bb9\u7684\u52a8\u6001</span>
+                    </span>
+                    <span class="bilibili-toolbox-switch">
+                        <input type="checkbox" class="bilibili-toolbox-keyword-toggle">
+                        <span class="bilibili-toolbox-switch-slider"></span>
+                    </span>
+                </label>
+                <input type="text" class="bilibili-toolbox-keyword-input" placeholder="\u8f93\u5165\u8981\u5305\u542b\u7684\u5185\u5bb9" autocomplete="off" spellcheck="false">
+                <div class="bilibili-toolbox-control-status"></div>
+            </div>
+            <div class="bilibili-toolbox-control-actions">
+                <button class="bilibili-toolbox-export-btn">\u5bfc\u51fa\u6536\u85cf</button>
+                <button class="bilibili-toolbox-import-btn">\u5bfc\u5165\u6536\u85cf</button>
+            </div>
+        `;
+        document.body.appendChild(panel);
+
+        eventBag.on(panel.querySelector('.bilibili-toolbox-forward-toggle'), 'change', async (event) => {
+            await storage.setSetting(TOOLBOX_SETTINGS.hideForwardDynamics, Boolean(event.target.checked));
+            syncFloatButton();
+            dynamicFilter.sync();
+        });
+        eventBag.on(panel.querySelector('.bilibili-toolbox-keyword-toggle'), 'change', (event) => {
+            const enabled = Boolean(event.target.checked);
+            dynamicFilter.setKeywordFilterState({ enabled });
+            renderDynamicControlsPanel();
+            if (enabled) {
+                window.setTimeout(() => panel.querySelector('.bilibili-toolbox-keyword-input')?.focus(), 0);
+            }
+        });
+        eventBag.on(panel.querySelector('.bilibili-toolbox-keyword-input'), 'input', (event) => {
+            dynamicFilter.setKeywordFilterState({ text: event.target.value });
+        });
+        eventBag.on(panel.querySelector('.bilibili-toolbox-export-btn'), 'click', exportFavorites);
+        eventBag.on(panel.querySelector('.bilibili-toolbox-import-btn'), 'click', importFavorites);
+
+        renderDynamicControlsPanel();
+    }
+
+    function isDynamicControlsPanelVisible() {
+        return document.getElementById('bilibili-fav-controls-panel')?.classList.contains('show');
+    }
+
+    function renderDynamicControlsPanel() {
+        const panel = document.getElementById('bilibili-fav-controls-panel');
+        if (!panel || !dynamicFilter) return;
+
+        const forwardEnabled = Boolean(getSettingValue(TOOLBOX_SETTINGS.hideForwardDynamics));
+        const keywordState = dynamicFilter.getKeywordFilterState();
+        const keywordInput = panel.querySelector('.bilibili-toolbox-keyword-input');
+        panel.querySelector('.bilibili-toolbox-forward-toggle').checked = forwardEnabled;
+        panel.querySelector('.bilibili-toolbox-keyword-toggle').checked = keywordState.enabled;
+        if (keywordInput.value !== keywordState.text) keywordInput.value = keywordState.text;
+        panel.querySelector('.bilibili-toolbox-control-status').textContent = getDynamicControlsStatus(forwardEnabled, keywordState);
+        syncFloatButton();
+    }
+
+    function showDynamicControlsPanel() {
+        createDynamicControlsPanel();
+        hidePanel('bilibili-fav-panel');
+        document.getElementById('bilibili-fav-controls-panel')?.classList.add('show');
+        renderDynamicControlsPanel();
+    }
+
+    function toggleDynamicControlsPanel() {
+        if (isDynamicControlsPanelVisible()) {
+            hidePanel('bilibili-fav-controls-panel');
+            return;
+        }
+        showDynamicControlsPanel();
+    }
+
+    function initDynamicControlsUi(options) {
+        storage = options.storage;
+        favoritesService = options.favoritesService;
+        dynamicFilter = options.dynamicFilter;
+        eventBag = options.eventBag;
+        showMessage = options.showMessage || showMessage;
+        renderFavoriteList = options.renderFavoriteList || renderFavoriteList;
+        syncFloatButton = options.syncFloatButton || syncFloatButton;
+        dataProvider = typeof options.getData === 'function' ? options.getData : dataProvider;
+        createDynamicControlsPanel();
+    }
+
+    function destroyDynamicControlsUi() {
+        Toolbox.favoritesTextDialog.close();
+        document.getElementById('bilibili-fav-controls-panel')?.remove();
+        storage = null;
+        favoritesService = null;
+        dynamicFilter = null;
+        eventBag = null;
+        showMessage = () => {};
+        renderFavoriteList = () => {};
+        syncFloatButton = () => {};
+        dataProvider = () => Shared.createDefaultData();
+    }
+
+    Toolbox.dynamicControlsUi = {
+        init: initDynamicControlsUi,
+        render: renderDynamicControlsPanel,
+        toggle: toggleDynamicControlsPanel,
+        destroy: destroyDynamicControlsUi,
+        getStatus: getDynamicControlsStatus
+    };
+})();
+
+// ===== favorites-ui.js =====
+// Bilibili Toolbox - favorites floating entry and list UI
+(function() {
+    'use strict';
+
+    if (!window.Shared) throw new Error('BilibiliToolbox: shared.js not loaded');
+    if (!window.BilibiliToolbox?.dynamicControlsUi) throw new Error('BilibiliToolbox: dynamic-controls-ui.js not loaded');
+
+    const Shared = window.Shared;
+    const Toolbox = window.BilibiliToolbox;
+    const TOOLBOX_SETTINGS = Shared.TOOLBOX_SETTINGS;
+    const dynamicControlsUi = Toolbox.dynamicControlsUi;
+
+    let dataProvider = () => Shared.createDefaultData();
     let storage = null;
     let favoritesService = null;
     let pageInfo = null;
@@ -3096,6 +3547,25 @@
     let isHoveringFavBtn = false;
     let isTouchDevice = false;
     let messageTimer = 0;
+
+    function setDataProvider(provider) {
+        if (typeof provider === 'function') dataProvider = provider;
+    }
+
+    function getSettingValue(key, fallback = false) {
+        const data = Shared.normalizeToolboxData(dataProvider());
+        return Object.prototype.hasOwnProperty.call(data.settings, key)
+            ? data.settings[key]
+            : fallback;
+    }
+
+    function hidePanel(id) {
+        document.getElementById(id)?.classList.remove('show');
+    }
+
+    function sortFavorites(favorites) {
+        return [...favorites].sort((a, b) => Shared.isReadlistFavorite(a) - Shared.isReadlistFavorite(b));
+    }
 
     function syncFloatBtnHideState() {
         const btn = document.getElementById('bilibili-fav-float-btn');
@@ -3156,13 +3626,13 @@
                 if (longPressTimer) clearTimeout(longPressTimer);
                 longPressTimer = 0;
             };
-            eventBag.on(btn, 'touchstart', (event) => {
+            eventBag.on(btn, 'touchstart', () => {
                 touchLongPressHandled = false;
                 clearLongPress();
                 longPressTimer = setTimeout(() => {
                     touchLongPressHandled = true;
                     hidePanel('bilibili-fav-panel');
-                    toggleDynamicControlsPanel();
+                    dynamicControlsUi.toggle();
                 }, 520);
             }, { passive: true });
             eventBag.on(btn, 'touchmove', clearLongPress, { passive: true });
@@ -3201,7 +3671,7 @@
             }
             isHoveringFavBtn = false;
             hidePanel('bilibili-fav-panel');
-            toggleDynamicControlsPanel();
+            dynamicControlsUi.toggle();
         });
 
         syncFloatBtnHideState();
@@ -3243,257 +3713,15 @@
         eventBag.on(panel.querySelector('.bilibili-fav-control-btn'), 'click', (event) => {
             event.preventDefault();
             event.stopPropagation();
-            toggleDynamicControlsPanel();
+            dynamicControlsUi.toggle();
         });
-    }
-
-    function showPanel(panelId, hideOtherId, createFn, renderFn) {
-        let panel = document.getElementById(panelId);
-        if (!panel) {
-            createFn();
-            panel = document.getElementById(panelId);
-        }
-        hidePanel(hideOtherId);
-        panel.classList.add('show');
-        renderFn();
     }
 
     function showFavoritesPanel() {
-        showPanel('bilibili-fav-panel', 'bilibili-fav-controls-panel', createFavoritesPanel, renderFavoriteList);
-    }
-
-    function createDynamicControlsPanel() {
-        if (document.getElementById('bilibili-fav-controls-panel')) return;
-
-        const panel = document.createElement('div');
-        panel.id = 'bilibili-fav-controls-panel';
-        panel.innerHTML = `
-            <div class="bilibili-fav-header"><span>\u52a8\u6001\u63a7\u5236</span></div>
-            <div class="bilibili-toolbox-control-content">
-                <label class="bilibili-toolbox-control-row">
-                    <span class="bilibili-toolbox-control-copy">
-                        <span class="bilibili-toolbox-control-title">\u9690\u85cf\u8f6c\u53d1\u52a8\u6001</span>
-                        <span class="bilibili-toolbox-control-desc">\u4ec5\u5728\u7528\u6237\u52a8\u6001\u9875\u751f\u6548</span>
-                    </span>
-                    <span class="bilibili-toolbox-switch">
-                        <input type="checkbox" class="bilibili-toolbox-forward-toggle">
-                        <span class="bilibili-toolbox-switch-slider"></span>
-                    </span>
-                </label>
-                <label class="bilibili-toolbox-control-row">
-                    <span class="bilibili-toolbox-control-copy">
-                        <span class="bilibili-toolbox-control-title">\u5173\u952e\u8bcd\u7b5b\u9009\u52a8\u6001</span>
-                        <span class="bilibili-toolbox-control-desc">\u4ec5\u663e\u793a\u5305\u542b\u8f93\u5165\u5185\u5bb9\u7684\u52a8\u6001</span>
-                    </span>
-                    <span class="bilibili-toolbox-switch">
-                        <input type="checkbox" class="bilibili-toolbox-keyword-toggle">
-                        <span class="bilibili-toolbox-switch-slider"></span>
-                    </span>
-                </label>
-                <input type="text" class="bilibili-toolbox-keyword-input" placeholder="\u8f93\u5165\u8981\u5305\u542b\u7684\u5185\u5bb9" autocomplete="off" spellcheck="false">
-                <div class="bilibili-toolbox-control-status"></div>
-            </div>
-            <div class="bilibili-toolbox-control-actions">
-                <button class="bilibili-toolbox-export-btn">\u5bfc\u51fa\u6536\u85cf</button>
-                <button class="bilibili-toolbox-import-btn">\u5bfc\u5165\u6536\u85cf</button>
-            </div>
-        `;
-        document.body.appendChild(panel);
-
-        eventBag.on(panel.querySelector('.bilibili-toolbox-forward-toggle'), 'change', async (event) => {
-            await storage.setSetting(TOOLBOX_SETTINGS.hideForwardDynamics, Boolean(event.target.checked));
-            syncFloatBtnHideState();
-            dynamicFilter.sync();
-        });
-        eventBag.on(panel.querySelector('.bilibili-toolbox-keyword-toggle'), 'change', (event) => {
-            const enabled = Boolean(event.target.checked);
-            dynamicFilter.setKeywordFilterState({ enabled });
-            renderDynamicControlsPanel();
-            if (enabled) {
-                window.setTimeout(() => panel.querySelector('.bilibili-toolbox-keyword-input')?.focus(), 0);
-            }
-        });
-        eventBag.on(panel.querySelector('.bilibili-toolbox-keyword-input'), 'input', (event) => {
-            dynamicFilter.setKeywordFilterState({ text: event.target.value });
-        });
-        eventBag.on(panel.querySelector('.bilibili-toolbox-export-btn'), 'click', exportFavorites);
-        eventBag.on(panel.querySelector('.bilibili-toolbox-import-btn'), 'click', importFavorites);
-
-        renderDynamicControlsPanel();
-    }
-
-    function isDynamicControlsPanelVisible() {
-        return document.getElementById('bilibili-fav-controls-panel')?.classList.contains('show');
-    }
-
-    function getDynamicControlsStatus(forwardEnabled, keywordState) {
-        if (!dynamicFilter.isSpaceDynamicPage()) return '\u5728\u7528\u6237\u52a8\u6001\u9875\u751f\u6548';
-
-        const states = [];
-        if (forwardEnabled) states.push('\u5df2\u9690\u85cf\u8f6c\u53d1\u52a8\u6001');
-        if (keywordState.enabled && !keywordState.hasKeyword) states.push('\u8bf7\u8f93\u5165\u5173\u952e\u8bcd\u540e\u5f00\u59cb\u7b5b\u9009');
-        if (keywordState.isActive) states.push(`\u4ec5\u663e\u793a\u5305\u542b\u201c${keywordState.displayText}\u201d\u7684\u52a8\u6001`);
-        return states.length ? states.join('\uff1b') : '\u5df2\u663e\u793a\u5168\u90e8\u52a8\u6001';
-    }
-
-    function renderDynamicControlsPanel() {
-        const panel = document.getElementById('bilibili-fav-controls-panel');
-        if (!panel) return;
-
-        const forwardEnabled = Boolean(getSettingValue(TOOLBOX_SETTINGS.hideForwardDynamics));
-        const keywordState = dynamicFilter.getKeywordFilterState();
-        const keywordInput = panel.querySelector('.bilibili-toolbox-keyword-input');
-        panel.querySelector('.bilibili-toolbox-forward-toggle').checked = forwardEnabled;
-        panel.querySelector('.bilibili-toolbox-keyword-toggle').checked = keywordState.enabled;
-        if (keywordInput.value !== keywordState.text) keywordInput.value = keywordState.text;
-        panel.querySelector('.bilibili-toolbox-control-status').textContent = getDynamicControlsStatus(forwardEnabled, keywordState);
-        syncFloatBtnHideState();
-    }
-
-    function showDynamicControlsPanel() {
-        showPanel('bilibili-fav-controls-panel', 'bilibili-fav-panel', createDynamicControlsPanel, renderDynamicControlsPanel);
-    }
-
-    function toggleDynamicControlsPanel() {
-        if (isDynamicControlsPanelVisible()) {
-            hidePanel('bilibili-fav-controls-panel');
-            return;
-        }
-        showDynamicControlsPanel();
-    }
-
-    function closeFavoritesTextDialog() {
-        document.querySelector('#bilibili-toolbox-export-dialog .bilibili-toolbox-export-close')?.click();
-    }
-
-    function showFavoritesTextDialog({ title, text = '', readOnly = false, clipboardAction = '', confirmText = '', onConfirm = null }) {
-        closeFavoritesTextDialog();
-        const dialog = document.createElement('div');
-        dialog.id = 'bilibili-toolbox-export-dialog';
-        dialog.className = 'bilibili-toolbox-export-dialog';
-        dialog.innerHTML = `
-            <div class="bilibili-toolbox-export-document" role="dialog" aria-modal="true" aria-labelledby="bilibili-toolbox-export-title">
-                <div class="bilibili-toolbox-export-header">
-                    <span id="bilibili-toolbox-export-title"></span>
-                    <button class="bilibili-toolbox-export-close" type="button" aria-label="\u5173\u95ed">&times;</button>
-                </div>
-                <textarea class="bilibili-toolbox-export-text" aria-label="\u6536\u85cf\u6587\u672c" spellcheck="false"></textarea>
-                ${clipboardAction || onConfirm ? `
-                    <div class="bilibili-toolbox-export-footer">
-                        <span class="bilibili-toolbox-export-status" role="status"></span>
-                        <div class="bilibili-toolbox-export-actions">
-                            ${clipboardAction ? '<button class="bilibili-toolbox-export-clipboard" type="button"></button>' : ''}
-                            ${onConfirm ? '<button class="bilibili-toolbox-export-confirm" type="button"></button>' : ''}
-                        </div>
-                    </div>
-                ` : ''}
-            </div>
-        `;
-
-        const close = () => {
-            document.removeEventListener('keydown', handleKeyDown);
-            dialog.remove();
-        };
-        const handleKeyDown = event => {
-            if (event.key === 'Escape') close();
-        };
-
-        dialog.querySelector('.bilibili-toolbox-export-close').addEventListener('click', close);
-        dialog.addEventListener('click', event => {
-            if (event.target === dialog) close();
-        });
-        document.addEventListener('keydown', handleKeyDown);
-        document.body.appendChild(dialog);
-
-        dialog.querySelector('#bilibili-toolbox-export-title').textContent = title;
-        const textarea = dialog.querySelector('.bilibili-toolbox-export-text');
-        textarea.value = text;
-        textarea.readOnly = readOnly;
-        const status = dialog.querySelector('.bilibili-toolbox-export-status');
-        const setStatus = (message, isError = false) => {
-            if (!status) return;
-            status.textContent = message;
-            status.classList.toggle('is-error', isError);
-        };
-
-        if (clipboardAction) {
-            const clipboard = dialog.querySelector('.bilibili-toolbox-export-clipboard');
-            clipboard.textContent = clipboardAction === 'copy' ? '\u4e00\u952e\u590d\u5236' : '\u4e00\u952e\u7c98\u8d34';
-            clipboard.addEventListener('click', async () => {
-                try {
-                    if (clipboardAction === 'copy') {
-                        await navigator.clipboard.writeText(textarea.value);
-                        setStatus('\u5df2\u590d\u5236\u5230\u526a\u8d34\u677f');
-                    } else {
-                        textarea.value = await navigator.clipboard.readText();
-                        textarea.focus();
-                        setStatus('\u5df2\u7c98\u8d34\u526a\u8d34\u677f\u5185\u5bb9');
-                    }
-                } catch (_) {
-                    textarea.focus();
-                    if (clipboardAction === 'copy') textarea.select();
-                    setStatus(
-                        clipboardAction === 'copy'
-                            ? '\u65e0\u6cd5\u8bbf\u95ee\u526a\u8d34\u677f\uff0c\u8bf7\u6309 Ctrl+C \u624b\u52a8\u590d\u5236'
-                            : '\u65e0\u6cd5\u8bbf\u95ee\u526a\u8d34\u677f\uff0c\u8bf7\u6309 Ctrl+V \u624b\u52a8\u7c98\u8d34',
-                        true
-                    );
-                }
-            });
-        }
-
-        if (onConfirm) {
-            const confirm = dialog.querySelector('.bilibili-toolbox-export-confirm');
-            confirm.textContent = confirmText;
-            confirm.addEventListener('click', () => onConfirm({ text: textarea.value, close, setStatus }));
-        }
-
-        textarea.focus();
-        if (readOnly) textarea.select();
-    }
-
-    function showExportTextDialog(text) {
-        showFavoritesTextDialog({
-            title: '\u5bfc\u51fa\u6536\u85cf\u6587\u672c',
-            text,
-            readOnly: true,
-            clipboardAction: 'copy'
-        });
-    }
-
-    function exportFavorites() {
-        const data = Shared.normalizeToolboxData(dataProvider());
-        if (!data.favorites.length) {
-            showMessage('\u6682\u65e0\u53ef\u5bfc\u51fa\u7684\u6536\u85cf', true);
-            return;
-        }
-
-        showExportTextDialog(favoritesService.createExportText(data));
-    }
-
-    function importFavorites() {
-        showFavoritesTextDialog({
-            title: '\u5bfc\u5165\u6536\u85cf\u6587\u672c',
-            clipboardAction: 'paste',
-            confirmText: '\u5bfc\u5165',
-            onConfirm: async ({ text, close, setStatus }) => {
-                const imported = favoritesService.normalizeImportedFavorites(text);
-
-                if (!imported?.length) {
-                    setStatus('\u672a\u8bfb\u53d6\u5230\u6709\u6548\u6536\u85cf', true);
-                    return;
-                }
-
-                try {
-                    const result = await favoritesService.importFavorites(imported);
-                    renderFavoriteList();
-                    close();
-                    showMessage(`\u5bfc\u5165 ${result.added} \u6761\uff0c\u66f4\u65b0 ${result.updated} \u6761\uff0c\u8df3\u8fc7 ${result.skipped} \u6761`);
-                } catch (_) {
-                    setStatus('\u5bfc\u5165\u5931\u8d25\uff0c\u8bf7\u7a0d\u540e\u91cd\u8bd5', true);
-                }
-            }
-        });
+        createFavoritesPanel();
+        hidePanel('bilibili-fav-controls-panel');
+        document.getElementById('bilibili-fav-panel')?.classList.add('show');
+        renderFavoriteList();
     }
 
     function getFavoriteDisplayData(item) {
@@ -3566,7 +3794,7 @@
 
     function syncFavoritesUi() {
         renderFavoriteList();
-        renderDynamicControlsPanel();
+        dynamicControlsUi.render();
         syncFloatBtnHideState();
     }
 
@@ -3579,70 +3807,45 @@
         eventBag = Toolbox.createEventBag();
         isTouchDevice = Shared.isTouchLikeDevice();
 
+        dynamicFilter.init({
+            getData: () => dataProvider(),
+            renderControls: () => dynamicControlsUi.render(),
+            syncFloatButton: syncFloatBtnHideState
+        });
+        dynamicControlsUi.init({
+            storage,
+            favoritesService,
+            dynamicFilter,
+            getData: () => dataProvider(),
+            showMessage,
+            renderFavoriteList,
+            syncFloatButton: syncFloatBtnHideState,
+            eventBag
+        });
         createFloatingButton();
-        createDynamicControlsPanel();
         eventBag.on(document, 'mousedown', handleDocumentPointerDown, true);
         eventBag.on(document, 'pointerdown', handleDocumentPointerDown, true);
         eventBag.on(document, 'touchstart', handleDocumentPointerDown, true);
         eventBag.on(document, 'keydown', handleDocumentKeyDown);
-        eventBag.on(window, URL_CHANGE_EVENT, () => dynamicFilter.sync());
+        eventBag.on(window, Toolbox.url.URL_CHANGE_EVENT, () => dynamicFilter.sync());
         syncFavoritesUi();
     }
 
     function destroyFavoritesUi() {
         if (messageTimer) clearTimeout(messageTimer);
+        dynamicControlsUi.destroy();
         if (eventBag) eventBag.cleanup();
         eventBag = null;
         messageTimer = 0;
         document.getElementById('bilibili-fav-panel')?.remove();
-        document.getElementById('bilibili-fav-controls-panel')?.remove();
         document.getElementById('bilibili-fav-float-btn')?.remove();
-        document.getElementById('bilibili-fav-hover-zone')?.remove();
-        closeFavoritesTextDialog();
     }
-
-    Toolbox.pageInfo = {
-        getCurrentPageInfo,
-        extractPageInfoForFavorite,
-        getCurrentFavoriteData: () => extractPageInfoForFavorite(getCurrentPageInfo())
-    };
-
-    Toolbox.url = {
-        URL_CHANGE_EVENT,
-        init: initUrlBridge,
-        notifyUrlChange
-    };
-
-    Toolbox.dynamicFilter = {
-        init: initDynamicFilter,
-        destroy: destroyDynamicFilter,
-        sync: syncDynamicFilter,
-        apply: applyDynamicFilter,
-        scheduleApply: scheduleDynamicFilterApply,
-        isSpaceDynamicPage,
-        getSettingValue,
-        setKeywordFilterState,
-        getKeywordFilterState,
-        FILTER_ACTIVE_CLASS,
-        FILTER_READY_CLASS,
-        HIDDEN_FORWARD_CLASS
-    };
 
     Toolbox.favoritesUi = {
         init: initFavoritesUi,
         destroy: destroyFavoritesUi,
         sync: syncFavoritesUi,
-        renderFavoriteList,
-        renderDynamicControlsPanel,
-        syncFloatBtnHideState,
-        isDynamicControlsPanelVisible
-    };
-
-    Toolbox.contentFeatures = {
-        pageInfo: Toolbox.pageInfo,
-        url: Toolbox.url,
-        dynamicFilter: Toolbox.dynamicFilter,
-        favoritesUi: Toolbox.favoritesUi
+        renderFavoriteList
     };
 })();
 
@@ -3654,9 +3857,13 @@
     if (!window.Shared) throw new Error('BilibiliToolbox: shared.js not loaded');
     if (!window.BilibiliToolbox?.storage) throw new Error('BilibiliToolbox: storage-service.js not loaded');
     if (!window.BilibiliToolbox?.favorites) throw new Error('BilibiliToolbox: favorites service not loaded');
-    if (!window.BilibiliToolbox?.contentFeatures) throw new Error('BilibiliToolbox: content-features.js not loaded');
     if (!window.BilibiliToolbox?.comicImages) throw new Error('BilibiliToolbox: comic-reader-images.js not loaded');
-    if (!window.BiliAnimations) throw new Error('BilibiliToolbox: animations.js not loaded');
+    if (!window.BilibiliToolbox?.animations) throw new Error('BilibiliToolbox: animations.js not loaded');
+    if (!window.BilibiliToolbox?.reader) throw new Error('BilibiliToolbox: comic-reader.js not loaded');
+    if (!window.BilibiliToolbox?.pageInfo) throw new Error('BilibiliToolbox: content-page-info.js not loaded');
+    if (!window.BilibiliToolbox?.url) throw new Error('BilibiliToolbox: content-url.js not loaded');
+    if (!window.BilibiliToolbox?.dynamicFilter) throw new Error('BilibiliToolbox: dynamic-filter.js not loaded');
+    if (!window.BilibiliToolbox?.favoritesUi) throw new Error('BilibiliToolbox: favorites-ui.js not loaded');
 
     const Toolbox = window.BilibiliToolbox;
     const storage = Toolbox.storage;
@@ -3682,11 +3889,6 @@
         unsubscribeStorage = storage.onChanged(syncAll);
 
         Toolbox.url.init();
-        Toolbox.dynamicFilter.init({
-            getData: () => toolboxData,
-            renderControls: () => Toolbox.favoritesUi.renderDynamicControlsPanel(),
-            syncFloatButton: () => Toolbox.favoritesUi.syncFloatBtnHideState()
-        });
         Toolbox.favoritesUi.init({
             storage,
             favoritesService: Toolbox.favorites,
@@ -3696,8 +3898,8 @@
         });
         setupMessageBridge();
 
-        if (window.shouldInitComicReader()) {
-            new window.BiliComicReader().init();
+        if (Toolbox.reader.shouldInitComicReader()) {
+            new Toolbox.reader.BiliComicReader().init();
         }
     }
 

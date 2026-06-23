@@ -5,9 +5,13 @@
     if (!window.Shared) throw new Error('BilibiliToolbox: shared.js not loaded');
     if (!window.BilibiliToolbox?.storage) throw new Error('BilibiliToolbox: storage-service.js not loaded');
     if (!window.BilibiliToolbox?.favorites) throw new Error('BilibiliToolbox: favorites service not loaded');
-    if (!window.BilibiliToolbox?.contentFeatures) throw new Error('BilibiliToolbox: content-features.js not loaded');
     if (!window.BilibiliToolbox?.comicImages) throw new Error('BilibiliToolbox: comic-reader-images.js not loaded');
-    if (!window.BiliAnimations) throw new Error('BilibiliToolbox: animations.js not loaded');
+    if (!window.BilibiliToolbox?.animations) throw new Error('BilibiliToolbox: animations.js not loaded');
+    if (!window.BilibiliToolbox?.reader) throw new Error('BilibiliToolbox: comic-reader.js not loaded');
+    if (!window.BilibiliToolbox?.pageInfo) throw new Error('BilibiliToolbox: content-page-info.js not loaded');
+    if (!window.BilibiliToolbox?.url) throw new Error('BilibiliToolbox: content-url.js not loaded');
+    if (!window.BilibiliToolbox?.dynamicFilter) throw new Error('BilibiliToolbox: dynamic-filter.js not loaded');
+    if (!window.BilibiliToolbox?.favoritesUi) throw new Error('BilibiliToolbox: favorites-ui.js not loaded');
 
     const Toolbox = window.BilibiliToolbox;
     const storage = Toolbox.storage;
@@ -33,11 +37,6 @@
         unsubscribeStorage = storage.onChanged(syncAll);
 
         Toolbox.url.init();
-        Toolbox.dynamicFilter.init({
-            getData: () => toolboxData,
-            renderControls: () => Toolbox.favoritesUi.renderDynamicControlsPanel(),
-            syncFloatButton: () => Toolbox.favoritesUi.syncFloatBtnHideState()
-        });
         Toolbox.favoritesUi.init({
             storage,
             favoritesService: Toolbox.favorites,
@@ -47,8 +46,8 @@
         });
         setupMessageBridge();
 
-        if (window.shouldInitComicReader()) {
-            new window.BiliComicReader().init();
+        if (Toolbox.reader.shouldInitComicReader()) {
+            new Toolbox.reader.BiliComicReader().init();
         }
     }
 

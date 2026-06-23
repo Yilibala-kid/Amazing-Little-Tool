@@ -21,8 +21,15 @@
         "storage-service.js",
         "animations.js",
         "comic-reader-images.js",
+        "reader-preferences.js",
+        "reader-screenshot.js",
         "comic-reader.js",
-        "content-features.js",
+        "content-page-info.js",
+        "content-url.js",
+        "dynamic-filter.js",
+        "favorites-text-dialog.js",
+        "dynamic-controls-ui.js",
+        "favorites-ui.js",
         "content.js"
       ],
       "css": [

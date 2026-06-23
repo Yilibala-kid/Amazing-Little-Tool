@@ -147,7 +147,7 @@
         applyTransform();
     }
 
-    window.BiliAnimations = {
+    const animationsApi = {
         FADE_ANIMATION_DURATION,
         FADE_SETTLE_DURATION,
         FADE_SHIFT_DISTANCE,
@@ -160,4 +160,6 @@
         resetImageContainer: resetAnimatedContainer,
         finishRender: finishAnimatedRender
     };
+
+    window.BilibiliToolbox.animations = animationsApi;
 })();
