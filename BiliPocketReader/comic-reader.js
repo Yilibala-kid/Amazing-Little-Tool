@@ -41,7 +41,15 @@
     const BACKGROUND_MODES = readerPreferences.BACKGROUND_MODES;
     const READER_BACKGROUND_COLORS = Object.freeze({
         black: '#0a0a0a',
-        darkGray: '#1f1f1f'
+        darkGray: '#1f1f1f',
+        lightGray: '#d8d8d8',
+        white: '#ffffff'
+    });
+    const READER_BACKGROUND_LABELS = Object.freeze({
+        black: '\u9ed1\u8272',
+        darkGray: '\u6df1\u7070',
+        lightGray: '\u6d45\u7070',
+        white: '\u767d\u8272'
     });
 
     // ============ 漫画模式功能 ============
@@ -348,7 +356,7 @@
             this.el.settingsPanel.append(
                 settingsHeader,
                 createSettingsRow('\u663e\u793a\u8d28\u91cf', '\u539f\u56fe\u4fdd\u7559\u7ec6\u8282\uff0c\u6d41\u7545\u51cf\u5c11\u7eb9\u7406\u95ea\u70c1\u3002', this.el.imageRenderBtn),
-                createSettingsRow('\u80cc\u666f\u989c\u8272', '\u5728\u9ed1\u8272\u548c\u6df1\u7070\u8272\u9605\u8bfb\u80cc\u666f\u4e4b\u95f4\u5207\u6362\u3002', this.el.backgroundBtn),
+                createSettingsRow('\u80cc\u666f\u989c\u8272', '\u5728\u9ed1\u8272\u3001\u6df1\u7070\u3001\u6d45\u7070\u548c\u767d\u8272\u9605\u8bfb\u80cc\u666f\u4e4b\u95f4\u5207\u6362\u3002', this.el.backgroundBtn),
                 createSettingsRow('\u7ffb\u9875\u52a8\u753b', '\u5728\u65e0\u52a8\u753b\u3001\u5e73\u6ed1\u548c\u6de1\u5165\u4e4b\u95f4\u5207\u6362\u3002', this.el.animationBtn),
                 createSettingsRow('\u663e\u793a\u5f20\u6570', '\u81ea\u52a8\u5224\u65ad\u5355\u56fe\u6216\u53cc\u56fe\uff0c\u4e5f\u53ef\u624b\u52a8\u6307\u5b9a\u3002', this.el.viewModeBtn),
                 createSettingsRow('\u70b9\u51fb\u7ffb\u9875\uff08\u4ec5\u79fb\u52a8\u7aef\uff09', '\u63a7\u5236\u70b9\u51fb\u5c4f\u5e55\u5de6\u53f3\u533a\u57df\u662f\u5426\u7ffb\u9875\u3002', this.el.tapPageBtn),
@@ -430,7 +438,7 @@
                 this.syncBackgroundButton();
                 this.applyReaderBackground();
                 this.savePreferences();
-                this.showReaderMessage(this.backgroundMode === 'darkGray' ? '\u80cc\u666f\uff1a\u6df1\u7070' : '\u80cc\u666f\uff1a\u9ed1\u8272');
+                this.showReaderMessage(`\u80cc\u666f\uff1a${this.getReaderBackgroundLabel()}`);
             });
 
             this.el.tapPageBtn.onclick = stop(() => {
@@ -558,10 +566,10 @@
         }
 
         syncBackgroundButton() {
-            const darkGray = this.backgroundMode === 'darkGray';
-            this.el.backgroundBtn.innerText = darkGray ? '\u6df1\u7070' : '\u9ed1\u8272';
-            this.el.backgroundBtn.title = darkGray ? '\u80cc\u666f\u989c\u8272\uff1a\u6df1\u7070' : '\u80cc\u666f\u989c\u8272\uff1a\u9ed1\u8272';
-            this.el.backgroundBtn.classList.toggle('active', darkGray);
+            const label = this.getReaderBackgroundLabel();
+            this.el.backgroundBtn.innerText = label;
+            this.el.backgroundBtn.title = `\u80cc\u666f\u989c\u8272\uff1a${label}`;
+            this.el.backgroundBtn.classList.toggle('active', this.backgroundMode !== 'black');
         }
 
         syncTapPageButton() {
@@ -644,6 +652,10 @@
 
         getReaderBackgroundColor() {
             return READER_BACKGROUND_COLORS[this.backgroundMode] || READER_BACKGROUND_COLORS.black;
+        }
+
+        getReaderBackgroundLabel() {
+            return READER_BACKGROUND_LABELS[this.backgroundMode] || READER_BACKGROUND_LABELS.black;
         }
 
         applyReaderBackground() {
@@ -1526,14 +1538,19 @@
 
         // 翻页相关方法
 
-        turnPage(e, step) {
+        async turnPage(e, step) {
             e?.stopPropagation?.();
             const direction = Math.sign(step);
             if (!this.canTurnPage(direction)) return;
-            if (!this.canGoForward(step)) step = direction;
-            if (!this.canGoForward(step)) return;
-            this.currentIndex += step;
-            this.render(true, step);
+            const requestIndex = this.currentIndex;
+            const nextIndex = direction < 0
+                ? await this.getPreviousPageGroupIndex()
+                : this.getNextPageGroupIndex(step);
+            if (requestIndex !== this.currentIndex) return;
+            if (nextIndex < 0 || nextIndex >= this.imgList.length || nextIndex === this.currentIndex) return;
+            const actualStep = nextIndex - this.currentIndex;
+            this.currentIndex = nextIndex;
+            this.render(true, actualStep);
         }
 
         offsetPage(e, step) {
@@ -1582,6 +1599,23 @@
         canGoForward(step) {
             const newIndex = this.currentIndex + step;
             return newIndex >= 0 && newIndex < this.imgList.length;
+        }
+
+        getNextPageGroupIndex(step) {
+            if (this.canGoForward(step)) return this.currentIndex + step;
+            const fallbackStep = Math.sign(step);
+            return this.currentIndex + fallbackStep;
+        }
+
+        async getPreviousPageGroupIndex() {
+            const prevIndex = this.currentIndex - 1;
+            if (prevIndex <= 0) return Math.max(0, prevIndex);
+            if (this.viewMode === 'single') return prevIndex;
+            if (this.viewMode === 'double') return Math.max(0, this.currentIndex - 2);
+
+            const prevImg = await this.loadImage(this.imgList[prevIndex]);
+            if (prevImg && this.isWideImage(prevImg)) return prevIndex;
+            return Math.max(0, this.currentIndex - 2);
         }
 
         canTurnPage(direction) {

@@ -16,9 +16,10 @@
     let pageInfo = null;
     let dynamicFilter = null;
     let eventBag = null;
-    let isHoveringFavBtn = false;
     let isTouchDevice = false;
-    let isVideoHoveringFavArea = false;
+    let useHoverInteractions = false;
+    let hoverState = { button: false, panel: false };
+    let hideTimers = { panel: 0, videoButton: 0 };
     let messageTimer = 0;
 
     function setDataProvider(provider) {
@@ -34,6 +35,27 @@
 
     function hidePanel(id) {
         document.getElementById(id)?.classList.remove('show');
+    }
+
+    function isPanelVisible(id) {
+        return document.getElementById(id)?.classList.contains('show') || false;
+    }
+
+    function clearHideTimer(name) {
+        if (hideTimers[name]) clearTimeout(hideTimers[name]);
+        hideTimers[name] = 0;
+    }
+
+    function isHoveringFavoritesArea() {
+        return hoverState.button || hoverState.panel;
+    }
+
+    function setHoverState(area, active) {
+        hoverState[area] = Boolean(active);
+    }
+
+    function resetHoverState() {
+        hoverState = { button: false, panel: false };
     }
 
     function sortFavorites(favorites) {
@@ -64,6 +86,12 @@
             || /\/\/(?:www\.)?bilibili\.com\/bangumi\//i.test(url);
     }
 
+    function supportsHoverPointer() {
+        const matchMedia = window.matchMedia;
+        if (typeof matchMedia !== 'function') return !isTouchDevice;
+        return Boolean(matchMedia('(any-hover: hover)').matches || matchMedia('(hover: hover)').matches);
+    }
+
     function setVideoFavoriteButtonVisible(visible) {
         const btn = document.getElementById('bilibili-fav-float-btn');
         if (!btn?.classList.contains('bilibili-fav-video-hidden')) return;
@@ -71,51 +99,60 @@
     }
 
     function scheduleHideVideoFavoriteButton() {
-        setTimeout(() => {
-            const panelVisible = document.getElementById('bilibili-fav-panel')?.classList.contains('show');
-            const controlsVisible = document.getElementById('bilibili-fav-controls-panel')?.classList.contains('show');
-            if (!isVideoHoveringFavArea && !isHoveringFavBtn && !panelVisible && !controlsVisible) {
+        clearHideTimer('videoButton');
+        hideTimers.videoButton = setTimeout(() => {
+            hideTimers.videoButton = 0;
+            if (!isHoveringFavoritesArea() && !isPanelVisible('bilibili-fav-panel') && !isPanelVisible('bilibili-fav-controls-panel')) {
                 setVideoFavoriteButtonVisible(false);
             }
         }, 220);
     }
 
-    function createVideoFavoriteHoverZone() {
-        const existing = document.getElementById('bilibili-fav-hover-zone');
-        if (existing) {
-            existing.style.display = '';
-            return;
-        }
+    function scheduleHideFavoritesPanel() {
+        clearHideTimer('panel');
+        hideTimers.panel = setTimeout(() => {
+            hideTimers.panel = 0;
+            if (!isHoveringFavoritesArea()) {
+                hidePanel('bilibili-fav-panel');
+                scheduleHideVideoFavoriteButton();
+            }
+        }, 200);
+    }
 
-        const zone = document.createElement('div');
-        zone.id = 'bilibili-fav-hover-zone';
-        document.body.appendChild(zone);
-        eventBag.on(zone, 'mouseenter', () => {
-            isVideoHoveringFavArea = true;
-            setVideoFavoriteButtonVisible(true);
-        });
-        eventBag.on(zone, 'mouseleave', () => {
-            isVideoHoveringFavArea = false;
-            scheduleHideVideoFavoriteButton();
-        });
+    function enterFavoritesArea(area) {
+        setHoverState(area, true);
+        clearHideTimer('panel');
+        clearHideTimer('videoButton');
+        setVideoFavoriteButtonVisible(true);
+        showFavoritesPanel();
+    }
+
+    function leaveFavoritesArea(area) {
+        setHoverState(area, false);
+        scheduleHideFavoritesPanel();
+    }
+
+    function openDynamicControls() {
+        resetHoverState();
+        clearHideTimer('panel');
+        setVideoFavoriteButtonVisible(true);
+        hidePanel('bilibili-fav-panel');
+        dynamicControlsUi.toggle();
+        scheduleHideVideoFavoriteButton();
     }
 
     function updateVideoFavoriteButtonMode() {
         const btn = document.getElementById('bilibili-fav-float-btn');
         if (!btn) return;
 
-        const shouldHideOnVideoPage = isVideoLikePage() && !isTouchDevice;
+        const shouldHideOnVideoPage = isVideoLikePage() && useHoverInteractions;
         btn.classList.toggle('bilibili-fav-video-hidden', shouldHideOnVideoPage);
         if (shouldHideOnVideoPage) {
-            createVideoFavoriteHoverZone();
             setVideoFavoriteButtonVisible(false);
             return;
         }
 
         btn.classList.remove('bilibili-fav-video-visible');
-        isVideoHoveringFavArea = false;
-        const zone = document.getElementById('bilibili-fav-hover-zone');
-        if (zone) zone.style.display = 'none';
     }
 
     function createFloatingButton() {
@@ -124,16 +161,16 @@
         const btn = document.createElement('div');
         btn.id = 'bilibili-fav-float-btn';
         btn.innerHTML = '&#11088;';
-        btn.title = isTouchDevice
-            ? '\u70b9\u51fb\u6253\u5f00\u6536\u85cf\uff0c\u957f\u6309\u6253\u5f00\u52a8\u6001\u63a7\u5236'
-            : '\u60ac\u505c\u67e5\u770b\u6536\u85cf\uff0c\u53f3\u952e\u6253\u5f00\u52a8\u6001\u8fc7\u6ee4';
-        if (isTouchDevice) btn.classList.add('bilibili-fav-touch');
+        btn.title = useHoverInteractions
+            ? '\u60ac\u505c\u67e5\u770b\u6536\u85cf\uff0c\u53f3\u952e\u6253\u5f00\u52a8\u6001\u8fc7\u6ee4'
+            : '\u70b9\u51fb\u6253\u5f00\u6536\u85cf\uff0c\u957f\u6309\u6253\u5f00\u52a8\u6001\u63a7\u5236';
+        if (!useHoverInteractions && isTouchDevice) btn.classList.add('bilibili-fav-touch');
         document.body.appendChild(btn);
 
         let touchLongPressHandled = false;
         updateVideoFavoriteButtonMode();
 
-        if (isTouchDevice) {
+        if (!useHoverInteractions) {
             let longPressTimer = 0;
             const clearLongPress = () => {
                 if (longPressTimer) clearTimeout(longPressTimer);
@@ -166,20 +203,8 @@
             });
             eventBag.add(clearLongPress);
         } else {
-            eventBag.on(btn, 'mouseenter', () => {
-                isHoveringFavBtn = true;
-                setVideoFavoriteButtonVisible(true);
-                showFavoritesPanel();
-            });
-            eventBag.on(btn, 'mouseleave', () => {
-                isHoveringFavBtn = false;
-                setTimeout(() => {
-                    if (!isHoveringFavBtn) {
-                        hidePanel('bilibili-fav-panel');
-                        scheduleHideVideoFavoriteButton();
-                    }
-                }, 200);
-            });
+            eventBag.on(btn, 'mouseenter', () => enterFavoritesArea('button'));
+            eventBag.on(btn, 'mouseleave', () => leaveFavoritesArea('button'));
         }
         eventBag.on(btn, 'contextmenu', (event) => {
             event.preventDefault();
@@ -188,16 +213,15 @@
                 touchLongPressHandled = false;
                 return;
             }
-            isHoveringFavBtn = false;
-            hidePanel('bilibili-fav-panel');
-            dynamicControlsUi.toggle();
+            openDynamicControls();
         });
 
         syncFloatBtnHideState();
     }
 
     function createFavoritesPanel() {
-        if (document.getElementById('bilibili-fav-panel')) return;
+        const existing = document.getElementById('bilibili-fav-panel');
+        if (existing) return existing;
 
         const panel = document.createElement('div');
         panel.id = 'bilibili-fav-panel';
@@ -214,11 +238,14 @@
         `;
         document.body.appendChild(panel);
 
-        if (!isTouchDevice) {
-            eventBag.on(panel, 'mouseenter', () => { isHoveringFavBtn = true; });
+        if (useHoverInteractions) {
+            eventBag.on(panel, 'mouseenter', () => {
+                setHoverState('panel', true);
+                clearHideTimer('panel');
+                clearHideTimer('videoButton');
+            });
             eventBag.on(panel, 'mouseleave', () => {
-                isHoveringFavBtn = false;
-                hidePanel('bilibili-fav-panel');
+                leaveFavoritesArea('panel');
             });
         }
         eventBag.on(panel, 'click', (event) => {
@@ -232,15 +259,18 @@
         eventBag.on(panel.querySelector('.bilibili-fav-control-btn'), 'click', (event) => {
             event.preventDefault();
             event.stopPropagation();
-            dynamicControlsUi.toggle();
+            openDynamicControls();
         });
+        return panel;
     }
 
     function showFavoritesPanel() {
-        createFavoritesPanel();
+        const wasCreated = !document.getElementById('bilibili-fav-panel');
+        const panel = createFavoritesPanel();
         hidePanel('bilibili-fav-controls-panel');
-        document.getElementById('bilibili-fav-panel')?.classList.add('show');
         renderFavoriteList();
+        if (wasCreated) panel.getBoundingClientRect?.();
+        panel.classList.add('show');
     }
 
     function getFavoriteDisplayData(item) {
@@ -303,12 +333,15 @@
         const controlsVisible = controlsPanel?.classList.contains('show');
         if (!favoritesVisible && !controlsVisible) return;
         if (favoritesPanel?.contains(event.target) || controlsPanel?.contains(event.target) || button?.contains(event.target)) return;
-        if (isTouchDevice) hidePanel('bilibili-fav-panel');
+        if (!useHoverInteractions) hidePanel('bilibili-fav-panel');
         hidePanel('bilibili-fav-controls-panel');
+        scheduleHideVideoFavoriteButton();
     }
 
     function handleDocumentKeyDown(event) {
-        if (event.key === 'Escape') hidePanel('bilibili-fav-controls-panel');
+        if (event.key !== 'Escape') return;
+        hidePanel('bilibili-fav-controls-panel');
+        scheduleHideVideoFavoriteButton();
     }
 
     function syncFavoritesUi() {
@@ -325,6 +358,7 @@
         setDataProvider(options.getData);
         eventBag = Toolbox.createEventBag();
         isTouchDevice = Shared.isTouchLikeDevice();
+        useHoverInteractions = supportsHoverPointer();
 
         dynamicFilter.init({
             getData: () => dataProvider(),
@@ -355,10 +389,12 @@
 
     function destroyFavoritesUi() {
         if (messageTimer) clearTimeout(messageTimer);
+        clearHideTimer('panel');
+        clearHideTimer('videoButton');
         dynamicControlsUi.destroy();
         if (eventBag) eventBag.cleanup();
         eventBag = null;
-        isVideoHoveringFavArea = false;
+        resetHoverState();
         messageTimer = 0;
         document.getElementById('bilibili-fav-panel')?.remove();
         document.getElementById('bilibili-fav-float-btn')?.remove();

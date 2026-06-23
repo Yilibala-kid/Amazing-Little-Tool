@@ -301,7 +301,7 @@ function loadReaderPreferencesContext() {
             viewMode: 'unknown',
             animationMode: 'book',
             imageRenderMode: 'raw',
-            backgroundMode: 'white',
+            backgroundMode: 'purple',
             tapPageNavigation: 'yes'
         })),
         plain(preferences.DEFAULT_READER_PREFERENCES)

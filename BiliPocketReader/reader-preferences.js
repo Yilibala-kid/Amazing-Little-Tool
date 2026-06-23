@@ -11,7 +11,7 @@
     const storage = Toolbox.storage;
     const VIEW_MODES = Object.freeze(['auto', 'single', 'double']);
     const IMAGE_RENDER_MODES = Object.freeze(['sharp', 'smooth']);
-    const BACKGROUND_MODES = Object.freeze(['black', 'darkGray']);
+    const BACKGROUND_MODES = Object.freeze(['black', 'darkGray', 'lightGray', 'white']);
     const DEFAULT_READER_PREFERENCES = Object.freeze({
         isRightToLeft: true,
         viewMode: 'auto',
