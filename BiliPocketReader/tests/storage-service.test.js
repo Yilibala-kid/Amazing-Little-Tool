@@ -62,24 +62,25 @@ assert.equal(isTouchLikeDeviceFor(), false);
 assert.deepEqual(plain(favorites.normalizeImportedFavorites([alice, null, {}])), [alice]);
 assert.deepEqual(plain(favorites.normalizeImportedFavorites([{ ...alice, link: 'https://old.example' }])), [alice]);
 assert.deepEqual(
-    plain(favorites.normalizeImportedFavorites('[user:1==Alice==https://i.example/alice.jpg]\n[readlist:2==Column==https://i.example/column.jpg]')),
+    plain(favorites.normalizeImportedFavorites('[<user:1><Alice><https://i.example/alice.jpg>]\n[<readlist:2><Column><https://i.example/column.jpg>]')),
     [alice, column]
 );
 assert.deepEqual(
-    plain(favorites.normalizeImportedFavorites('[\n  user:1\n  ==\n  Alice Cooper\n  ==\n  https://i.example/\n  alice.jpg\n]')),
+    plain(favorites.normalizeImportedFavorites('[\n  <user:1>\n  <\n  Alice Cooper\n  >\n  <\n  https://i.example/\n  alice.jpg\n  >\n]')),
     [{ ...alice, uname: 'Alice Cooper', face: 'https://i.example/alice.jpg' }]
 );
 assert.deepEqual(
-    plain(favorites.normalizeImportedFavorites('[user:1==Alice==https://i.example/a==b.jpg]')),
+    plain(favorites.normalizeImportedFavorites('[<user:1><Alice><https://i.example/a==b.jpg>]')),
     [{ ...alice, face: 'https://i.example/a==b.jpg' }]
 );
 assert.deepEqual(plain(favorites.normalizeImportedFavorites('user:1\tAlice\thttps://i.example/alice.jpg')), []);
 assert.deepEqual(plain(favorites.normalizeImportedFavorites('3')), []);
 assert.deepEqual(plain(favorites.normalizeImportedFavorites('user:1')), []);
-assert.deepEqual(plain(favorites.normalizeImportedFavorites('[user:1== ==https://i.example/alice.jpg]')), []);
-assert.deepEqual(plain(favorites.normalizeImportedFavorites('[user:1==Alice==]')), []);
-assert.deepEqual(plain(favorites.normalizeImportedFavorites('[USER:1==Alice==https://i.example/alice.jpg]')), []);
-assert.deepEqual(plain(favorites.normalizeImportedFavorites('[user : 1==Alice==https://i.example/alice.jpg]')), []);
+assert.deepEqual(plain(favorites.normalizeImportedFavorites('[<user:1>< ><https://i.example/alice.jpg>]')), []);
+assert.deepEqual(plain(favorites.normalizeImportedFavorites('[<user:1><Alice><>]')), []);
+assert.deepEqual(plain(favorites.normalizeImportedFavorites('[<USER:1><Alice><https://i.example/alice.jpg>]')), []);
+assert.deepEqual(plain(favorites.normalizeImportedFavorites('[<user : 1><Alice><https://i.example/alice.jpg>]')), []);
+assert.deepEqual(plain(favorites.normalizeImportedFavorites('[user:1==Alice==https://i.example/alice.jpg]')), []);
 assert.deepEqual(plain(favorites.normalizeImportedFavorites('user:1==Alice==https://i.example/alice.jpg')), []);
 assert.equal(Shared.getFavoriteLink({ uid: '42' }), '#');
 assert.equal(Shared.getFavoriteLink({ type: 'user', uid: 42 }), '#');
@@ -99,7 +100,7 @@ assert.equal(Shared.getFavoriteLink({ type: 'readlist', id: '9' }), 'https://www
     assert.deepEqual(plain(result.data.settings), { hideForwardDynamics: true });
 
     const exportedText = favorites.createExportText(result.data);
-    assert.equal(exportedText, '[user:1==Alice==https://i.example/alice.jpg]\n[readlist:2==Column==https://i.example/column.jpg]');
+    assert.equal(exportedText, '[<user:1><Alice><https://i.example/alice.jpg>]\n[<readlist:2><Column><https://i.example/column.jpg>]');
     assert.deepEqual(
         plain(favorites.normalizeImportedFavorites(exportedText)),
         [alice, column]

@@ -85,14 +85,13 @@
     function parseFavoriteBlockContent(content) {
         if (typeof content !== 'string') return null;
 
-        const firstSeparator = content.indexOf('==');
-        if (firstSeparator < 0) return null;
-        const secondSeparator = content.indexOf('==', firstSeparator + 2);
-        if (secondSeparator < 0) return null;
+        const parts = content.match(/^\s*<([^<>]*)>\s*<([^<>]*)>\s*<([^<>]*)>\s*$/);
+        if (!parts) return null;
 
-        const key = content.slice(0, firstSeparator).trim();
-        const name = content.slice(firstSeparator + 2, secondSeparator).replace(/\s+/g, ' ').trim();
-        const image = content.slice(secondSeparator + 2).replace(/\s+/g, '').trim();
+        const [, keyRaw, nameRaw, imageRaw] = parts;
+        const key = keyRaw.trim();
+        const name = nameRaw.replace(/\s+/g, ' ').trim();
+        const image = imageRaw.replace(/\s+/g, '').trim();
         const match = key.match(/^(user|readlist):(\d+)$/);
         if (!match) return null;
         if (!name || !image) return null;
@@ -202,7 +201,7 @@
                 if (!key) return '';
                 const name = cleanExportName(window.Shared.getFavoriteName(item));
                 const image = cleanExportImage(window.Shared.getFavoriteImage(item));
-                return name && image ? `[${key}==${name}==${image}]` : '';
+                return name && image ? `[<${key}><${name}><${image}>]` : '';
             })
             .filter(Boolean)
             .join('\n');

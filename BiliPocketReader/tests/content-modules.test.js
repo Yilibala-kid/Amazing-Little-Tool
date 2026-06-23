@@ -289,6 +289,7 @@ function loadReaderPreferencesContext() {
         viewMode: 'double',
         animationMode: 'fade',
         imageRenderMode: 'sharp',
+        backgroundMode: 'darkGray',
         tapPageNavigation: false
     };
     await preferences.save(custom);
@@ -300,6 +301,7 @@ function loadReaderPreferencesContext() {
             viewMode: 'unknown',
             animationMode: 'book',
             imageRenderMode: 'raw',
+            backgroundMode: 'white',
             tapPageNavigation: 'yes'
         })),
         plain(preferences.DEFAULT_READER_PREFERENCES)

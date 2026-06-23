@@ -55,6 +55,25 @@
     border-radius: var(--radius-sm);
 }
 
+#bilibili-fav-float-btn.bilibili-fav-video-hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+#bilibili-fav-float-btn.bilibili-fav-video-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+#bilibili-fav-hover-zone {
+    position: fixed;
+    bottom: 68px;
+    right: 8px;
+    width: 74px;
+    height: 74px;
+    z-index: 999998;
+}
+
 /* ===== Shared panel base ===== */
 #bilibili-fav-panel,
 #bilibili-fav-controls-panel {

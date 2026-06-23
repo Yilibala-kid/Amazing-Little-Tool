@@ -38,6 +38,11 @@
     const readerScreenshot = Toolbox.readerScreenshot;
     const VIEW_MODES = readerPreferences.VIEW_MODES;
     const IMAGE_RENDER_MODES = readerPreferences.IMAGE_RENDER_MODES;
+    const BACKGROUND_MODES = readerPreferences.BACKGROUND_MODES;
+    const READER_BACKGROUND_COLORS = Object.freeze({
+        black: '#0a0a0a',
+        darkGray: '#1f1f1f'
+    });
 
     // ============ 漫画模式功能 ============
 
@@ -56,6 +61,7 @@
                 viewMode: this.viewMode,
                 animationMode: this.animationMode,
                 imageRenderMode: this.imageRenderMode,
+                backgroundMode: this.backgroundMode,
                 tapPageNavigation: this.tapPageNavigation
             });
             void readerPreferences.save(preferences).catch(() => {});
@@ -79,6 +85,7 @@
             this.viewMode = preferences.viewMode;
             this.animationMode = preferences.animationMode;
             this.imageRenderMode = preferences.imageRenderMode;
+            this.backgroundMode = preferences.backgroundMode;
             this.tapPageNavigation = preferences.tapPageNavigation;
             this.rotation = 0;
             this.activePageCount = 1;
@@ -223,6 +230,7 @@
                 ['animationBtn', '', '', 'comic-btn comic-btn-alt'],
                 ['viewModeBtn', '', '', 'comic-btn comic-btn-alt'],
                 ['imageRenderBtn', '', '', 'comic-btn comic-btn-alt'],
+                ['backgroundBtn', '', '', 'comic-btn comic-btn-alt'],
                 ['tapPageBtn', '', '', 'comic-btn comic-btn-alt'],
                 ['resetViewBtn', '\u91cd\u7f6e', '\u91cd\u7f6e\u89c6\u56fe', 'comic-btn comic-btn-alt'],
                 ['screenshotBtn', '\u622a\u56fe', '\u62d6\u52a8\u9009\u62e9\u622a\u56fe\u8303\u56f4', 'comic-btn comic-btn-alt'],
@@ -340,6 +348,7 @@
             this.el.settingsPanel.append(
                 settingsHeader,
                 createSettingsRow('\u663e\u793a\u8d28\u91cf', '\u539f\u56fe\u4fdd\u7559\u7ec6\u8282\uff0c\u6d41\u7545\u51cf\u5c11\u7eb9\u7406\u95ea\u70c1\u3002', this.el.imageRenderBtn),
+                createSettingsRow('\u80cc\u666f\u989c\u8272', '\u5728\u9ed1\u8272\u548c\u6df1\u7070\u8272\u9605\u8bfb\u80cc\u666f\u4e4b\u95f4\u5207\u6362\u3002', this.el.backgroundBtn),
                 createSettingsRow('\u7ffb\u9875\u52a8\u753b', '\u5728\u65e0\u52a8\u753b\u3001\u5e73\u6ed1\u548c\u6de1\u5165\u4e4b\u95f4\u5207\u6362\u3002', this.el.animationBtn),
                 createSettingsRow('\u663e\u793a\u5f20\u6570', '\u81ea\u52a8\u5224\u65ad\u5355\u56fe\u6216\u53cc\u56fe\uff0c\u4e5f\u53ef\u624b\u52a8\u6307\u5b9a\u3002', this.el.viewModeBtn),
                 createSettingsRow('\u70b9\u51fb\u7ffb\u9875\uff08\u4ec5\u79fb\u52a8\u7aef\uff09', '\u63a7\u5236\u70b9\u51fb\u5c4f\u5e55\u5de6\u53f3\u533a\u57df\u662f\u5426\u7ffb\u9875\u3002', this.el.tapPageBtn),
@@ -354,9 +363,11 @@
             animations.syncAnimationButton(this.el.animationBtn, this.animationMode);
             this.syncViewModeButton();
             this.syncImageRenderButton();
+            this.syncBackgroundButton();
             this.syncTapPageButton();
             this.syncRotateButton();
             this.syncFullscreenButton();
+            this.applyReaderBackground();
             this.applyResponsiveLayout();
         }
 
@@ -411,6 +422,15 @@
                 this.savePreferences();
                 this.applyImageRenderMode();
                 this.showReaderMessage(this.imageRenderMode === 'sharp' ? '\u539f\u56fe\u6a21\u5f0f' : '\u6d41\u7545\u6a21\u5f0f');
+            });
+
+            this.el.backgroundBtn.onclick = stop(() => {
+                const currentIdx = BACKGROUND_MODES.indexOf(this.backgroundMode);
+                this.backgroundMode = BACKGROUND_MODES[(currentIdx + 1) % BACKGROUND_MODES.length];
+                this.syncBackgroundButton();
+                this.applyReaderBackground();
+                this.savePreferences();
+                this.showReaderMessage(this.backgroundMode === 'darkGray' ? '\u80cc\u666f\uff1a\u6df1\u7070' : '\u80cc\u666f\uff1a\u9ed1\u8272');
             });
 
             this.el.tapPageBtn.onclick = stop(() => {
@@ -537,6 +557,13 @@
             this.el.imageRenderBtn.classList.toggle('active', sharp);
         }
 
+        syncBackgroundButton() {
+            const darkGray = this.backgroundMode === 'darkGray';
+            this.el.backgroundBtn.innerText = darkGray ? '\u6df1\u7070' : '\u9ed1\u8272';
+            this.el.backgroundBtn.title = darkGray ? '\u80cc\u666f\u989c\u8272\uff1a\u6df1\u7070' : '\u80cc\u666f\u989c\u8272\uff1a\u9ed1\u8272';
+            this.el.backgroundBtn.classList.toggle('active', darkGray);
+        }
+
         syncTapPageButton() {
             const enabled = Boolean(this.tapPageNavigation);
             this.el.tapPageBtn.innerText = enabled ? '\u70b9\u51fb\u7ffb\u9875' : '\u70b9\u51fb\u5173\u95ed';
@@ -613,6 +640,14 @@
             this.el.reader.classList.toggle('reader-compact', this.isCompactLayout);
             this.updateFitScale();
             this.applyTransform();
+        }
+
+        getReaderBackgroundColor() {
+            return READER_BACKGROUND_COLORS[this.backgroundMode] || READER_BACKGROUND_COLORS.black;
+        }
+
+        applyReaderBackground() {
+            if (this.el.reader) this.el.reader.style.background = this.getReaderBackgroundColor();
         }
 
         setSelectionHint(text) {
@@ -1493,7 +1528,9 @@
 
         turnPage(e, step) {
             e?.stopPropagation?.();
-            if (!this.canGoForward(step)) step = step > 0 ? 1 : -1;
+            const direction = Math.sign(step);
+            if (!this.canTurnPage(direction)) return;
+            if (!this.canGoForward(step)) step = direction;
             if (!this.canGoForward(step)) return;
             this.currentIndex += step;
             this.render(true, step);
@@ -1545,6 +1582,12 @@
         canGoForward(step) {
             const newIndex = this.currentIndex + step;
             return newIndex >= 0 && newIndex < this.imgList.length;
+        }
+
+        canTurnPage(direction) {
+            if (direction > 0) return this.currentIndex + this.activePageCount < this.imgList.length;
+            if (direction < 0) return this.currentIndex > 0;
+            return false;
         }
 
         updatePageInfo(step) {

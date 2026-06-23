@@ -11,11 +11,13 @@
     const storage = Toolbox.storage;
     const VIEW_MODES = Object.freeze(['auto', 'single', 'double']);
     const IMAGE_RENDER_MODES = Object.freeze(['sharp', 'smooth']);
+    const BACKGROUND_MODES = Object.freeze(['black', 'darkGray']);
     const DEFAULT_READER_PREFERENCES = Object.freeze({
         isRightToLeft: true,
         viewMode: 'auto',
         animationMode: 'smooth',
         imageRenderMode: 'smooth',
+        backgroundMode: 'black',
         tapPageNavigation: true
     });
 
@@ -25,6 +27,10 @@
 
     function normalizeImageRenderMode(mode) {
         return IMAGE_RENDER_MODES.includes(mode) ? mode : DEFAULT_READER_PREFERENCES.imageRenderMode;
+    }
+
+    function normalizeBackgroundMode(mode) {
+        return BACKGROUND_MODES.includes(mode) ? mode : DEFAULT_READER_PREFERENCES.backgroundMode;
     }
 
     function normalizePreferences(value = {}) {
@@ -38,6 +44,7 @@
                 : DEFAULT_READER_PREFERENCES.viewMode,
             animationMode: normalizeAnimationMode(input.animationMode || DEFAULT_READER_PREFERENCES.animationMode),
             imageRenderMode: normalizeImageRenderMode(input.imageRenderMode || DEFAULT_READER_PREFERENCES.imageRenderMode),
+            backgroundMode: normalizeBackgroundMode(input.backgroundMode || DEFAULT_READER_PREFERENCES.backgroundMode),
             tapPageNavigation: typeof input.tapPageNavigation === 'boolean'
                 ? input.tapPageNavigation
                 : DEFAULT_READER_PREFERENCES.tapPageNavigation
@@ -55,9 +62,11 @@
     Toolbox.readerPreferences = {
         VIEW_MODES,
         IMAGE_RENDER_MODES,
+        BACKGROUND_MODES,
         DEFAULT_READER_PREFERENCES,
         normalizeAnimationMode,
         normalizeImageRenderMode,
+        normalizeBackgroundMode,
         normalize: normalizePreferences,
         load: loadPreferences,
         save: savePreferences

@@ -70,6 +70,11 @@
         await navigator.share(data);
     }
 
+    function isShareCanceled(error) {
+        return error?.name === 'AbortError'
+            || /cancel/i.test(error?.message || '');
+    }
+
     function download(blob, filename) {
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -99,7 +104,12 @@
                 await share(blob, filename);
                 reader.showReaderMessage('\u622a\u56fe\u5df2\u6253\u5f00\u7cfb\u7edf\u5206\u4eab');
                 return;
-            } catch (_) {}
+            } catch (error) {
+                if (isShareCanceled(error)) {
+                    reader.showReaderMessage('\u5df2\u53d6\u6d88\u5206\u4eab');
+                    return;
+                }
+            }
         }
 
         download(blob, filename);
@@ -137,7 +147,7 @@
             const ctx = outputCanvas.getContext('2d');
             if (!ctx) throw new Error('CANVAS_CONTEXT_FAILED');
             ctx.scale(dpr, dpr);
-            ctx.fillStyle = READER_BACKGROUND;
+            ctx.fillStyle = reader.getReaderBackgroundColor?.() || READER_BACKGROUND;
             ctx.fillRect(0, 0, selectionRect.width, selectionRect.height);
 
             loadedImages.forEach(({ descriptor, image }) => {
