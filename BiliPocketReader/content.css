@@ -487,6 +487,10 @@
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
+.bilibili-fav-avatar.square {
+    border-radius: var(--radius-md);
+}
+
 .bilibili-fav-avatar.cover {
     display: block;
     width: 100%;

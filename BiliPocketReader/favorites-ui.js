@@ -275,12 +275,15 @@
 
     function getFavoriteDisplayData(item) {
         const isReadlist = Shared.isReadlistFavorite(item);
+        const isOpus = Shared.isOpusFavorite(item);
         return {
             isReadlist,
             key: Shared.escapeHtml(Shared.getFavoriteKey(item)),
             link: Shared.escapeHtml(Shared.getFavoriteLink(item)),
             img: Shared.escapeHtml(Shared.getFavoriteImage(item)) || Shared.FALLBACK_IMAGE,
-            imgClass: isReadlist ? 'bilibili-fav-avatar cover' : 'bilibili-fav-avatar',
+            imgClass: isReadlist
+                ? 'bilibili-fav-avatar cover'
+                : `bilibili-fav-avatar${isOpus ? ' square' : ''}`,
             name: Shared.escapeHtml(Shared.getFavoriteName(item))
         };
     }

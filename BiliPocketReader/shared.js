@@ -4,7 +4,9 @@
 
     const SHARED_STORAGE_KEY = 'bilibiliToolboxSharedData.v1';
     const USER_TYPE = 'user';
+    const OPUS_TYPE = 'opus';
     const READLIST_TYPE = 'readlist';
+    const OPUS_TAB_INTENT_PARAM = 'bilibili_toolbox_opus_tab';
     const FALLBACK_IMAGE = 'https://www.bilibili.com/favicon.ico';
     const BILIBILI_SPACE_URL = 'https://space.bilibili.com/';
     const BILIBILI_READLIST_URL = 'https://www.bilibili.com/read/readlist/rl';
@@ -36,19 +38,21 @@
         const identity = getFavoriteIdentity(item);
         if (!identity) return null;
 
-        return identity.type === READLIST_TYPE
-            ? {
+        if (identity.type === READLIST_TYPE) {
+            return {
                 type: READLIST_TYPE,
                 id: identity.id,
                 title: typeof item.title === 'string' ? item.title : '',
                 cover: typeof item.cover === 'string' ? item.cover : ''
-            }
-            : {
-                type: USER_TYPE,
-                uid: identity.id,
-                uname: typeof item.uname === 'string' ? item.uname : '',
-                face: typeof item.face === 'string' ? item.face : ''
             };
+        }
+
+        return {
+            type: identity.type,
+            uid: identity.id,
+            uname: typeof item.uname === 'string' ? item.uname : '',
+            face: typeof item.face === 'string' ? item.face : ''
+        };
     }
 
     function normalizeFavoriteList(favorites) {
@@ -69,9 +73,13 @@
         return item?.type === READLIST_TYPE;
     }
 
+    function isOpusFavorite(item) {
+        return item?.type === OPUS_TYPE;
+    }
+
     function getFavoriteIdentity(item) {
         if (!item || typeof item !== 'object') return null;
-        if (item.type !== USER_TYPE && item.type !== READLIST_TYPE) return null;
+        if (item.type !== USER_TYPE && item.type !== OPUS_TYPE && item.type !== READLIST_TYPE) return null;
         const type = item.type;
         const id = normalizeFavoriteId(type === READLIST_TYPE ? item.id : item.uid);
         return id ? { type, id } : null;
@@ -97,9 +105,9 @@
     function getFavoriteLink(item) {
         const identity = getFavoriteIdentity(item);
         if (!identity) return '#';
-        return identity.type === READLIST_TYPE
-            ? `${BILIBILI_READLIST_URL}${identity.id}`
-            : `${BILIBILI_SPACE_URL}${identity.id}/dynamic`;
+        if (identity.type === READLIST_TYPE) return `${BILIBILI_READLIST_URL}${identity.id}`;
+        if (identity.type === OPUS_TYPE) return `${BILIBILI_SPACE_URL}${identity.id}/upload/opus?${OPUS_TAB_INTENT_PARAM}=1`;
+        return `${BILIBILI_SPACE_URL}${identity.id}/dynamic`;
     }
 
     function escapeHtml(str) {
@@ -166,7 +174,9 @@
     window.Shared = {
         SHARED_STORAGE_KEY,
         USER_TYPE,
+        OPUS_TYPE,
         READLIST_TYPE,
+        OPUS_TAB_INTENT_PARAM,
         FALLBACK_IMAGE,
         TOOLBOX_SETTINGS,
         createDefaultData,
@@ -174,6 +184,7 @@
         normalizeFavoriteList,
         normalizeToolboxData,
         isReadlistFavorite,
+        isOpusFavorite,
         getFavoriteKey,
         getFavoriteName,
         getFavoriteImage,

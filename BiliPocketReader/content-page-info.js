@@ -7,6 +7,7 @@
     const Shared = window.Shared;
     const Toolbox = window.BilibiliToolbox;
     const ARTICLE_URL_PATTERN = /^https?:\/\/(?:www\.|m\.)?bilibili\.com\/read\/(?:cv\d+|mobile|native)(?:[/?#]|$)/i;
+    const SPACE_OPUS_URL_PATTERN = /^https?:\/\/space\.bilibili\.com\/(\d+)\/upload\/opus(?:[/?#]|$)/i;
 
     function extractUserNameFromMeta() {
         const title = document.title || '';
@@ -88,6 +89,9 @@
             return { type: Shared.READLIST_TYPE, id: readlistMatch[1], title, cover };
         }
 
+        const opusMatch = url.match(SPACE_OPUS_URL_PATTERN);
+        if (opusMatch) return { type: Shared.OPUS_TYPE, uid: opusMatch[1] };
+
         const uid = Shared.extractUidFromUrl(url);
         if (uid) return { type: Shared.USER_TYPE, uid };
 
@@ -123,7 +127,7 @@
             || '';
 
         return {
-            type: Shared.USER_TYPE,
+            type: pageInfo.type === Shared.OPUS_TYPE ? Shared.OPUS_TYPE : Shared.USER_TYPE,
             uid: pageInfo.uid,
             uname,
             face

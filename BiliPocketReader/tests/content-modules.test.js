@@ -137,6 +137,55 @@ function loadDynamicFilterContext() {
     return context;
 }
 
+function loadPageInfoContext(href) {
+    const document = {
+        title: 'Ottergeist\u7684\u4e2a\u4eba\u7a7a\u95f4',
+        querySelector(selector) {
+            if (selector === '.user-name, .user-name-shadow, .name') {
+                return { textContent: 'Ottergeist' };
+            }
+            if (selector === '.user-face img, .avatar img, [class*="face"] img') {
+                return { src: 'https://i.example/otter.jpg' };
+            }
+            return null;
+        },
+        querySelectorAll() {
+            return [];
+        }
+    };
+    const context = createBaseContext({
+        document,
+        location: { href }
+    });
+    runFile(context, 'shared.js');
+    runFile(context, 'content-page-info.js');
+    return context;
+}
+
+function loadSpaceOpusTabsContext(tabs = [], href = 'https://space.bilibili.com/41700837/upload/opus', clock = { now: 1000 }) {
+    const location = { href };
+    const context = createBaseContext({
+        Date: { now: () => clock.now },
+        URL,
+        location,
+        history: {
+            state: null,
+            replaceState(state, title, url) {
+                location.href = url;
+            }
+        },
+        document: {
+            title: '',
+            querySelectorAll(selector) {
+                return selector === '.content-filter .content-tab' ? tabs : [];
+            }
+        }
+    });
+    runFile(context, 'shared.js');
+    runFile(context, 'space-opus-tabs.js');
+    return context;
+}
+
 function createFakeCard({ dataset = {}, attrs = {}, actionText = '', hasForwardContent = false } = {}) {
     return {
         dataset,
@@ -167,6 +216,76 @@ function createFakeCard({ dataset = {}, attrs = {}, actionText = '', hasForwardC
     assert.equal(filter.isForwardDynamic(createFakeCard({ actionText: '\u8f6c\u53d1\u4e86\u52a8\u6001' })), true);
     assert.equal(filter.isForwardDynamic(createFakeCard({ hasForwardContent: true })), true);
     assert.equal(filter.isForwardDynamic(createFakeCard()), false);
+}
+
+{
+    const { BilibiliToolbox } = loadPageInfoContext('https://space.bilibili.com/41700837/upload/opus');
+    assert.deepEqual(
+        plain(BilibiliToolbox.pageInfo.getCurrentFavoriteData()),
+        {
+            type: 'opus',
+            uid: '41700837',
+            uname: 'Ottergeist',
+            face: 'https://i.example/otter.jpg'
+        }
+    );
+}
+
+{
+    let clicked = 0;
+    const tabs = [
+        { textContent: '\u5168\u90e8\u56fe\u6587', className: 'content-tab', click() {} },
+        {
+            textContent: '\u4e13\u680f',
+            className: 'content-tab',
+            click() {
+                clicked += 1;
+                this.className = 'content-tab active';
+            }
+        },
+        { textContent: '\u52a8\u6001', className: 'content-tab', click() {} }
+    ];
+    const { BilibiliToolbox } = loadSpaceOpusTabsContext(tabs);
+    const opusTabs = BilibiliToolbox.spaceOpusTabs;
+
+    assert.equal(opusTabs.isSpaceOpusUploadPage('https://space.bilibili.com/41700837/upload/opus'), true);
+    assert.equal(opusTabs.isSpaceOpusUploadPage('https://space.bilibili.com/41700837/dynamic'), false);
+    assert.equal(opusTabs.selectNow(), false);
+    assert.equal(clicked, 0);
+
+    const clock = { now: 1000 };
+    const delayedTabs = [];
+    const marked = loadSpaceOpusTabsContext(delayedTabs, 'https://space.bilibili.com/41700837/upload/opus?bilibili_toolbox_opus_tab=1', clock);
+    const markedOpusTabs = marked.BilibiliToolbox.spaceOpusTabs;
+    assert.equal(markedOpusTabs.selectNow(), false);
+    assert.equal(marked.location.href, 'https://space.bilibili.com/41700837/upload/opus');
+
+    marked.location.href = 'https://space.bilibili.com/41700837/upload/opus?spm_id_from=333.1387.0.0';
+    delayedTabs.push(...tabs);
+    clock.now += 400;
+    assert.equal(markedOpusTabs.selectNow(), true);
+    assert.equal(clicked, 1);
+    assert.equal(markedOpusTabs.selectNow(), false);
+    assert.equal(clicked, 1);
+
+    let activeClicks = 0;
+    let fallbackClicks = 0;
+    const activeTabs = [
+        {
+            textContent: '\u5168\u90e8\u56fe\u6587',
+            className: 'content-tab',
+            click() { fallbackClicks += 1; }
+        },
+        {
+            textContent: '\u4e13\u680f',
+            className: 'content-tab active',
+            click() { activeClicks += 1; }
+        }
+    ];
+    const activeMarked = loadSpaceOpusTabsContext(activeTabs, 'https://space.bilibili.com/41700837/upload/opus?bilibili_toolbox_opus_tab=1');
+    assert.equal(activeMarked.BilibiliToolbox.spaceOpusTabs.selectNow(), true);
+    assert.equal(activeClicks, 0);
+    assert.equal(fallbackClicks, 0);
 }
 
 function loadDynamicControlsContext() {

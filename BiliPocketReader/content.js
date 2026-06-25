@@ -11,6 +11,7 @@
     if (!window.BilibiliToolbox?.pageInfo) throw new Error('BilibiliToolbox: content-page-info.js not loaded');
     if (!window.BilibiliToolbox?.url) throw new Error('BilibiliToolbox: content-url.js not loaded');
     if (!window.BilibiliToolbox?.dynamicFilter) throw new Error('BilibiliToolbox: dynamic-filter.js not loaded');
+    if (!window.BilibiliToolbox?.spaceOpusTabs) throw new Error('BilibiliToolbox: space-opus-tabs.js not loaded');
     if (!window.BilibiliToolbox?.favoritesUi) throw new Error('BilibiliToolbox: favorites-ui.js not loaded');
 
     const Toolbox = window.BilibiliToolbox;
@@ -37,6 +38,7 @@
         unsubscribeStorage = storage.onChanged(syncAll);
 
         Toolbox.url.init();
+        Toolbox.spaceOpusTabs.init();
         Toolbox.favoritesUi.init({
             storage,
             favoritesService: Toolbox.favorites,
@@ -53,6 +55,7 @@
 
     function destroy() {
         if (unsubscribeStorage) unsubscribeStorage();
+        Toolbox.spaceOpusTabs.destroy();
         Toolbox.favoritesUi.destroy();
         Toolbox.dynamicFilter.destroy();
         storage.destroy();

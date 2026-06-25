@@ -92,13 +92,14 @@
         const key = keyRaw.trim();
         const name = nameRaw.replace(/\s+/g, ' ').trim();
         const image = imageRaw.replace(/\s+/g, '').trim();
-        const match = key.match(/^(user|readlist):(\d+)$/);
+        const match = key.match(/^(user|opus|readlist):(\d+)$/);
         if (!match) return null;
         if (!name || !image) return null;
 
-        const isReadlist = match[1].toLowerCase() === window.Shared.READLIST_TYPE;
+        const type = match[1].toLowerCase();
+        const isReadlist = type === window.Shared.READLIST_TYPE;
         return {
-            type: isReadlist ? window.Shared.READLIST_TYPE : window.Shared.USER_TYPE,
+            type: isReadlist ? window.Shared.READLIST_TYPE : type,
             [isReadlist ? 'id' : 'uid']: match[2],
             [isReadlist ? 'title' : 'uname']: name,
             [isReadlist ? 'cover' : 'face']: image

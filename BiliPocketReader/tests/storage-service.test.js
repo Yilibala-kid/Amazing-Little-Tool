@@ -41,6 +41,7 @@ const favorites = BilibiliToolbox.favorites;
 const storage = BilibiliToolbox.storage;
 const plain = value => JSON.parse(JSON.stringify(value));
 const alice = { type: 'user', uid: '1', uname: 'Alice', face: 'https://i.example/alice.jpg' };
+const otter = { type: 'opus', uid: '41700837', uname: 'Ottergeist', face: 'https://i.example/otter.jpg' };
 const column = { type: 'readlist', id: '2', title: 'Column', cover: 'https://i.example/column.jpg' };
 
 function isTouchLikeDeviceFor({ coarse = false, noHover = false, maxTouchPoints = 0 } = {}) {
@@ -62,8 +63,8 @@ assert.equal(isTouchLikeDeviceFor(), false);
 assert.deepEqual(plain(favorites.normalizeImportedFavorites([alice, null, {}])), [alice]);
 assert.deepEqual(plain(favorites.normalizeImportedFavorites([{ ...alice, link: 'https://old.example' }])), [alice]);
 assert.deepEqual(
-    plain(favorites.normalizeImportedFavorites('[<user:1><Alice><https://i.example/alice.jpg>]\n[<readlist:2><Column><https://i.example/column.jpg>]')),
-    [alice, column]
+    plain(favorites.normalizeImportedFavorites('[<user:1><Alice><https://i.example/alice.jpg>]\n[<opus:41700837><Ottergeist><https://i.example/otter.jpg>]\n[<readlist:2><Column><https://i.example/column.jpg>]')),
+    [alice, otter, column]
 );
 assert.deepEqual(
     plain(favorites.normalizeImportedFavorites('[\n  <user:1>\n  <\n  Alice Cooper\n  >\n  <\n  https://i.example/\n  alice.jpg\n  >\n]')),
@@ -86,31 +87,32 @@ assert.equal(Shared.getFavoriteLink({ uid: '42' }), '#');
 assert.equal(Shared.getFavoriteLink({ type: 'user', uid: 42 }), '#');
 assert.equal(Shared.getFavoriteLink({ type: 'user', uid: 'https://space.bilibili.com/42/dynamic' }), '#');
 assert.equal(Shared.getFavoriteLink({ type: 'user', uid: '42' }), 'https://space.bilibili.com/42/dynamic');
+assert.equal(Shared.getFavoriteLink({ type: 'opus', uid: '42' }), 'https://space.bilibili.com/42/upload/opus?bilibili_toolbox_opus_tab=1');
 assert.equal(Shared.getFavoriteLink({ type: 'readlist', id: '9' }), 'https://www.bilibili.com/read/readlist/rl9');
 
 (async () => {
     await storage.init();
     await storage.write({ favorites: [alice], settings: { hideForwardDynamics: true } });
 
-    const result = await favorites.importFavorites([alice, column, {}]);
-    assert.equal(result.added, 1);
+    const result = await favorites.importFavorites([alice, otter, column, {}]);
+    assert.equal(result.added, 2);
     assert.equal(result.updated, 0);
     assert.equal(result.skipped, 1);
-    assert.deepEqual(plain(result.data.favorites), [alice, column]);
+    assert.deepEqual(plain(result.data.favorites), [alice, otter, column]);
     assert.deepEqual(plain(result.data.settings), { hideForwardDynamics: true });
 
     const exportedText = favorites.createExportText(result.data);
-    assert.equal(exportedText, '[<user:1><Alice><https://i.example/alice.jpg>]\n[<readlist:2><Column><https://i.example/column.jpg>]');
+    assert.equal(exportedText, '[<user:1><Alice><https://i.example/alice.jpg>]\n[<opus:41700837><Ottergeist><https://i.example/otter.jpg>]\n[<readlist:2><Column><https://i.example/column.jpg>]');
     assert.deepEqual(
         plain(favorites.normalizeImportedFavorites(exportedText)),
-        [alice, column]
+        [alice, otter, column]
     );
 
     await storage.write({ favorites: [{ type: 'user', uid: '1', uname: '\u7528\u6237', face: 'https://www.bilibili.com/favicon.ico' }], settings: {} });
     const enriched = await favorites.importFavorites(exportedText);
-    assert.equal(enriched.added, 1);
+    assert.equal(enriched.added, 2);
     assert.equal(enriched.updated, 1);
-    assert.deepEqual(plain(enriched.data.favorites), [alice, column]);
+    assert.deepEqual(plain(enriched.data.favorites), [alice, otter, column]);
     console.log('storage-service tests passed');
 })().catch(error => {
     console.error(error);

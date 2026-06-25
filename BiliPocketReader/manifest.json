@@ -27,6 +27,7 @@
         "content-page-info.js",
         "content-url.js",
         "dynamic-filter.js",
+        "space-opus-tabs.js",
         "favorites-text-dialog.js",
         "dynamic-controls-ui.js",
         "favorites-ui.js",
