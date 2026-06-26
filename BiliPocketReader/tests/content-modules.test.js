@@ -295,12 +295,20 @@ function loadPageInfoContext(href) {
     return context;
 }
 
-function loadSpaceOpusTabsContext(tabs = [], href = 'https://space.bilibili.com/41700837/upload/opus', clock = { now: 1000 }) {
+function loadSpaceOpusTabsContext(tabs = [], href = 'https://space.bilibili.com/41700837/upload/opus', clock = { now: 1000 }, data = null) {
     const location = { href };
     const context = createBaseContext({
         Date: { now: () => clock.now },
         URL,
         location,
+        setTimeout() { return 1; },
+        clearTimeout() {},
+        addEventListener() {},
+        removeEventListener() {},
+        MutationObserver: class {
+            observe() {}
+            disconnect() {}
+        },
         history: {
             state: null,
             replaceState(state, title, url) {
@@ -309,6 +317,7 @@ function loadSpaceOpusTabsContext(tabs = [], href = 'https://space.bilibili.com/
         },
         document: {
             title: '',
+            body: {},
             querySelectorAll(selector) {
                 return selector === '.content-filter .content-tab' ? tabs : [];
             }
@@ -317,6 +326,9 @@ function loadSpaceOpusTabsContext(tabs = [], href = 'https://space.bilibili.com/
     runFile(context, 'shared.js');
     runFile(context, 'bilibili-dom-adapter.js');
     runFile(context, 'space-opus-tabs.js');
+    if (data) {
+        context.BilibiliToolbox.spaceOpusTabs.init({ getData: () => data });
+    }
     return context;
 }
 
@@ -407,7 +419,7 @@ function createFakeCard({ dataset = {}, attrs = {}, actionText = '', hasForwardC
 
 {
     let clicked = 0;
-    const tabs = [
+    const createTabs = () => [
         { textContent: '\u5168\u90e8\u56fe\u6587', className: 'content-tab', click() {} },
         {
             textContent: '\u4e13\u680f',
@@ -419,28 +431,30 @@ function createFakeCard({ dataset = {}, attrs = {}, actionText = '', hasForwardC
         },
         { textContent: '\u52a8\u6001', className: 'content-tab', click() {} }
     ];
-    const { BilibiliToolbox } = loadSpaceOpusTabsContext(tabs);
+    const { BilibiliToolbox } = loadSpaceOpusTabsContext(createTabs());
     const opusTabs = BilibiliToolbox.spaceOpusTabs;
 
     assert.equal(opusTabs.isSpaceOpusUploadPage('https://space.bilibili.com/41700837/upload/opus'), true);
     assert.equal(opusTabs.isSpaceOpusUploadPage('https://space.bilibili.com/41700837/dynamic'), false);
+    assert.equal(opusTabs.selectNow(), true);
+    assert.equal(clicked, 1);
     assert.equal(opusTabs.selectNow(), false);
-    assert.equal(clicked, 0);
+    assert.equal(clicked, 1);
 
     const clock = { now: 1000 };
     const delayedTabs = [];
-    const marked = loadSpaceOpusTabsContext(delayedTabs, 'https://space.bilibili.com/41700837/upload/opus?bilibili_toolbox_opus_tab=1', clock);
-    const markedOpusTabs = marked.BilibiliToolbox.spaceOpusTabs;
-    assert.equal(markedOpusTabs.selectNow(), false);
-    assert.equal(marked.location.href, 'https://space.bilibili.com/41700837/upload/opus');
+    const delayed = loadSpaceOpusTabsContext(delayedTabs, 'https://space.bilibili.com/41700837/upload/opus', clock);
+    const delayedOpusTabs = delayed.BilibiliToolbox.spaceOpusTabs;
+    assert.equal(delayedOpusTabs.selectNow(), false);
+    assert.equal(delayed.location.href, 'https://space.bilibili.com/41700837/upload/opus');
 
-    marked.location.href = 'https://space.bilibili.com/41700837/upload/opus?spm_id_from=333.1387.0.0';
-    delayedTabs.push(...tabs);
+    delayed.location.href = 'https://space.bilibili.com/41700837/upload/opus?spm_id_from=333.1387.0.0';
+    delayedTabs.push(...createTabs());
     clock.now += 400;
-    assert.equal(markedOpusTabs.selectNow(), true);
-    assert.equal(clicked, 1);
-    assert.equal(markedOpusTabs.selectNow(), false);
-    assert.equal(clicked, 1);
+    assert.equal(delayedOpusTabs.selectNow(), true);
+    assert.equal(clicked, 2);
+    assert.equal(delayedOpusTabs.selectNow(), false);
+    assert.equal(clicked, 2);
 
     let activeClicks = 0;
     let fallbackClicks = 0;
@@ -456,10 +470,30 @@ function createFakeCard({ dataset = {}, attrs = {}, actionText = '', hasForwardC
             click() { activeClicks += 1; }
         }
     ];
-    const activeMarked = loadSpaceOpusTabsContext(activeTabs, 'https://space.bilibili.com/41700837/upload/opus?bilibili_toolbox_opus_tab=1');
-    assert.equal(activeMarked.BilibiliToolbox.spaceOpusTabs.selectNow(), true);
+    const activePage = loadSpaceOpusTabsContext(activeTabs, 'https://space.bilibili.com/41700837/upload/opus');
+    assert.equal(activePage.BilibiliToolbox.spaceOpusTabs.selectNow(), true);
     assert.equal(activeClicks, 0);
     assert.equal(fallbackClicks, 0);
+
+    let disabledClicks = 0;
+    const disabledTabs = [
+        { textContent: '\u5168\u90e8\u56fe\u6587', className: 'content-tab', click() {} },
+        {
+            textContent: '\u4e13\u680f',
+            className: 'content-tab',
+            click() {
+                disabledClicks += 1;
+                this.className = 'content-tab active';
+            }
+        }
+    ];
+    const disabledData = {
+        favorites: [],
+        settings: { autoSelectOpusTab: false }
+    };
+    const disabledPage = loadSpaceOpusTabsContext(disabledTabs, 'https://space.bilibili.com/41700837/upload/opus', { now: 1000 }, disabledData);
+    assert.equal(disabledPage.BilibiliToolbox.spaceOpusTabs.selectNow(), false);
+    assert.equal(disabledClicks, 0);
 }
 
 function loadSettingsPopoverDomContext(data) {
@@ -538,7 +572,9 @@ function loadFavoritesUiContext(data, keywordState = { enabled: false, isActive:
     const buttons = panel.querySelectorAll('.bilibili-toolbox-favorite-columns button');
 
     assert.equal(panel.innerHTML.includes('\u52a8\u6001\u8fc7\u6ee4\uff08\u5728\u52a8\u6001\u9875\u751f\u6548\uff09'), true);
+    assert.equal(panel.innerHTML.includes('\u81ea\u52a8\u5207\u5230\u4e13\u680f'), true);
     assert.equal(panel.innerHTML.includes('bilibili-toolbox-control-status'), false);
+    assert.equal(panel.querySelector('.bilibili-toolbox-opus-tab-toggle').checked, true);
     assert.equal(buttons.find(button => button.dataset.columns === '4').classList.contains('active'), true);
     assert.equal(buttons.find(button => button.dataset.columns === '4')['aria-pressed'], 'true');
     assert.equal(buttons.find(button => button.dataset.columns === '2').classList.contains('active'), false);

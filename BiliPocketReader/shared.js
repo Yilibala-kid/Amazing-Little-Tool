@@ -6,7 +6,6 @@
     const USER_TYPE = 'user';
     const OPUS_TYPE = 'opus';
     const READLIST_TYPE = 'readlist';
-    const OPUS_TAB_INTENT_PARAM = 'bilibili_toolbox_opus_tab';
     const FAVORITE_COLUMN_OPTIONS = Object.freeze([2, 3, 4, 5]);
     const DEFAULT_FAVORITE_COLUMNS = 2;
     const FALLBACK_IMAGE = 'https://www.bilibili.com/favicon.ico';
@@ -14,11 +13,13 @@
     const BILIBILI_READLIST_URL = 'https://www.bilibili.com/read/readlist/rl';
     const TOOLBOX_SETTINGS = Object.freeze({
         hideForwardDynamics: 'hideForwardDynamics',
+        autoSelectOpusTab: 'autoSelectOpusTab',
         readerPreferences: 'readerPreferences',
         favoriteColumns: 'favoriteColumns'
     });
     const DEFAULT_SETTINGS = Object.freeze({
         hideForwardDynamics: false,
+        autoSelectOpusTab: true,
         favoriteColumns: DEFAULT_FAVORITE_COLUMNS,
         readerPreferences: {}
     });
@@ -41,6 +42,7 @@
     function createDefaultSettings() {
         return {
             hideForwardDynamics: DEFAULT_SETTINGS.hideForwardDynamics,
+            autoSelectOpusTab: DEFAULT_SETTINGS.autoSelectOpusTab,
             favoriteColumns: DEFAULT_SETTINGS.favoriteColumns,
             readerPreferences: { ...DEFAULT_SETTINGS.readerPreferences }
         };
@@ -96,6 +98,9 @@
             hideForwardDynamics: typeof input.hideForwardDynamics === 'boolean'
                 ? input.hideForwardDynamics
                 : DEFAULT_SETTINGS.hideForwardDynamics,
+            autoSelectOpusTab: typeof input.autoSelectOpusTab === 'boolean'
+                ? input.autoSelectOpusTab
+                : DEFAULT_SETTINGS.autoSelectOpusTab,
             favoriteColumns: normalizeFavoriteColumns(input.favoriteColumns),
             readerPreferences: normalizeObject(input.readerPreferences)
         };
@@ -145,7 +150,7 @@
         const identity = getFavoriteIdentity(item);
         if (!identity) return '#';
         if (identity.type === READLIST_TYPE) return `${BILIBILI_READLIST_URL}${identity.id}`;
-        if (identity.type === OPUS_TYPE) return `${BILIBILI_SPACE_URL}${identity.id}/upload/opus?${OPUS_TAB_INTENT_PARAM}=1`;
+        if (identity.type === OPUS_TYPE) return `${BILIBILI_SPACE_URL}${identity.id}/upload/opus`;
         return `${BILIBILI_SPACE_URL}${identity.id}/dynamic`;
     }
 
@@ -215,7 +220,6 @@
         USER_TYPE,
         OPUS_TYPE,
         READLIST_TYPE,
-        OPUS_TAB_INTENT_PARAM,
         FAVORITE_COLUMN_OPTIONS,
         DEFAULT_FAVORITE_COLUMNS,
         FALLBACK_IMAGE,

@@ -8,6 +8,7 @@
     const Shared = window.Shared;
     const Toolbox = window.BilibiliToolbox;
     const bilibiliDom = Toolbox.bilibiliDom;
+    const TOOLBOX_SETTINGS = Shared.TOOLBOX_SETTINGS;
     const OPUS_TAB_TEXT = '\u4e13\u680f';
     const BURST_DELAYS = [0, 80, 250, 600, 1200, 2500, 5000];
     const INTENT_TTL_MS = 10000;
@@ -18,6 +19,15 @@
     let intentUid = '';
     let intentUntil = 0;
     let selectedForIntent = false;
+    let dataProvider = () => Shared.createDefaultData();
+
+    function getSettingValue(key, fallback = false) {
+        return Shared.getSettingValue(dataProvider(), key, fallback);
+    }
+
+    function isAutoSelectEnabled() {
+        return Boolean(getSettingValue(TOOLBOX_SETTINGS.autoSelectOpusTab, true));
+    }
 
     function isSpaceOpusUploadPage(url = window.location.href) {
         return bilibiliDom.isSpaceOpusUploadPage(url);
@@ -27,17 +37,16 @@
         return bilibiliDom.getSpaceOpusUid(url);
     }
 
-    function consumeOpusTabIntent() {
+    function ensureOpusTabIntent() {
+        if (!isAutoSelectEnabled()) return false;
         if (!isSpaceOpusUploadPage()) return false;
 
-        const url = new URL(window.location.href);
-        if (url.searchParams.get(Shared.OPUS_TAB_INTENT_PARAM) !== '1') return false;
+        const uid = getSpaceOpusUid();
+        if (!uid) return false;
 
-        intentUid = getSpaceOpusUid(url.toString());
+        intentUid = uid;
         intentUntil = Date.now() + INTENT_TTL_MS;
         selectedForIntent = false;
-        url.searchParams.delete(Shared.OPUS_TAB_INTENT_PARAM);
-        history.replaceState(history.state, document.title, url.toString());
         return Boolean(intentUid);
     }
 
@@ -58,6 +67,11 @@
     }
 
     function hasFreshIntentForCurrentUrl() {
+        if (!isAutoSelectEnabled()) {
+            intentUid = '';
+            return false;
+        }
+
         const uid = getSpaceOpusUid();
         const hasFreshIntent = intentUid
             && uid === intentUid
@@ -77,7 +91,7 @@
     }
 
     function selectOpusTabNow() {
-        if (!intentUid) consumeOpusTabIntent();
+        if (!intentUid) ensureOpusTabIntent();
         if (!hasFreshIntentForCurrentUrl()) return false;
 
         const tab = findOpusTab();
@@ -109,13 +123,25 @@
 
     function scheduleSelectBurst() {
         clearTabTimers();
-        consumeOpusTabIntent();
+        ensureOpusTabIntent();
         if (!hasFreshIntentForCurrentUrl()) return;
         BURST_DELAYS.forEach(scheduleSelect);
     }
 
-    function initSpaceOpusTabs() {
+    function syncSpaceOpusTabs() {
+        if (!isAutoSelectEnabled()) {
+            clearTabTimers();
+            intentUid = '';
+            intentUntil = 0;
+            selectedForIntent = false;
+            return;
+        }
+        scheduleSelectBurst();
+    }
+
+    function initSpaceOpusTabs(options = {}) {
         if (tabObserver) return;
+        dataProvider = typeof options.getData === 'function' ? options.getData : dataProvider;
 
         tabObserver = new MutationObserver(() => {
             if (hasFreshIntentForCurrentUrl()) scheduleSelect();
@@ -129,7 +155,7 @@
 
         urlChangeHandler = scheduleSelectBurst;
         window.addEventListener(Toolbox.url?.URL_CHANGE_EVENT || 'bilibili-toolbox:urlchange', urlChangeHandler);
-        scheduleSelectBurst();
+        syncSpaceOpusTabs();
     }
 
     function destroySpaceOpusTabs() {
@@ -140,6 +166,7 @@
         clearTabTimers();
         tabObserver = null;
         urlChangeHandler = null;
+        dataProvider = () => Shared.createDefaultData();
         intentUid = '';
         intentUntil = 0;
         selectedForIntent = false;
@@ -148,6 +175,7 @@
     Toolbox.spaceOpusTabs = {
         init: initSpaceOpusTabs,
         destroy: destroySpaceOpusTabs,
+        sync: syncSpaceOpusTabs,
         selectNow: selectOpusTabNow,
         isSpaceOpusUploadPage
     };

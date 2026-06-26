@@ -26,6 +26,7 @@
 
     function syncAll(data) {
         toolboxData = window.Shared.normalizeToolboxData(data);
+        Toolbox.spaceOpusTabs.sync();
         Toolbox.favoritesUi.sync();
         Toolbox.dynamicFilter.sync();
     }
@@ -47,7 +48,9 @@
         unsubscribeStorage = storage.onChanged(syncAll);
 
         Toolbox.url.init();
-        Toolbox.spaceOpusTabs.init();
+        Toolbox.spaceOpusTabs.init({
+            getData: () => toolboxData
+        });
         settingsEventBag = Toolbox.createEventBag();
         Toolbox.dynamicFilter.init({
             getData: () => toolboxData,

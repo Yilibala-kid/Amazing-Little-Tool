@@ -13,7 +13,7 @@ BiliPocketReader 是运行在 bilibili 页面上的 MV3 内容脚本扩展，同
 - 收藏显示设置：收藏面板每行 2 到 5 个收藏，保持收藏块固定宽度，通过调整面板宽度改变列数。
 - 动态过滤：在用户动态页隐藏转发动态，或临时按关键词只显示匹配动态。
 - 收藏导入/导出：文本格式导入导出收藏。
-- 空间图文页深链：收藏图文入口跳转到 `/upload/opus?bilibili_toolbox_opus_tab=1` 后，自动消费参数并尝试切到“专栏”tab。
+- 空间图文页深链：进入 `/upload/opus` 后自动尝试切到“专栏”tab。
 
 ## 加载顺序
 
@@ -54,6 +54,7 @@ BiliPocketReader 是运行在 bilibili 页面上的 MV3 内容脚本扩展，同
   favorites: [],
   settings: {
     hideForwardDynamics: false,
+    autoSelectOpusTab: true,
     favoriteColumns: 2,
     readerPreferences: { ... }
   }
@@ -80,6 +81,7 @@ BiliPocketReader 是运行在 bilibili 页面上的 MV3 内容脚本扩展，同
 设置项：
 
 - `hideForwardDynamics`：是否隐藏转发动态，持久化。
+- `autoSelectOpusTab`：进入空间图文页时是否自动切到“专栏”tab，持久化，默认开启。
 - `favoriteColumns`：收藏面板列数，合法值 `2, 3, 4, 5`，默认 `2`。
 - `readerPreferences`：阅读器偏好，包含阅读方向、显示张数、翻页动画、显示质量、背景色、移动端点击翻页。
 
@@ -112,7 +114,7 @@ BiliPocketReader 是运行在 bilibili 页面上的 MV3 内容脚本扩展，同
 - 定义 storage key、收藏类型、设置 key。
 - 归一化收藏和整体数据结构。
 - 生成收藏 key、名称、图片、跳转链接。
-- 处理空间图文深链参数。
+- 生成空间图文页跳转链接。
 - 定义收藏列数选项和归一化函数。
 - 定义设置默认值、`normalizeSettings()` 和 `getSettingValue()`。
 - 提供 `createEventBag()` 统一管理事件解绑。
@@ -257,9 +259,10 @@ SPA URL 变化桥。
 
 职责：
 
-- 展示“收藏显示”和“动态过滤”两组设置。
+- 展示“收藏显示”“空间图文”和“动态过滤”三组设置。
 - 修改 `favoriteColumns`。
 - 修改 `hideForwardDynamics`。
+- 修改 `autoSelectOpusTab`。
 - 控制临时关键词过滤。
 - 提供收藏导入/导出入口。
 
@@ -320,15 +323,13 @@ SPA URL 变化桥。
 
 职责：
 
-- 检测 `/upload/opus` 页面。
-- 消费 `bilibili_toolbox_opus_tab=1` 参数。
+- 检测 `/upload/opus` 页面并记录短期切 tab intent。
 - 在短时间窗口内尝试点击“专栏”tab。
 - 监听 SPA URL 变化后重新尝试。
 
 维护要点：
 
-- 这个模块只服务从收藏深链进入图文页的体验。
-- 不要长期保留 URL 参数，消费后会 `replaceState` 清理。
+- 这个模块服务进入空间图文页后的“专栏”tab 自动切换体验，可通过 `autoSelectOpusTab` 关闭。
 
 ### `comic-reader-images.js`
 
@@ -627,16 +628,15 @@ SPA URL 变化桥。
 空间图文收藏链接由 `Shared.getFavoriteLink()` 生成：
 
 ```text
-https://space.bilibili.com/<uid>/upload/opus?bilibili_toolbox_opus_tab=1
+https://space.bilibili.com/<uid>/upload/opus
 ```
 
 进入页面后：
 
-1. `space-opus-tabs.js` 检测参数。
-2. 参数有效时记录短期 intent。
-3. `history.replaceState` 删除参数。
-4. burst retry 查找“专栏”tab。
-5. 找到后点击，若已经 active 不重复点击。
+1. `space-opus-tabs.js` 检测 `/upload/opus` 页面。
+2. 记录短期 intent。
+3. burst retry 查找“专栏”tab。
+4. 找到后点击，若已经 active 不重复点击。
 
 ## 常见维护任务
 
