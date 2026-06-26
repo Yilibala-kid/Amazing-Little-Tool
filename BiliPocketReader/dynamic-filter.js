@@ -34,9 +34,10 @@
         '\u8f6c\u53d1\u4e86\u4e13\u680f',
         '\u8f6c\u53d1\u4e86'
     ];
+    const DYNAMIC_FILTER_BURST_DELAYS = [0, 80, 250, 600, 1200, 2500];
 
     let dataProvider = () => Shared.createDefaultData();
-    let onRenderControls = () => {};
+    let onRenderSettings = () => {};
     let onSyncFloatButton = () => {};
     let dynamicFilterObserver = null;
     let debounceFilterTimer = 0;
@@ -49,10 +50,7 @@
     }
 
     function getSettingValue(key, fallback = false) {
-        const data = Shared.normalizeToolboxData(dataProvider());
-        return Object.prototype.hasOwnProperty.call(data.settings, key)
-            ? data.settings[key]
-            : fallback;
+        return Shared.getSettingValue(dataProvider(), key, fallback);
     }
 
     function isSpaceDynamicPage(url = window.location.href) {
@@ -118,6 +116,7 @@
         if (typeof state.text === 'string') {
             keywordFilterText = state.text;
         }
+        onRenderSettings();
         onSyncFloatButton();
         scheduleDynamicFilterApply(0);
     }
@@ -138,8 +137,6 @@
     }
 
     function applyDynamicFilter() {
-        onRenderControls();
-
         const dynamicPage = isSpaceDynamicPage();
         const shouldHideForward = dynamicPage
             && Boolean(getSettingValue(TOOLBOX_SETTINGS.hideForwardDynamics, false));
@@ -187,7 +184,7 @@
 
     function scheduleDynamicFilterBurst() {
         clearDynamicFilterBurstTimers();
-        [0, 80, 250, 600, 1200, 2500].forEach(delay => {
+        DYNAMIC_FILTER_BURST_DELAYS.forEach(delay => {
             const timer = window.setTimeout(() => {
                 dynamicFilterBurstTimers = dynamicFilterBurstTimers.filter(item => item !== timer);
                 runDynamicFilterNow();
@@ -197,31 +194,26 @@
     }
 
     function syncDynamicFilter() {
-        onRenderControls();
+        onRenderSettings();
         onSyncFloatButton();
         scheduleDynamicFilterBurst();
     }
 
     function initDynamicFilter(options = {}) {
         setDataProvider(options.getData);
-        onRenderControls = options.renderControls || onRenderControls;
+        onRenderSettings = options.renderSettings || onRenderSettings;
         onSyncFloatButton = options.syncFloatButton || onSyncFloatButton;
 
         if (!dynamicFilterObserver && document.body) {
             dynamicFilterObserver = new MutationObserver((mutations) => {
                 if (mutations.some(mutation => mutation.addedNodes.length
-                    || mutation.removedNodes.length
-                    || mutation.type === 'attributes'
-                    || mutation.type === 'characterData')) {
+                    || mutation.removedNodes.length)) {
                     scheduleDynamicFilterApply();
                 }
             });
             dynamicFilterObserver.observe(document.body, {
                 childList: true,
-                subtree: true,
-                attributes: true,
-                attributeFilter: ['class', 'data-type', 'data-dyn-type'],
-                characterData: true
+                subtree: true
             });
         }
 
@@ -236,6 +228,8 @@
         debounceFilterTimer = 0;
         keywordFilterEnabled = false;
         keywordFilterText = '';
+        onRenderSettings = () => {};
+        onSyncFloatButton = () => {};
         setDynamicFilterActive(false);
         clearDynamicFilterCardClasses();
     }

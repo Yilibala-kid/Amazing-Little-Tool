@@ -9,9 +9,9 @@
     const DEFAULT_ANIMATION_MODE = 'smooth';
     const ANIMATION_MODES = ['none', 'smooth', 'fade'];
     const ANIMATION_BUTTON_MAP = {
-        none: ['\u65e0', '\u7ffb\u9875\u52a8\u753b\uff1a\u5173\u95ed', '#333'],
-        smooth: ['\u5e73\u6ed1', '\u7ffb\u9875\u52a8\u753b\uff1a\u6de1\u5165 + \u5e73\u79fb + \u7ec6\u5fae\u7f29\u653e', '#4b5563'],
-        fade: ['\u6de1\u5165', '\u7ffb\u9875\u52a8\u753b\uff1a\u6de1\u5165\u6de1\u51fa', '#4b5563']
+        none: ['\u65e0', '\u7ffb\u9875\u52a8\u753b\uff1a\u5173\u95ed'],
+        smooth: ['\u5e73\u6ed1', '\u7ffb\u9875\u52a8\u753b\uff1a\u6de1\u5165 + \u5e73\u79fb + \u7ec6\u5fae\u7f29\u653e'],
+        fade: ['\u6de1\u5165', '\u7ffb\u9875\u52a8\u753b\uff1a\u6de1\u5165\u6de1\u51fa']
     };
 
     function normalizeMode(animationMode) {
@@ -25,9 +25,9 @@
 
     function syncAnimationButtonState(animationBtn, animationMode) {
         if (!animationBtn) return;
-        const [text, title, background] = ANIMATION_BUTTON_MAP[normalizeMode(animationMode)];
+        const [text, title] = ANIMATION_BUTTON_MAP[normalizeMode(animationMode)];
         Object.assign(animationBtn, { innerText: text, title });
-        animationBtn.style.background = background;
+        animationBtn.style.background = '';
     }
 
     function resolveRenderMode(animate, hasExistingImage, animationMode) {
@@ -102,16 +102,17 @@
 
     function resetAnimatedContainer(imgContainer, animationMode, transitionDirection, applyTransform, getTransform, getShiftedTransformFn) {
         const mode = normalizeMode(animationMode);
-        imgContainer.innerHTML = '';
         imgContainer.style.transition = 'none';
         applyTransform();
         if (mode === 'smooth') {
+            imgContainer.innerHTML = '';
             Object.assign(imgContainer.style, {
                 transform: withSubtleScale(getShiftedTransform(getShiftedTransformFn, getTransform, -transitionDirection * FADE_SHIFT_DISTANCE)),
                 opacity: '0',
                 filter: 'none'
             });
         } else if (mode === 'fade') {
+            imgContainer.innerHTML = '';
             Object.assign(imgContainer.style, { opacity: '0', filter: 'none' });
         } else {
             Object.assign(imgContainer.style, { opacity: '1', filter: 'none' });

@@ -3,15 +3,14 @@
     'use strict';
 
     if (!window.Shared) throw new Error('BilibiliToolbox: shared.js not loaded');
-    if (!window.BilibiliToolbox?.dynamicControlsUi) throw new Error('BilibiliToolbox: dynamic-controls-ui.js not loaded');
+    if (!window.BilibiliToolbox?.settingsPopoverUi) throw new Error('BilibiliToolbox: settings-popover-ui.js not loaded');
 
     const Shared = window.Shared;
     const Toolbox = window.BilibiliToolbox;
     const TOOLBOX_SETTINGS = Shared.TOOLBOX_SETTINGS;
-    const dynamicControlsUi = Toolbox.dynamicControlsUi;
+    const settingsPopoverUi = Toolbox.settingsPopoverUi;
 
     let dataProvider = () => Shared.createDefaultData();
-    let storage = null;
     let favoritesService = null;
     let pageInfo = null;
     let dynamicFilter = null;
@@ -27,10 +26,7 @@
     }
 
     function getSettingValue(key, fallback = false) {
-        const data = Shared.normalizeToolboxData(dataProvider());
-        return Object.prototype.hasOwnProperty.call(data.settings, key)
-            ? data.settings[key]
-            : fallback;
+        return Shared.getSettingValue(dataProvider(), key, fallback);
     }
 
     function hidePanel(id) {
@@ -102,7 +98,7 @@
         clearHideTimer('videoButton');
         hideTimers.videoButton = setTimeout(() => {
             hideTimers.videoButton = 0;
-            if (!isHoveringFavoritesArea() && !isPanelVisible('bilibili-fav-panel') && !isPanelVisible('bilibili-fav-controls-panel')) {
+            if (!isHoveringFavoritesArea() && !isPanelVisible('bilibili-fav-panel') && !isPanelVisible('bilibili-toolbox-settings-panel')) {
                 setVideoFavoriteButtonVisible(false);
             }
         }, 220);
@@ -132,12 +128,12 @@
         scheduleHideFavoritesPanel();
     }
 
-    function openDynamicControls() {
+    function openToolboxSettings() {
         resetHoverState();
         clearHideTimer('panel');
         setVideoFavoriteButtonVisible(true);
         hidePanel('bilibili-fav-panel');
-        dynamicControlsUi.toggle();
+        settingsPopoverUi.toggle();
         scheduleHideVideoFavoriteButton();
     }
 
@@ -162,8 +158,8 @@
         btn.id = 'bilibili-fav-float-btn';
         btn.innerHTML = '&#11088;';
         btn.title = useHoverInteractions
-            ? '\u60ac\u505c\u67e5\u770b\u6536\u85cf\uff0c\u53f3\u952e\u6253\u5f00\u52a8\u6001\u8fc7\u6ee4'
-            : '\u70b9\u51fb\u6253\u5f00\u6536\u85cf\uff0c\u957f\u6309\u6253\u5f00\u52a8\u6001\u63a7\u5236';
+            ? '\u60ac\u505c\u67e5\u770b\u6536\u85cf\uff0c\u53f3\u952e\u6253\u5f00\u8bbe\u7f6e'
+            : '\u70b9\u51fb\u6253\u5f00\u6536\u85cf\uff0c\u957f\u6309\u6253\u5f00\u8bbe\u7f6e';
         if (!useHoverInteractions && isTouchDevice) btn.classList.add('bilibili-fav-touch');
         document.body.appendChild(btn);
 
@@ -182,7 +178,7 @@
                 longPressTimer = setTimeout(() => {
                     touchLongPressHandled = true;
                     hidePanel('bilibili-fav-panel');
-                    dynamicControlsUi.toggle();
+                    settingsPopoverUi.toggle();
                 }, 520);
             }, { passive: true });
             eventBag.on(btn, 'touchmove', clearLongPress, { passive: true });
@@ -213,7 +209,7 @@
                 touchLongPressHandled = false;
                 return;
             }
-            openDynamicControls();
+            openToolboxSettings();
         });
 
         syncFloatBtnHideState();
@@ -229,7 +225,7 @@
             <div class="bilibili-fav-header">
                 <span>\u6211\u7684\u6536\u85cf</span>
                 <span class="bilibili-fav-header-actions">
-                    <button class="bilibili-fav-control-btn">\u63a7\u5236</button>
+                    <button class="bilibili-fav-control-btn">\u8bbe\u7f6e</button>
                     <button class="bilibili-fav-add-btn">+ \u6dfb\u52a0\u5f53\u524d</button>
                 </span>
             </div>
@@ -259,7 +255,7 @@
         eventBag.on(panel.querySelector('.bilibili-fav-control-btn'), 'click', (event) => {
             event.preventDefault();
             event.stopPropagation();
-            openDynamicControls();
+            openToolboxSettings();
         });
         return panel;
     }
@@ -267,7 +263,7 @@
     function showFavoritesPanel() {
         const wasCreated = !document.getElementById('bilibili-fav-panel');
         const panel = createFavoritesPanel();
-        hidePanel('bilibili-fav-controls-panel');
+        hidePanel('bilibili-toolbox-settings-panel');
         renderFavoriteList();
         if (wasCreated) panel.getBoundingClientRect?.();
         panel.classList.add('show');
@@ -291,6 +287,12 @@
     function renderFavoriteList() {
         const listEl = document.querySelector('.bilibili-fav-list');
         if (!listEl) return;
+
+        const columns = getSettingValue(
+            TOOLBOX_SETTINGS.favoriteColumns,
+            Shared.DEFAULT_FAVORITE_COLUMNS
+        );
+        document.getElementById('bilibili-fav-panel')?.style.setProperty('--bilibili-fav-columns', String(columns));
 
         const favorites = dataProvider().favorites || [];
         if (favorites.length === 0) {
@@ -330,31 +332,29 @@
 
     function handleDocumentPointerDown(event) {
         const favoritesPanel = document.getElementById('bilibili-fav-panel');
-        const controlsPanel = document.getElementById('bilibili-fav-controls-panel');
+        const controlsPanel = document.getElementById('bilibili-toolbox-settings-panel');
         const button = document.getElementById('bilibili-fav-float-btn');
         const favoritesVisible = favoritesPanel?.classList.contains('show');
         const controlsVisible = controlsPanel?.classList.contains('show');
         if (!favoritesVisible && !controlsVisible) return;
         if (favoritesPanel?.contains(event.target) || controlsPanel?.contains(event.target) || button?.contains(event.target)) return;
         if (!useHoverInteractions) hidePanel('bilibili-fav-panel');
-        hidePanel('bilibili-fav-controls-panel');
+        hidePanel('bilibili-toolbox-settings-panel');
         scheduleHideVideoFavoriteButton();
     }
 
     function handleDocumentKeyDown(event) {
         if (event.key !== 'Escape') return;
-        hidePanel('bilibili-fav-controls-panel');
+        hidePanel('bilibili-toolbox-settings-panel');
         scheduleHideVideoFavoriteButton();
     }
 
     function syncFavoritesUi() {
         renderFavoriteList();
-        dynamicControlsUi.render();
         syncFloatBtnHideState();
     }
 
     function initFavoritesUi(options) {
-        storage = options.storage;
         favoritesService = options.favoritesService;
         pageInfo = options.pageInfo;
         dynamicFilter = options.dynamicFilter;
@@ -363,30 +363,11 @@
         isTouchDevice = Shared.isTouchLikeDevice();
         useHoverInteractions = supportsHoverPointer();
 
-        dynamicFilter.init({
-            getData: () => dataProvider(),
-            renderControls: () => dynamicControlsUi.render(),
-            syncFloatButton: syncFloatBtnHideState
-        });
-        dynamicControlsUi.init({
-            storage,
-            favoritesService,
-            dynamicFilter,
-            getData: () => dataProvider(),
-            showMessage,
-            renderFavoriteList,
-            syncFloatButton: syncFloatBtnHideState,
-            eventBag
-        });
         createFloatingButton();
         eventBag.on(document, 'mousedown', handleDocumentPointerDown, true);
         eventBag.on(document, 'pointerdown', handleDocumentPointerDown, true);
         eventBag.on(document, 'touchstart', handleDocumentPointerDown, true);
         eventBag.on(document, 'keydown', handleDocumentKeyDown);
-        eventBag.on(window, Toolbox.url.URL_CHANGE_EVENT, () => {
-            dynamicFilter.sync();
-            updateVideoFavoriteButtonMode();
-        });
         syncFavoritesUi();
     }
 
@@ -394,7 +375,6 @@
         if (messageTimer) clearTimeout(messageTimer);
         clearHideTimer('panel');
         clearHideTimer('videoButton');
-        dynamicControlsUi.destroy();
         if (eventBag) eventBag.cleanup();
         eventBag = null;
         resetHoverState();
@@ -408,6 +388,9 @@
         init: initFavoritesUi,
         destroy: destroyFavoritesUi,
         sync: syncFavoritesUi,
-        renderFavoriteList
+        renderFavoriteList,
+        showMessage,
+        syncFloatButton: syncFloatBtnHideState,
+        syncPageMode: updateVideoFavoriteButtonMode
     };
 })();

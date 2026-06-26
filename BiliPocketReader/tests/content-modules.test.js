@@ -22,6 +22,18 @@ class FakeClassList {
         this.values = new Set();
     }
 
+    add(...names) {
+        names.forEach(name => this.values.add(name));
+    }
+
+    remove(...names) {
+        names.forEach(name => this.values.delete(name));
+    }
+
+    contains(name) {
+        return this.values.has(name);
+    }
+
     toggle(name, force) {
         const enabled = force === undefined ? !this.values.has(name) : Boolean(force);
         if (enabled) this.values.add(name);
@@ -37,7 +49,11 @@ class FakeElement {
         this.children = [];
         this.listeners = {};
         this.selectorCache = {};
-        this.style = {};
+        this.style = {
+            setProperty(name, value) {
+                this[name] = String(value);
+            }
+        };
         this.classList = new FakeClassList();
         this.dataset = {};
         this.textContent = '';
@@ -49,6 +65,17 @@ class FakeElement {
 
     set innerHTML(value) {
         this._innerHTML = value;
+        if (String(value).includes('bilibili-fav-list')) {
+            this.selectorCache['.bilibili-fav-list'] = new FakeElement('div', this.ownerDocument);
+        }
+        if (String(value).includes('data-columns=')) {
+            this.selectorCache['.bilibili-toolbox-favorite-columns button'] =
+                [2, 3, 4, 5].map(columns => {
+                    const button = new FakeElement('button', this.ownerDocument);
+                    button.dataset.columns = String(columns);
+                    return button;
+                });
+        }
     }
 
     get innerHTML() {
@@ -74,6 +101,10 @@ class FakeElement {
         this.listeners[type].push(handler);
     }
 
+    removeEventListener(type, handler) {
+        this.listeners[type] = (this.listeners[type] || []).filter(item => item !== handler);
+    }
+
     dispatch(type, event = {}) {
         (this.listeners[type] || []).forEach(handler => handler({ target: this, ...event }));
     }
@@ -86,8 +117,32 @@ class FakeElement {
         this.focused = true;
     }
 
+    blur() {
+        this.focused = false;
+    }
+
     select() {
         this.selected = true;
+    }
+
+    contains(target) {
+        if (target === this) return true;
+        return this.children.some(child => child.contains?.(target));
+    }
+
+    setAttribute(name, value) {
+        this[name] = String(value);
+    }
+
+    getBoundingClientRect() {
+        return {};
+    }
+
+    closest(selector) {
+        if (selector === 'button[data-columns]' && this.tagName === 'button' && this.dataset.columns) {
+            return this;
+        }
+        return null;
     }
 
     querySelector(selector) {
@@ -95,6 +150,11 @@ class FakeElement {
             this.selectorCache[selector] = new FakeElement(selector, this.ownerDocument);
         }
         return this.selectorCache[selector];
+    }
+
+    querySelectorAll(selector) {
+        const cached = this.selectorCache[selector];
+        return Array.isArray(cached) ? cached : [];
     }
 }
 
@@ -116,6 +176,11 @@ function createFakeDocument() {
                 const [, childSelector] = selector.split(/\s+/, 2);
                 return childSelector ? dialog.querySelector(childSelector) : dialog;
             }
+            if (selector === '.bilibili-fav-list') {
+                for (const element of Object.values(document.elementsById)) {
+                    if (element.selectorCache[selector]) return element.selectorCache[selector];
+                }
+            }
             return null;
         },
         addEventListener(type, handler) {
@@ -134,6 +199,40 @@ function loadDynamicFilterContext() {
     const context = createBaseContext();
     runFile(context, 'shared.js');
     runFile(context, 'dynamic-filter.js');
+    return context;
+}
+
+function loadDynamicFilterObserverContext() {
+    let observedOptions = null;
+    const context = createBaseContext({
+        document: {
+            body: {},
+            documentElement: { classList: new FakeClassList() },
+            querySelectorAll() { return []; }
+        },
+        MutationObserver: class {
+            constructor(callback) {
+                this.callback = callback;
+            }
+
+            observe(target, options) {
+                observedOptions = options;
+            }
+
+            disconnect() {}
+        },
+        setTimeout() { return 1; },
+        clearTimeout() {}
+    });
+    runFile(context, 'shared.js');
+    runFile(context, 'dynamic-filter.js');
+    return { context, getObservedOptions: () => observedOptions };
+}
+
+function loadReaderPageGroupsContext() {
+    const context = createBaseContext();
+    runFile(context, 'shared.js');
+    runFile(context, 'comic-reader-page-groups.js');
     return context;
 }
 
@@ -219,6 +318,27 @@ function createFakeCard({ dataset = {}, attrs = {}, actionText = '', hasForwardC
 }
 
 {
+    const { context, getObservedOptions } = loadDynamicFilterObserverContext();
+    context.BilibiliToolbox.dynamicFilter.init();
+
+    assert.deepEqual(plain(getObservedOptions()), { childList: true, subtree: true });
+}
+
+{
+    const { Shared } = loadDynamicFilterContext();
+
+    assert.deepEqual(plain(Shared.FAVORITE_COLUMN_OPTIONS), [2, 3, 4, 5]);
+    assert.equal(Shared.DEFAULT_FAVORITE_COLUMNS, 2);
+    assert.equal(Shared.normalizeFavoriteColumns(2), 2);
+    assert.equal(Shared.normalizeFavoriteColumns('3'), 3);
+    assert.equal(Shared.normalizeFavoriteColumns(4), 4);
+    assert.equal(Shared.normalizeFavoriteColumns(5), 5);
+    assert.equal(Shared.normalizeFavoriteColumns(1), 2);
+    assert.equal(Shared.normalizeFavoriteColumns(6), 2);
+    assert.equal(Shared.normalizeFavoriteColumns('bad'), 2);
+}
+
+{
     const { BilibiliToolbox } = loadPageInfoContext('https://space.bilibili.com/41700837/upload/opus');
     assert.deepEqual(
         plain(BilibiliToolbox.pageInfo.getCurrentFavoriteData()),
@@ -288,17 +408,83 @@ function createFakeCard({ dataset = {}, attrs = {}, actionText = '', hasForwardC
     assert.equal(fallbackClicks, 0);
 }
 
-function loadDynamicControlsContext() {
+function loadSettingsPopoverContext() {
     const context = createBaseContext();
     runFile(context, 'shared.js');
     runFile(context, 'favorites-text-dialog.js');
-    runFile(context, 'dynamic-controls-ui.js');
+    runFile(context, 'settings-popover-ui.js');
     return context;
 }
 
+function loadSettingsPopoverDomContext(data) {
+    const document = createFakeDocument();
+    const context = createBaseContext({
+        document,
+        setTimeout() { return 1; },
+        clearTimeout() {}
+    });
+    runFile(context, 'shared.js');
+    runFile(context, 'favorites-text-dialog.js');
+    runFile(context, 'settings-popover-ui.js');
+    context.BilibiliToolbox.settingsPopoverUi.init({
+        storage: { async setSetting() {} },
+        favoritesService: {
+            createExportText() { return ''; },
+            normalizeImportedFavorites() { return []; },
+            async importFavorites() { return { added: 0, updated: 0, skipped: 0 }; }
+        },
+        dynamicFilter: {
+            isSpaceDynamicPage() { return true; },
+            getKeywordFilterState() {
+                return { enabled: false, text: '', hasKeyword: false, isActive: false, displayText: '' };
+            },
+            setKeywordFilterState() {}
+        },
+        getData: () => data,
+        showMessage() {},
+        eventBag: context.BilibiliToolbox.createEventBag()
+    });
+    return { context, document };
+}
+
+function loadFavoritesUiContext(data) {
+    const document = createFakeDocument();
+    const context = createBaseContext({
+        document,
+        location: { href: 'https://space.bilibili.com/123/dynamic' },
+        navigator: {},
+        matchMedia() { return { matches: true }; },
+        setTimeout() { return 1; },
+        clearTimeout() {},
+        addEventListener() {},
+        removeEventListener() {}
+    });
+    runFile(context, 'shared.js');
+    context.BilibiliToolbox.url = { URL_CHANGE_EVENT: 'bilibili-toolbox-url-change' };
+    context.BilibiliToolbox.settingsPopoverUi = {
+        init() {},
+        render() {},
+        toggle() {},
+        destroy() {}
+    };
+    runFile(context, 'favorites-ui.js');
+    context.BilibiliToolbox.favoritesUi.init({
+        storage: {},
+        favoritesService: {},
+        pageInfo: {},
+        dynamicFilter: {
+            init() {},
+            sync() {},
+            getKeywordFilterState() { return { isActive: false }; }
+        },
+        getData: () => data
+    });
+    return { context, document };
+}
+
 {
-    const { BilibiliToolbox } = loadDynamicControlsContext();
-    const controls = BilibiliToolbox.dynamicControlsUi;
+    const { BilibiliToolbox } = loadSettingsPopoverContext();
+    const controls = BilibiliToolbox.settingsPopoverUi;
     const emptyKeyword = { enabled: false, hasKeyword: false, isActive: false, displayText: '' };
     const waitingKeyword = { enabled: true, hasKeyword: false, isActive: false, displayText: '' };
     const activeKeyword = { enabled: true, hasKeyword: true, isActive: true, displayText: 'abc' };
@@ -308,6 +494,37 @@ function loadDynamicControlsContext() {
     assert.equal(controls.getStatus(true, emptyKeyword, true), '\u5df2\u9690\u85cf\u8f6c\u53d1\u52a8\u6001');
     assert.equal(controls.getStatus(false, waitingKeyword, true), '\u8bf7\u8f93\u5165\u5173\u952e\u8bcd\u540e\u5f00\u59cb\u7b5b\u9009');
     assert.equal(controls.getStatus(true, activeKeyword, true), '\u5df2\u9690\u85cf\u8f6c\u53d1\u52a8\u6001\uff1b\u4ec5\u663e\u793a\u5305\u542b\u201cabc\u201d\u7684\u52a8\u6001');
+}
+
+{
+    const data = {
+        ...loadDynamicFilterContext().Shared.createDefaultData(),
+        settings: { favoriteColumns: 4 }
+    };
+    const { document } = loadSettingsPopoverDomContext(data);
+    const panel = document.getElementById('bilibili-toolbox-settings-panel');
+    const buttons = panel.querySelectorAll('.bilibili-toolbox-favorite-columns button');
+
+    assert.equal(buttons.find(button => button.dataset.columns === '4').classList.contains('active'), true);
+    assert.equal(buttons.find(button => button.dataset.columns === '4')['aria-pressed'], 'true');
+    assert.equal(buttons.find(button => button.dataset.columns === '2').classList.contains('active'), false);
+}
+
+{
+    const data = {
+        ...loadDynamicFilterContext().Shared.createDefaultData(),
+        settings: { favoriteColumns: 3 }
+    };
+    const { context, document } = loadFavoritesUiContext(data);
+    const button = document.getElementById('bilibili-fav-float-btn');
+    button.dispatch('mouseenter');
+
+    const panel = document.getElementById('bilibili-fav-panel');
+    assert.equal(panel.style['--bilibili-fav-columns'], '3');
+
+    data.settings.favoriteColumns = 5;
+    context.BilibiliToolbox.favoritesUi.sync();
+    assert.equal(panel.style['--bilibili-fav-columns'], '5');
 }
 
 {
@@ -363,6 +580,50 @@ function loadReaderScreenshotContext() {
     assert.equal(screenshot.getBounds([]), null);
 }
 
+function loadAnimationsContext() {
+    const context = createBaseContext();
+    runFile(context, 'shared.js');
+    runFile(context, 'animations.js');
+    return context;
+}
+
+function createAnimationContainer() {
+    return {
+        children: [{}],
+        style: {},
+        get firstChild() {
+            return this.children[0] || null;
+        },
+        set innerHTML(value) {
+            this._innerHTML = value;
+            if (value === '') this.children = [];
+        },
+        get innerHTML() {
+            return this._innerHTML || '';
+        },
+        getBoundingClientRect() {
+            return {};
+        }
+    };
+}
+
+{
+    const { BilibiliToolbox } = loadAnimationsContext();
+    const animations = BilibiliToolbox.animations;
+    const noop = () => {};
+    const getTransform = () => 'scale(1) translate(0px,0px)';
+
+    const noneContainer = createAnimationContainer();
+    animations.resetImageContainer(noneContainer, 'none', 0, noop, getTransform, null);
+    assert.equal(noneContainer.children.length, 1);
+    assert.equal(noneContainer.style.opacity, '1');
+
+    const fadeContainer = createAnimationContainer();
+    animations.resetImageContainer(fadeContainer, 'fade', 0, noop, getTransform, null);
+    assert.equal(fadeContainer.children.length, 0);
+    assert.equal(fadeContainer.style.opacity, '0');
+}
+
 function loadReaderPreferencesContext() {
     const values = {};
     const storageListeners = new Set();
@@ -396,6 +657,98 @@ function loadReaderPreferencesContext() {
 }
 
 (async () => {
+    {
+        const { BilibiliToolbox } = loadReaderPageGroupsContext();
+        const pageGroups = BilibiliToolbox.readerPageGroups;
+        const tall = { naturalWidth: 800, naturalHeight: 1300 };
+        const wide = { naturalWidth: 1300, naturalHeight: 800 };
+        const imgList = ['tall-a', 'tall-b', 'wide-c'];
+        const images = {
+            'tall-a': tall,
+            'tall-b': { naturalWidth: 900, naturalHeight: 1200 },
+            'wide-c': wide
+        };
+        const loadImage = async (src) => images[src] || null;
+
+        assert.equal(pageGroups.isWideImage(wide, 0), true);
+        assert.equal(pageGroups.isWideImage(tall, 0), false);
+        assert.equal(pageGroups.isWideImage(tall, 90), true);
+        assert.equal(pageGroups.getNextIndex({ currentIndex: 0, total: 3, step: 2 }), 2);
+        assert.equal(pageGroups.getNextIndex({ currentIndex: 2, total: 3, step: 2 }), 3);
+
+        assert.deepEqual(
+            plain(await pageGroups.loadVisibleImages({
+                currentIndex: 0,
+                imgList,
+                viewMode: 'single',
+                loadImage,
+                isWideImage: pageGroups.isWideImage
+            })),
+            { images: [tall], preloadStart: 1 }
+        );
+        assert.deepEqual(
+            plain(await pageGroups.loadVisibleImages({
+                currentIndex: 0,
+                imgList,
+                viewMode: 'double',
+                loadImage,
+                isWideImage: pageGroups.isWideImage
+            })),
+            { images: [tall, images['tall-b']], preloadStart: 2 }
+        );
+        assert.deepEqual(
+            plain(await pageGroups.loadVisibleImages({
+                currentIndex: 2,
+                imgList,
+                viewMode: 'auto',
+                loadImage,
+                isWideImage: pageGroups.isWideImage
+            })),
+            { images: [wide], preloadStart: 3 }
+        );
+        assert.deepEqual(
+            plain(await pageGroups.loadVisibleImages({
+                currentIndex: 1,
+                imgList,
+                viewMode: 'auto',
+                loadImage,
+                isWideImage: pageGroups.isWideImage
+            })),
+            { images: [images['tall-b']], preloadStart: 2 }
+        );
+
+        assert.equal(await pageGroups.getPreviousIndex({
+            currentIndex: 1,
+            viewMode: 'auto',
+            loadImage: async (index) => images[imgList[index]],
+            isWideImage: pageGroups.isWideImage
+        }), 0);
+        assert.equal(await pageGroups.getPreviousIndex({
+            currentIndex: 4,
+            viewMode: 'single',
+            loadImage: async () => null,
+            isWideImage: pageGroups.isWideImage
+        }), 3);
+        assert.equal(await pageGroups.getPreviousIndex({
+            currentIndex: 4,
+            viewMode: 'double',
+            loadImage: async () => null,
+            isWideImage: pageGroups.isWideImage
+        }), 2);
+        assert.equal(await pageGroups.getPreviousIndex({
+            currentIndex: 2,
+            viewMode: 'auto',
+            loadImage: async () => wide,
+            isWideImage: pageGroups.isWideImage
+        }), 1);
+        assert.equal(await pageGroups.getPreviousIndex({
+            currentIndex: 2,
+            viewMode: 'auto',
+            loadImage: async () => tall,
+            isWideImage: pageGroups.isWideImage
+        }), 0);
+    }
+
     const { BilibiliToolbox } = loadReaderPreferencesContext();
     const preferences = BilibiliToolbox.readerPreferences;
     const storage = BilibiliToolbox.storage;

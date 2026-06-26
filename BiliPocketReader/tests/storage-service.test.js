@@ -89,6 +89,14 @@ assert.equal(Shared.getFavoriteLink({ type: 'user', uid: 'https://space.bilibili
 assert.equal(Shared.getFavoriteLink({ type: 'user', uid: '42' }), 'https://space.bilibili.com/42/dynamic');
 assert.equal(Shared.getFavoriteLink({ type: 'opus', uid: '42' }), 'https://space.bilibili.com/42/upload/opus?bilibili_toolbox_opus_tab=1');
 assert.equal(Shared.getFavoriteLink({ type: 'readlist', id: '9' }), 'https://www.bilibili.com/read/readlist/rl9');
+assert.deepEqual(
+    plain(Shared.normalizeSettings({ hideForwardDynamics: true, favoriteColumns: 5, readerPreferences: { viewMode: 'single' } })),
+    { hideForwardDynamics: true, favoriteColumns: 5, readerPreferences: { viewMode: 'single' } }
+);
+assert.deepEqual(
+    plain(Shared.normalizeSettings({ hideForwardDynamics: 'yes', favoriteColumns: 9, readerPreferences: 'bad' })),
+    plain(Shared.DEFAULT_SETTINGS)
+);
 
 (async () => {
     await storage.init();
@@ -99,7 +107,10 @@ assert.equal(Shared.getFavoriteLink({ type: 'readlist', id: '9' }), 'https://www
     assert.equal(result.updated, 0);
     assert.equal(result.skipped, 1);
     assert.deepEqual(plain(result.data.favorites), [alice, otter, column]);
-    assert.deepEqual(plain(result.data.settings), { hideForwardDynamics: true });
+    assert.deepEqual(
+        plain(result.data.settings),
+        { ...plain(Shared.DEFAULT_SETTINGS), hideForwardDynamics: true }
+    );
 
     const exportedText = favorites.createExportText(result.data);
     assert.equal(exportedText, '[<user:1><Alice><https://i.example/alice.jpg>]\n[<opus:41700837><Ottergeist><https://i.example/otter.jpg>]\n[<readlist:2><Column><https://i.example/column.jpg>]');

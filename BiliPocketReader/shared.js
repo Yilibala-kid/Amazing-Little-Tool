@@ -7,12 +7,20 @@
     const OPUS_TYPE = 'opus';
     const READLIST_TYPE = 'readlist';
     const OPUS_TAB_INTENT_PARAM = 'bilibili_toolbox_opus_tab';
+    const FAVORITE_COLUMN_OPTIONS = Object.freeze([2, 3, 4, 5]);
+    const DEFAULT_FAVORITE_COLUMNS = 2;
     const FALLBACK_IMAGE = 'https://www.bilibili.com/favicon.ico';
     const BILIBILI_SPACE_URL = 'https://space.bilibili.com/';
     const BILIBILI_READLIST_URL = 'https://www.bilibili.com/read/readlist/rl';
     const TOOLBOX_SETTINGS = Object.freeze({
         hideForwardDynamics: 'hideForwardDynamics',
-        readerPreferences: 'readerPreferences'
+        readerPreferences: 'readerPreferences',
+        favoriteColumns: 'favoriteColumns'
+    });
+    const DEFAULT_SETTINGS = Object.freeze({
+        hideForwardDynamics: false,
+        favoriteColumns: DEFAULT_FAVORITE_COLUMNS,
+        readerPreferences: {}
     });
     const UID_URL_PATTERNS = [
         [/space\.bilibili\.com\/(\d+)/, () => true],
@@ -26,7 +34,15 @@
     function createDefaultData() {
         return {
             favorites: [],
-            settings: {}
+            settings: createDefaultSettings()
+        };
+    }
+
+    function createDefaultSettings() {
+        return {
+            hideForwardDynamics: DEFAULT_SETTINGS.hideForwardDynamics,
+            favoriteColumns: DEFAULT_SETTINGS.favoriteColumns,
+            readerPreferences: { ...DEFAULT_SETTINGS.readerPreferences }
         };
     }
 
@@ -65,8 +81,31 @@
         const next = normalizeObject(data);
         return {
             favorites: normalizeFavoriteList(next.favorites),
-            settings: normalizeObject(next.settings)
+            settings: normalizeSettings(next.settings)
         };
+    }
+
+    function normalizeFavoriteColumns(value) {
+        const columns = Number(value);
+        return FAVORITE_COLUMN_OPTIONS.includes(columns) ? columns : DEFAULT_FAVORITE_COLUMNS;
+    }
+
+    function normalizeSettings(settings) {
+        const input = normalizeObject(settings);
+        return {
+            hideForwardDynamics: typeof input.hideForwardDynamics === 'boolean'
+                ? input.hideForwardDynamics
+                : DEFAULT_SETTINGS.hideForwardDynamics,
+            favoriteColumns: normalizeFavoriteColumns(input.favoriteColumns),
+            readerPreferences: normalizeObject(input.readerPreferences)
+        };
+    }
+
+    function getSettingValue(data, key, fallback = false) {
+        const settings = normalizeToolboxData(data).settings;
+        return Object.prototype.hasOwnProperty.call(settings, key)
+            ? settings[key]
+            : fallback;
     }
 
     function isReadlistFavorite(item) {
@@ -177,12 +216,19 @@
         OPUS_TYPE,
         READLIST_TYPE,
         OPUS_TAB_INTENT_PARAM,
+        FAVORITE_COLUMN_OPTIONS,
+        DEFAULT_FAVORITE_COLUMNS,
         FALLBACK_IMAGE,
         TOOLBOX_SETTINGS,
+        DEFAULT_SETTINGS,
         createDefaultData,
+        createDefaultSettings,
         normalizeFavorite,
         normalizeFavoriteList,
         normalizeToolboxData,
+        normalizeFavoriteColumns,
+        normalizeSettings,
+        getSettingValue,
         isReadlistFavorite,
         isOpusFavorite,
         getFavoriteKey,

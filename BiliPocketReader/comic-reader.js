@@ -10,7 +10,6 @@
     ];
     const MIN_SCALE = 0.5;
     const MAX_SCALE = 3;
-    const SCALE_STEP = 0.1;
     const DOUBLE_CLICK_SCALE = 2;
     const MAX_RENDER_SCALE = 2;
     const CONTROLS_HIDE_DELAY = 500;
@@ -29,6 +28,8 @@
     if (!window.BilibiliToolbox?.animations) throw new Error('BilibiliToolbox: animations.js not loaded');
     if (!window.BilibiliToolbox?.readerPreferences) throw new Error('BilibiliToolbox: reader-preferences.js not loaded');
     if (!window.BilibiliToolbox?.readerScreenshot) throw new Error('BilibiliToolbox: reader-screenshot.js not loaded');
+    if (!window.BilibiliToolbox?.readerPageGroups) throw new Error('BilibiliToolbox: comic-reader-page-groups.js not loaded');
+    if (!window.BilibiliToolbox?.readerInteractions) throw new Error('BilibiliToolbox: comic-reader-interactions.js not loaded');
 
     const Toolbox = window.BilibiliToolbox;
     const Shared = window.Shared;
@@ -36,9 +37,8 @@
     const comicImages = Toolbox.comicImages;
     const readerPreferences = Toolbox.readerPreferences;
     const readerScreenshot = Toolbox.readerScreenshot;
-    const VIEW_MODES = readerPreferences.VIEW_MODES;
-    const IMAGE_RENDER_MODES = readerPreferences.IMAGE_RENDER_MODES;
-    const BACKGROUND_MODES = readerPreferences.BACKGROUND_MODES;
+    const readerPageGroups = Toolbox.readerPageGroups;
+    const readerInteractions = Toolbox.readerInteractions;
     const READER_BACKGROUND_COLORS = Object.freeze({
         black: '#0a0a0a',
         darkGray: '#1f1f1f',
@@ -381,163 +381,7 @@
 
         // 4. 缁戝畾浜嬩欢
         bindEvents() {
-            const on = (...args) => this.eventBag.on(...args);
-            const stop = (handler) => (e) => {
-                e.stopPropagation();
-                handler();
-            };
-
-            // Controls visibility 鈥?only the panels trigger show/hide, images don't
-            on(this.el.controls, 'mouseenter', () => this.showControls());
-            on(this.el.settingsControls, 'mouseenter', () => this.showControls());
-            on(this.el.settingsPanel, 'mouseenter', () => this.showControls());
-            on(this.el.controls, 'mouseleave', () => this.scheduleHideControls());
-            on(this.el.settingsControls, 'mouseleave', () => this.scheduleHideControls());
-            on(this.el.settingsPanel, 'mouseleave', () => this.scheduleHideControls());
-            on(this.el.reader, 'mouseleave', () => this.scheduleHideControls());
-
-            this.el.leftBtn.onclick = (e) => this.turnPage(e, this.isRightToLeft ? this.lastStep : -this.lastStep);
-            this.el.rightBtn.onclick = (e) => this.turnPage(e, this.isRightToLeft ? -this.lastStep : this.lastStep);
-
-            this.el.offsetIncBtn.onclick = (e) => this.offsetPage(e, this.isRightToLeft ? 1 : -1);
-            this.el.offsetDecBtn.onclick = (e) => this.offsetPage(e, this.isRightToLeft ? -1 : 1);
-
-            this.el.directionBtn.onclick = stop(() => {
-                this.isRightToLeft = !this.isRightToLeft;
-                this.updateDirection();
-                this.syncDirectionButton();
-                this.savePreferences();
-            });
-
-            this.el.animationBtn.onclick = stop(() => {
-                this.animationMode = animations.getNextAnimationMode(this.animationMode);
-                animations.syncAnimationButton(this.el.animationBtn, this.animationMode);
-                this.savePreferences();
-            });
-
-            this.el.viewModeBtn.onclick = stop(() => {
-                const currentIdx = VIEW_MODES.indexOf(this.viewMode);
-                this.viewMode = VIEW_MODES[(currentIdx + 1) % VIEW_MODES.length];
-                this.syncViewModeButton();
-                this.savePreferences();
-                this.render(false);
-            });
-
-            this.el.imageRenderBtn.onclick = stop(() => {
-                const currentIdx = IMAGE_RENDER_MODES.indexOf(this.imageRenderMode);
-                this.imageRenderMode = IMAGE_RENDER_MODES[(currentIdx + 1) % IMAGE_RENDER_MODES.length];
-                this.syncImageRenderButton();
-                this.savePreferences();
-                this.applyImageRenderMode();
-                this.showReaderMessage(this.imageRenderMode === 'sharp' ? '\u539f\u56fe\u6a21\u5f0f' : '\u6d41\u7545\u6a21\u5f0f');
-            });
-
-            this.el.backgroundBtn.onclick = stop(() => {
-                const currentIdx = BACKGROUND_MODES.indexOf(this.backgroundMode);
-                this.backgroundMode = BACKGROUND_MODES[(currentIdx + 1) % BACKGROUND_MODES.length];
-                this.syncBackgroundButton();
-                this.applyReaderBackground();
-                this.savePreferences();
-                this.showReaderMessage(`\u80cc\u666f\uff1a${this.getReaderBackgroundLabel()}`);
-            });
-
-            this.el.tapPageBtn.onclick = stop(() => {
-                this.tapPageNavigation = !this.tapPageNavigation;
-                this.syncTapPageButton();
-                this.savePreferences();
-                this.showReaderMessage(this.tapPageNavigation ? '\u70b9\u51fb\u7ffb\u9875\u5df2\u5f00\u542f' : '\u70b9\u51fb\u7ffb\u9875\u5df2\u5173\u95ed');
-            });
-
-            this.el.settingsBtn.onclick = stop(() => this.toggleSettingsPanel());
-
-            this.el.resetViewBtn.onclick = stop(() => this.resetTransform());
-            this.el.screenshotBtn.onclick = stop(() => this.startScreenshotSelection());
-
-            this.el.fullScreenBtn.onclick = stop(() => this.toggleFullscreen());
-
-            this.el.rotateBtn.onclick = stop(() => {
-                this.rotation = (this.rotation + 90) % 360;
-                this.syncRotateButton();
-                this.render(false);
-            });
-
-            this.el.closeBtn.onclick = () => this.close();
-
-            // 椤电爜璺宠浆
-            on(this.el.pageInfo, 'click', (e) => {
-                e.stopPropagation();
-                this.showPageInput();
-            });
-            on(this.el.pageInput, 'focus', () => this.el.pageInput.select());
-            on(this.el.pageInput, 'keydown', (e) => {
-                e.stopPropagation();
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    this.jumpToPageFromInput();
-                    this.el.pageInput.blur();
-                } else if (e.key === 'Escape') {
-                    e.preventDefault();
-                    this.hidePageInput();
-                    this.el.pageInput.blur();
-                }
-            });
-            on(this.el.pageInput, 'blur', () => this.jumpToPageFromInput());
-            this.el.selectionCancelBtn.onclick = () => this.cancelScreenshotSelection(true);
-            this.el.selectionFullBtn.onclick = () => { void this.saveFullScreenshot(); };
-            this.el.selectionSaveBtn.onclick = () => { void this.saveSelectionScreenshot(); };
-            on(this.el.selectionOverlay, 'pointerdown', this.handleSelectionPointerDown);
-            on(this.el.selectionOverlay, 'pointermove', this.handleSelectionPointerMove);
-            on(this.el.selectionOverlay, 'pointerup', this.handleSelectionPointerUp);
-            on(this.el.selectionOverlay, 'pointercancel', this.handleSelectionPointerUp);
-            on(this.el.reader, 'pointerdown', this.handleSettingsOutsidePointerDown, true);
-
-            // 图片容器事件（翻页与拖拽起冲突）
-            on(this.el.imgContainer, 'wheel', (e) => {
-                e.preventDefault();
-                this.animateTransform();
-                this.zoomAt(e.clientX, e.clientY, this.scale + (e.deltaY > 0 ? -SCALE_STEP : SCALE_STEP));
-            }, { passive: false });
-
-            on(this.el.imgContainer, 'dblclick', (e) => {
-                e.preventDefault();
-                this.animateTransform(220);
-                if (Math.abs(this.scale - 1) < 0.05) {
-                    this.zoomAt(e.clientX, e.clientY, this.getDoubleClickScale());
-                    return;
-                }
-                this.resetScaleAndPan();
-            });
-
-            on(this.el.imgContainer, 'mousedown', (e) => {
-                if (e.button !== 0) return;
-                e.preventDefault();
-                this.setTransformTransition('none');
-                this.isDragging = true;
-                this.initX = this.translateX;
-                this.initY = this.translateY;
-                this.startX = e.clientX;
-                this.startY = e.clientY;
-                this.el.imgContainer.classList.add('is-grabbing');
-            });
-
-            on(this.el.imgContainer, 'mouseleave', () => {
-                this.isDragging = false;
-                this.el.imgContainer.classList.remove('is-grabbing');
-            });
-
-            // 注册全局事件（需要在退出时清理）
-            on(document, 'mousemove', this.handleMouseMove);
-            on(document, 'mouseup', this.handleMouseUp);
-            on(document, 'fullscreenchange', this.handleFullscreenChange);
-            on(window, 'keydown', this.handleKeyDown);
-            on(window, 'resize', this.handleResize);
-
-            // 触摸滑动事件（使用已经绑定的函数引用，便于后续解绑）
-            on(this.el.reader, 'touchstart', this.boundHandleTouchStart, { passive: false });
-            on(this.el.reader, 'touchmove', this.boundHandleTouchMove, { passive: false });
-            on(this.el.reader, 'touchend', this.boundHandleTouchEnd, { passive: false });
-            on(this.el.reader, 'touchcancel', this.boundHandleTouchEnd, { passive: false });
-            this.showControls();
+            readerInteractions.bind(this);
         }
 
         syncDirectionButton() {
@@ -562,14 +406,14 @@
             this.el.imageRenderBtn.title = sharp
                 ? '\u663e\u793a\u6a21\u5f0f\uff1a\u539f\u56fe\uff08\u7ec6\u8282\u66f4\u597d\uff0c\u53ef\u80fd\u6709\u6469\u5c14\u7eb9\uff09'
                 : '\u663e\u793a\u6a21\u5f0f\uff1a\u6d41\u7545\uff08\u6469\u5c14\u7eb9\u66f4\u5c11\uff0c\u653e\u5927\u540e\u7ec6\u8282\u7a0d\u8f6f\uff09';
-            this.el.imageRenderBtn.classList.toggle('active', sharp);
+            this.el.imageRenderBtn.classList.remove('active');
         }
 
         syncBackgroundButton() {
             const label = this.getReaderBackgroundLabel();
             this.el.backgroundBtn.innerText = label;
             this.el.backgroundBtn.title = `\u80cc\u666f\u989c\u8272\uff1a${label}`;
-            this.el.backgroundBtn.classList.toggle('active', this.backgroundMode !== 'black');
+            this.el.backgroundBtn.classList.remove('active');
         }
 
         syncTapPageButton() {
@@ -1422,6 +1266,30 @@
         async loadImages(renderIndex, animationMode = 'none', transitionDirection = 0) {
             if (renderIndex !== this.currentIndex) return;
 
+            this.resetPageInteractionState();
+
+            animations.resetImageContainer(
+                this.el.imgContainer,
+                animationMode,
+                transitionDirection,
+                () => this.applyTransform(),
+                () => this.getTransformStyle(),
+                (screenTranslateX) => this.getTransformStyle(screenTranslateX)
+            );
+
+            const result = await readerPageGroups.loadVisibleImages({
+                currentIndex: this.currentIndex,
+                imgList: this.imgList,
+                viewMode: this.viewMode,
+                loadImage: (src) => this.loadImage(src),
+                isWideImage: (img) => this.isWideImage(img)
+            });
+            if (!result || renderIndex !== this.currentIndex) return;
+
+            this.commitImages(result.images, animationMode, result.preloadStart, transitionDirection);
+        }
+
+        resetPageInteractionState() {
             this.scale = 1;
             this.fitScale = 1;
             this.contentNaturalWidth = 0;
@@ -1433,33 +1301,6 @@
             this.touchEdgePageStep = 0;
             this.lastTapTime = 0;
             this.clearPendingTap();
-
-            animations.resetImageContainer(
-                this.el.imgContainer,
-                animationMode,
-                transitionDirection,
-                () => this.applyTransform(),
-                () => this.getTransformStyle(),
-                (screenTranslateX) => this.getTransformStyle(screenTranslateX)
-            );
-
-            const img1 = await this.loadImage(this.imgList[this.currentIndex]);
-            if (!img1 || renderIndex !== this.currentIndex) return;
-
-            const canUseDoubleMode = this.viewMode === 'double' || (this.viewMode === 'auto' && !this.isWideImage(img1));
-            if (!canUseDoubleMode || this.currentIndex + 1 >= this.imgList.length) {
-                this.commitImages([img1], animationMode, this.currentIndex + 1, transitionDirection);
-                return;
-            }
-
-            const img2 = await this.loadImage(this.imgList[this.currentIndex + 1]);
-            if (!img2 || renderIndex !== this.currentIndex) {
-                this.commitImages([img1], animationMode, this.currentIndex + 1, transitionDirection);
-                return;
-            }
-
-            const images = this.viewMode === 'auto' && this.isWideImage(img2) ? [img1] : [img1, img2];
-            this.commitImages(images, animationMode, this.currentIndex + 2, transitionDirection);
         }
 
         loadImage(src) {
@@ -1472,10 +1313,7 @@
         }
 
         isWideImage(img) {
-            const isRotated90or270 = this.rotation === 90 || this.rotation === 270;
-            const width = isRotated90or270 ? img.naturalHeight : img.naturalWidth;
-            const height = isRotated90or270 ? img.naturalWidth : img.naturalHeight;
-            return width > height * 1.2;
+            return readerPageGroups.isWideImage(img, this.rotation);
         }
 
         commitImages(images, animationMode, preloadStart, transitionDirection = 0) {
@@ -1602,20 +1440,20 @@
         }
 
         getNextPageGroupIndex(step) {
-            if (this.canGoForward(step)) return this.currentIndex + step;
-            const fallbackStep = Math.sign(step);
-            return this.currentIndex + fallbackStep;
+            return readerPageGroups.getNextIndex({
+                currentIndex: this.currentIndex,
+                total: this.imgList.length,
+                step
+            });
         }
 
         async getPreviousPageGroupIndex() {
-            const prevIndex = this.currentIndex - 1;
-            if (prevIndex <= 0) return Math.max(0, prevIndex);
-            if (this.viewMode === 'single') return prevIndex;
-            if (this.viewMode === 'double') return Math.max(0, this.currentIndex - 2);
-
-            const prevImg = await this.loadImage(this.imgList[prevIndex]);
-            if (prevImg && this.isWideImage(prevImg)) return prevIndex;
-            return Math.max(0, this.currentIndex - 2);
+            return readerPageGroups.getPreviousIndex({
+                currentIndex: this.currentIndex,
+                viewMode: this.viewMode,
+                loadImage: (index) => this.loadImage(this.imgList[index]),
+                isWideImage: (img) => this.isWideImage(img)
+            });
         }
 
         canTurnPage(direction) {

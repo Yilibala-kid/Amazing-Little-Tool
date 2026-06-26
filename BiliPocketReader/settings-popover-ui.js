@@ -1,4 +1,4 @@
-// Bilibili Toolbox - dynamic filtering controls UI
+// Bilibili Toolbox - settings popover UI
 (function() {
     'use strict';
 
@@ -15,14 +15,9 @@
     let dynamicFilter = null;
     let eventBag = null;
     let showMessage = () => {};
-    let renderFavoriteList = () => {};
-    let syncFloatButton = () => {};
 
     function getSettingValue(key, fallback = false) {
-        const data = Shared.normalizeToolboxData(dataProvider());
-        return Object.prototype.hasOwnProperty.call(data.settings, key)
-            ? data.settings[key]
-            : fallback;
+        return Shared.getSettingValue(dataProvider(), key, fallback);
     }
 
     function hidePanel(id) {
@@ -59,7 +54,6 @@
 
                 try {
                     const result = await favoritesService.importFavorites(imported);
-                    renderFavoriteList();
                     close();
                     showMessage(`\u5bfc\u5165 ${result.added} \u6761\uff0c\u66f4\u65b0 ${result.updated} \u6761\uff0c\u8df3\u8fc7 ${result.skipped} \u6761`);
                 } catch (_) {
@@ -79,36 +73,51 @@
         return states.length ? states.join('\uff1b') : '\u5df2\u663e\u793a\u5168\u90e8\u52a8\u6001';
     }
 
-    function createDynamicControlsPanel() {
-        if (document.getElementById('bilibili-fav-controls-panel')) return;
+    function createSettingsPopoverPanel() {
+        if (document.getElementById('bilibili-toolbox-settings-panel')) return;
 
         const panel = document.createElement('div');
-        panel.id = 'bilibili-fav-controls-panel';
+        panel.id = 'bilibili-toolbox-settings-panel';
         panel.innerHTML = `
-            <div class="bilibili-fav-header"><span>\u52a8\u6001\u63a7\u5236</span></div>
+            <div class="bilibili-fav-header"><span>\u5de5\u5177\u7bb1\u8bbe\u7f6e</span></div>
             <div class="bilibili-toolbox-control-content">
-                <label class="bilibili-toolbox-control-row">
-                    <span class="bilibili-toolbox-control-copy">
-                        <span class="bilibili-toolbox-control-title">\u9690\u85cf\u8f6c\u53d1\u52a8\u6001</span>
-                        <span class="bilibili-toolbox-control-desc">\u4ec5\u5728\u7528\u6237\u52a8\u6001\u9875\u751f\u6548</span>
-                    </span>
-                    <span class="bilibili-toolbox-switch">
-                        <input type="checkbox" class="bilibili-toolbox-forward-toggle">
-                        <span class="bilibili-toolbox-switch-slider"></span>
-                    </span>
-                </label>
-                <label class="bilibili-toolbox-control-row">
-                    <span class="bilibili-toolbox-control-copy">
-                        <span class="bilibili-toolbox-control-title">\u5173\u952e\u8bcd\u7b5b\u9009\u52a8\u6001</span>
-                        <span class="bilibili-toolbox-control-desc">\u4ec5\u663e\u793a\u5305\u542b\u8f93\u5165\u5185\u5bb9\u7684\u52a8\u6001</span>
-                    </span>
-                    <span class="bilibili-toolbox-switch">
-                        <input type="checkbox" class="bilibili-toolbox-keyword-toggle">
-                        <span class="bilibili-toolbox-switch-slider"></span>
-                    </span>
-                </label>
-                <input type="text" class="bilibili-toolbox-keyword-input" placeholder="\u8f93\u5165\u8981\u5305\u542b\u7684\u5185\u5bb9" autocomplete="off" spellcheck="false">
-                <div class="bilibili-toolbox-control-status"></div>
+                <section class="bilibili-toolbox-control-section">
+                    <div class="bilibili-toolbox-section-title">\u6536\u85cf\u663e\u793a</div>
+                    <div class="bilibili-toolbox-control-row bilibili-toolbox-control-row-stack">
+                        <span class="bilibili-toolbox-control-copy">
+                            <span class="bilibili-toolbox-control-title">\u6bcf\u884c\u6536\u85cf\u4e2a\u6570</span>
+                            <span class="bilibili-toolbox-control-desc">\u8c03\u6574\u6536\u85cf\u9762\u677f\u7684\u6392\u5217\u5bc6\u5ea6</span>
+                        </span>
+                        <span class="bilibili-toolbox-segmented bilibili-toolbox-favorite-columns" role="group" aria-label="\u6bcf\u884c\u6536\u85cf\u4e2a\u6570">
+                            ${Shared.FAVORITE_COLUMN_OPTIONS.map(columns => `<button type="button" data-columns="${columns}">${columns}</button>`).join('')}
+                        </span>
+                    </div>
+                </section>
+                <section class="bilibili-toolbox-control-section">
+                    <div class="bilibili-toolbox-section-title">\u52a8\u6001\u8fc7\u6ee4</div>
+                    <label class="bilibili-toolbox-control-row">
+                        <span class="bilibili-toolbox-control-copy">
+                            <span class="bilibili-toolbox-control-title">\u9690\u85cf\u8f6c\u53d1\u52a8\u6001</span>
+                            <span class="bilibili-toolbox-control-desc">\u4ec5\u5728\u7528\u6237\u52a8\u6001\u9875\u751f\u6548</span>
+                        </span>
+                        <span class="bilibili-toolbox-switch">
+                            <input type="checkbox" class="bilibili-toolbox-forward-toggle">
+                            <span class="bilibili-toolbox-switch-slider"></span>
+                        </span>
+                    </label>
+                    <label class="bilibili-toolbox-control-row">
+                        <span class="bilibili-toolbox-control-copy">
+                            <span class="bilibili-toolbox-control-title">\u5173\u952e\u8bcd\u7b5b\u9009\u52a8\u6001</span>
+                            <span class="bilibili-toolbox-control-desc">\u4ec5\u663e\u793a\u5305\u542b\u8f93\u5165\u5185\u5bb9\u7684\u52a8\u6001</span>
+                        </span>
+                        <span class="bilibili-toolbox-switch">
+                            <input type="checkbox" class="bilibili-toolbox-keyword-toggle">
+                            <span class="bilibili-toolbox-switch-slider"></span>
+                        </span>
+                    </label>
+                    <input type="text" class="bilibili-toolbox-keyword-input" placeholder="\u8f93\u5165\u8981\u5305\u542b\u7684\u5185\u5bb9" autocomplete="off" spellcheck="false">
+                    <div class="bilibili-toolbox-control-status"></div>
+                </section>
             </div>
             <div class="bilibili-toolbox-control-actions">
                 <button class="bilibili-toolbox-export-btn">\u5bfc\u51fa\u6536\u85cf</button>
@@ -119,13 +128,11 @@
 
         eventBag.on(panel.querySelector('.bilibili-toolbox-forward-toggle'), 'change', async (event) => {
             await storage.setSetting(TOOLBOX_SETTINGS.hideForwardDynamics, Boolean(event.target.checked));
-            syncFloatButton();
-            dynamicFilter.sync();
         });
         eventBag.on(panel.querySelector('.bilibili-toolbox-keyword-toggle'), 'change', (event) => {
             const enabled = Boolean(event.target.checked);
             dynamicFilter.setKeywordFilterState({ enabled });
-            renderDynamicControlsPanel();
+            renderSettingsPopoverPanel();
             if (enabled) {
                 window.setTimeout(() => panel.querySelector('.bilibili-toolbox-keyword-input')?.focus(), 0);
             }
@@ -133,75 +140,85 @@
         eventBag.on(panel.querySelector('.bilibili-toolbox-keyword-input'), 'input', (event) => {
             dynamicFilter.setKeywordFilterState({ text: event.target.value });
         });
+        eventBag.on(panel.querySelector('.bilibili-toolbox-favorite-columns'), 'click', async (event) => {
+            const button = event.target.closest('button[data-columns]');
+            if (!button) return;
+            const columns = Shared.normalizeFavoriteColumns(button.dataset.columns);
+            await storage.setSetting(TOOLBOX_SETTINGS.favoriteColumns, columns);
+        });
         eventBag.on(panel.querySelector('.bilibili-toolbox-export-btn'), 'click', exportFavorites);
         eventBag.on(panel.querySelector('.bilibili-toolbox-import-btn'), 'click', importFavorites);
 
-        renderDynamicControlsPanel();
+        renderSettingsPopoverPanel();
     }
 
-    function isDynamicControlsPanelVisible() {
-        return document.getElementById('bilibili-fav-controls-panel')?.classList.contains('show');
+    function isSettingsPopoverPanelVisible() {
+        return document.getElementById('bilibili-toolbox-settings-panel')?.classList.contains('show');
     }
 
-    function renderDynamicControlsPanel() {
-        const panel = document.getElementById('bilibili-fav-controls-panel');
+    function renderSettingsPopoverPanel() {
+        const panel = document.getElementById('bilibili-toolbox-settings-panel');
         if (!panel || !dynamicFilter) return;
 
         const forwardEnabled = Boolean(getSettingValue(TOOLBOX_SETTINGS.hideForwardDynamics));
+        const favoriteColumns = getSettingValue(
+            TOOLBOX_SETTINGS.favoriteColumns,
+            Shared.DEFAULT_FAVORITE_COLUMNS
+        );
         const keywordState = dynamicFilter.getKeywordFilterState();
         const keywordInput = panel.querySelector('.bilibili-toolbox-keyword-input');
         panel.querySelector('.bilibili-toolbox-forward-toggle').checked = forwardEnabled;
         panel.querySelector('.bilibili-toolbox-keyword-toggle').checked = keywordState.enabled;
+        panel.querySelectorAll('.bilibili-toolbox-favorite-columns button').forEach(button => {
+            const active = Number(button.dataset.columns) === favoriteColumns;
+            button.classList.toggle('active', active);
+            button.setAttribute('aria-pressed', String(active));
+        });
         if (keywordInput.value !== keywordState.text) keywordInput.value = keywordState.text;
         panel.querySelector('.bilibili-toolbox-control-status').textContent = getDynamicControlsStatus(forwardEnabled, keywordState);
-        syncFloatButton();
     }
 
-    function showDynamicControlsPanel() {
-        createDynamicControlsPanel();
+    function showSettingsPopoverPanel() {
+        createSettingsPopoverPanel();
         hidePanel('bilibili-fav-panel');
-        document.getElementById('bilibili-fav-controls-panel')?.classList.add('show');
-        renderDynamicControlsPanel();
+        document.getElementById('bilibili-toolbox-settings-panel')?.classList.add('show');
+        renderSettingsPopoverPanel();
     }
 
-    function toggleDynamicControlsPanel() {
-        if (isDynamicControlsPanelVisible()) {
-            hidePanel('bilibili-fav-controls-panel');
+    function toggleSettingsPopoverPanel() {
+        if (isSettingsPopoverPanelVisible()) {
+            hidePanel('bilibili-toolbox-settings-panel');
             return;
         }
-        showDynamicControlsPanel();
+        showSettingsPopoverPanel();
     }
 
-    function initDynamicControlsUi(options) {
+    function initSettingsPopoverUi(options) {
         storage = options.storage;
         favoritesService = options.favoritesService;
         dynamicFilter = options.dynamicFilter;
         eventBag = options.eventBag;
         showMessage = options.showMessage || showMessage;
-        renderFavoriteList = options.renderFavoriteList || renderFavoriteList;
-        syncFloatButton = options.syncFloatButton || syncFloatButton;
         dataProvider = typeof options.getData === 'function' ? options.getData : dataProvider;
-        createDynamicControlsPanel();
+        createSettingsPopoverPanel();
     }
 
-    function destroyDynamicControlsUi() {
+    function destroySettingsPopoverUi() {
         Toolbox.favoritesTextDialog.close();
-        document.getElementById('bilibili-fav-controls-panel')?.remove();
+        document.getElementById('bilibili-toolbox-settings-panel')?.remove();
         storage = null;
         favoritesService = null;
         dynamicFilter = null;
         eventBag = null;
         showMessage = () => {};
-        renderFavoriteList = () => {};
-        syncFloatButton = () => {};
         dataProvider = () => Shared.createDefaultData();
     }
 
-    Toolbox.dynamicControlsUi = {
-        init: initDynamicControlsUi,
-        render: renderDynamicControlsPanel,
-        toggle: toggleDynamicControlsPanel,
-        destroy: destroyDynamicControlsUi,
+    Toolbox.settingsPopoverUi = {
+        init: initSettingsPopoverUi,
+        render: renderSettingsPopoverPanel,
+        toggle: toggleSettingsPopoverPanel,
+        destroy: destroySettingsPopoverUi,
         getStatus: getDynamicControlsStatus
     };
 })();

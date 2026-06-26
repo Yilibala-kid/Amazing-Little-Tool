@@ -12,12 +12,14 @@
     if (!window.BilibiliToolbox?.url) throw new Error('BilibiliToolbox: content-url.js not loaded');
     if (!window.BilibiliToolbox?.dynamicFilter) throw new Error('BilibiliToolbox: dynamic-filter.js not loaded');
     if (!window.BilibiliToolbox?.spaceOpusTabs) throw new Error('BilibiliToolbox: space-opus-tabs.js not loaded');
+    if (!window.BilibiliToolbox?.settingsPopoverUi) throw new Error('BilibiliToolbox: settings-popover-ui.js not loaded');
     if (!window.BilibiliToolbox?.favoritesUi) throw new Error('BilibiliToolbox: favorites-ui.js not loaded');
 
     const Toolbox = window.BilibiliToolbox;
     const storage = Toolbox.storage;
     let toolboxData = window.Shared.createDefaultData();
     let unsubscribeStorage = null;
+    let settingsEventBag = null;
 
     function syncAll(data) {
         toolboxData = window.Shared.normalizeToolboxData(data);
@@ -39,13 +41,27 @@
 
         Toolbox.url.init();
         Toolbox.spaceOpusTabs.init();
-        Toolbox.favoritesUi.init({
+        settingsEventBag = Toolbox.createEventBag();
+        Toolbox.dynamicFilter.init({
+            getData: () => toolboxData,
+            renderSettings: () => Toolbox.settingsPopoverUi.render(),
+            syncFloatButton: () => Toolbox.favoritesUi.syncFloatButton()
+        });
+        Toolbox.settingsPopoverUi.init({
             storage,
+            favoritesService: Toolbox.favorites,
+            dynamicFilter: Toolbox.dynamicFilter,
+            getData: () => toolboxData,
+            showMessage: (...args) => Toolbox.favoritesUi.showMessage(...args),
+            eventBag: settingsEventBag
+        });
+        Toolbox.favoritesUi.init({
             favoritesService: Toolbox.favorites,
             getData: () => toolboxData,
             pageInfo: Toolbox.pageInfo,
             dynamicFilter: Toolbox.dynamicFilter
         });
+        window.addEventListener(Toolbox.url.URL_CHANGE_EVENT, handleUrlChange);
         setupMessageBridge();
 
         if (Toolbox.reader.shouldInitComicReader()) {
@@ -53,9 +69,18 @@
         }
     }
 
+    function handleUrlChange() {
+        Toolbox.dynamicFilter.sync();
+        Toolbox.favoritesUi.syncPageMode();
+    }
+
     function destroy() {
         if (unsubscribeStorage) unsubscribeStorage();
+        window.removeEventListener(Toolbox.url.URL_CHANGE_EVENT, handleUrlChange);
         Toolbox.spaceOpusTabs.destroy();
+        Toolbox.settingsPopoverUi.destroy();
+        if (settingsEventBag) settingsEventBag.cleanup();
+        settingsEventBag = null;
         Toolbox.favoritesUi.destroy();
         Toolbox.dynamicFilter.destroy();
         storage.destroy();
