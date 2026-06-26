@@ -3,12 +3,12 @@
     'use strict';
 
     if (!window.Shared) throw new Error('BilibiliToolbox: shared.js not loaded');
+    if (!window.BilibiliToolbox?.bilibiliDom) throw new Error('BilibiliToolbox: bilibili-dom-adapter.js not loaded');
 
     const Shared = window.Shared;
     const Toolbox = window.BilibiliToolbox;
+    const bilibiliDom = Toolbox.bilibiliDom;
     const TOOLBOX_SETTINGS = Shared.TOOLBOX_SETTINGS;
-    const SPACE_DYNAMIC_URL_PATTERN = /^https?:\/\/space\.bilibili\.com\/\d+\/dynamic(?:[/?#]|$)/i;
-    const DYNAMIC_CARD_SELECTOR = '.bili-dyn-list__item, .bili-dyn-item, .bili-opus-view';
     const FORWARD_DYNAMIC_SELECTOR = [
         '.bili-dyn-content__forw__desc',
         '.bili-dyn-content__orig.reference',
@@ -54,11 +54,11 @@
     }
 
     function isSpaceDynamicPage(url = window.location.href) {
-        return SPACE_DYNAMIC_URL_PATTERN.test(url);
+        return bilibiliDom.isSpaceDynamicPage(url);
     }
 
     function getDynamicCardElements() {
-        const candidates = Array.from(document.querySelectorAll(DYNAMIC_CARD_SELECTOR));
+        const candidates = bilibiliDom.getDynamicCards();
         const set = new Set(candidates);
         return candidates.filter(card => {
             for (let parent = card.parentElement; parent; parent = parent.parentElement) {
@@ -133,7 +133,7 @@
 
     function markDynamicCardReady(card) {
         card.classList.add(FILTER_READY_CLASS);
-        card.querySelectorAll(DYNAMIC_CARD_SELECTOR).forEach(child => child.classList.add(FILTER_READY_CLASS));
+        card.querySelectorAll(bilibiliDom.DYNAMIC_CARD_SELECTOR).forEach(child => child.classList.add(FILTER_READY_CLASS));
     }
 
     function applyDynamicFilter() {

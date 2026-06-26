@@ -19,10 +19,14 @@
       "js": [
         "shared.js",
         "storage-service.js",
+        "bilibili-dom-adapter.js",
         "animations.js",
         "comic-reader-images.js",
         "reader-preferences.js",
         "reader-screenshot.js",
+        "reader-transform.js",
+        "reader-selection.js",
+        "reader-dom.js",
         "comic-reader-page-groups.js",
         "comic-reader-interactions.js",
         "comic-reader.js",
@@ -36,7 +40,10 @@
         "content.js"
       ],
       "css": [
-        "content.css"
+        "content-base.css",
+        "content-toolbox.css",
+        "content-reader.css",
+        "content-responsive.css"
       ]
     }
   ]

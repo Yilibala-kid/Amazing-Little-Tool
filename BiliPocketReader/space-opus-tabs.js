@@ -3,11 +3,11 @@
     'use strict';
 
     if (!window.Shared) throw new Error('BilibiliToolbox: shared.js not loaded');
+    if (!window.BilibiliToolbox?.bilibiliDom) throw new Error('BilibiliToolbox: bilibili-dom-adapter.js not loaded');
 
     const Shared = window.Shared;
     const Toolbox = window.BilibiliToolbox;
-    const SPACE_OPUS_URL_PATTERN = /^https?:\/\/space\.bilibili\.com\/(\d+)\/upload\/opus(?:[/?#]|$)/i;
-    const CONTENT_TAB_SELECTOR = '.content-filter .content-tab';
+    const bilibiliDom = Toolbox.bilibiliDom;
     const OPUS_TAB_TEXT = '\u4e13\u680f';
     const BURST_DELAYS = [0, 80, 250, 600, 1200, 2500, 5000];
     const INTENT_TTL_MS = 10000;
@@ -20,11 +20,11 @@
     let selectedForIntent = false;
 
     function isSpaceOpusUploadPage(url = window.location.href) {
-        return SPACE_OPUS_URL_PATTERN.test(url);
+        return bilibiliDom.isSpaceOpusUploadPage(url);
     }
 
     function getSpaceOpusUid(url = window.location.href) {
-        return url.match(SPACE_OPUS_URL_PATTERN)?.[1] || '';
+        return bilibiliDom.getSpaceOpusUid(url);
     }
 
     function consumeOpusTabIntent() {
@@ -50,7 +50,7 @@
     }
 
     function getContentTabs() {
-        return Array.from(document.querySelectorAll(CONTENT_TAB_SELECTOR));
+        return bilibiliDom.getContentTabs();
     }
 
     function findOpusTab() {

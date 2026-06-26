@@ -7,9 +7,9 @@
     const FADE_SHIFT_DISTANCE = 60;
     const SMOOTH_SCALE_START = 0.95;
     const DEFAULT_ANIMATION_MODE = 'smooth';
-    const ANIMATION_MODES = ['none', 'smooth', 'fade'];
+    const ANIMATION_MODES = ['smooth', 'fade'];
+    const IMMEDIATE_RENDER_MODE = 'immediate';
     const ANIMATION_BUTTON_MAP = {
-        none: ['\u65e0', '\u7ffb\u9875\u52a8\u753b\uff1a\u5173\u95ed'],
         smooth: ['\u5e73\u6ed1', '\u7ffb\u9875\u52a8\u753b\uff1a\u6de1\u5165 + \u5e73\u79fb + \u7ec6\u5fae\u7f29\u653e'],
         fade: ['\u6de1\u5165', '\u7ffb\u9875\u52a8\u753b\uff1a\u6de1\u5165\u6de1\u51fa']
     };
@@ -31,7 +31,7 @@
     }
 
     function resolveRenderMode(animate, hasExistingImage, animationMode) {
-        return animate && hasExistingImage ? normalizeMode(animationMode) : 'none';
+        return animate && hasExistingImage ? normalizeMode(animationMode) : IMMEDIATE_RENDER_MODE;
     }
 
     function resolveTransitionDirection(step, isRightToLeft, lastStep) {
@@ -97,22 +97,21 @@
             playFadeTransition(imgContainer, renderIndex, getCurrentIndex, transitionToken, getTransitionToken, loadImages, direction);
             return;
         }
-        loadImages(renderIndex, 'none', direction);
+        loadImages(renderIndex, IMMEDIATE_RENDER_MODE, direction);
     }
 
     function resetAnimatedContainer(imgContainer, animationMode, transitionDirection, applyTransform, getTransform, getShiftedTransformFn) {
-        const mode = normalizeMode(animationMode);
+        const mode = ANIMATION_MODES.includes(animationMode) ? animationMode : IMMEDIATE_RENDER_MODE;
+        imgContainer.innerHTML = '';
         imgContainer.style.transition = 'none';
         applyTransform();
         if (mode === 'smooth') {
-            imgContainer.innerHTML = '';
             Object.assign(imgContainer.style, {
                 transform: withSubtleScale(getShiftedTransform(getShiftedTransformFn, getTransform, -transitionDirection * FADE_SHIFT_DISTANCE)),
                 opacity: '0',
                 filter: 'none'
             });
         } else if (mode === 'fade') {
-            imgContainer.innerHTML = '';
             Object.assign(imgContainer.style, { opacity: '0', filter: 'none' });
         } else {
             Object.assign(imgContainer.style, { opacity: '1', filter: 'none' });
@@ -120,7 +119,7 @@
     }
 
     function finishAnimatedRender(imgContainer, animationMode, transitionDirection, applyTransform, getTransform, getShiftedTransformFn) {
-        const mode = normalizeMode(animationMode);
+        const mode = ANIMATION_MODES.includes(animationMode) ? animationMode : IMMEDIATE_RENDER_MODE;
         if (mode === 'smooth') {
             Object.assign(imgContainer.style, {
                 transition: 'none',
@@ -154,6 +153,7 @@
         FADE_SHIFT_DISTANCE,
         DEFAULT_ANIMATION_MODE,
         ANIMATION_MODES,
+        IMMEDIATE_RENDER_MODE,
         normalizeAnimationMode: normalizeMode,
         getNextAnimationMode: getNextMode,
         syncAnimationButton: syncAnimationButtonState,

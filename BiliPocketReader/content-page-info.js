@@ -3,11 +3,11 @@
     'use strict';
 
     if (!window.Shared) throw new Error('BilibiliToolbox: shared.js not loaded');
+    if (!window.BilibiliToolbox?.bilibiliDom) throw new Error('BilibiliToolbox: bilibili-dom-adapter.js not loaded');
 
     const Shared = window.Shared;
     const Toolbox = window.BilibiliToolbox;
-    const ARTICLE_URL_PATTERN = /^https?:\/\/(?:www\.|m\.)?bilibili\.com\/read\/(?:cv\d+|mobile|native)(?:[/?#]|$)/i;
-    const SPACE_OPUS_URL_PATTERN = /^https?:\/\/space\.bilibili\.com\/(\d+)\/upload\/opus(?:[/?#]|$)/i;
+    const bilibiliDom = Toolbox.bilibiliDom;
 
     function extractUserNameFromMeta() {
         const title = document.title || '';
@@ -26,44 +26,18 @@
 
     function normalizeImageUrl(src) {
         if (!src || typeof src !== 'string') return '';
-        if (src.startsWith('//')) return `https:${src}`;
-        return src;
-    }
-
-    function extractUidFromAuthorLink(link) {
-        const href = link?.getAttribute?.('href') || link?.href || '';
-        return href.match(/space\.bilibili\.com\/(\d+)/)?.[1]
-            || href.match(/\/space\/(\d+)/)?.[1]
-            || null;
-    }
-
-    function getArticleAuthorLink() {
-        const selectors = [
-            '.article-author a[href*="space"]',
-            '.article-info a[href*="space"]',
-            '.author-info a[href*="space"]',
-            '.up-info a[href*="space"]',
-            '.opus-module-author a[href*="space"]',
-            '[class*="author"] a[href*="space"]',
-            '[class*="up"] a[href*="space"]',
-            'a[href*="space.bilibili.com/"]',
-            'a[href*="/space/"]'
-        ];
-
-        return selectors
-            .flatMap(selector => Array.from(document.querySelectorAll(selector)))
-            .find(link => extractUidFromAuthorLink(link));
+        return bilibiliDom.normalizeProtocolUrl(src);
     }
 
     function getArticleAuthorInfo(url = window.location.href) {
-        if (!ARTICLE_URL_PATTERN.test(url)) return null;
+        if (!bilibiliDom.isArticlePage(url)) return null;
 
-        const link = getArticleAuthorLink();
-        const uid = extractUidFromAuthorLink(link)
+        const link = bilibiliDom.getArticleAuthorLink();
+        const uid = bilibiliDom.extractUidFromAuthorLink(link)
             || document.querySelector('[data-mid]')?.getAttribute('data-mid');
         if (!uid) return null;
 
-        const scope = link?.closest?.('.article-author, .article-info, .author-info, .up-info, [class*="author"], [class*="up"]')
+        const scope = link?.closest?.(bilibiliDom.AUTHOR_SCOPE_SELECTOR)
             || document;
         const uname = link?.textContent?.trim()
             || scope.querySelector('.user-name, .name, [class*="name"]')?.textContent?.trim()
@@ -89,8 +63,8 @@
             return { type: Shared.READLIST_TYPE, id: readlistMatch[1], title, cover };
         }
 
-        const opusMatch = url.match(SPACE_OPUS_URL_PATTERN);
-        if (opusMatch) return { type: Shared.OPUS_TYPE, uid: opusMatch[1] };
+        const opusUid = bilibiliDom.getSpaceOpusUid(url);
+        if (opusUid) return { type: Shared.OPUS_TYPE, uid: opusUid };
 
         const uid = Shared.extractUidFromUrl(url);
         if (uid) return { type: Shared.USER_TYPE, uid };
@@ -99,7 +73,7 @@
         if (articleAuthor) return articleAuthor;
 
         const pageUid = document.querySelector('[data-mid]')?.getAttribute('data-mid')
-            || document.querySelector('.user-name, .user-name-shadow, .name')?.closest('a')?.href?.match(/space\.bilibili\.com\/(\d+)/)?.[1];
+            || document.querySelector(bilibiliDom.USER_NAME_SELECTOR)?.closest('a')?.href?.match(/space\.bilibili\.com\/(\d+)/)?.[1];
 
         return pageUid ? { type: Shared.USER_TYPE, uid: pageUid } : null;
     }
@@ -117,12 +91,12 @@
         }
 
         const uname = pageInfo.uname
-            || document.querySelector('.user-name, .user-name-shadow, .name')?.textContent?.trim()
+            || document.querySelector(bilibiliDom.USER_NAME_SELECTOR)?.textContent?.trim()
             || document.querySelector('[data-mid]')?.getAttribute('data-uname')
             || extractUserNameFromMeta()
             || '\u7528\u6237';
         const face = pageInfo.face
-            || document.querySelector('.user-face img, .avatar img, [class*="face"] img')?.src
+            || document.querySelector(bilibiliDom.USER_FACE_SELECTOR)?.src
             || document.querySelector('[data-mid]')?.getAttribute('data-face')
             || '';
 

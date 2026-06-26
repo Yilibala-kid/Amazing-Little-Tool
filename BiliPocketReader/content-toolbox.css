@@ -1,0 +1,594 @@
+﻿/* ===== Floating star button ===== */
+#bilibili-fav-float-btn {
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    background: var(--acc);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    cursor: pointer;
+    box-shadow: var(--shadow-float);
+    z-index: 999999;
+    transition: transform 0.2s, box-shadow 0.2s, opacity 0.3s, visibility 0.3s;
+    line-height: 1;
+    text-align: center;
+}
+
+#bilibili-fav-float-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(251, 114, 153, 0.4);
+}
+
+#bilibili-fav-float-btn.dynamic-filter-active {
+    border-radius: var(--radius-sm);
+}
+
+#bilibili-fav-float-btn.bilibili-fav-video-hidden {
+    opacity: 0;
+}
+
+#bilibili-fav-float-btn.bilibili-fav-video-visible {
+    opacity: 1;
+}
+
+/* ===== Shared panel base ===== */
+#bilibili-fav-panel,
+#bilibili-toolbox-settings-panel {
+    position: fixed;
+    bottom: 140px;
+    right: 20px;
+    width: 280px;
+    background: var(--bg-overlay);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-heavy);
+    z-index: 1000000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s, transform 0.2s, visibility 0.2s;
+    font-family: var(--font);
+    transform: translateY(10px);
+    color: var(--text-primary);
+    border: 1px solid var(--border-subtle);
+}
+
+#bilibili-fav-panel {
+    --bilibili-fav-columns: 2;
+    --bilibili-fav-item-width: 130px;
+    --bilibili-fav-list-gap: 4px;
+    --bilibili-fav-list-padding-x: 10px;
+    width: calc(
+        var(--bilibili-fav-columns) * var(--bilibili-fav-item-width)
+        + (var(--bilibili-fav-columns) - 1) * var(--bilibili-fav-list-gap)
+        + var(--bilibili-fav-list-padding-x) * 2
+    );
+}
+
+#bilibili-toolbox-settings-panel {
+    width: 320px;
+    z-index: 1000001;
+}
+
+#bilibili-fav-panel.show,
+#bilibili-toolbox-settings-panel.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+/* ===== Panel header ===== */
+.bilibili-fav-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border-subtle);
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: 0.3px;
+}
+
+.bilibili-fav-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* ===== Panel content ===== */
+.bilibili-fav-content { max-height: 400px; overflow: auto; }
+
+.bilibili-fav-list {
+    padding: 8px var(--bilibili-fav-list-padding-x);
+    display: grid;
+    grid-template-columns: repeat(var(--bilibili-fav-columns, 2), var(--bilibili-fav-item-width));
+    gap: var(--bilibili-fav-list-gap);
+}
+
+.bilibili-fav-content::-webkit-scrollbar { width: 5px; }
+.bilibili-fav-content::-webkit-scrollbar-track { background: transparent; }
+.bilibili-fav-content::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 3px; }
+.bilibili-fav-content::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.25); }
+
+/* ===== Toolbox settings content ===== */
+.bilibili-toolbox-control-content {
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.bilibili-toolbox-control-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.bilibili-toolbox-section-title {
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.bilibili-toolbox-control-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: var(--radius-md);
+    background: var(--bg-surface);
+    cursor: pointer;
+    border: 1px solid var(--border-subtle);
+}
+
+.bilibili-toolbox-control-row-stack {
+    align-items: stretch;
+    cursor: default;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.bilibili-toolbox-control-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.bilibili-toolbox-control-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.bilibili-toolbox-control-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+.bilibili-toolbox-segmented {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+    padding: 3px;
+    border-radius: var(--radius-pill);
+    background: var(--bg-deepest);
+    border: 1px solid var(--border-subtle);
+}
+
+.bilibili-toolbox-segmented button {
+    min-height: 30px;
+    padding: 0;
+    color: var(--text-secondary);
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-pill);
+    cursor: pointer;
+    font: 600 13px/1 var(--font);
+}
+
+.bilibili-toolbox-segmented button:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.bilibili-toolbox-segmented button.active {
+    color: #fff;
+    background: var(--acc);
+}
+
+.bilibili-toolbox-keyword-input {
+    width: 100%;
+    min-height: 38px;
+    padding: 0 12px;
+    box-sizing: border-box;
+    color: var(--text-primary);
+    background: var(--bg-deepest);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    font-family: var(--font);
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s, opacity 0.2s;
+}
+
+.bilibili-toolbox-keyword-input::placeholder {
+    color: var(--text-muted);
+}
+
+.bilibili-toolbox-keyword-input:focus {
+    border-color: var(--acc);
+    box-shadow: 0 0 0 2px rgba(251, 114, 153, 0.18);
+}
+
+/* ===== Toggle switch ===== */
+.bilibili-toolbox-switch {
+    position: relative;
+    width: 46px;
+    height: 28px;
+    flex-shrink: 0;
+}
+
+.bilibili-toolbox-switch input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    margin: 0;
+}
+
+.bilibili-toolbox-switch-slider {
+    position: absolute;
+    inset: 0;
+    border-radius: var(--radius-pill);
+    background: rgba(255, 255, 255, 0.2);
+    transition: background 0.2s;
+}
+
+.bilibili-toolbox-switch-slider::before {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform 0.2s;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.bilibili-toolbox-switch input:checked + .bilibili-toolbox-switch-slider {
+    background: var(--acc);
+}
+
+.bilibili-toolbox-switch input:checked + .bilibili-toolbox-switch-slider::before {
+    transform: translateX(18px);
+}
+
+/* ===== Empty state ===== */
+.bilibili-fav-empty { grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 40px 20px; font-size: 14px; }
+
+/* ===== Toast message ===== */
+.bilibili-fav-msg { padding: 8px; text-align: center; font-size: 12px; display: none; }
+
+/* ===== Pill buttons (global) ===== */
+.bilibili-fav-add-btn,
+.bilibili-fav-control-btn,
+.bilibili-toolbox-export-btn,
+.bilibili-toolbox-import-btn {
+    padding: 10px 0;
+    font-size: 13px;
+    font-weight: 600;
+    border: none;
+    border-radius: var(--radius-pill);
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--text-primary);
+    letter-spacing: 0.3px;
+    flex: 1;
+}
+
+.bilibili-fav-add-btn {
+    padding: 8px 16px;
+    flex: none;
+}
+
+.bilibili-fav-control-btn {
+    display: none;
+    padding: 8px 12px;
+    flex: none;
+}
+
+/* Primary pill — accent fill */
+.bilibili-fav-add-btn,
+.bilibili-fav-control-btn,
+.bilibili-toolbox-export-btn {
+    background: var(--acc);
+    color: #fff;
+}
+
+.bilibili-fav-add-btn:hover,
+.bilibili-fav-control-btn:hover,
+.bilibili-toolbox-export-btn:hover {
+    background: var(--acc-hover);
+}
+
+/* Secondary pill — dark fill */
+.bilibili-toolbox-import-btn {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-strong);
+}
+
+.bilibili-toolbox-import-btn:hover {
+    background: #2a2a2a;
+}
+
+/* ===== Button group layout ===== */
+.bilibili-toolbox-control-actions {
+    display: flex;
+    gap: 8px;
+    padding: 0 16px 16px;
+}
+
+/* ===== Export text document ===== */
+.bilibili-toolbox-export-dialog {
+    position: fixed;
+    inset: 0;
+    z-index: 1000002;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: rgba(0, 0, 0, 0.72);
+}
+
+.bilibili-toolbox-export-document {
+    display: flex;
+    width: min(640px, 100%);
+    max-height: min(720px, 86vh);
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-heavy);
+}
+
+.bilibili-toolbox-export-header {
+    display: flex;
+    min-height: 44px;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 14px;
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 600;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.bilibili-toolbox-export-close {
+    display: inline-flex;
+    width: 30px;
+    height: 30px;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    color: var(--text-secondary);
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 22px;
+    line-height: 1;
+}
+
+.bilibili-toolbox-export-close:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.bilibili-toolbox-export-text {
+    width: 100%;
+    min-height: min(560px, 72vh);
+    padding: 14px;
+    resize: vertical;
+    box-sizing: border-box;
+    color: var(--text-primary);
+    background: var(--bg-deepest);
+    border: none;
+    outline: none;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.bilibili-toolbox-export-footer {
+    display: flex;
+    min-height: 52px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 12px;
+    border-top: 1px solid var(--border-subtle);
+}
+
+.bilibili-toolbox-export-status {
+    color: var(--text-secondary);
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.bilibili-toolbox-export-status.is-error {
+    color: var(--error);
+}
+
+.bilibili-toolbox-export-actions {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 8px;
+}
+
+.bilibili-toolbox-export-clipboard,
+.bilibili-toolbox-export-confirm {
+    flex-shrink: 0;
+    padding: 8px 18px;
+    color: #fff;
+    background: var(--acc);
+    border: none;
+    border-radius: var(--radius-pill);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.bilibili-toolbox-export-clipboard:hover,
+.bilibili-toolbox-export-confirm:hover {
+    background: var(--acc-hover);
+}
+
+/* ===== Favorite list items ===== */
+.bilibili-fav-item-link {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    width: var(--bilibili-fav-item-width);
+    min-width: 0;
+    position: relative;
+}
+
+.bilibili-fav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px 6px 10px;
+    border-radius: var(--radius-md);
+    transition: background 0.2s;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    height: 88px;
+    box-sizing: border-box;
+    background: transparent;
+}
+
+.bilibili-fav-item[data-readlist="true"] { padding: 0; }
+
+.bilibili-fav-item-link:hover .bilibili-fav-item {
+    background: var(--bg-surface);
+}
+
+.bilibili-fav-item-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    position: relative;
+    z-index: 1;
+}
+
+.bilibili-fav-item[data-readlist="true"] .bilibili-fav-item-info {
+    padding: 0;
+    overflow: hidden;
+    border-radius: inherit;
+}
+
+/* ===== Avatar — round, no border ===== */
+.bilibili-fav-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+    position: relative;
+    z-index: 1;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.bilibili-fav-avatar.square {
+    border-radius: var(--radius-md);
+}
+
+.bilibili-fav-avatar.cover {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: var(--radius-md);
+    box-shadow: none;
+    position: absolute;
+    inset: 0;
+}
+
+/* ===== Name label ===== */
+.bilibili-fav-name {
+    font-size: 12px;
+    color: var(--text-primary);
+    font-weight: 500;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    position: relative;
+    z-index: 1;
+    margin-top: 6px;
+}
+
+.bilibili-fav-item[data-readlist="true"] .bilibili-fav-name {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    color: #fff;
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.75));
+    padding: 20px 8px 8px;
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    font-weight: 600;
+}
+
+/* ===== Delete button — ghost pill ===== */
+.bilibili-fav-delete {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    font-size: 14px;
+    line-height: 1;
+    color: var(--text-primary);
+    background: rgba(0, 0, 0, 0.5);
+    border: none;
+    border-radius: 50%;
+    appearance: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    z-index: 2;
+    opacity: 0;
+}
+
+.bilibili-fav-item:hover .bilibili-fav-delete { opacity: 1; }
+.bilibili-fav-delete:hover { background: var(--error); }
+
+/* ===== Dynamic filter visibility ===== */
+.bilibili-toolbox-dynamic-filter-active .bili-dyn-list__item:not(.bilibili-toolbox-dynamic-filter-ready),
+.bilibili-toolbox-dynamic-filter-active .bili-dyn-item:not(.bilibili-toolbox-dynamic-filter-ready),
+.bilibili-toolbox-dynamic-filter-active .bili-opus-view:not(.bilibili-toolbox-dynamic-filter-ready),
+.bilibili-toolbox-hide-forward-dynamic { display: none !important; }
+
+/* ══════════════════════════════════════ */

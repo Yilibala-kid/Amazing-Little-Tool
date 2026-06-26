@@ -62,7 +62,7 @@
     };
     window.chrome = chromeShim;
 
-    const css = "/* ===== content.css ===== */\n/* Bilibili Toolbox — Spotify-inspired dark theme */\r\n\r\n:root {\r\n    --acc: #fb7299;\r\n    --acc-hover: #fc8bab;\r\n    --acc-active: #e86288;\r\n    --bg-deepest: #0a0a0a;\r\n    --bg-surface: #181818;\r\n    --bg-elevated: #1f1f1f;\r\n    --bg-overlay: rgba(20, 20, 20, 0.94);\r\n    --text-primary: #ffffff;\r\n    --text-secondary: #b3b3b3;\r\n    --text-muted: #7c7c7c;\r\n    --border-subtle: rgba(255, 255, 255, 0.12);\r\n    --border-strong: #4d4d4d;\r\n    --error: #f3727f;\r\n    --error-hover: #e86a77;\r\n    --shadow-heavy: 0 8px 24px rgba(0, 0, 0, 0.5);\r\n    --shadow-card: 0 4px 8px rgba(0, 0, 0, 0.3);\r\n    --shadow-float: 0 4px 16px rgba(251, 114, 153, 0.25);\r\n    --radius-sm: 6px;\r\n    --radius-md: 8px;\r\n    --radius-lg: 12px;\r\n    --radius-pill: 9999px;\r\n    --font: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif;\r\n}\r\n\r\n/* ===== Floating star button ===== */\r\n#bilibili-fav-float-btn {\r\n    position: fixed;\r\n    bottom: 80px;\r\n    right: 20px;\r\n    width: 50px;\r\n    height: 50px;\r\n    background: var(--acc);\r\n    border-radius: 50%;\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    font-size: 24px;\r\n    cursor: pointer;\r\n    box-shadow: var(--shadow-float);\r\n    z-index: 999999;\r\n    transition: transform 0.2s, box-shadow 0.2s, opacity 0.3s, visibility 0.3s;\r\n    line-height: 1;\r\n    text-align: center;\r\n}\r\n\r\n#bilibili-fav-float-btn:hover {\r\n    transform: scale(1.1);\r\n    box-shadow: 0 6px 20px rgba(251, 114, 153, 0.4);\r\n}\r\n\r\n#bilibili-fav-float-btn.hide-forward-active {\r\n    border-radius: var(--radius-sm);\r\n}\r\n\r\n#bilibili-fav-float-btn.bilibili-fav-video-hidden {\r\n    opacity: 0;\r\n}\r\n\r\n#bilibili-fav-float-btn.bilibili-fav-video-visible {\r\n    opacity: 1;\r\n}\r\n\r\n/* ===== Shared panel base ===== */\r\n#bilibili-fav-panel,\n#bilibili-toolbox-settings-panel {\n    position: fixed;\n    bottom: 140px;\n    right: 20px;\n    width: 280px;\r\n    background: var(--bg-overlay);\r\n    backdrop-filter: blur(20px);\r\n    -webkit-backdrop-filter: blur(20px);\r\n    border-radius: var(--radius-lg);\r\n    box-shadow: var(--shadow-heavy);\r\n    z-index: 1000000;\r\n    opacity: 0;\r\n    visibility: hidden;\r\n    transition: opacity 0.2s, transform 0.2s, visibility 0.2s;\r\n    font-family: var(--font);\r\n    transform: translateY(10px);\r\n    color: var(--text-primary);\r\n    border: 1px solid var(--border-subtle);\n}\n\n#bilibili-fav-panel {\n    --bilibili-fav-columns: 2;\n    --bilibili-fav-item-width: 130px;\n    --bilibili-fav-list-gap: 4px;\n    --bilibili-fav-list-padding-x: 10px;\n    width: calc(\n        var(--bilibili-fav-columns) * var(--bilibili-fav-item-width)\n        + (var(--bilibili-fav-columns) - 1) * var(--bilibili-fav-list-gap)\n        + var(--bilibili-fav-list-padding-x) * 2\n    );\n}\n\n#bilibili-toolbox-settings-panel {\n    width: 320px;\n    z-index: 1000001;\n}\n\r\n#bilibili-fav-panel.show,\n#bilibili-toolbox-settings-panel.show {\n    opacity: 1;\r\n    visibility: visible;\r\n    transform: translateY(0);\r\n}\r\n\r\n/* ===== Panel header ===== */\r\n.bilibili-fav-header {\r\n    display: flex;\r\n    justify-content: space-between;\r\n    align-items: center;\r\n    padding: 10px 16px;\r\n    border-bottom: 1px solid var(--border-subtle);\r\n    background: var(--bg-elevated);\r\n    color: var(--text-primary);\r\n    border-radius: var(--radius-lg) var(--radius-lg) 0 0;\r\n    font-weight: 600;\r\n    font-size: 14px;\r\n    letter-spacing: 0.3px;\r\n}\r\n\r\n.bilibili-fav-header-actions {\r\n    display: flex;\r\n    align-items: center;\r\n    gap: 6px;\r\n}\r\n\r\n/* ===== Panel content ===== */\r\n.bilibili-fav-content { max-height: 400px; overflow: auto; }\n\r\n.bilibili-fav-list {\n    padding: 8px var(--bilibili-fav-list-padding-x);\n    display: grid;\n    grid-template-columns: repeat(var(--bilibili-fav-columns, 2), var(--bilibili-fav-item-width));\n    gap: var(--bilibili-fav-list-gap);\n}\n\r\n.bilibili-fav-content::-webkit-scrollbar { width: 5px; }\r\n.bilibili-fav-content::-webkit-scrollbar-track { background: transparent; }\r\n.bilibili-fav-content::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 3px; }\r\n.bilibili-fav-content::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.25); }\r\n\r\n/* ===== Toolbox settings content ===== */\n.bilibili-toolbox-control-content {\n    padding: 14px;\n    display: flex;\n    flex-direction: column;\n    gap: 14px;\n}\n\n.bilibili-toolbox-control-section {\n    display: flex;\n    flex-direction: column;\n    gap: 10px;\n}\n\n.bilibili-toolbox-section-title {\n    color: var(--text-secondary);\n    font-size: 12px;\n    font-weight: 700;\n    line-height: 1;\n}\n\r\n.bilibili-toolbox-control-row {\n    display: flex;\r\n    align-items: center;\r\n    justify-content: space-between;\r\n    gap: 12px;\r\n    padding: 12px 14px;\r\n    border-radius: var(--radius-md);\r\n    background: var(--bg-surface);\r\n    cursor: pointer;\r\n    border: 1px solid var(--border-subtle);\n}\n\n.bilibili-toolbox-control-row-stack {\n    align-items: stretch;\n    cursor: default;\n    flex-direction: column;\n    gap: 10px;\n}\n\n.bilibili-toolbox-control-copy {\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: 4px;\r\n    min-width: 0;\r\n}\r\n\r\n.bilibili-toolbox-control-title {\r\n    font-size: 14px;\r\n    font-weight: 600;\r\n    color: var(--text-primary);\r\n}\r\n\r\n.bilibili-toolbox-control-desc {\n    font-size: 12px;\n    color: var(--text-secondary);\n    line-height: 1.4;\n}\n\n.bilibili-toolbox-segmented {\n    display: grid;\n    grid-template-columns: repeat(4, minmax(0, 1fr));\n    gap: 4px;\n    padding: 3px;\n    border-radius: var(--radius-pill);\n    background: var(--bg-deepest);\n    border: 1px solid var(--border-subtle);\n}\n\n.bilibili-toolbox-segmented button {\n    min-height: 30px;\n    padding: 0;\n    color: var(--text-secondary);\n    background: transparent;\n    border: none;\n    border-radius: var(--radius-pill);\n    cursor: pointer;\n    font: 600 13px/1 var(--font);\n}\n\n.bilibili-toolbox-segmented button:hover {\n    color: var(--text-primary);\n    background: rgba(255, 255, 255, 0.08);\n}\n\n.bilibili-toolbox-segmented button.active {\n    color: #fff;\n    background: var(--acc);\n}\n\n.bilibili-toolbox-control-status {\n    font-size: 12px;\r\n    line-height: 1.4;\r\n    padding: 8px 12px;\r\n    border-radius: var(--radius-sm);\r\n    background: var(--bg-surface);\r\n    color: var(--text-secondary);\r\n}\r\n\r\n.bilibili-toolbox-keyword-input {\r\n    width: 100%;\r\n    min-height: 38px;\r\n    padding: 0 12px;\r\n    box-sizing: border-box;\r\n    color: var(--text-primary);\r\n    background: var(--bg-deepest);\r\n    border: 1px solid var(--border-subtle);\r\n    border-radius: var(--radius-md);\r\n    font-family: var(--font);\r\n    font-size: 13px;\r\n    outline: none;\r\n    transition: border-color 0.2s, box-shadow 0.2s, opacity 0.2s;\r\n}\r\n\r\n.bilibili-toolbox-keyword-input::placeholder {\r\n    color: var(--text-muted);\r\n}\r\n\r\n.bilibili-toolbox-keyword-input:focus {\r\n    border-color: var(--acc);\r\n    box-shadow: 0 0 0 2px rgba(251, 114, 153, 0.18);\r\n}\r\n\r\n/* ===== Toggle switch ===== */\r\n.bilibili-toolbox-switch {\r\n    position: relative;\r\n    width: 46px;\r\n    height: 28px;\r\n    flex-shrink: 0;\r\n}\r\n\r\n.bilibili-toolbox-switch input {\r\n    position: absolute;\r\n    inset: 0;\r\n    opacity: 0;\r\n    cursor: pointer;\r\n    margin: 0;\r\n}\r\n\r\n.bilibili-toolbox-switch-slider {\r\n    position: absolute;\r\n    inset: 0;\r\n    border-radius: var(--radius-pill);\r\n    background: rgba(255, 255, 255, 0.2);\r\n    transition: background 0.2s;\r\n}\r\n\r\n.bilibili-toolbox-switch-slider::before {\r\n    content: \"\";\r\n    position: absolute;\r\n    top: 3px;\r\n    left: 3px;\r\n    width: 22px;\r\n    height: 22px;\r\n    border-radius: 50%;\r\n    background: #fff;\r\n    transition: transform 0.2s;\r\n    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);\r\n}\r\n\r\n.bilibili-toolbox-switch input:checked + .bilibili-toolbox-switch-slider {\r\n    background: var(--acc);\r\n}\r\n\r\n.bilibili-toolbox-switch input:checked + .bilibili-toolbox-switch-slider::before {\r\n    transform: translateX(18px);\r\n}\r\n\r\n/* ===== Empty state ===== */\r\n.bilibili-fav-empty { grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 40px 20px; font-size: 14px; }\n\r\n/* ===== Toast message ===== */\r\n.bilibili-fav-msg { padding: 8px; text-align: center; font-size: 12px; display: none; }\r\n\r\n/* ===== Pill buttons (global) ===== */\r\n.bilibili-fav-add-btn,\r\n.bilibili-fav-control-btn,\r\n.bilibili-toolbox-export-btn,\r\n.bilibili-toolbox-import-btn {\r\n    padding: 10px 0;\r\n    font-size: 13px;\r\n    font-weight: 600;\r\n    border: none;\r\n    border-radius: var(--radius-pill);\r\n    cursor: pointer;\r\n    transition: all 0.2s;\r\n    color: var(--text-primary);\r\n    letter-spacing: 0.3px;\r\n    flex: 1;\r\n}\r\n\r\n.bilibili-fav-add-btn {\r\n    padding: 8px 16px;\r\n    flex: none;\r\n}\r\n\r\n.bilibili-fav-control-btn {\r\n    display: none;\r\n    padding: 8px 12px;\r\n    flex: none;\r\n}\r\n\r\n/* Primary pill — accent fill */\r\n.bilibili-fav-add-btn,\r\n.bilibili-fav-control-btn,\r\n.bilibili-toolbox-export-btn {\r\n    background: var(--acc);\r\n    color: #fff;\r\n}\r\n\r\n.bilibili-fav-add-btn:hover,\r\n.bilibili-fav-control-btn:hover,\r\n.bilibili-toolbox-export-btn:hover {\r\n    background: var(--acc-hover);\r\n}\r\n\r\n/* Secondary pill — dark fill */\r\n.bilibili-toolbox-import-btn {\r\n    background: var(--bg-elevated);\r\n    border: 1px solid var(--border-strong);\r\n}\r\n\r\n.bilibili-toolbox-import-btn:hover {\r\n    background: #2a2a2a;\r\n}\r\n\r\n/* ===== Button group layout ===== */\r\n.bilibili-toolbox-control-actions {\r\n    display: flex;\r\n    gap: 8px;\r\n    padding: 0 16px 16px;\r\n}\r\n\r\n/* ===== Export text document ===== */\r\n.bilibili-toolbox-export-dialog {\r\n    position: fixed;\r\n    inset: 0;\r\n    z-index: 1000002;\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    padding: 16px;\r\n    background: rgba(0, 0, 0, 0.72);\r\n}\r\n\r\n.bilibili-toolbox-export-document {\r\n    display: flex;\r\n    width: min(640px, 100%);\r\n    max-height: min(720px, 86vh);\r\n    flex-direction: column;\r\n    overflow: hidden;\r\n    background: var(--bg-elevated);\r\n    border: 1px solid var(--border-subtle);\r\n    border-radius: var(--radius-md);\r\n    box-shadow: var(--shadow-heavy);\r\n}\r\n\r\n.bilibili-toolbox-export-header {\r\n    display: flex;\r\n    min-height: 44px;\r\n    align-items: center;\r\n    justify-content: space-between;\r\n    padding: 0 14px;\r\n    color: var(--text-primary);\r\n    font-size: 14px;\r\n    font-weight: 600;\r\n    border-bottom: 1px solid var(--border-subtle);\r\n}\r\n\r\n.bilibili-toolbox-export-close {\r\n    display: inline-flex;\r\n    width: 30px;\r\n    height: 30px;\r\n    align-items: center;\r\n    justify-content: center;\r\n    padding: 0;\r\n    color: var(--text-secondary);\r\n    background: transparent;\r\n    border: none;\r\n    border-radius: 50%;\r\n    cursor: pointer;\r\n    font-size: 22px;\r\n    line-height: 1;\r\n}\r\n\r\n.bilibili-toolbox-export-close:hover {\r\n    color: var(--text-primary);\r\n    background: rgba(255, 255, 255, 0.1);\r\n}\r\n\r\n.bilibili-toolbox-export-text {\r\n    width: 100%;\r\n    min-height: min(560px, 72vh);\r\n    padding: 14px;\r\n    resize: vertical;\r\n    box-sizing: border-box;\r\n    color: var(--text-primary);\r\n    background: var(--bg-deepest);\r\n    border: none;\r\n    outline: none;\r\n    font-family: Consolas, \"Courier New\", monospace;\r\n    font-size: 13px;\r\n    line-height: 1.5;\r\n}\r\n\r\n.bilibili-toolbox-export-footer {\r\n    display: flex;\r\n    min-height: 52px;\r\n    align-items: center;\r\n    justify-content: space-between;\r\n    gap: 12px;\r\n    padding: 8px 12px;\r\n    border-top: 1px solid var(--border-subtle);\r\n}\r\n\r\n.bilibili-toolbox-export-status {\r\n    color: var(--text-secondary);\r\n    font-size: 12px;\r\n    line-height: 1.4;\r\n}\r\n\r\n.bilibili-toolbox-export-status.is-error {\r\n    color: var(--error);\r\n}\r\n\r\n.bilibili-toolbox-export-actions {\r\n    display: flex;\r\n    flex-shrink: 0;\r\n    align-items: center;\r\n    gap: 8px;\r\n}\r\n\r\n.bilibili-toolbox-export-clipboard,\r\n.bilibili-toolbox-export-confirm {\r\n    flex-shrink: 0;\r\n    padding: 8px 18px;\r\n    color: #fff;\r\n    background: var(--acc);\r\n    border: none;\r\n    border-radius: var(--radius-pill);\r\n    cursor: pointer;\r\n    font-size: 13px;\r\n    font-weight: 600;\r\n}\r\n\r\n.bilibili-toolbox-export-clipboard:hover,\r\n.bilibili-toolbox-export-confirm:hover {\r\n    background: var(--acc-hover);\r\n}\r\n\r\n/* ===== Favorite list items ===== */\r\n.bilibili-fav-item-link {\n    display: block;\n    text-decoration: none;\n    color: inherit;\n    width: var(--bilibili-fav-item-width);\n    min-width: 0;\n    position: relative;\n}\n\r\n.bilibili-fav-item {\r\n    display: flex;\r\n    flex-direction: column;\r\n    align-items: center;\r\n    padding: 8px 6px 10px;\r\n    border-radius: var(--radius-md);\r\n    transition: background 0.2s;\r\n    text-align: center;\r\n    position: relative;\r\n    overflow: hidden;\r\n    height: 88px;\r\n    box-sizing: border-box;\r\n    background: transparent;\r\n}\r\n\r\n.bilibili-fav-item[data-readlist=\"true\"] { padding: 0; }\r\n\r\n.bilibili-fav-item-link:hover .bilibili-fav-item {\r\n    background: var(--bg-surface);\r\n}\r\n\r\n.bilibili-fav-item-info {\r\n    display: flex;\r\n    flex-direction: column;\r\n    align-items: center;\r\n    width: 100%;\r\n    height: 100%;\r\n    position: relative;\r\n    z-index: 1;\r\n}\r\n\r\n.bilibili-fav-item[data-readlist=\"true\"] .bilibili-fav-item-info {\r\n    padding: 0;\r\n    overflow: hidden;\r\n    border-radius: inherit;\r\n}\r\n\r\n/* ===== Avatar — round, no border ===== */\r\n.bilibili-fav-avatar {\n    width: 44px;\n    height: 44px;\n    border-radius: 50%;\n    object-fit: cover;\r\n    position: relative;\r\n    z-index: 1;\r\n    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);\n}\n\n.bilibili-fav-avatar.square {\n    border-radius: var(--radius-md);\n}\n\n.bilibili-fav-avatar.cover {\n    display: block;\n    width: 100%;\n    height: 100%;\r\n    border-radius: var(--radius-md);\r\n    box-shadow: none;\r\n    position: absolute;\r\n    inset: 0;\r\n}\r\n\r\n/* ===== Name label ===== */\r\n.bilibili-fav-name {\r\n    font-size: 12px;\r\n    color: var(--text-primary);\r\n    font-weight: 500;\r\n    max-width: 100%;\r\n    overflow: hidden;\r\n    text-overflow: ellipsis;\r\n    white-space: nowrap;\r\n    position: relative;\r\n    z-index: 1;\r\n    margin-top: 6px;\r\n}\r\n\r\n.bilibili-fav-item[data-readlist=\"true\"] .bilibili-fav-name {\r\n    position: absolute;\r\n    bottom: 0;\r\n    left: 0;\r\n    right: 0;\r\n    color: #fff;\r\n    background: linear-gradient(transparent, rgba(0, 0, 0, 0.75));\r\n    padding: 20px 8px 8px;\r\n    border-radius: 0 0 var(--radius-md) var(--radius-md);\r\n    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);\r\n    font-weight: 600;\r\n}\r\n\r\n/* ===== Delete button — ghost pill ===== */\r\n.bilibili-fav-delete {\r\n    position: absolute;\r\n    top: 4px;\r\n    right: 4px;\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    width: 20px;\r\n    height: 20px;\r\n    padding: 0;\r\n    font-size: 14px;\r\n    line-height: 1;\r\n    color: var(--text-primary);\r\n    background: rgba(0, 0, 0, 0.5);\r\n    border: none;\r\n    border-radius: 50%;\r\n    appearance: none;\r\n    cursor: pointer;\r\n    transition: all 0.2s;\r\n    z-index: 2;\r\n    opacity: 0;\r\n}\r\n\r\n.bilibili-fav-item:hover .bilibili-fav-delete { opacity: 1; }\r\n.bilibili-fav-delete:hover { background: var(--error); }\r\n\r\n/* ===== Dynamic filter visibility ===== */\r\n.bilibili-toolbox-dynamic-filter-active .bili-dyn-list__item:not(.bilibili-toolbox-dynamic-filter-ready),\r\n.bilibili-toolbox-dynamic-filter-active .bili-dyn-item:not(.bilibili-toolbox-dynamic-filter-ready),\r\n.bilibili-toolbox-dynamic-filter-active .bili-opus-view:not(.bilibili-toolbox-dynamic-filter-ready),\r\n.bilibili-toolbox-hide-forward-dynamic { display: none !important; }\r\n\r\n/* ══════════════════════════════════════ */\r\n/*  Comic Reader — Spotify dark theme   */\r\n/* ══════════════════════════════════════ */\r\n\r\n.comic-entry-btn {\r\n    position: fixed;\r\n    bottom: 24px;\r\n    right: 24px;\r\n    z-index: 9999;\r\n    display: inline-flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    padding: 10px 18px;\r\n    cursor: pointer;\r\n    background: var(--acc);\r\n    color: #fff;\r\n    border: none;\r\n    border-radius: 24px;\r\n    font-size: 20px;\r\n    line-height: 1;\r\n    box-shadow: 0 4px 16px rgba(251,114,153,0.3);\r\n}\r\n\r\n.comic-entry-btn-touch {\r\n    bottom: 16px;\r\n    right: 16px;\r\n    padding: 12px 16px;\r\n    font-size: 18px;\r\n}\r\n\r\n#comic-reader-overlay {\r\n    position: fixed;\r\n    inset: 0;\r\n    background: var(--bg-deepest);\r\n    z-index: 10000;\r\n    display: flex;\r\n    flex-direction: column;\r\n    align-items: center;\r\n    justify-content: center;\r\n    overflow: hidden;\r\n    touch-action: none;\r\n    overscroll-behavior: none;\r\n    isolation: isolate;\r\n}\r\n\r\n.comic-img-container {\r\n    display: flex;\r\n    width: 100%;\r\n    height: 100%;\r\n    align-items: center;\r\n    justify-content: center;\r\n    gap: 4px;\r\n    padding: 0;\r\n    margin: 0;\r\n    cursor: grab;\r\n    touch-action: none;\r\n    transform-origin: center center;\r\n    will-change: transform;\r\n}\r\n\r\n.comic-img-container.is-grabbing,\r\n.comic-img-container.is-grabbing img { cursor: grabbing; }\r\n\r\n/* ===== Reader control panels ===== */\r\n.comic-controls,\r\n.comic-settings-controls {\r\n    position: fixed;\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: 6px;\r\n    background: var(--bg-overlay);\r\n    padding: 8px 10px;\r\n    border-radius: var(--radius-lg);\r\n    backdrop-filter: blur(20px);\r\n    -webkit-backdrop-filter: blur(20px);\r\n    border: 1px solid var(--border-subtle);\r\n    color: var(--text-primary);\r\n    z-index: 10001;\r\n    transition: opacity 0.5s;\r\n    opacity: 1;\r\n    box-shadow: var(--shadow-heavy);\r\n}\r\n\r\n.comic-controls.is-hidden,\r\n.comic-settings-controls.is-hidden { opacity: 0; }\r\n\r\n.comic-controls { bottom: 24px; right: 24px; }\r\n.comic-settings-controls { top: 24px; right: 24px; }\r\n\r\n.comic-settings-panel {\r\n    position: fixed;\r\n    left: 50%;\r\n    top: 50%;\r\n    z-index: 10002;\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: 8px;\r\n    width: min(460px, calc(100vw - 32px));\r\n    max-height: min(76vh, 560px);\r\n    overflow-y: auto;\r\n    padding: 14px;\r\n    color: var(--text-primary);\r\n    background: var(--bg-overlay);\r\n    border: 1px solid var(--border-subtle);\r\n    border-radius: var(--radius-md);\r\n    box-shadow: var(--shadow-heavy);\r\n    backdrop-filter: blur(20px);\r\n    -webkit-backdrop-filter: blur(20px);\r\n    opacity: 0;\r\n    visibility: hidden;\r\n    pointer-events: none;\r\n    transform: translate(-50%, -50%) scale(0.96);\r\n    transition: opacity 0.18s ease-out, transform 0.18s ease-out, visibility 0.18s;\r\n}\r\n\r\n.comic-settings-panel.show {\r\n    opacity: 1;\r\n    visibility: visible;\r\n    pointer-events: auto;\r\n    transform: translate(-50%, -50%) scale(1);\r\n}\r\n\r\n.comic-settings-panel .comic-btn {\r\n    min-width: 96px;\r\n    padding: 8px 12px;\r\n    border-radius: var(--radius-md);\r\n    white-space: nowrap;\r\n}\r\n\r\n.comic-settings-panel-header {\r\n    padding: 2px 2px 10px;\r\n    border-bottom: 1px solid var(--border-subtle);\r\n}\r\n\r\n.comic-settings-panel-title {\r\n    font-size: 15px;\r\n    font-weight: 700;\r\n    color: var(--text-primary);\r\n}\r\n\r\n.comic-settings-panel-desc {\r\n    margin-top: 4px;\r\n    font-size: 12px;\r\n    line-height: 1.5;\r\n    color: var(--text-secondary);\r\n}\r\n\r\n.comic-settings-item {\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: space-between;\r\n    gap: 14px;\r\n    padding: 12px;\r\n    border: 1px solid var(--border-subtle);\r\n    border-radius: var(--radius-md);\r\n    background: rgba(255, 255, 255, 0.035);\r\n}\r\n\r\n.comic-settings-copy {\r\n    min-width: 0;\r\n}\r\n\r\n.comic-settings-title {\r\n    font-size: 13px;\r\n    font-weight: 700;\r\n    color: var(--text-primary);\r\n}\r\n\r\n.comic-settings-desc {\r\n    margin-top: 4px;\r\n    font-size: 12px;\r\n    line-height: 1.45;\r\n    color: var(--text-secondary);\r\n}\r\n\r\n.comic-settings-action {\r\n    display: flex;\r\n    flex-shrink: 0;\r\n    align-items: center;\r\n    justify-content: flex-end;\r\n}\r\n\r\n.comic-reader-row {\r\n    display: flex;\r\n    gap: 6px;\r\n    align-items: center;\r\n    justify-content: center;\r\n}\r\n\r\n.comic-reader-row-wrap { flex-wrap: wrap; }\r\n\r\n.comic-page-info {\r\n    display: inline-flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    gap: 4px;\r\n    font-size: 14px;\r\n    min-width: 68px;\r\n    min-height: 32px;\r\n    padding: 0 2px;\r\n    color: var(--text-primary);\r\n    cursor: pointer;\r\n    white-space: nowrap;\r\n}\r\n\r\n.comic-page-display {\r\n    display: inline;\r\n}\r\n\r\n.comic-page-input {\r\n    display: none;\r\n    width: 44px;\r\n    height: 32px;\r\n    padding: 0 8px;\r\n    color: var(--text-primary);\r\n    background: var(--bg-deepest);\r\n    border: 1px solid var(--border-subtle);\r\n    border-radius: var(--radius-pill);\r\n    font: inherit;\r\n    text-align: center;\r\n    outline: none;\r\n}\r\n\r\n.comic-page-input:focus {\r\n    border-color: var(--acc);\r\n    box-shadow: 0 0 0 2px rgba(251, 114, 153, 0.18);\r\n}\r\n\r\n.comic-page-range {\r\n    display: none;\r\n    color: var(--text-secondary);\r\n}\r\n\r\n.comic-page-info.is-editing {\r\n    cursor: text;\r\n    justify-content: flex-start;\r\n}\r\n\r\n.comic-page-info.is-editing .comic-page-display {\r\n    display: none;\r\n}\r\n\r\n.comic-page-info.is-editing .comic-page-input,\r\n.comic-page-info.is-editing .comic-page-range {\r\n    display: inline-flex;\r\n}\r\n\r\n/* ===== Reader pill buttons ===== */\r\n.comic-btn {\r\n    padding: 8px 16px;\r\n    cursor: pointer;\r\n    background: var(--bg-elevated);\r\n    color: var(--text-primary);\r\n    border: 1px solid var(--border-strong);\r\n    border-radius: var(--radius-pill);\r\n    font-size: 13px;\r\n    font-weight: 500;\r\n    letter-spacing: 0.3px;\r\n    transition: background 0.15s, border-color 0.15s;\r\n}\r\n\r\n.comic-btn-alt {\r\n    background: transparent;\r\n    border-color: var(--border-subtle);\r\n}\r\n\r\n.comic-btn:hover { background: #2a2a2a; }\r\n\r\n.comic-btn-alt:hover { background: var(--bg-elevated); }\r\n\r\n.comic-btn.active {\r\n    background: var(--acc);\r\n    border-color: var(--acc);\r\n    color: #fff;\r\n}\r\n.comic-btn.active:hover { background: var(--acc-hover); }\r\n\r\n/* ===== Reader toast ===== */\r\n.comic-toast {\r\n    position: fixed;\r\n    left: 50%;\r\n    transform: translateX(-50%);\r\n    padding: 8px 16px;\r\n    border-radius: var(--radius-pill);\r\n    font-size: 13px;\r\n    font-weight: 500;\r\n    color: var(--text-primary);\r\n    z-index: 10004;\r\n    opacity: 0;\r\n    transition: opacity 0.2s;\r\n    pointer-events: none;\r\n    background: var(--bg-overlay);\r\n    backdrop-filter: blur(12px);\r\n    -webkit-backdrop-filter: blur(12px);\r\n    border: 1px solid var(--border-subtle);\r\n    box-shadow: var(--shadow-card);\r\n    top: 18px;\r\n}\r\n\r\n.comic-toast.is-visible { opacity: 1; }\r\n\r\n.comic-toast.is-error { background: rgba(180, 40, 40, 0.94); }\r\n\r\n/* ===== Reader images ===== */\r\n#comic-reader-overlay img {\r\n    cursor: grab;\r\n    display: block;\r\n    max-width: none;\r\n    max-height: none;\r\n    object-fit: contain;\r\n    box-shadow: 0 0 30px rgba(0, 0, 0, 0.4);\r\n    touch-action: none;\r\n    user-select: none;\r\n    -webkit-user-drag: none;\r\n    flex-shrink: 0;\r\n}\r\n\r\n#comic-reader-overlay .comic-img-full,\r\n#comic-reader-overlay .comic-img-half {\r\n    max-width: none;\r\n    max-height: none;\r\n}\r\n\r\n/* ===== Screenshot selection ===== */\r\n.comic-selection-overlay {\r\n    position: fixed;\r\n    inset: 0;\r\n    z-index: 10003;\r\n    display: none;\r\n    cursor: crosshair;\r\n    touch-action: none;\r\n    background: rgba(10,10,10,0.01);\r\n}\r\n\r\n.comic-selection-hint {\r\n    position: fixed;\r\n    top: 66px;\r\n    right: 18px;\r\n    width: 236px;\r\n    max-width: calc(100vw - 36px);\r\n    padding: 10px 12px;\r\n    border-radius: var(--radius-md);\r\n    background: rgba(15,15,15,0.92);\r\n    color: #fff;\r\n    font-size: 13px;\r\n    line-height: 1.45;\r\n    text-align: left;\r\n    pointer-events: none;\r\n    border: 1px solid var(--border-subtle);\r\n    box-shadow: var(--shadow-card);\r\n}\r\n\r\n.comic-selection-toolbar {\r\n    position: fixed;\r\n    top: 18px;\r\n    right: 18px;\r\n    display: flex;\r\n    gap: 10px;\r\n    align-items: center;\r\n}\r\n\r\n.comic-selection-action {\r\n    padding: 10px 14px;\r\n    border: none;\r\n    border-radius: var(--radius-pill);\r\n    color: #fff;\r\n    font-size: 13px;\r\n    cursor: pointer;\r\n    box-shadow: 0 4px 12px rgba(0,0,0,0.25);\r\n}\r\n\r\n.comic-selection-save { background: var(--acc); }\r\n.comic-selection-full { background: #3467a8; }\r\n.comic-selection-cancel { background: #d33; }\r\n\r\n.comic-selection-action.is-disabled {\r\n    opacity: 0.45;\r\n    cursor: not-allowed;\r\n}\r\n\r\n.comic-selection-box {\r\n    position: absolute;\r\n    display: none;\r\n    border: 2px dashed var(--acc);\r\n    background: rgba(251,114,153,0.18);\r\n    box-shadow: 0 0 0 1px rgba(255,255,255,0.25) inset;\r\n    pointer-events: none;\r\n}\r\n\r\n.comic-sel-handle {\r\n    position: absolute;\r\n    width: 28px;\r\n    height: 28px;\r\n    pointer-events: auto;\r\n    display: none;\r\n    z-index: 2;\r\n    transform: translate(-50%,-50%);\r\n    touch-action: none;\r\n}\r\n\r\n.comic-sel-handle::after {\r\n    content: \"\";\r\n    position: absolute;\r\n    left: 50%;\r\n    top: 50%;\r\n    width: 12px;\r\n    height: 12px;\r\n    background: var(--acc);\r\n    border: 2px solid #fff;\r\n    border-radius: 50%;\r\n    box-shadow: 0 1px 4px rgba(0,0,0,0.4);\r\n    transform: translate(-50%,-50%);\r\n}\r\n\r\n.comic-sel-handle[data-dir=\"n\"],\r\n.comic-sel-handle[data-dir=\"s\"] {\r\n    width: max(28px, calc(100% - 40px));\r\n}\r\n\r\n.comic-sel-handle[data-dir=\"e\"],\r\n.comic-sel-handle[data-dir=\"w\"] {\r\n    height: max(28px, calc(100% - 40px));\r\n}\r\n\r\n.comic-sel-handle[data-dir=\"nw\"],\r\n.comic-sel-handle[data-dir=\"ne\"],\r\n.comic-sel-handle[data-dir=\"se\"],\r\n.comic-sel-handle[data-dir=\"sw\"] {\r\n    width: 34px;\r\n    height: 34px;\r\n    z-index: 3;\r\n}\r\n\r\n/* ===== Compact layout (mobile) ===== */\r\n#comic-reader-overlay.reader-compact .comic-btn {\r\n    min-width: 54px;\r\n    min-height: 44px;\r\n    padding: 10px 12px;\r\n    font-size: 14px;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-controls {\r\n    left: auto;\r\n    right: max(12px, env(safe-area-inset-right));\r\n    bottom: max(12px, env(safe-area-inset-bottom));\r\n    width: fit-content;\r\n    max-width: calc(100vw - 24px);\r\n    padding: 8px 12px;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-settings-controls {\r\n    top: max(12px, env(safe-area-inset-top));\r\n    left: auto;\r\n    right: max(12px, env(safe-area-inset-right));\r\n    width: fit-content;\r\n    max-width: 96px;\r\n    flex-direction: column;\r\n    flex-wrap: nowrap;\r\n    justify-content: center;\r\n    max-height: 40vh;\r\n    overflow-y: auto;\r\n    padding: 8px 12px;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-settings-panel {\r\n    width: min(360px, calc(100vw - 24px));\r\n    padding: 12px;\r\n    gap: 8px;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-settings-item {\r\n    align-items: center;\r\n    flex-direction: row;\r\n    gap: 14px;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-settings-action {\r\n    justify-content: flex-end;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-settings-action .comic-btn {\r\n    width: auto;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-toast {\r\n    top: 12px;\r\n    max-width: calc(100vw - 24px);\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-selection-hint {\r\n    top: 62px;\r\n    right: 12px;\r\n    width: min(236px, calc(100vw - 24px));\r\n    max-width: calc(100vw - 24px);\r\n    font-size: 12px;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-selection-toolbar {\r\n    top: 12px;\r\n    right: 12px;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-selection-action {\r\n    padding: 10px 12px;\r\n    font-size: 12px;\r\n}\r\n\r\n@media (hover: none), (pointer: coarse) {\r\n    #bilibili-fav-float-btn.bilibili-fav-touch {\r\n        bottom: max(76px, env(safe-area-inset-bottom));\r\n        right: max(16px, env(safe-area-inset-right));\r\n        width: 54px;\r\n        height: 54px;\r\n        font-size: 24px;\r\n        opacity: 1 !important;\r\n        visibility: visible !important;\r\n    }\r\n\r\n    #bilibili-fav-panel,\n    #bilibili-toolbox-settings-panel {\n        right: max(12px, env(safe-area-inset-right));\n        bottom: max(140px, calc(env(safe-area-inset-bottom) + 84px));\n        max-height: min(70vh, 560px);\n        overflow: hidden;\n    }\n\n    #bilibili-fav-panel {\n        width: min(\n            calc(\n                var(--bilibili-fav-columns) * var(--bilibili-fav-item-width)\n                + (var(--bilibili-fav-columns) - 1) * var(--bilibili-fav-list-gap)\n                + var(--bilibili-fav-list-padding-x) * 2\n            ),\n            calc(100vw - 24px)\n        );\n    }\n\n    #bilibili-toolbox-settings-panel {\n        width: min(320px, calc(100vw - 24px));\n    }\n\r\n    .bilibili-fav-header {\r\n        gap: 8px;\r\n        padding: 10px 12px;\r\n    }\r\n\r\n    .bilibili-fav-header-actions {\r\n        flex-shrink: 0;\r\n    }\r\n\r\n    .bilibili-fav-control-btn {\r\n        display: inline-flex;\r\n        align-items: center;\r\n        justify-content: center;\r\n    }\r\n\r\n    .bilibili-fav-add-btn,\r\n    .bilibili-fav-control-btn,\r\n    .bilibili-toolbox-export-btn,\r\n    .bilibili-toolbox-import-btn {\r\n        min-height: 42px;\r\n    }\r\n\r\n    .bilibili-fav-content {\r\n        max-height: min(52vh, 420px);\r\n    }\r\n\r\n    .bilibili-fav-delete {\r\n        width: 26px;\r\n        height: 26px;\r\n        font-size: 16px;\r\n        opacity: 1;\r\n    }\r\n\r\n    .bilibili-fav-item-link {\r\n        touch-action: manipulation;\r\n    }\r\n\r\n    .comic-sel-handle {\r\n        width: 36px;\r\n        height: 36px;\r\n    }\r\n\r\n    .comic-sel-handle[data-dir=\"n\"],\r\n    .comic-sel-handle[data-dir=\"s\"] {\r\n        width: max(36px, calc(100% - 48px));\r\n    }\r\n\r\n    .comic-sel-handle[data-dir=\"e\"],\r\n    .comic-sel-handle[data-dir=\"w\"] {\r\n        height: max(36px, calc(100% - 48px));\r\n    }\r\n\r\n    .comic-sel-handle[data-dir=\"nw\"],\r\n    .comic-sel-handle[data-dir=\"ne\"],\r\n    .comic-sel-handle[data-dir=\"se\"],\r\n    .comic-sel-handle[data-dir=\"sw\"] {\r\n        width: 44px;\r\n        height: 44px;\r\n    }\r\n\r\n    #comic-reader-overlay.reader-compact .comic-reader-row {\r\n        gap: 6px;\r\n        flex-wrap: wrap;\r\n    }\r\n\r\n    #comic-reader-overlay.reader-compact .comic-settings-controls { gap: 8px; }\r\n\r\n    #comic-reader-overlay.reader-compact .comic-selection-hint { text-align: left; }\r\n}\r\n\n";
+    const css = "/* ===== content-base.css ===== */\n/* Bilibili Toolbox — Spotify-inspired dark theme */\r\n\r\n:root {\r\n    --acc: #fb7299;\r\n    --acc-hover: #fc8bab;\r\n    --acc-active: #e86288;\r\n    --bg-deepest: #0a0a0a;\r\n    --bg-surface: #181818;\r\n    --bg-elevated: #1f1f1f;\r\n    --bg-overlay: rgba(20, 20, 20, 0.94);\r\n    --text-primary: #ffffff;\r\n    --text-secondary: #b3b3b3;\r\n    --text-muted: #7c7c7c;\r\n    --border-subtle: rgba(255, 255, 255, 0.12);\r\n    --border-strong: #4d4d4d;\r\n    --error: #f3727f;\r\n    --error-hover: #e86a77;\r\n    --shadow-heavy: 0 8px 24px rgba(0, 0, 0, 0.5);\r\n    --shadow-card: 0 4px 8px rgba(0, 0, 0, 0.3);\r\n    --shadow-float: 0 4px 16px rgba(251, 114, 153, 0.25);\r\n    --radius-sm: 6px;\r\n    --radius-md: 8px;\r\n    --radius-lg: 12px;\r\n    --radius-pill: 9999px;\r\n    --font: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif;\r\n}\r\n\r\n\n/* ===== content-toolbox.css ===== */\n/* ===== Floating star button ===== */\r\n#bilibili-fav-float-btn {\r\n    position: fixed;\r\n    bottom: 80px;\r\n    right: 20px;\r\n    width: 50px;\r\n    height: 50px;\r\n    background: var(--acc);\r\n    border-radius: 50%;\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    font-size: 24px;\r\n    cursor: pointer;\r\n    box-shadow: var(--shadow-float);\r\n    z-index: 999999;\r\n    transition: transform 0.2s, box-shadow 0.2s, opacity 0.3s, visibility 0.3s;\r\n    line-height: 1;\r\n    text-align: center;\r\n}\r\n\r\n#bilibili-fav-float-btn:hover {\r\n    transform: scale(1.1);\r\n    box-shadow: 0 6px 20px rgba(251, 114, 153, 0.4);\r\n}\r\n\r\n#bilibili-fav-float-btn.dynamic-filter-active {\n    border-radius: var(--radius-sm);\n}\n\r\n#bilibili-fav-float-btn.bilibili-fav-video-hidden {\r\n    opacity: 0;\r\n}\r\n\r\n#bilibili-fav-float-btn.bilibili-fav-video-visible {\r\n    opacity: 1;\r\n}\r\n\r\n/* ===== Shared panel base ===== */\r\n#bilibili-fav-panel,\r\n#bilibili-toolbox-settings-panel {\r\n    position: fixed;\r\n    bottom: 140px;\r\n    right: 20px;\r\n    width: 280px;\r\n    background: var(--bg-overlay);\r\n    backdrop-filter: blur(20px);\r\n    -webkit-backdrop-filter: blur(20px);\r\n    border-radius: var(--radius-lg);\r\n    box-shadow: var(--shadow-heavy);\r\n    z-index: 1000000;\r\n    opacity: 0;\r\n    visibility: hidden;\r\n    transition: opacity 0.2s, transform 0.2s, visibility 0.2s;\r\n    font-family: var(--font);\r\n    transform: translateY(10px);\r\n    color: var(--text-primary);\r\n    border: 1px solid var(--border-subtle);\r\n}\r\n\r\n#bilibili-fav-panel {\r\n    --bilibili-fav-columns: 2;\r\n    --bilibili-fav-item-width: 130px;\r\n    --bilibili-fav-list-gap: 4px;\r\n    --bilibili-fav-list-padding-x: 10px;\r\n    width: calc(\r\n        var(--bilibili-fav-columns) * var(--bilibili-fav-item-width)\r\n        + (var(--bilibili-fav-columns) - 1) * var(--bilibili-fav-list-gap)\r\n        + var(--bilibili-fav-list-padding-x) * 2\r\n    );\r\n}\r\n\r\n#bilibili-toolbox-settings-panel {\r\n    width: 320px;\r\n    z-index: 1000001;\r\n}\r\n\r\n#bilibili-fav-panel.show,\r\n#bilibili-toolbox-settings-panel.show {\r\n    opacity: 1;\r\n    visibility: visible;\r\n    transform: translateY(0);\r\n}\r\n\r\n/* ===== Panel header ===== */\r\n.bilibili-fav-header {\r\n    display: flex;\r\n    justify-content: space-between;\r\n    align-items: center;\r\n    padding: 10px 16px;\r\n    border-bottom: 1px solid var(--border-subtle);\r\n    background: var(--bg-elevated);\r\n    color: var(--text-primary);\r\n    border-radius: var(--radius-lg) var(--radius-lg) 0 0;\r\n    font-weight: 600;\r\n    font-size: 14px;\r\n    letter-spacing: 0.3px;\r\n}\r\n\r\n.bilibili-fav-header-actions {\r\n    display: flex;\r\n    align-items: center;\r\n    gap: 6px;\r\n}\r\n\r\n/* ===== Panel content ===== */\r\n.bilibili-fav-content { max-height: 400px; overflow: auto; }\r\n\r\n.bilibili-fav-list {\r\n    padding: 8px var(--bilibili-fav-list-padding-x);\r\n    display: grid;\r\n    grid-template-columns: repeat(var(--bilibili-fav-columns, 2), var(--bilibili-fav-item-width));\r\n    gap: var(--bilibili-fav-list-gap);\r\n}\r\n\r\n.bilibili-fav-content::-webkit-scrollbar { width: 5px; }\r\n.bilibili-fav-content::-webkit-scrollbar-track { background: transparent; }\r\n.bilibili-fav-content::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 3px; }\r\n.bilibili-fav-content::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.25); }\r\n\r\n/* ===== Toolbox settings content ===== */\r\n.bilibili-toolbox-control-content {\r\n    padding: 14px;\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: 14px;\r\n}\r\n\r\n.bilibili-toolbox-control-section {\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: 10px;\r\n}\r\n\r\n.bilibili-toolbox-section-title {\r\n    color: var(--text-secondary);\r\n    font-size: 12px;\r\n    font-weight: 700;\r\n    line-height: 1;\r\n}\r\n\r\n.bilibili-toolbox-control-row {\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: space-between;\r\n    gap: 12px;\r\n    padding: 12px 14px;\r\n    border-radius: var(--radius-md);\r\n    background: var(--bg-surface);\r\n    cursor: pointer;\r\n    border: 1px solid var(--border-subtle);\r\n}\r\n\r\n.bilibili-toolbox-control-row-stack {\r\n    align-items: stretch;\r\n    cursor: default;\r\n    flex-direction: column;\r\n    gap: 10px;\r\n}\r\n\r\n.bilibili-toolbox-control-copy {\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: 4px;\r\n    min-width: 0;\r\n}\r\n\r\n.bilibili-toolbox-control-title {\r\n    font-size: 14px;\r\n    font-weight: 600;\r\n    color: var(--text-primary);\r\n}\r\n\r\n.bilibili-toolbox-control-desc {\r\n    font-size: 12px;\r\n    color: var(--text-secondary);\r\n    line-height: 1.4;\r\n}\r\n\r\n.bilibili-toolbox-segmented {\r\n    display: grid;\r\n    grid-template-columns: repeat(4, minmax(0, 1fr));\r\n    gap: 4px;\r\n    padding: 3px;\r\n    border-radius: var(--radius-pill);\r\n    background: var(--bg-deepest);\r\n    border: 1px solid var(--border-subtle);\r\n}\r\n\r\n.bilibili-toolbox-segmented button {\r\n    min-height: 30px;\r\n    padding: 0;\r\n    color: var(--text-secondary);\r\n    background: transparent;\r\n    border: none;\r\n    border-radius: var(--radius-pill);\r\n    cursor: pointer;\r\n    font: 600 13px/1 var(--font);\r\n}\r\n\r\n.bilibili-toolbox-segmented button:hover {\r\n    color: var(--text-primary);\r\n    background: rgba(255, 255, 255, 0.08);\r\n}\r\n\r\n.bilibili-toolbox-segmented button.active {\r\n    color: #fff;\r\n    background: var(--acc);\r\n}\r\n\r\n.bilibili-toolbox-keyword-input {\n    width: 100%;\r\n    min-height: 38px;\r\n    padding: 0 12px;\r\n    box-sizing: border-box;\r\n    color: var(--text-primary);\r\n    background: var(--bg-deepest);\r\n    border: 1px solid var(--border-subtle);\r\n    border-radius: var(--radius-md);\r\n    font-family: var(--font);\r\n    font-size: 13px;\r\n    outline: none;\r\n    transition: border-color 0.2s, box-shadow 0.2s, opacity 0.2s;\r\n}\r\n\r\n.bilibili-toolbox-keyword-input::placeholder {\r\n    color: var(--text-muted);\r\n}\r\n\r\n.bilibili-toolbox-keyword-input:focus {\r\n    border-color: var(--acc);\r\n    box-shadow: 0 0 0 2px rgba(251, 114, 153, 0.18);\r\n}\r\n\r\n/* ===== Toggle switch ===== */\r\n.bilibili-toolbox-switch {\r\n    position: relative;\r\n    width: 46px;\r\n    height: 28px;\r\n    flex-shrink: 0;\r\n}\r\n\r\n.bilibili-toolbox-switch input {\r\n    position: absolute;\r\n    inset: 0;\r\n    opacity: 0;\r\n    cursor: pointer;\r\n    margin: 0;\r\n}\r\n\r\n.bilibili-toolbox-switch-slider {\r\n    position: absolute;\r\n    inset: 0;\r\n    border-radius: var(--radius-pill);\r\n    background: rgba(255, 255, 255, 0.2);\r\n    transition: background 0.2s;\r\n}\r\n\r\n.bilibili-toolbox-switch-slider::before {\r\n    content: \"\";\r\n    position: absolute;\r\n    top: 3px;\r\n    left: 3px;\r\n    width: 22px;\r\n    height: 22px;\r\n    border-radius: 50%;\r\n    background: #fff;\r\n    transition: transform 0.2s;\r\n    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);\r\n}\r\n\r\n.bilibili-toolbox-switch input:checked + .bilibili-toolbox-switch-slider {\r\n    background: var(--acc);\r\n}\r\n\r\n.bilibili-toolbox-switch input:checked + .bilibili-toolbox-switch-slider::before {\r\n    transform: translateX(18px);\r\n}\r\n\r\n/* ===== Empty state ===== */\r\n.bilibili-fav-empty { grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 40px 20px; font-size: 14px; }\r\n\r\n/* ===== Toast message ===== */\r\n.bilibili-fav-msg { padding: 8px; text-align: center; font-size: 12px; display: none; }\r\n\r\n/* ===== Pill buttons (global) ===== */\r\n.bilibili-fav-add-btn,\r\n.bilibili-fav-control-btn,\r\n.bilibili-toolbox-export-btn,\r\n.bilibili-toolbox-import-btn {\r\n    padding: 10px 0;\r\n    font-size: 13px;\r\n    font-weight: 600;\r\n    border: none;\r\n    border-radius: var(--radius-pill);\r\n    cursor: pointer;\r\n    transition: all 0.2s;\r\n    color: var(--text-primary);\r\n    letter-spacing: 0.3px;\r\n    flex: 1;\r\n}\r\n\r\n.bilibili-fav-add-btn {\r\n    padding: 8px 16px;\r\n    flex: none;\r\n}\r\n\r\n.bilibili-fav-control-btn {\r\n    display: none;\r\n    padding: 8px 12px;\r\n    flex: none;\r\n}\r\n\r\n/* Primary pill — accent fill */\r\n.bilibili-fav-add-btn,\r\n.bilibili-fav-control-btn,\r\n.bilibili-toolbox-export-btn {\r\n    background: var(--acc);\r\n    color: #fff;\r\n}\r\n\r\n.bilibili-fav-add-btn:hover,\r\n.bilibili-fav-control-btn:hover,\r\n.bilibili-toolbox-export-btn:hover {\r\n    background: var(--acc-hover);\r\n}\r\n\r\n/* Secondary pill — dark fill */\r\n.bilibili-toolbox-import-btn {\r\n    background: var(--bg-elevated);\r\n    border: 1px solid var(--border-strong);\r\n}\r\n\r\n.bilibili-toolbox-import-btn:hover {\r\n    background: #2a2a2a;\r\n}\r\n\r\n/* ===== Button group layout ===== */\r\n.bilibili-toolbox-control-actions {\r\n    display: flex;\r\n    gap: 8px;\r\n    padding: 0 16px 16px;\r\n}\r\n\r\n/* ===== Export text document ===== */\r\n.bilibili-toolbox-export-dialog {\r\n    position: fixed;\r\n    inset: 0;\r\n    z-index: 1000002;\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    padding: 16px;\r\n    background: rgba(0, 0, 0, 0.72);\r\n}\r\n\r\n.bilibili-toolbox-export-document {\r\n    display: flex;\r\n    width: min(640px, 100%);\r\n    max-height: min(720px, 86vh);\r\n    flex-direction: column;\r\n    overflow: hidden;\r\n    background: var(--bg-elevated);\r\n    border: 1px solid var(--border-subtle);\r\n    border-radius: var(--radius-md);\r\n    box-shadow: var(--shadow-heavy);\r\n}\r\n\r\n.bilibili-toolbox-export-header {\r\n    display: flex;\r\n    min-height: 44px;\r\n    align-items: center;\r\n    justify-content: space-between;\r\n    padding: 0 14px;\r\n    color: var(--text-primary);\r\n    font-size: 14px;\r\n    font-weight: 600;\r\n    border-bottom: 1px solid var(--border-subtle);\r\n}\r\n\r\n.bilibili-toolbox-export-close {\r\n    display: inline-flex;\r\n    width: 30px;\r\n    height: 30px;\r\n    align-items: center;\r\n    justify-content: center;\r\n    padding: 0;\r\n    color: var(--text-secondary);\r\n    background: transparent;\r\n    border: none;\r\n    border-radius: 50%;\r\n    cursor: pointer;\r\n    font-size: 22px;\r\n    line-height: 1;\r\n}\r\n\r\n.bilibili-toolbox-export-close:hover {\r\n    color: var(--text-primary);\r\n    background: rgba(255, 255, 255, 0.1);\r\n}\r\n\r\n.bilibili-toolbox-export-text {\r\n    width: 100%;\r\n    min-height: min(560px, 72vh);\r\n    padding: 14px;\r\n    resize: vertical;\r\n    box-sizing: border-box;\r\n    color: var(--text-primary);\r\n    background: var(--bg-deepest);\r\n    border: none;\r\n    outline: none;\r\n    font-family: Consolas, \"Courier New\", monospace;\r\n    font-size: 13px;\r\n    line-height: 1.5;\r\n}\r\n\r\n.bilibili-toolbox-export-footer {\r\n    display: flex;\r\n    min-height: 52px;\r\n    align-items: center;\r\n    justify-content: space-between;\r\n    gap: 12px;\r\n    padding: 8px 12px;\r\n    border-top: 1px solid var(--border-subtle);\r\n}\r\n\r\n.bilibili-toolbox-export-status {\r\n    color: var(--text-secondary);\r\n    font-size: 12px;\r\n    line-height: 1.4;\r\n}\r\n\r\n.bilibili-toolbox-export-status.is-error {\r\n    color: var(--error);\r\n}\r\n\r\n.bilibili-toolbox-export-actions {\r\n    display: flex;\r\n    flex-shrink: 0;\r\n    align-items: center;\r\n    gap: 8px;\r\n}\r\n\r\n.bilibili-toolbox-export-clipboard,\r\n.bilibili-toolbox-export-confirm {\r\n    flex-shrink: 0;\r\n    padding: 8px 18px;\r\n    color: #fff;\r\n    background: var(--acc);\r\n    border: none;\r\n    border-radius: var(--radius-pill);\r\n    cursor: pointer;\r\n    font-size: 13px;\r\n    font-weight: 600;\r\n}\r\n\r\n.bilibili-toolbox-export-clipboard:hover,\r\n.bilibili-toolbox-export-confirm:hover {\r\n    background: var(--acc-hover);\r\n}\r\n\r\n/* ===== Favorite list items ===== */\r\n.bilibili-fav-item-link {\r\n    display: block;\r\n    text-decoration: none;\r\n    color: inherit;\r\n    width: var(--bilibili-fav-item-width);\r\n    min-width: 0;\r\n    position: relative;\r\n}\r\n\r\n.bilibili-fav-item {\r\n    display: flex;\r\n    flex-direction: column;\r\n    align-items: center;\r\n    padding: 8px 6px 10px;\r\n    border-radius: var(--radius-md);\r\n    transition: background 0.2s;\r\n    text-align: center;\r\n    position: relative;\r\n    overflow: hidden;\r\n    height: 88px;\r\n    box-sizing: border-box;\r\n    background: transparent;\r\n}\r\n\r\n.bilibili-fav-item[data-readlist=\"true\"] { padding: 0; }\r\n\r\n.bilibili-fav-item-link:hover .bilibili-fav-item {\r\n    background: var(--bg-surface);\r\n}\r\n\r\n.bilibili-fav-item-info {\r\n    display: flex;\r\n    flex-direction: column;\r\n    align-items: center;\r\n    width: 100%;\r\n    height: 100%;\r\n    position: relative;\r\n    z-index: 1;\r\n}\r\n\r\n.bilibili-fav-item[data-readlist=\"true\"] .bilibili-fav-item-info {\r\n    padding: 0;\r\n    overflow: hidden;\r\n    border-radius: inherit;\r\n}\r\n\r\n/* ===== Avatar — round, no border ===== */\r\n.bilibili-fav-avatar {\r\n    width: 44px;\r\n    height: 44px;\r\n    border-radius: 50%;\r\n    object-fit: cover;\r\n    position: relative;\r\n    z-index: 1;\r\n    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);\r\n}\r\n\r\n.bilibili-fav-avatar.square {\r\n    border-radius: var(--radius-md);\r\n}\r\n\r\n.bilibili-fav-avatar.cover {\r\n    display: block;\r\n    width: 100%;\r\n    height: 100%;\r\n    border-radius: var(--radius-md);\r\n    box-shadow: none;\r\n    position: absolute;\r\n    inset: 0;\r\n}\r\n\r\n/* ===== Name label ===== */\r\n.bilibili-fav-name {\r\n    font-size: 12px;\r\n    color: var(--text-primary);\r\n    font-weight: 500;\r\n    max-width: 100%;\r\n    overflow: hidden;\r\n    text-overflow: ellipsis;\r\n    white-space: nowrap;\r\n    position: relative;\r\n    z-index: 1;\r\n    margin-top: 6px;\r\n}\r\n\r\n.bilibili-fav-item[data-readlist=\"true\"] .bilibili-fav-name {\r\n    position: absolute;\r\n    bottom: 0;\r\n    left: 0;\r\n    right: 0;\r\n    color: #fff;\r\n    background: linear-gradient(transparent, rgba(0, 0, 0, 0.75));\r\n    padding: 20px 8px 8px;\r\n    border-radius: 0 0 var(--radius-md) var(--radius-md);\r\n    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);\r\n    font-weight: 600;\r\n}\r\n\r\n/* ===== Delete button — ghost pill ===== */\r\n.bilibili-fav-delete {\r\n    position: absolute;\r\n    top: 4px;\r\n    right: 4px;\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    width: 20px;\r\n    height: 20px;\r\n    padding: 0;\r\n    font-size: 14px;\r\n    line-height: 1;\r\n    color: var(--text-primary);\r\n    background: rgba(0, 0, 0, 0.5);\r\n    border: none;\r\n    border-radius: 50%;\r\n    appearance: none;\r\n    cursor: pointer;\r\n    transition: all 0.2s;\r\n    z-index: 2;\r\n    opacity: 0;\r\n}\r\n\r\n.bilibili-fav-item:hover .bilibili-fav-delete { opacity: 1; }\r\n.bilibili-fav-delete:hover { background: var(--error); }\r\n\r\n/* ===== Dynamic filter visibility ===== */\r\n.bilibili-toolbox-dynamic-filter-active .bili-dyn-list__item:not(.bilibili-toolbox-dynamic-filter-ready),\r\n.bilibili-toolbox-dynamic-filter-active .bili-dyn-item:not(.bilibili-toolbox-dynamic-filter-ready),\r\n.bilibili-toolbox-dynamic-filter-active .bili-opus-view:not(.bilibili-toolbox-dynamic-filter-ready),\r\n.bilibili-toolbox-hide-forward-dynamic { display: none !important; }\r\n\r\n/* ══════════════════════════════════════ */\r\n\n/* ===== content-reader.css ===== */\n/*  Comic Reader — Spotify dark theme   */\r\n/* ══════════════════════════════════════ */\r\n\r\n.comic-entry-btn {\r\n    position: fixed;\r\n    bottom: 24px;\r\n    right: 24px;\r\n    z-index: 9999;\r\n    display: inline-flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    padding: 10px 18px;\r\n    cursor: pointer;\r\n    background: var(--acc);\r\n    color: #fff;\r\n    border: none;\r\n    border-radius: 24px;\r\n    font-size: 20px;\r\n    line-height: 1;\r\n    box-shadow: 0 4px 16px rgba(251,114,153,0.3);\r\n}\r\n\r\n.comic-entry-btn-touch {\r\n    bottom: 16px;\r\n    right: 16px;\r\n    padding: 12px 16px;\r\n    font-size: 18px;\r\n}\r\n\r\n#comic-reader-overlay {\r\n    position: fixed;\r\n    inset: 0;\r\n    background: var(--bg-deepest);\r\n    z-index: 10000;\r\n    display: flex;\r\n    flex-direction: column;\r\n    align-items: center;\r\n    justify-content: center;\r\n    overflow: hidden;\r\n    touch-action: none;\r\n    overscroll-behavior: none;\r\n    isolation: isolate;\r\n}\r\n\r\n.comic-img-container {\r\n    display: flex;\r\n    width: 100%;\r\n    height: 100%;\r\n    align-items: center;\r\n    justify-content: center;\r\n    gap: 4px;\r\n    padding: 0;\r\n    margin: 0;\r\n    cursor: grab;\r\n    touch-action: none;\r\n    transform-origin: center center;\r\n    will-change: transform;\r\n}\r\n\r\n.comic-img-container.is-grabbing,\r\n.comic-img-container.is-grabbing img { cursor: grabbing; }\r\n\r\n/* ===== Reader control panels ===== */\r\n.comic-controls,\r\n.comic-settings-controls {\r\n    position: fixed;\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: 6px;\r\n    background: var(--bg-overlay);\r\n    padding: 8px 10px;\r\n    border-radius: var(--radius-lg);\r\n    backdrop-filter: blur(20px);\r\n    -webkit-backdrop-filter: blur(20px);\r\n    border: 1px solid var(--border-subtle);\r\n    color: var(--text-primary);\r\n    z-index: 10001;\r\n    transition: opacity 0.5s;\r\n    opacity: 1;\r\n    box-shadow: var(--shadow-heavy);\r\n}\r\n\r\n.comic-controls.is-hidden,\r\n.comic-settings-controls.is-hidden { opacity: 0; }\r\n\r\n.comic-controls { bottom: 24px; right: 24px; }\r\n.comic-settings-controls { top: 24px; right: 24px; }\r\n\r\n.comic-settings-panel {\r\n    position: fixed;\r\n    left: 50%;\r\n    top: 50%;\r\n    z-index: 10002;\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: 8px;\r\n    width: min(460px, calc(100vw - 32px));\r\n    max-height: min(76vh, 560px);\r\n    overflow-y: auto;\r\n    padding: 14px;\r\n    color: var(--text-primary);\r\n    background: var(--bg-overlay);\r\n    border: 1px solid var(--border-subtle);\r\n    border-radius: var(--radius-md);\r\n    box-shadow: var(--shadow-heavy);\r\n    backdrop-filter: blur(20px);\r\n    -webkit-backdrop-filter: blur(20px);\r\n    opacity: 0;\r\n    visibility: hidden;\r\n    pointer-events: none;\r\n    transform: translate(-50%, -50%) scale(0.96);\r\n    transition: opacity 0.18s ease-out, transform 0.18s ease-out, visibility 0.18s;\r\n}\r\n\r\n.comic-settings-panel.show {\r\n    opacity: 1;\r\n    visibility: visible;\r\n    pointer-events: auto;\r\n    transform: translate(-50%, -50%) scale(1);\r\n}\r\n\r\n.comic-settings-panel .comic-btn {\r\n    min-width: 96px;\r\n    padding: 8px 12px;\r\n    border-radius: var(--radius-md);\r\n    white-space: nowrap;\r\n}\r\n\r\n.comic-settings-panel-header {\r\n    padding: 2px 2px 10px;\r\n    border-bottom: 1px solid var(--border-subtle);\r\n}\r\n\r\n.comic-settings-panel-title {\r\n    font-size: 15px;\r\n    font-weight: 700;\r\n    color: var(--text-primary);\r\n}\r\n\r\n.comic-settings-panel-desc {\r\n    margin-top: 4px;\r\n    font-size: 12px;\r\n    line-height: 1.5;\r\n    color: var(--text-secondary);\r\n}\r\n\r\n.comic-settings-item {\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: space-between;\r\n    gap: 14px;\r\n    padding: 12px;\r\n    border: 1px solid var(--border-subtle);\r\n    border-radius: var(--radius-md);\r\n    background: rgba(255, 255, 255, 0.035);\r\n}\r\n\r\n.comic-settings-copy {\r\n    min-width: 0;\r\n}\r\n\r\n.comic-settings-title {\r\n    font-size: 13px;\r\n    font-weight: 700;\r\n    color: var(--text-primary);\r\n}\r\n\r\n.comic-settings-desc {\r\n    margin-top: 4px;\r\n    font-size: 12px;\r\n    line-height: 1.45;\r\n    color: var(--text-secondary);\r\n}\r\n\r\n.comic-settings-action {\r\n    display: flex;\r\n    flex-shrink: 0;\r\n    align-items: center;\r\n    justify-content: flex-end;\r\n}\r\n\r\n.comic-reader-row {\r\n    display: flex;\r\n    gap: 6px;\r\n    align-items: center;\r\n    justify-content: center;\r\n}\r\n\r\n.comic-reader-row-wrap { flex-wrap: wrap; }\r\n\r\n.comic-page-info {\r\n    display: inline-flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    gap: 4px;\r\n    font-size: 14px;\r\n    min-width: 68px;\r\n    min-height: 32px;\r\n    padding: 0 2px;\r\n    color: var(--text-primary);\r\n    cursor: pointer;\r\n    white-space: nowrap;\r\n}\r\n\r\n.comic-page-display {\r\n    display: inline;\r\n}\r\n\r\n.comic-page-input {\r\n    display: none;\r\n    width: 44px;\r\n    height: 32px;\r\n    padding: 0 8px;\r\n    color: var(--text-primary);\r\n    background: var(--bg-deepest);\r\n    border: 1px solid var(--border-subtle);\r\n    border-radius: var(--radius-pill);\r\n    font: inherit;\r\n    text-align: center;\r\n    outline: none;\r\n}\r\n\r\n.comic-page-input:focus {\r\n    border-color: var(--acc);\r\n    box-shadow: 0 0 0 2px rgba(251, 114, 153, 0.18);\r\n}\r\n\r\n.comic-page-range {\r\n    display: none;\r\n    color: var(--text-secondary);\r\n}\r\n\r\n.comic-page-info.is-editing {\r\n    cursor: text;\r\n    justify-content: flex-start;\r\n}\r\n\r\n.comic-page-info.is-editing .comic-page-display {\r\n    display: none;\r\n}\r\n\r\n.comic-page-info.is-editing .comic-page-input,\r\n.comic-page-info.is-editing .comic-page-range {\r\n    display: inline-flex;\r\n}\r\n\r\n/* ===== Reader pill buttons ===== */\r\n.comic-btn {\r\n    padding: 8px 16px;\r\n    cursor: pointer;\r\n    background: var(--bg-elevated);\r\n    color: var(--text-primary);\r\n    border: 1px solid var(--border-strong);\r\n    border-radius: var(--radius-pill);\r\n    font-size: 13px;\r\n    font-weight: 500;\r\n    letter-spacing: 0.3px;\r\n    transition: background 0.15s, border-color 0.15s;\r\n}\r\n\r\n.comic-btn-alt {\r\n    background: transparent;\r\n    border-color: var(--border-subtle);\r\n}\r\n\r\n.comic-btn:hover { background: #2a2a2a; }\r\n\r\n.comic-btn-alt:hover { background: var(--bg-elevated); }\r\n\r\n.comic-btn.active {\r\n    background: var(--acc);\r\n    border-color: var(--acc);\r\n    color: #fff;\r\n}\r\n.comic-btn.active:hover { background: var(--acc-hover); }\r\n\r\n/* ===== Reader toast ===== */\r\n.comic-toast {\r\n    position: fixed;\r\n    left: 50%;\r\n    transform: translateX(-50%);\r\n    padding: 8px 16px;\r\n    border-radius: var(--radius-pill);\r\n    font-size: 13px;\r\n    font-weight: 500;\r\n    color: var(--text-primary);\r\n    z-index: 10004;\r\n    opacity: 0;\r\n    transition: opacity 0.2s;\r\n    pointer-events: none;\r\n    background: var(--bg-overlay);\r\n    backdrop-filter: blur(12px);\r\n    -webkit-backdrop-filter: blur(12px);\r\n    border: 1px solid var(--border-subtle);\r\n    box-shadow: var(--shadow-card);\r\n    top: 18px;\r\n}\r\n\r\n.comic-toast.is-visible { opacity: 1; }\r\n\r\n.comic-toast.is-error { background: rgba(180, 40, 40, 0.94); }\r\n\r\n/* ===== Reader images ===== */\r\n#comic-reader-overlay img {\r\n    cursor: grab;\r\n    display: block;\r\n    max-width: none;\r\n    max-height: none;\r\n    object-fit: contain;\r\n    box-shadow: 0 0 30px rgba(0, 0, 0, 0.4);\r\n    touch-action: none;\r\n    user-select: none;\r\n    -webkit-user-drag: none;\r\n    flex-shrink: 0;\r\n}\r\n\r\n#comic-reader-overlay .comic-img-full,\r\n#comic-reader-overlay .comic-img-half {\r\n    max-width: none;\r\n    max-height: none;\r\n}\r\n\r\n/* ===== Screenshot selection ===== */\r\n.comic-selection-overlay {\r\n    position: fixed;\r\n    inset: 0;\r\n    z-index: 10003;\r\n    display: none;\r\n    cursor: crosshair;\r\n    touch-action: none;\r\n    background: rgba(10,10,10,0.01);\r\n}\r\n\r\n.comic-selection-hint {\r\n    position: fixed;\r\n    top: 66px;\r\n    right: 18px;\r\n    width: 236px;\r\n    max-width: calc(100vw - 36px);\r\n    padding: 10px 12px;\r\n    border-radius: var(--radius-md);\r\n    background: rgba(15,15,15,0.92);\r\n    color: #fff;\r\n    font-size: 13px;\r\n    line-height: 1.45;\r\n    text-align: left;\r\n    pointer-events: none;\r\n    border: 1px solid var(--border-subtle);\r\n    box-shadow: var(--shadow-card);\r\n}\r\n\r\n.comic-selection-toolbar {\r\n    position: fixed;\r\n    top: 18px;\r\n    right: 18px;\r\n    display: flex;\r\n    gap: 10px;\r\n    align-items: center;\r\n}\r\n\r\n.comic-selection-action {\r\n    padding: 10px 14px;\r\n    border: none;\r\n    border-radius: var(--radius-pill);\r\n    color: #fff;\r\n    font-size: 13px;\r\n    cursor: pointer;\r\n    box-shadow: 0 4px 12px rgba(0,0,0,0.25);\r\n}\r\n\r\n.comic-selection-save { background: var(--acc); }\r\n.comic-selection-full { background: #3467a8; }\r\n.comic-selection-cancel { background: #d33; }\r\n\r\n.comic-selection-action.is-disabled {\r\n    opacity: 0.45;\r\n    cursor: not-allowed;\r\n}\r\n\r\n.comic-selection-box {\r\n    position: absolute;\r\n    display: none;\r\n    border: 2px dashed var(--acc);\r\n    background: rgba(251,114,153,0.18);\r\n    box-shadow: 0 0 0 1px rgba(255,255,255,0.25) inset;\r\n    pointer-events: none;\r\n}\r\n\r\n.comic-sel-handle {\r\n    position: absolute;\r\n    width: 28px;\r\n    height: 28px;\r\n    pointer-events: auto;\r\n    display: none;\r\n    z-index: 2;\r\n    transform: translate(-50%,-50%);\r\n    touch-action: none;\r\n}\r\n\r\n.comic-sel-handle::after {\r\n    content: \"\";\r\n    position: absolute;\r\n    left: 50%;\r\n    top: 50%;\r\n    width: 12px;\r\n    height: 12px;\r\n    background: var(--acc);\r\n    border: 2px solid #fff;\r\n    border-radius: 50%;\r\n    box-shadow: 0 1px 4px rgba(0,0,0,0.4);\r\n    transform: translate(-50%,-50%);\r\n}\r\n\r\n.comic-sel-handle[data-dir=\"n\"],\r\n.comic-sel-handle[data-dir=\"s\"] {\r\n    width: max(28px, calc(100% - 40px));\r\n}\r\n\r\n.comic-sel-handle[data-dir=\"e\"],\r\n.comic-sel-handle[data-dir=\"w\"] {\r\n    height: max(28px, calc(100% - 40px));\r\n}\r\n\r\n.comic-sel-handle[data-dir=\"nw\"],\r\n.comic-sel-handle[data-dir=\"ne\"],\r\n.comic-sel-handle[data-dir=\"se\"],\r\n.comic-sel-handle[data-dir=\"sw\"] {\r\n    width: 34px;\r\n    height: 34px;\r\n    z-index: 3;\r\n}\r\n\r\n/* ===== Compact layout (mobile) ===== */\r\n#comic-reader-overlay.reader-compact .comic-btn {\r\n    min-width: 54px;\r\n    min-height: 44px;\r\n    padding: 10px 12px;\r\n    font-size: 14px;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-controls {\r\n    left: auto;\r\n    right: max(12px, env(safe-area-inset-right));\r\n    bottom: max(12px, env(safe-area-inset-bottom));\r\n    width: fit-content;\r\n    max-width: calc(100vw - 24px);\r\n    padding: 8px 12px;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-settings-controls {\r\n    top: max(12px, env(safe-area-inset-top));\r\n    left: auto;\r\n    right: max(12px, env(safe-area-inset-right));\r\n    width: fit-content;\r\n    max-width: 96px;\r\n    flex-direction: column;\r\n    flex-wrap: nowrap;\r\n    justify-content: center;\r\n    max-height: 40vh;\r\n    overflow-y: auto;\r\n    padding: 8px 12px;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-settings-panel {\r\n    width: min(360px, calc(100vw - 24px));\r\n    padding: 12px;\r\n    gap: 8px;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-settings-item {\r\n    align-items: center;\r\n    flex-direction: row;\r\n    gap: 14px;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-settings-action {\r\n    justify-content: flex-end;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-settings-action .comic-btn {\r\n    width: auto;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-toast {\r\n    top: 12px;\r\n    max-width: calc(100vw - 24px);\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-selection-hint {\r\n    top: 62px;\r\n    right: 12px;\r\n    width: min(236px, calc(100vw - 24px));\r\n    max-width: calc(100vw - 24px);\r\n    font-size: 12px;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-selection-toolbar {\r\n    top: 12px;\r\n    right: 12px;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-selection-action {\r\n    padding: 10px 12px;\r\n    font-size: 12px;\r\n}\r\n\r\n@media (hover: none), (pointer: coarse) {\r\n\n/* ===== content-responsive.css ===== */\n    #bilibili-fav-float-btn.bilibili-fav-touch {\r\n        bottom: max(76px, env(safe-area-inset-bottom));\r\n        right: max(16px, env(safe-area-inset-right));\r\n        width: 54px;\r\n        height: 54px;\r\n        font-size: 24px;\r\n        opacity: 1 !important;\r\n        visibility: visible !important;\r\n    }\r\n\r\n    #bilibili-fav-panel,\r\n    #bilibili-toolbox-settings-panel {\r\n        right: max(12px, env(safe-area-inset-right));\r\n        bottom: max(140px, calc(env(safe-area-inset-bottom) + 84px));\r\n        max-height: min(70vh, 560px);\r\n        overflow: hidden;\r\n    }\r\n\r\n    #bilibili-fav-panel {\r\n        width: min(\r\n            calc(\r\n                var(--bilibili-fav-columns) * var(--bilibili-fav-item-width)\r\n                + (var(--bilibili-fav-columns) - 1) * var(--bilibili-fav-list-gap)\r\n                + var(--bilibili-fav-list-padding-x) * 2\r\n            ),\r\n            calc(100vw - 24px)\r\n        );\r\n    }\r\n\r\n    #bilibili-toolbox-settings-panel {\r\n        width: min(320px, calc(100vw - 24px));\r\n    }\r\n\r\n    .bilibili-fav-header {\r\n        gap: 8px;\r\n        padding: 10px 12px;\r\n    }\r\n\r\n    .bilibili-fav-header-actions {\r\n        flex-shrink: 0;\r\n    }\r\n\r\n    .bilibili-fav-control-btn {\r\n        display: inline-flex;\r\n        align-items: center;\r\n        justify-content: center;\r\n    }\r\n\r\n    .bilibili-fav-add-btn,\r\n    .bilibili-fav-control-btn,\r\n    .bilibili-toolbox-export-btn,\r\n    .bilibili-toolbox-import-btn {\r\n        min-height: 42px;\r\n    }\r\n\r\n    .bilibili-fav-content {\r\n        max-height: min(52vh, 420px);\r\n    }\r\n\r\n    .bilibili-fav-delete {\r\n        width: 26px;\r\n        height: 26px;\r\n        font-size: 16px;\r\n        opacity: 1;\r\n    }\r\n\r\n    .bilibili-fav-item-link {\r\n        touch-action: manipulation;\r\n    }\r\n\r\n    .comic-sel-handle {\r\n        width: 36px;\r\n        height: 36px;\r\n    }\r\n\r\n    .comic-sel-handle[data-dir=\"n\"],\r\n    .comic-sel-handle[data-dir=\"s\"] {\r\n        width: max(36px, calc(100% - 48px));\r\n    }\r\n\r\n    .comic-sel-handle[data-dir=\"e\"],\r\n    .comic-sel-handle[data-dir=\"w\"] {\r\n        height: max(36px, calc(100% - 48px));\r\n    }\r\n\r\n    .comic-sel-handle[data-dir=\"nw\"],\r\n    .comic-sel-handle[data-dir=\"ne\"],\r\n    .comic-sel-handle[data-dir=\"se\"],\r\n    .comic-sel-handle[data-dir=\"sw\"] {\r\n        width: 44px;\r\n        height: 44px;\r\n    }\r\n\r\n    #comic-reader-overlay.reader-compact .comic-reader-row {\r\n        gap: 6px;\r\n        flex-wrap: wrap;\r\n    }\r\n\r\n    #comic-reader-overlay.reader-compact .comic-settings-controls { gap: 8px; }\r\n\r\n    #comic-reader-overlay.reader-compact .comic-selection-hint { text-align: left; }\r\n}\r\n\n";
     function injectStyle() {
         if (document.getElementById('bilibili-toolbox-userscript-style')) return;
         const style = document.createElement('style');
@@ -551,6 +551,135 @@
     };
 })();
 
+// ===== bilibili-dom-adapter.js =====
+// Bilibili Toolbox - Bilibili DOM and URL adapter
+(function() {
+    'use strict';
+
+    if (!window.BilibiliToolbox) throw new Error('BilibiliToolbox: shared.js not loaded');
+
+    const Toolbox = window.BilibiliToolbox;
+    const COMIC_URL_PATTERNS = Object.freeze([
+        'bilibili.com/read/',
+        'bilibili.com/opus/',
+        't.bilibili.com/'
+    ]);
+    const ARTICLE_URL_PATTERN = /^https?:\/\/(?:www\.|m\.)?bilibili\.com\/read\/(?:cv\d+|mobile|native)(?:[/?#]|$)/i;
+    const SPACE_OPUS_URL_PATTERN = /^https?:\/\/space\.bilibili\.com\/(\d+)\/upload\/opus(?:[/?#]|$)/i;
+    const SPACE_DYNAMIC_URL_PATTERN = /^https?:\/\/space\.bilibili\.com\/\d+\/dynamic(?:[/?#]|$)/i;
+    const CONTENT_TAB_SELECTOR = '.content-filter .content-tab';
+    const DYNAMIC_CARD_SELECTOR = '.bili-dyn-list__item, .bili-dyn-item, .bili-opus-view';
+    const PRIMARY_IMAGE_SELECTOR = `
+        .opus-module-content img,
+        .article-content img,
+        .bili-rich-text img,
+        .opus-read-content img,
+        .horizontal-scroll-album__pic__img img
+    `;
+    const FALLBACK_IMAGE_SELECTOR = `
+        .horizontal-scroll-album__indicator__thumbnail img
+    `;
+    const ARTICLE_AUTHOR_LINK_SELECTORS = Object.freeze([
+        '.article-author a[href*="space"]',
+        '.article-info a[href*="space"]',
+        '.author-info a[href*="space"]',
+        '.up-info a[href*="space"]',
+        '.opus-module-author a[href*="space"]',
+        '[class*="author"] a[href*="space"]',
+        '[class*="up"] a[href*="space"]',
+        'a[href*="space.bilibili.com/"]',
+        'a[href*="/space/"]'
+    ]);
+    const AUTHOR_SCOPE_SELECTOR = '.article-author, .article-info, .author-info, .up-info, [class*="author"], [class*="up"]';
+    const USER_NAME_SELECTOR = '.user-name, .user-name-shadow, .name';
+    const USER_FACE_SELECTOR = '.user-face img, .avatar img, [class*="face"] img';
+
+    function queryAll(selector, root = document) {
+        return Array.from(root?.querySelectorAll?.(selector) || []);
+    }
+
+    function query(selector, root = document) {
+        return root?.querySelector?.(selector) || null;
+    }
+
+    function normalizeProtocolUrl(src) {
+        if (!src || typeof src !== 'string') return '';
+        if (src.startsWith('//')) return `https:${src}`;
+        return src;
+    }
+
+    function isComicReaderPage(url = window.location.href) {
+        return COMIC_URL_PATTERNS.some(pattern => url.includes(pattern));
+    }
+
+    function isArticlePage(url = window.location.href) {
+        return ARTICLE_URL_PATTERN.test(url);
+    }
+
+    function isSpaceOpusUploadPage(url = window.location.href) {
+        return SPACE_OPUS_URL_PATTERN.test(url);
+    }
+
+    function getSpaceOpusUid(url = window.location.href) {
+        return url.match(SPACE_OPUS_URL_PATTERN)?.[1] || '';
+    }
+
+    function isSpaceDynamicPage(url = window.location.href) {
+        return SPACE_DYNAMIC_URL_PATTERN.test(url);
+    }
+
+    function extractUidFromAuthorLink(link) {
+        const href = link?.getAttribute?.('href') || link?.href || '';
+        return href.match(/space\.bilibili\.com\/(\d+)/)?.[1]
+            || href.match(/\/space\/(\d+)/)?.[1]
+            || null;
+    }
+
+    function getArticleAuthorLink() {
+        return ARTICLE_AUTHOR_LINK_SELECTORS
+            .flatMap(selector => queryAll(selector))
+            .find(link => extractUidFromAuthorLink(link)) || null;
+    }
+
+    function getContentTabs() {
+        return queryAll(CONTENT_TAB_SELECTOR);
+    }
+
+    function getDynamicCards() {
+        return queryAll(DYNAMIC_CARD_SELECTOR);
+    }
+
+    function getPrimaryImages() {
+        return queryAll(PRIMARY_IMAGE_SELECTOR);
+    }
+
+    function getFallbackImages() {
+        return queryAll(FALLBACK_IMAGE_SELECTOR);
+    }
+
+    Toolbox.bilibiliDom = {
+        COMIC_URL_PATTERNS,
+        DYNAMIC_CARD_SELECTOR,
+        AUTHOR_SCOPE_SELECTOR,
+        USER_NAME_SELECTOR,
+        USER_FACE_SELECTOR,
+        query,
+        queryAll,
+        normalizeProtocolUrl,
+        isComicReaderPage,
+        isArticlePage,
+        isSpaceOpusUploadPage,
+        getSpaceOpusUid,
+        isSpaceDynamicPage,
+        extractUidFromAuthorLink,
+        getArticleAuthorLink,
+        getContentTabs,
+        getDynamicCards,
+        getPrimaryImages,
+        getFallbackImages
+    };
+})();
+
 // ===== animations.js =====
 // Bilibili Toolbox - Animation Module
 (function() {
@@ -561,9 +690,9 @@
     const FADE_SHIFT_DISTANCE = 60;
     const SMOOTH_SCALE_START = 0.95;
     const DEFAULT_ANIMATION_MODE = 'smooth';
-    const ANIMATION_MODES = ['none', 'smooth', 'fade'];
+    const ANIMATION_MODES = ['smooth', 'fade'];
+    const IMMEDIATE_RENDER_MODE = 'immediate';
     const ANIMATION_BUTTON_MAP = {
-        none: ['\u65e0', '\u7ffb\u9875\u52a8\u753b\uff1a\u5173\u95ed'],
         smooth: ['\u5e73\u6ed1', '\u7ffb\u9875\u52a8\u753b\uff1a\u6de1\u5165 + \u5e73\u79fb + \u7ec6\u5fae\u7f29\u653e'],
         fade: ['\u6de1\u5165', '\u7ffb\u9875\u52a8\u753b\uff1a\u6de1\u5165\u6de1\u51fa']
     };
@@ -585,7 +714,7 @@
     }
 
     function resolveRenderMode(animate, hasExistingImage, animationMode) {
-        return animate && hasExistingImage ? normalizeMode(animationMode) : 'none';
+        return animate && hasExistingImage ? normalizeMode(animationMode) : IMMEDIATE_RENDER_MODE;
     }
 
     function resolveTransitionDirection(step, isRightToLeft, lastStep) {
@@ -651,22 +780,21 @@
             playFadeTransition(imgContainer, renderIndex, getCurrentIndex, transitionToken, getTransitionToken, loadImages, direction);
             return;
         }
-        loadImages(renderIndex, 'none', direction);
+        loadImages(renderIndex, IMMEDIATE_RENDER_MODE, direction);
     }
 
     function resetAnimatedContainer(imgContainer, animationMode, transitionDirection, applyTransform, getTransform, getShiftedTransformFn) {
-        const mode = normalizeMode(animationMode);
+        const mode = ANIMATION_MODES.includes(animationMode) ? animationMode : IMMEDIATE_RENDER_MODE;
+        imgContainer.innerHTML = '';
         imgContainer.style.transition = 'none';
         applyTransform();
         if (mode === 'smooth') {
-            imgContainer.innerHTML = '';
             Object.assign(imgContainer.style, {
                 transform: withSubtleScale(getShiftedTransform(getShiftedTransformFn, getTransform, -transitionDirection * FADE_SHIFT_DISTANCE)),
                 opacity: '0',
                 filter: 'none'
             });
         } else if (mode === 'fade') {
-            imgContainer.innerHTML = '';
             Object.assign(imgContainer.style, { opacity: '0', filter: 'none' });
         } else {
             Object.assign(imgContainer.style, { opacity: '1', filter: 'none' });
@@ -674,7 +802,7 @@
     }
 
     function finishAnimatedRender(imgContainer, animationMode, transitionDirection, applyTransform, getTransform, getShiftedTransformFn) {
-        const mode = normalizeMode(animationMode);
+        const mode = ANIMATION_MODES.includes(animationMode) ? animationMode : IMMEDIATE_RENDER_MODE;
         if (mode === 'smooth') {
             Object.assign(imgContainer.style, {
                 transition: 'none',
@@ -708,6 +836,7 @@
         FADE_SHIFT_DISTANCE,
         DEFAULT_ANIMATION_MODE,
         ANIMATION_MODES,
+        IMMEDIATE_RENDER_MODE,
         normalizeAnimationMode: normalizeMode,
         getNextAnimationMode: getNextMode,
         syncAnimationButton: syncAnimationButtonState,
@@ -724,9 +853,10 @@
 (function() {
     'use strict';
 
-    if (!window.BilibiliToolbox) throw new Error('BilibiliToolbox: shared.js not loaded');
+    if (!window.BilibiliToolbox?.bilibiliDom) throw new Error('BilibiliToolbox: bilibili-dom-adapter.js not loaded');
 
     const Toolbox = window.BilibiliToolbox;
+    const bilibiliDom = Toolbox.bilibiliDom;
     const IMAGE_ATTRS = [
         'data-origin-src',
         'data-original',
@@ -737,23 +867,13 @@
         'data-src',
         'src'
     ];
-    const PRIMARY_IMAGE_SELECTOR = `
-        .opus-module-content img,
-        .article-content img,
-        .bili-rich-text img,
-        .opus-read-content img,
-        .horizontal-scroll-album__pic__img img
-    `;
-    const FALLBACK_IMAGE_SELECTOR = `
-        .horizontal-scroll-album__indicator__thumbnail img
-    `;
     const IMAGE_FILE_PATTERN = /\.(?:jpe?g|png|webp|gif|avif)(?:$|[?#])/i;
 
     function normalizeImageUrl(rawSrc) {
         if (!rawSrc || typeof rawSrc !== 'string') return '';
         let src = rawSrc.trim().replace(/^["']|["']$/g, '');
         if (!src || src.includes('base64')) return '';
-        if (src.startsWith('//')) src = 'https:' + src;
+        src = bilibiliDom.normalizeProtocolUrl(src);
         if (src.startsWith('http:')) src = 'https:' + src.slice(5);
         if (!src.startsWith('http')) return '';
 
@@ -848,14 +968,13 @@
     function collectDynamicImagesFromDom() {
         const fileSet = new Set();
         const images = [];
-        const primaryImages = Array.from(document.querySelectorAll(PRIMARY_IMAGE_SELECTOR));
+        const primaryImages = bilibiliDom.getPrimaryImages();
         primaryImages.forEach(img => pushBestImage(images, fileSet, img));
 
         // Thumbnail strips are a last resort. They are useful on some album
         // pages, but preferring them can make the reader display low-res images.
         if (images.length === 0) {
-            Array.from(document.querySelectorAll(FALLBACK_IMAGE_SELECTOR))
-                .forEach(img => pushBestImage(images, fileSet, img));
+            bilibiliDom.getFallbackImages().forEach(img => pushBestImage(images, fileSet, img));
         }
 
         return images;
@@ -1154,6 +1273,704 @@
     };
 })();
 
+// ===== reader-transform.js =====
+// Bilibili Toolbox - reader transform and image sizing helpers
+(function() {
+    'use strict';
+
+    if (!window.BilibiliToolbox) throw new Error('BilibiliToolbox: shared.js not loaded');
+
+    const Toolbox = window.BilibiliToolbox;
+    const MIN_SCALE = 0.5;
+    const MAX_SCALE = 3;
+    const DOUBLE_CLICK_SCALE = 2;
+    const MAX_RENDER_SCALE = 2;
+    const TOUCH_ZOOM_EPSILON = 0.01;
+    const PAN_EDGE_ALLOWANCE = 72;
+
+    const methods = {
+        setTransformTransition(value) {
+            if (!this.el.imgContainer) return;
+            this.el.imgContainer.style.transition = value;
+        },
+
+        animateTransform(duration = 180) {
+            if (this.transformTransitionTimer) clearTimeout(this.transformTransitionTimer);
+            this.setTransformTransition(`transform ${duration}ms ease-out`);
+            this.transformTransitionTimer = setTimeout(() => {
+                this.transformTransitionTimer = null;
+                this.setTransformTransition('none');
+            }, duration);
+        },
+
+        getImageGap() {
+            if (!this.el.imgContainer) return 0;
+            const styles = window.getComputedStyle(this.el.imgContainer);
+            const gap = parseFloat(styles.columnGap || styles.gap || '0');
+            return Number.isFinite(gap) ? gap : 0;
+        },
+
+        isSharpRenderMode() {
+            return this.imageRenderMode === 'sharp';
+        },
+
+        getEffectiveImageSize(img) {
+            const naturalWidth = img.naturalWidth || img.width || 0;
+            const naturalHeight = img.naturalHeight || img.height || 0;
+            const rotated = this.rotation === 90 || this.rotation === 270;
+            return {
+                width: rotated ? naturalHeight : naturalWidth,
+                height: rotated ? naturalWidth : naturalHeight
+            };
+        },
+
+        getSharpDisplaySizes(images, isFull) {
+            const naturalSizes = images.map(img => this.getEffectiveImageSize(img));
+            if (isFull || naturalSizes.length < 2) return naturalSizes;
+
+            const targetHeight = Math.max(...naturalSizes.map(size => size.height || 0));
+            if (!targetHeight) return naturalSizes;
+
+            return naturalSizes.map(size => {
+                if (!size.width || !size.height) return size;
+                const ratio = targetHeight / size.height;
+                return {
+                    width: size.width * ratio,
+                    height: targetHeight
+                };
+            });
+        },
+
+        getDisplayedImageSize(img) {
+            const displayWidth = Number.parseFloat(img.dataset.displayWidth || '');
+            const displayHeight = Number.parseFloat(img.dataset.displayHeight || '');
+            if (Number.isFinite(displayWidth) && displayWidth > 0
+                && Number.isFinite(displayHeight) && displayHeight > 0) {
+                return { width: displayWidth, height: displayHeight };
+            }
+            return this.getEffectiveImageSize(img);
+        },
+
+        updateFitScale(images = Array.from(this.el.imgContainer?.querySelectorAll('img') || [])) {
+            if (!this.isSharpRenderMode()) {
+                this.fitScale = 1;
+                this.contentNaturalWidth = 0;
+                this.contentNaturalHeight = 0;
+                return;
+            }
+
+            const readerRect = this.el.reader?.getBoundingClientRect();
+            if (!readerRect || !images.length) {
+                this.fitScale = 1;
+                this.contentNaturalWidth = 0;
+                this.contentNaturalHeight = 0;
+                return;
+            }
+
+            const sizes = images.map(img => this.getDisplayedImageSize(img));
+            const gap = this.getImageGap() * Math.max(0, images.length - 1);
+            const width = sizes.reduce((sum, size) => sum + size.width, 0) + gap;
+            const height = Math.max(...sizes.map(size => size.height));
+
+            this.contentNaturalWidth = width;
+            this.contentNaturalHeight = height;
+            if (!width || !height || !readerRect.width || !readerRect.height) {
+                this.fitScale = 1;
+                return;
+            }
+
+            this.fitScale = Math.min(1, readerRect.width / width, readerRect.height / height);
+        },
+
+        getRenderScale(scale = this.scale) {
+            return Math.max(0.001, this.fitScale * scale);
+        },
+
+        getMaxScale() {
+            if (!this.fitScale) return MAX_SCALE;
+            return Math.max(MAX_SCALE, MAX_RENDER_SCALE / this.fitScale);
+        },
+
+        getDoubleClickScale() {
+            if (!this.fitScale) return DOUBLE_CLICK_SCALE;
+            return Math.min(this.getMaxScale(), Math.max(DOUBLE_CLICK_SCALE, 1 / this.fitScale));
+        },
+
+        applyImageRenderMode() {
+            const images = Array.from(this.el.imgContainer?.querySelectorAll('img') || []);
+            const isFull = images.length === 1;
+            const displaySizes = this.isSharpRenderMode()
+                ? this.getSharpDisplaySizes(images, isFull)
+                : [];
+            images.forEach((img, index) => this.setupImg(img, isFull, displaySizes[index]));
+            this.scale = 1;
+            this.translateX = 0;
+            this.translateY = 0;
+            this.updateFitScale(images);
+            this.applyTransform();
+        },
+
+        getImageBounds() {
+            if (!this.el.imgContainer) return null;
+            const images = Array.from(this.el.imgContainer.querySelectorAll('img'));
+            if (!images.length) return null;
+            const containerRect = this.el.reader?.getBoundingClientRect()
+                || this.el.imgContainer.getBoundingClientRect();
+            const imageRects = images.map(img => img.getBoundingClientRect());
+            const left = Math.min(...imageRects.map(rect => rect.left));
+            const right = Math.max(...imageRects.map(rect => rect.right));
+            const top = Math.min(...imageRects.map(rect => rect.top));
+            const bottom = Math.max(...imageRects.map(rect => rect.bottom));
+            return {
+                containerRect,
+                left,
+                right,
+                top,
+                bottom,
+                width: right - left,
+                height: bottom - top
+            };
+        },
+
+        getPanLimits() {
+            const bounds = this.getImageBounds();
+            if (!bounds || this.scale <= 1) return { maxX: 0, maxY: 0 };
+
+            const renderScale = this.getRenderScale();
+            const allowance = PAN_EDGE_ALLOWANCE / renderScale;
+            return {
+                maxX: Math.max(0, (bounds.width - bounds.containerRect.width) / (2 * renderScale)) + allowance,
+                maxY: Math.max(0, (bounds.height - bounds.containerRect.height) / (2 * renderScale)) + allowance
+            };
+        },
+
+        clampPanValue(value, limit) {
+            return Math.max(-limit, Math.min(limit, value));
+        },
+
+        clampTransform() {
+            const limits = this.getPanLimits();
+            if (!limits.maxX && !limits.maxY) {
+                this.translateX = 0;
+                this.translateY = 0;
+                return;
+            }
+
+            this.translateX = this.clampPanValue(this.translateX, limits.maxX);
+            this.translateY = this.clampPanValue(this.translateY, limits.maxY);
+        },
+
+        zoomAt(clientX, clientY, nextScale) {
+            if (!this.el.imgContainer) return;
+            const clampedScale = Math.max(MIN_SCALE, Math.min(this.getMaxScale(), nextScale));
+            const previousScale = this.scale || 1;
+            if (Math.abs(clampedScale - previousScale) < 0.001) return;
+
+            const rect = this.el.reader?.getBoundingClientRect()
+                || this.el.imgContainer.getBoundingClientRect();
+            const offsetX = clientX - (rect.left + rect.width / 2);
+            const offsetY = clientY - (rect.top + rect.height / 2);
+            const previousRenderScale = this.getRenderScale(previousScale);
+
+            this.scale = clampedScale;
+            const nextRenderScale = this.getRenderScale(clampedScale);
+            this.translateX += offsetX * (1 / nextRenderScale - 1 / previousRenderScale);
+            this.translateY += offsetY * (1 / nextRenderScale - 1 / previousRenderScale);
+            if (this.isTouchDevice) {
+                this.touchPanLocked = clampedScale > 1 + TOUCH_ZOOM_EPSILON;
+            }
+            this.applyTransform();
+        },
+
+        resetScaleAndPan() {
+            this.scale = 1;
+            this.translateX = 0;
+            this.translateY = 0;
+            this.touchPanLocked = false;
+            this.touchDidMoveImage = false;
+            this.touchEdgePageStep = 0;
+            this.applyTransform();
+        },
+
+        resetTransform() {
+            this.clearPendingTap();
+            this.animateTransform(220);
+            this.scale = 1;
+            this.translateX = 0;
+            this.translateY = 0;
+            this.rotation = 0;
+            this.touchPanLocked = false;
+            this.touchDidMoveImage = false;
+            this.touchEdgePageStep = 0;
+            this.lastTapTime = 0;
+            this.twoFingerTapCandidate = false;
+            this.lastTwoFingerTapTime = 0;
+            this.lastTwoFingerTapCenterX = 0;
+            this.lastTwoFingerTapCenterY = 0;
+            this.syncRotateButton();
+            this.applyImageRenderMode();
+        },
+
+        getTransformStyle(screenTranslateX = 0, screenTranslateY = 0) {
+            const renderScale = this.getRenderScale();
+            return `scale(${renderScale}) translate(${this.translateX + screenTranslateX / renderScale}px,${this.translateY + screenTranslateY / renderScale}px)`;
+        },
+
+        writeTransform() {
+            if (this.el.imgContainer) this.el.imgContainer.style.transform = this.getTransformStyle();
+        },
+
+        applyTransform() {
+            this.writeTransform();
+            this.clampTransform();
+            if (this.isTouchDevice && this.scale <= 1 + TOUCH_ZOOM_EPSILON) {
+                this.touchPanLocked = false;
+            }
+            this.writeTransform();
+        },
+
+        handleMouseMove(e) {
+            if (!this.isDragging) return;
+            const renderScale = this.getRenderScale();
+            this.translateX = this.initX + (e.clientX - this.startX) / renderScale;
+            this.translateY = this.initY + (e.clientY - this.startY) / renderScale;
+            this.applyTransform();
+        },
+
+        handleMouseUp() {
+            if (!this.isDragging) return;
+            this.isDragging = false;
+            this.el.imgContainer.classList.remove('is-grabbing');
+        }
+    };
+
+    function attach(reader) {
+        Object.entries(methods).forEach(([name, method]) => {
+            reader[name] = method.bind(reader);
+        });
+        return reader;
+    }
+
+    Toolbox.readerTransform = {
+        attach,
+        methods
+    };
+})();
+
+// ===== reader-selection.js =====
+// Bilibili Toolbox - reader screenshot selection helpers
+(function() {
+    'use strict';
+
+    if (!window.BilibiliToolbox) throw new Error('BilibiliToolbox: shared.js not loaded');
+
+    const Toolbox = window.BilibiliToolbox;
+    const readerScreenshot = Toolbox.readerScreenshot;
+
+    const methods = {
+        setSelectionHint(text) {
+            this.el.selectionHint.textContent = text;
+        },
+
+        getReaderPoint(clientX, clientY) {
+            const rect = this.el.reader.getBoundingClientRect();
+            return {
+                x: Math.max(0, Math.min(rect.width, clientX - rect.left)),
+                y: Math.max(0, Math.min(rect.height, clientY - rect.top))
+            };
+        },
+
+        normalizeSelectionRect(start = this.selectionStart, end = this.selectionCurrent) {
+            if (!start || !end) return null;
+            return { x: Math.min(start.x, end.x), y: Math.min(start.y, end.y), width: Math.abs(end.x - start.x), height: Math.abs(end.y - start.y) };
+        },
+
+        hasValidSelection(rect = this.normalizeSelectionRect()) {
+            return Boolean(rect && rect.width >= 8 && rect.height >= 8);
+        },
+
+        updateSelectionActions() {
+            const hasSelection = this.hasValidSelection();
+            this.el.selectionSaveBtn.disabled = !hasSelection;
+            this.el.selectionSaveBtn.classList.toggle('is-disabled', !hasSelection);
+        },
+
+        updateSelectionBox() {
+            const rect = this.normalizeSelectionRect();
+            if (!rect) {
+                this.el.selectionBox.style.display = 'none';
+                this._hideHandles();
+                return;
+            }
+            Object.assign(this.el.selectionBox.style, {
+                display: 'block', left: `${rect.x}px`, top: `${rect.y}px`,
+                width: `${rect.width}px`, height: `${rect.height}px`
+            });
+            const valid = this.hasValidSelection(rect);
+            const w = rect.width, h = rect.height;
+            const pos = { nw: [0,0], n: [w/2,0], ne: [w,0], e: [w,h/2], se: [w,h], s: [w/2,h], sw: [0,h], w: [0,h/2] };
+            for (const [dir, [x, y]] of Object.entries(pos)) {
+                const el = this.selectionHandles[dir];
+                if (!el) continue;
+                el.style.display = valid ? 'block' : 'none';
+                el.style.left = `${x}px`;
+                el.style.top = `${y}px`;
+            }
+        },
+
+        clearSelectionBox() {
+            this.isDraggingSelection = false;
+            this.selectionPointerId = null;
+            this.resizeDirection = null;
+            this.selectionStart = null;
+            this.selectionCurrent = null;
+            this.el.selectionBox.style.display = 'none';
+            this._hideHandles();
+            this.updateSelectionActions();
+        },
+
+        _hideHandles() {
+            for (const h of Object.values(this.selectionHandles)) {
+                h.style.display = 'none';
+            }
+        },
+
+        startScreenshotSelection() {
+            if (this.isSelectingScreenshot) return;
+            this.isSelectingScreenshot = true;
+            this.pageFlipToken += 1;
+            this.selectionWasControlsVisible = this.controlsVisible;
+            this.clearSelectionBox();
+            this.hideSettingsPanel();
+            this.el.selectionOverlay.style.display = 'block';
+            this.setSelectionHint('\u62d6\u52a8\u9009\u62e9\u622a\u56fe\u8303\u56f4\uff0c\u5b8c\u6210\u540e\u70b9\u51fb\u4fdd\u5b58');
+            this.hideControls();
+            if (this.hideTimer) clearTimeout(this.hideTimer);
+        },
+
+        cancelScreenshotSelection(showMessage = false, restoreControls = true) {
+            if (!this.isSelectingScreenshot) return;
+            this.isSelectingScreenshot = false;
+            this.clearSelectionBox();
+            this.el.selectionOverlay.style.display = 'none';
+            this.setSelectionHint('\u62d6\u52a8\u9009\u62e9\u622a\u56fe\u8303\u56f4\uff0c\u5b8c\u6210\u540e\u70b9\u51fb\u4fdd\u5b58');
+            if (restoreControls) { this.selectionWasControlsVisible ? this.showControls() : this.hideControls(); }
+            if (showMessage) this.showReaderMessage('\u5df2\u53d6\u6d88\u622a\u56fe');
+        },
+
+        handleSelectionPointerDown(e) {
+            if (!this.isSelectingScreenshot || e.button === 2 || e.target.closest?.('button')) return;
+            e.preventDefault();
+            this.selectionPointerId = e.pointerId;
+
+            const handle = e.target.closest?.('.comic-sel-handle');
+            if (handle && this.hasValidSelection()) {
+                const rect = this.normalizeSelectionRect();
+                this.selectionStart = { x: rect.x, y: rect.y };
+                this.selectionCurrent = { x: rect.x + rect.width, y: rect.y + rect.height };
+                this.resizeDirection = handle.dataset.dir;
+                this.isDraggingSelection = true;
+                this.setSelectionHint('\u62d6\u52a8\u8fb9\u89d2\u8c03\u6574\u9009\u533a\u8303\u56f4');
+                this.el.selectionOverlay.setPointerCapture?.(e.pointerId);
+                return;
+            }
+
+            if (e.target.closest?.('.comic-sel-handle') || e.target === this.el.selectionBox) return;
+
+            this.isDraggingSelection = true;
+            this.resizeDirection = null;
+            this.selectionStart = this.getReaderPoint(e.clientX, e.clientY);
+            this.selectionCurrent = this.selectionStart;
+            this.updateSelectionBox();
+            this.updateSelectionActions();
+            this.setSelectionHint('\u62d6\u52a8\u9009\u62e9\u622a\u56fe\u8303\u56f4\uff0c\u5b8c\u6210\u540e\u62d6\u52a8\u8fb9\u89d2\u5fae\u8c03');
+            this.el.selectionOverlay.setPointerCapture?.(e.pointerId);
+        },
+
+        handleSelectionPointerMove(e) {
+            if (!this.isSelectingScreenshot || !this.isDraggingSelection) return;
+            if (this.selectionPointerId !== null && e.pointerId !== this.selectionPointerId) return;
+            e.preventDefault();
+
+            const pt = this.getReaderPoint(e.clientX, e.clientY);
+            const MIN = 8;
+
+            if (this.resizeDirection) {
+                const d = this.resizeDirection;
+                if (d.includes('w')) this.selectionStart.x = Math.min(pt.x, this.selectionCurrent.x - MIN);
+                if (d.includes('e')) this.selectionCurrent.x = Math.max(pt.x, this.selectionStart.x + MIN);
+                if (d.includes('n')) this.selectionStart.y = Math.min(pt.y, this.selectionCurrent.y - MIN);
+                if (d.includes('s')) this.selectionCurrent.y = Math.max(pt.y, this.selectionStart.y + MIN);
+            } else {
+                this.selectionCurrent = pt;
+            }
+
+            this.updateSelectionBox();
+            this.updateSelectionActions();
+        },
+
+        handleSelectionPointerUp(e) {
+            if (!this.isSelectingScreenshot || !this.isDraggingSelection) return;
+            if (this.selectionPointerId !== null && e.pointerId !== this.selectionPointerId) return;
+            e.preventDefault();
+            this.isDraggingSelection = false;
+            this.selectionPointerId = null;
+            this.resizeDirection = null;
+
+            if (!this.selectionStart && !this.selectionCurrent) return;
+
+            this.el.selectionOverlay.releasePointerCapture?.(e.pointerId);
+            this.updateSelectionBox();
+            this.updateSelectionActions();
+
+            if (this.hasValidSelection()) {
+                this.setSelectionHint('\u9009\u533a\u5df2\u5c31\u7eea\uff0c\u62d6\u52a8\u8fb9\u89d2\u5fae\u8c03\uff0c\u6216\u70b9\u51fb\u4fdd\u5b58');
+            } else {
+                this.clearSelectionBox();
+                this.setSelectionHint('\u9009\u533a\u592a\u5c0f\uff0c\u8bf7\u91cd\u65b0\u62d6\u52a8\u9009\u62e9');
+            }
+        },
+
+        async saveSelectionScreenshot() {
+            if (!this.hasValidSelection()) {
+                this.showReaderMessage('\u8bf7\u5148\u62d6\u52a8\u9009\u51fa\u622a\u56fe\u8303\u56f4', true);
+                return;
+            }
+
+            const success = await this.captureScreenshot(this.normalizeSelectionRect());
+            if (success) {
+                this.cancelScreenshotSelection(false);
+            }
+        },
+
+        async saveFullScreenshot() {
+            const descriptors = this.getVisibleImageDescriptors();
+            const rect = readerScreenshot.getBounds(descriptors);
+            if (!rect) {
+                this.showReaderMessage('\u5f53\u524d\u6ca1\u6709\u53ef\u622a\u56fe\u7684\u9875\u9762', true);
+                return;
+            }
+
+            const success = await this.captureScreenshot(rect, descriptors);
+            if (success) {
+                this.cancelScreenshotSelection(false);
+            }
+        }
+    };
+
+    function attach(reader) {
+        Object.entries(methods).forEach(([name, method]) => {
+            reader[name] = method.bind(reader);
+        });
+        return reader;
+    }
+
+    Toolbox.readerSelection = {
+        attach,
+        methods
+    };
+})();
+
+// ===== reader-dom.js =====
+// Bilibili Toolbox - reader DOM creation
+(function() {
+    'use strict';
+
+    if (!window.BilibiliToolbox?.animations) throw new Error('BilibiliToolbox: animations.js not loaded');
+
+    const Toolbox = window.BilibiliToolbox;
+    const animations = Toolbox.animations;
+
+    function createButton(text, title, className = 'comic-btn') {
+        const btn = document.createElement('button');
+        btn.innerText = text;
+        btn.title = title;
+        btn.className = className;
+        return btn;
+    }
+
+    function createSettingsRow(title, desc, control) {
+        const item = document.createElement('div');
+        item.className = 'comic-settings-item';
+        const copy = document.createElement('div');
+        copy.className = 'comic-settings-copy';
+        const titleEl = document.createElement('div');
+        titleEl.className = 'comic-settings-title';
+        titleEl.textContent = title;
+        const descEl = document.createElement('div');
+        descEl.className = 'comic-settings-desc';
+        descEl.textContent = desc;
+        const action = document.createElement('div');
+        action.className = 'comic-settings-action';
+        copy.append(titleEl, descEl);
+        action.append(control);
+        item.append(copy, action);
+        return item;
+    }
+
+    function createReaderUi(reader) {
+        reader.el.reader = document.createElement('div');
+        reader.el.reader.id = 'comic-reader-overlay';
+
+        reader.el.imgContainer = document.createElement('div');
+        reader.el.imgContainer.className = 'comic-img-container';
+
+        reader.el.controls = document.createElement('div');
+        reader.el.controls.className = 'comic-controls';
+
+        reader.el.settingsControls = document.createElement('div');
+        reader.el.settingsControls.className = 'comic-settings-controls';
+
+        reader.el.settingsPanel = document.createElement('div');
+        reader.el.settingsPanel.className = 'comic-settings-panel';
+        reader.el.settingsPanel.setAttribute('aria-hidden', 'true');
+
+        const row = document.createElement('div');
+        row.className = 'comic-reader-row';
+        const secondRow = document.createElement('div');
+        secondRow.className = 'comic-reader-row comic-reader-row-wrap';
+
+        [
+            ['rightBtn', '\u2192', '\u5411\u53f3\u7ffb\u9875', 'comic-btn'],
+            ['leftBtn', '\u2190', '\u5411\u5de6\u7ffb\u9875', 'comic-btn'],
+            ['offsetIncBtn', '<', '\u5de6\u79fb\u4e00\u9875', 'comic-btn comic-btn-alt'],
+            ['offsetDecBtn', '>', '\u53f3\u79fb\u4e00\u9875', 'comic-btn comic-btn-alt'],
+            ['directionBtn', '', '', 'comic-btn comic-btn-alt'],
+            ['animationBtn', '', '', 'comic-btn comic-btn-alt'],
+            ['viewModeBtn', '', '', 'comic-btn comic-btn-alt'],
+            ['imageRenderBtn', '', '', 'comic-btn comic-btn-alt'],
+            ['backgroundBtn', '', '', 'comic-btn comic-btn-alt'],
+            ['tapPageBtn', '', '', 'comic-btn comic-btn-alt'],
+            ['resetViewBtn', '\u91cd\u7f6e', '\u91cd\u7f6e\u89c6\u56fe', 'comic-btn comic-btn-alt'],
+            ['screenshotBtn', '\u622a\u56fe', '\u62d6\u52a8\u9009\u62e9\u622a\u56fe\u8303\u56f4', 'comic-btn comic-btn-alt'],
+            ['fullScreenBtn', '', '', 'comic-btn comic-btn-alt'],
+            ['rotateBtn', '', '', 'comic-btn comic-btn-alt'],
+            ['settingsBtn', '\u8bbe\u7f6e', '\u6253\u5f00\u9605\u8bfb\u5668\u8bbe\u7f6e', 'comic-btn comic-btn-alt'],
+            ['closeBtn', '\u9000\u51fa', '\u9000\u51fa', 'comic-btn']
+        ].forEach(([key, text, title, style]) => {
+            reader.el[key] = createButton(text, title, style);
+        });
+
+        reader.el.pageInfo = document.createElement('span');
+        reader.el.pageInfo.className = 'comic-page-info';
+        reader.el.pageInfo.title = '\u70b9\u51fb\u8f93\u5165\u9875\u7801';
+
+        reader.el.pageDisplay = document.createElement('span');
+        reader.el.pageDisplay.className = 'comic-page-display';
+
+        reader.el.pageInput = document.createElement('input');
+        reader.el.pageInput.className = 'comic-page-input';
+        reader.el.pageInput.type = 'text';
+        reader.el.pageInput.inputMode = 'numeric';
+        reader.el.pageInput.pattern = '[0-9]*';
+        reader.el.pageInput.autocomplete = 'off';
+        reader.el.pageInput.spellcheck = false;
+        reader.el.pageInput.title = '\u8f93\u5165\u9875\u7801\u540e\u56de\u8f66\u8df3\u8f6c';
+
+        reader.el.pageRange = document.createElement('span');
+        reader.el.pageRange.className = 'comic-page-range';
+        reader.el.pageInfo.append(reader.el.pageDisplay, reader.el.pageInput, reader.el.pageRange);
+
+        reader.el.toast = document.createElement('div');
+        reader.el.toast.className = 'comic-toast';
+
+        reader.el.selectionOverlay = document.createElement('div');
+        reader.el.selectionOverlay.className = 'comic-selection-overlay';
+
+        reader.el.selectionHint = document.createElement('div');
+        reader.el.selectionHint.className = 'comic-selection-hint';
+        reader.el.selectionHint.textContent = '\u62d6\u52a8\u9009\u62e9\u622a\u56fe\u8303\u56f4\uff0c\u5b8c\u6210\u540e\u70b9\u51fb\u4fdd\u5b58';
+
+        reader.el.selectionToolbar = document.createElement('div');
+        reader.el.selectionToolbar.className = 'comic-selection-toolbar';
+
+        reader.el.selectionCancelBtn = document.createElement('button');
+        reader.el.selectionCancelBtn.type = 'button';
+        reader.el.selectionCancelBtn.innerText = '\u53d6\u6d88\u622a\u56fe';
+        reader.el.selectionCancelBtn.className = 'comic-selection-action comic-selection-cancel';
+
+        reader.el.selectionSaveBtn = document.createElement('button');
+        reader.el.selectionSaveBtn.type = 'button';
+        reader.el.selectionSaveBtn.innerText = '\u4fdd\u5b58\u622a\u56fe';
+        reader.el.selectionSaveBtn.className = 'comic-selection-action comic-selection-save';
+
+        reader.el.selectionFullBtn = document.createElement('button');
+        reader.el.selectionFullBtn.type = 'button';
+        reader.el.selectionFullBtn.innerText = '\u4fdd\u5b58\u5168\u56fe';
+        reader.el.selectionFullBtn.className = 'comic-selection-action comic-selection-full';
+
+        reader.el.selectionBox = document.createElement('div');
+        reader.el.selectionBox.className = 'comic-selection-box';
+
+        const handleCursors = {
+            nw: 'nwse-resize', n: 'ns-resize', ne: 'nesw-resize',
+            e: 'ew-resize', se: 'nwse-resize', s: 'ns-resize',
+            sw: 'nesw-resize', w: 'ew-resize'
+        };
+        for (const [dir, cursor] of Object.entries(handleCursors)) {
+            const h = document.createElement('div');
+            h.className = 'comic-sel-handle';
+            h.dataset.dir = dir;
+            h.style.cursor = cursor;
+            reader.el.selectionBox.appendChild(h);
+            reader.selectionHandles[dir] = h;
+        }
+
+        reader.el.selectionToolbar.append(reader.el.selectionFullBtn, reader.el.selectionSaveBtn, reader.el.selectionCancelBtn);
+        reader.el.selectionOverlay.append(reader.el.selectionHint, reader.el.selectionToolbar, reader.el.selectionBox);
+
+        const settingsHeader = document.createElement('div');
+        settingsHeader.className = 'comic-settings-panel-header';
+        const settingsTitle = document.createElement('div');
+        settingsTitle.className = 'comic-settings-panel-title';
+        settingsTitle.textContent = '\u9605\u8bfb\u8bbe\u7f6e';
+        const settingsDesc = document.createElement('div');
+        settingsDesc.className = 'comic-settings-panel-desc';
+        settingsDesc.textContent = '\u8c03\u6574\u663e\u793a\u3001\u7ffb\u9875\u548c\u9605\u8bfb\u4e60\u60ef\uff0c\u66f4\u6539\u4f1a\u81ea\u52a8\u4fdd\u5b58\u3002';
+        settingsHeader.append(settingsTitle, settingsDesc);
+
+        row.append(reader.el.leftBtn, reader.el.offsetIncBtn, reader.el.pageInfo, reader.el.offsetDecBtn, reader.el.rightBtn);
+        secondRow.append(reader.el.resetViewBtn, reader.el.fullScreenBtn);
+        reader.el.controls.append(row, secondRow);
+
+        reader.el.settingsControls.append(reader.el.closeBtn, reader.el.screenshotBtn, reader.el.rotateBtn, reader.el.settingsBtn);
+        reader.el.settingsPanel.append(
+            settingsHeader,
+            createSettingsRow('\u663e\u793a\u8d28\u91cf', '\u539f\u56fe\u4fdd\u7559\u7ec6\u8282\uff0c\u6d41\u7545\u51cf\u5c11\u7eb9\u7406\u95ea\u70c1\u3002', reader.el.imageRenderBtn),
+            createSettingsRow('\u80cc\u666f\u989c\u8272', '\u5728\u9ed1\u8272\u3001\u6df1\u7070\u3001\u6d45\u7070\u548c\u767d\u8272\u9605\u8bfb\u80cc\u666f\u4e4b\u95f4\u5207\u6362\u3002', reader.el.backgroundBtn),
+            createSettingsRow('\u7ffb\u9875\u52a8\u753b', '\u5728\u5e73\u6ed1\u548c\u6de1\u5165\u4e4b\u95f4\u5207\u6362\u3002', reader.el.animationBtn),
+            createSettingsRow('\u663e\u793a\u5f20\u6570', '\u81ea\u52a8\u5224\u65ad\u5355\u56fe\u6216\u53cc\u56fe\uff0c\u4e5f\u53ef\u624b\u52a8\u6307\u5b9a\u3002', reader.el.viewModeBtn),
+            createSettingsRow('\u70b9\u51fb\u7ffb\u9875\uff08\u4ec5\u79fb\u52a8\u7aef\uff09', '\u63a7\u5236\u70b9\u51fb\u5c4f\u5e55\u5de6\u53f3\u533a\u57df\u662f\u5426\u7ffb\u9875\u3002', reader.el.tapPageBtn),
+            createSettingsRow('\u9605\u8bfb\u65b9\u5411', '\u9002\u914d\u4ece\u53f3\u5f80\u5de6\u6216\u4ece\u5de6\u5f80\u53f3\u7684\u9605\u8bfb\u4e60\u60ef\u3002', reader.el.directionBtn)
+        );
+
+        reader.el.reader.append(reader.el.imgContainer, reader.el.controls, reader.el.settingsControls, reader.el.settingsPanel, reader.el.toast, reader.el.selectionOverlay);
+
+        document.body.appendChild(reader.el.reader);
+        reader.updateDirection();
+        reader.syncDirectionButton();
+        animations.syncAnimationButton(reader.el.animationBtn, reader.animationMode);
+        reader.syncViewModeButton();
+        reader.syncImageRenderButton();
+        reader.syncBackgroundButton();
+        reader.syncTapPageButton();
+        reader.syncRotateButton();
+        reader.syncFullscreenButton();
+        reader.applyReaderBackground();
+        reader.applyResponsiveLayout();
+    }
+
+    function attach(reader) {
+        reader.createUI = () => createReaderUi(reader);
+        return reader;
+    }
+
+    Toolbox.readerDom = {
+        attach,
+        create: createReaderUi
+    };
+})();
+
 // ===== comic-reader-page-groups.js =====
 // Bilibili Toolbox - reader page grouping helpers
 (function() {
@@ -1397,11 +2214,6 @@
     'use strict';
 
     // ============ 常量定义 ============
-    const COMIC_URL_PATTERNS = [
-        'bilibili.com/read/',
-        'bilibili.com/opus/',
-        't.bilibili.com/'
-    ];
     const MIN_SCALE = 0.5;
     const MAX_SCALE = 3;
     const DOUBLE_CLICK_SCALE = 2;
@@ -1417,20 +2229,28 @@
     const PRELOAD_COUNT = 4;
     const MOBILE_BREAKPOINT = 768;
     if (!window.Shared) throw new Error('BilibiliToolbox: shared.js not loaded');
+    if (!window.BilibiliToolbox?.bilibiliDom) throw new Error('BilibiliToolbox: bilibili-dom-adapter.js not loaded');
     if (!window.BilibiliToolbox?.storage) throw new Error('BilibiliToolbox: storage-service.js not loaded');
     if (!window.BilibiliToolbox?.comicImages) throw new Error('BilibiliToolbox: comic-reader-images.js not loaded');
     if (!window.BilibiliToolbox?.animations) throw new Error('BilibiliToolbox: animations.js not loaded');
     if (!window.BilibiliToolbox?.readerPreferences) throw new Error('BilibiliToolbox: reader-preferences.js not loaded');
     if (!window.BilibiliToolbox?.readerScreenshot) throw new Error('BilibiliToolbox: reader-screenshot.js not loaded');
+    if (!window.BilibiliToolbox?.readerTransform) throw new Error('BilibiliToolbox: reader-transform.js not loaded');
+    if (!window.BilibiliToolbox?.readerSelection) throw new Error('BilibiliToolbox: reader-selection.js not loaded');
+    if (!window.BilibiliToolbox?.readerDom) throw new Error('BilibiliToolbox: reader-dom.js not loaded');
     if (!window.BilibiliToolbox?.readerPageGroups) throw new Error('BilibiliToolbox: comic-reader-page-groups.js not loaded');
     if (!window.BilibiliToolbox?.readerInteractions) throw new Error('BilibiliToolbox: comic-reader-interactions.js not loaded');
 
     const Toolbox = window.BilibiliToolbox;
     const Shared = window.Shared;
+    const bilibiliDom = Toolbox.bilibiliDom;
     const animations = Toolbox.animations;
     const comicImages = Toolbox.comicImages;
     const readerPreferences = Toolbox.readerPreferences;
     const readerScreenshot = Toolbox.readerScreenshot;
+    const readerTransform = Toolbox.readerTransform;
+    const readerSelection = Toolbox.readerSelection;
+    const readerDom = Toolbox.readerDom;
     const readerPageGroups = Toolbox.readerPageGroups;
     const readerInteractions = Toolbox.readerInteractions;
     const READER_BACKGROUND_COLORS = Object.freeze({
@@ -1546,6 +2366,10 @@
             this.el = {};
             this.eventBag = null;
 
+            readerTransform.attach(this);
+            readerSelection.attach(this);
+            readerDom.attach(this);
+
             // 绑定全局事件的 this 指向，便于后续解绑
             this.handleKeyDown = this.handleKeyDown.bind(this);
             this.handleFullscreenChange = this.handleFullscreenChange.bind(this);
@@ -1593,186 +2417,6 @@
         }
 
         // 3. 创建 UI
-        createUI() {
-            const createBtn = (text, title, className = 'comic-btn') => {
-                const btn = document.createElement('button');
-                btn.innerText = text;
-                btn.title = title;
-                btn.className = className;
-                return btn;
-            };
-
-            this.el.reader = document.createElement('div');
-            this.el.reader.id = 'comic-reader-overlay';
-
-            this.el.imgContainer = document.createElement('div');
-            this.el.imgContainer.className = 'comic-img-container';
-
-            this.el.controls = document.createElement('div');
-            this.el.controls.className = 'comic-controls';
-
-            this.el.settingsControls = document.createElement('div');
-            this.el.settingsControls.className = 'comic-settings-controls';
-
-            this.el.settingsPanel = document.createElement('div');
-            this.el.settingsPanel.className = 'comic-settings-panel';
-            this.el.settingsPanel.setAttribute('aria-hidden', 'true');
-
-            const row = document.createElement('div');
-            row.className = 'comic-reader-row';
-            const secondRow = document.createElement('div');
-            secondRow.className = 'comic-reader-row comic-reader-row-wrap';
-
-            [
-                ['rightBtn', '\u2192', '\u5411\u53f3\u7ffb\u9875', 'comic-btn'],
-                ['leftBtn', '\u2190', '\u5411\u5de6\u7ffb\u9875', 'comic-btn'],
-                ['offsetIncBtn', '<', '\u5de6\u79fb\u4e00\u9875', 'comic-btn comic-btn-alt'],
-                ['offsetDecBtn', '>', '\u53f3\u79fb\u4e00\u9875', 'comic-btn comic-btn-alt'],
-                ['directionBtn', '', '', 'comic-btn comic-btn-alt'],
-                ['animationBtn', '', '', 'comic-btn comic-btn-alt'],
-                ['viewModeBtn', '', '', 'comic-btn comic-btn-alt'],
-                ['imageRenderBtn', '', '', 'comic-btn comic-btn-alt'],
-                ['backgroundBtn', '', '', 'comic-btn comic-btn-alt'],
-                ['tapPageBtn', '', '', 'comic-btn comic-btn-alt'],
-                ['resetViewBtn', '\u91cd\u7f6e', '\u91cd\u7f6e\u89c6\u56fe', 'comic-btn comic-btn-alt'],
-                ['screenshotBtn', '\u622a\u56fe', '\u62d6\u52a8\u9009\u62e9\u622a\u56fe\u8303\u56f4', 'comic-btn comic-btn-alt'],
-                ['fullScreenBtn', '', '', 'comic-btn comic-btn-alt'],
-                ['rotateBtn', '', '', 'comic-btn comic-btn-alt'],
-                ['settingsBtn', '\u8bbe\u7f6e', '\u6253\u5f00\u9605\u8bfb\u5668\u8bbe\u7f6e', 'comic-btn comic-btn-alt'],
-                ['closeBtn', '\u9000\u51fa', '\u9000\u51fa', 'comic-btn']
-            ].forEach(([key, text, title, style]) => {
-                this.el[key] = createBtn(text, title, style);
-            });
-
-            this.el.pageInfo = document.createElement('span');
-            this.el.pageInfo.className = 'comic-page-info';
-            this.el.pageInfo.title = '\u70b9\u51fb\u8f93\u5165\u9875\u7801';
-
-            this.el.pageDisplay = document.createElement('span');
-            this.el.pageDisplay.className = 'comic-page-display';
-
-            this.el.pageInput = document.createElement('input');
-            this.el.pageInput.className = 'comic-page-input';
-            this.el.pageInput.type = 'text';
-            this.el.pageInput.inputMode = 'numeric';
-            this.el.pageInput.pattern = '[0-9]*';
-            this.el.pageInput.autocomplete = 'off';
-            this.el.pageInput.spellcheck = false;
-            this.el.pageInput.title = '\u8f93\u5165\u9875\u7801\u540e\u56de\u8f66\u8df3\u8f6c';
-
-            this.el.pageRange = document.createElement('span');
-            this.el.pageRange.className = 'comic-page-range';
-            this.el.pageInfo.append(this.el.pageDisplay, this.el.pageInput, this.el.pageRange);
-
-            this.el.toast = document.createElement('div');
-            this.el.toast.className = 'comic-toast';
-
-            this.el.selectionOverlay = document.createElement('div');
-            this.el.selectionOverlay.className = 'comic-selection-overlay';
-
-            this.el.selectionHint = document.createElement('div');
-            this.el.selectionHint.className = 'comic-selection-hint';
-            this.el.selectionHint.textContent = '\u62d6\u52a8\u9009\u62e9\u622a\u56fe\u8303\u56f4\uff0c\u5b8c\u6210\u540e\u70b9\u51fb\u4fdd\u5b58';
-
-            this.el.selectionToolbar = document.createElement('div');
-            this.el.selectionToolbar.className = 'comic-selection-toolbar';
-
-            this.el.selectionCancelBtn = document.createElement('button');
-            this.el.selectionCancelBtn.type = 'button';
-            this.el.selectionCancelBtn.innerText = '\u53d6\u6d88\u622a\u56fe';
-            this.el.selectionCancelBtn.className = 'comic-selection-action comic-selection-cancel';
-
-            this.el.selectionSaveBtn = document.createElement('button');
-            this.el.selectionSaveBtn.type = 'button';
-            this.el.selectionSaveBtn.innerText = '\u4fdd\u5b58\u622a\u56fe';
-            this.el.selectionSaveBtn.className = 'comic-selection-action comic-selection-save';
-
-            this.el.selectionFullBtn = document.createElement('button');
-            this.el.selectionFullBtn.type = 'button';
-            this.el.selectionFullBtn.innerText = '\u4fdd\u5b58\u5168\u56fe';
-            this.el.selectionFullBtn.className = 'comic-selection-action comic-selection-full';
-
-            this.el.selectionBox = document.createElement('div');
-            this.el.selectionBox.className = 'comic-selection-box';
-
-            const handleCursors = {
-                nw: 'nwse-resize', n: 'ns-resize', ne: 'nesw-resize',
-                e: 'ew-resize', se: 'nwse-resize', s: 'ns-resize',
-                sw: 'nesw-resize', w: 'ew-resize'
-            };
-            for (const [dir, cursor] of Object.entries(handleCursors)) {
-                const h = document.createElement('div');
-                h.className = 'comic-sel-handle';
-                h.dataset.dir = dir;
-                h.style.cursor = cursor;
-                this.el.selectionBox.appendChild(h);
-                this.selectionHandles[dir] = h;
-            }
-
-            this.el.selectionToolbar.append(this.el.selectionFullBtn, this.el.selectionSaveBtn, this.el.selectionCancelBtn);
-            this.el.selectionOverlay.append(this.el.selectionHint, this.el.selectionToolbar, this.el.selectionBox);
-
-            const createSettingsRow = (title, desc, control) => {
-                const item = document.createElement('div');
-                item.className = 'comic-settings-item';
-                const copy = document.createElement('div');
-                copy.className = 'comic-settings-copy';
-                const titleEl = document.createElement('div');
-                titleEl.className = 'comic-settings-title';
-                titleEl.textContent = title;
-                const descEl = document.createElement('div');
-                descEl.className = 'comic-settings-desc';
-                descEl.textContent = desc;
-                const action = document.createElement('div');
-                action.className = 'comic-settings-action';
-                copy.append(titleEl, descEl);
-                action.append(control);
-                item.append(copy, action);
-                return item;
-            };
-
-            const settingsHeader = document.createElement('div');
-            settingsHeader.className = 'comic-settings-panel-header';
-            const settingsTitle = document.createElement('div');
-            settingsTitle.className = 'comic-settings-panel-title';
-            settingsTitle.textContent = '\u9605\u8bfb\u8bbe\u7f6e';
-            const settingsDesc = document.createElement('div');
-            settingsDesc.className = 'comic-settings-panel-desc';
-            settingsDesc.textContent = '\u8c03\u6574\u663e\u793a\u3001\u7ffb\u9875\u548c\u9605\u8bfb\u4e60\u60ef\uff0c\u66f4\u6539\u4f1a\u81ea\u52a8\u4fdd\u5b58\u3002';
-            settingsHeader.append(settingsTitle, settingsDesc);
-
-            row.append(this.el.leftBtn, this.el.offsetIncBtn, this.el.pageInfo, this.el.offsetDecBtn, this.el.rightBtn);
-            secondRow.append(this.el.resetViewBtn, this.el.fullScreenBtn);
-            this.el.controls.append(row, secondRow);
-
-            // 右上角设置按钮横向排列（退出在最上面）
-            this.el.settingsControls.append(this.el.closeBtn, this.el.screenshotBtn, this.el.rotateBtn, this.el.settingsBtn);
-            this.el.settingsPanel.append(
-                settingsHeader,
-                createSettingsRow('\u663e\u793a\u8d28\u91cf', '\u539f\u56fe\u4fdd\u7559\u7ec6\u8282\uff0c\u6d41\u7545\u51cf\u5c11\u7eb9\u7406\u95ea\u70c1\u3002', this.el.imageRenderBtn),
-                createSettingsRow('\u80cc\u666f\u989c\u8272', '\u5728\u9ed1\u8272\u3001\u6df1\u7070\u3001\u6d45\u7070\u548c\u767d\u8272\u9605\u8bfb\u80cc\u666f\u4e4b\u95f4\u5207\u6362\u3002', this.el.backgroundBtn),
-                createSettingsRow('\u7ffb\u9875\u52a8\u753b', '\u5728\u65e0\u52a8\u753b\u3001\u5e73\u6ed1\u548c\u6de1\u5165\u4e4b\u95f4\u5207\u6362\u3002', this.el.animationBtn),
-                createSettingsRow('\u663e\u793a\u5f20\u6570', '\u81ea\u52a8\u5224\u65ad\u5355\u56fe\u6216\u53cc\u56fe\uff0c\u4e5f\u53ef\u624b\u52a8\u6307\u5b9a\u3002', this.el.viewModeBtn),
-                createSettingsRow('\u70b9\u51fb\u7ffb\u9875\uff08\u4ec5\u79fb\u52a8\u7aef\uff09', '\u63a7\u5236\u70b9\u51fb\u5c4f\u5e55\u5de6\u53f3\u533a\u57df\u662f\u5426\u7ffb\u9875\u3002', this.el.tapPageBtn),
-                createSettingsRow('\u9605\u8bfb\u65b9\u5411', '\u9002\u914d\u4ece\u53f3\u5f80\u5de6\u6216\u4ece\u5de6\u5f80\u53f3\u7684\u9605\u8bfb\u4e60\u60ef\u3002', this.el.directionBtn)
-            );
-
-            this.el.reader.append(this.el.imgContainer, this.el.controls, this.el.settingsControls, this.el.settingsPanel, this.el.toast, this.el.selectionOverlay);
-
-            document.body.appendChild(this.el.reader);
-            this.updateDirection();
-            this.syncDirectionButton();
-            animations.syncAnimationButton(this.el.animationBtn, this.animationMode);
-            this.syncViewModeButton();
-            this.syncImageRenderButton();
-            this.syncBackgroundButton();
-            this.syncTapPageButton();
-            this.syncRotateButton();
-            this.syncFullscreenButton();
-            this.applyReaderBackground();
-            this.applyResponsiveLayout();
-        }
-
         // 4. 缁戝畾浜嬩欢
         bindEvents() {
             readerInteractions.bind(this);
@@ -1900,195 +2544,6 @@
             if (this.el.reader) this.el.reader.style.background = this.getReaderBackgroundColor();
         }
 
-        setSelectionHint(text) {
-            this.el.selectionHint.textContent = text;
-        }
-
-        getReaderPoint(clientX, clientY) {
-            const rect = this.el.reader.getBoundingClientRect();
-            return {
-                x: Math.max(0, Math.min(rect.width, clientX - rect.left)),
-                y: Math.max(0, Math.min(rect.height, clientY - rect.top))
-            };
-        }
-
-        normalizeSelectionRect(start = this.selectionStart, end = this.selectionCurrent) {
-            if (!start || !end) return null;
-            return { x: Math.min(start.x, end.x), y: Math.min(start.y, end.y), width: Math.abs(end.x - start.x), height: Math.abs(end.y - start.y) };
-        }
-
-        hasValidSelection(rect = this.normalizeSelectionRect()) {
-            return Boolean(rect && rect.width >= 8 && rect.height >= 8);
-        }
-
-        updateSelectionActions() {
-            const hasSelection = this.hasValidSelection();
-            this.el.selectionSaveBtn.disabled = !hasSelection;
-            this.el.selectionSaveBtn.classList.toggle('is-disabled', !hasSelection);
-        }
-
-        updateSelectionBox() {
-            const rect = this.normalizeSelectionRect();
-            if (!rect) {
-                this.el.selectionBox.style.display = 'none';
-                this._hideHandles();
-                return;
-            }
-            Object.assign(this.el.selectionBox.style, {
-                display: 'block', left: `${rect.x}px`, top: `${rect.y}px`,
-                width: `${rect.width}px`, height: `${rect.height}px`
-            });
-            const valid = this.hasValidSelection(rect);
-            const w = rect.width, h = rect.height;
-            const pos = { nw: [0,0], n: [w/2,0], ne: [w,0], e: [w,h/2], se: [w,h], s: [w/2,h], sw: [0,h], w: [0,h/2] };
-            for (const [dir, [x, y]] of Object.entries(pos)) {
-                const el = this.selectionHandles[dir];
-                if (!el) continue;
-                el.style.display = valid ? 'block' : 'none';
-                el.style.left = `${x}px`;
-                el.style.top = `${y}px`;
-            }
-        }
-
-        clearSelectionBox() {
-            this.isDraggingSelection = false;
-            this.selectionPointerId = null;
-            this.resizeDirection = null;
-            this.selectionStart = null;
-            this.selectionCurrent = null;
-            this.el.selectionBox.style.display = 'none';
-            this._hideHandles();
-            this.updateSelectionActions();
-        }
-
-        _hideHandles() {
-            for (const h of Object.values(this.selectionHandles)) {
-                h.style.display = 'none';
-            }
-        }
-
-        startScreenshotSelection() {
-            if (this.isSelectingScreenshot) return;
-            this.isSelectingScreenshot = true;
-            this.pageFlipToken += 1;
-            this.selectionWasControlsVisible = this.controlsVisible;
-            this.clearSelectionBox();
-            this.hideSettingsPanel();
-            this.el.selectionOverlay.style.display = 'block';
-            this.setSelectionHint('\u62d6\u52a8\u9009\u62e9\u622a\u56fe\u8303\u56f4\uff0c\u5b8c\u6210\u540e\u70b9\u51fb\u4fdd\u5b58');
-            this.hideControls();
-            if (this.hideTimer) clearTimeout(this.hideTimer);
-        }
-
-        cancelScreenshotSelection(showMessage = false, restoreControls = true) {
-            if (!this.isSelectingScreenshot) return;
-            this.isSelectingScreenshot = false;
-            this.clearSelectionBox();
-            this.el.selectionOverlay.style.display = 'none';
-            this.setSelectionHint('\u62d6\u52a8\u9009\u62e9\u622a\u56fe\u8303\u56f4\uff0c\u5b8c\u6210\u540e\u70b9\u51fb\u4fdd\u5b58');
-            if (restoreControls) { this.selectionWasControlsVisible ? this.showControls() : this.hideControls(); }
-            if (showMessage) this.showReaderMessage('\u5df2\u53d6\u6d88\u622a\u56fe');
-        }
-
-        handleSelectionPointerDown(e) {
-            if (!this.isSelectingScreenshot || e.button === 2 || e.target.closest?.('button')) return;
-            e.preventDefault();
-            this.selectionPointerId = e.pointerId;
-
-            const handle = e.target.closest?.('.comic-sel-handle');
-            if (handle && this.hasValidSelection()) {
-                const rect = this.normalizeSelectionRect();
-                this.selectionStart = { x: rect.x, y: rect.y };
-                this.selectionCurrent = { x: rect.x + rect.width, y: rect.y + rect.height };
-                this.resizeDirection = handle.dataset.dir;
-                this.isDraggingSelection = true;
-                this.setSelectionHint('\u62d6\u52a8\u8fb9\u89d2\u8c03\u6574\u9009\u533a\u8303\u56f4');
-                this.el.selectionOverlay.setPointerCapture?.(e.pointerId);
-                return;
-            }
-
-            if (e.target.closest?.('.comic-sel-handle') || e.target === this.el.selectionBox) return;
-
-            this.isDraggingSelection = true;
-            this.resizeDirection = null;
-            this.selectionStart = this.getReaderPoint(e.clientX, e.clientY);
-            this.selectionCurrent = this.selectionStart;
-            this.updateSelectionBox();
-            this.updateSelectionActions();
-            this.setSelectionHint('\u62d6\u52a8\u9009\u62e9\u622a\u56fe\u8303\u56f4\uff0c\u5b8c\u6210\u540e\u62d6\u52a8\u8fb9\u89d2\u5fae\u8c03');
-            this.el.selectionOverlay.setPointerCapture?.(e.pointerId);
-        }
-
-        handleSelectionPointerMove(e) {
-            if (!this.isSelectingScreenshot || !this.isDraggingSelection) return;
-            if (this.selectionPointerId !== null && e.pointerId !== this.selectionPointerId) return;
-            e.preventDefault();
-
-            const pt = this.getReaderPoint(e.clientX, e.clientY);
-            const MIN = 8;
-
-            if (this.resizeDirection) {
-                const d = this.resizeDirection;
-                if (d.includes('w')) this.selectionStart.x = Math.min(pt.x, this.selectionCurrent.x - MIN);
-                if (d.includes('e')) this.selectionCurrent.x = Math.max(pt.x, this.selectionStart.x + MIN);
-                if (d.includes('n')) this.selectionStart.y = Math.min(pt.y, this.selectionCurrent.y - MIN);
-                if (d.includes('s')) this.selectionCurrent.y = Math.max(pt.y, this.selectionStart.y + MIN);
-            } else {
-                this.selectionCurrent = pt;
-            }
-
-            this.updateSelectionBox();
-            this.updateSelectionActions();
-        }
-
-        handleSelectionPointerUp(e) {
-            if (!this.isSelectingScreenshot || !this.isDraggingSelection) return;
-            if (this.selectionPointerId !== null && e.pointerId !== this.selectionPointerId) return;
-            e.preventDefault();
-            this.isDraggingSelection = false;
-            this.selectionPointerId = null;
-            this.resizeDirection = null;
-
-            if (!this.selectionStart && !this.selectionCurrent) return;
-
-            this.el.selectionOverlay.releasePointerCapture?.(e.pointerId);
-            this.updateSelectionBox();
-            this.updateSelectionActions();
-
-            if (this.hasValidSelection()) {
-                this.setSelectionHint('\u9009\u533a\u5df2\u5c31\u7eea\uff0c\u62d6\u52a8\u8fb9\u89d2\u5fae\u8c03\uff0c\u6216\u70b9\u51fb\u4fdd\u5b58');
-            } else {
-                this.clearSelectionBox();
-                this.setSelectionHint('\u9009\u533a\u592a\u5c0f\uff0c\u8bf7\u91cd\u65b0\u62d6\u52a8\u9009\u62e9');
-            }
-        }
-
-        async saveSelectionScreenshot() {
-            if (!this.hasValidSelection()) {
-                this.showReaderMessage('\u8bf7\u5148\u62d6\u52a8\u9009\u51fa\u622a\u56fe\u8303\u56f4', true);
-                return;
-            }
-
-            const success = await this.captureScreenshot(this.normalizeSelectionRect());
-            if (success) {
-                this.cancelScreenshotSelection(false);
-            }
-        }
-
-        async saveFullScreenshot() {
-            const descriptors = this.getVisibleImageDescriptors();
-            const rect = readerScreenshot.getBounds(descriptors);
-            if (!rect) {
-                this.showReaderMessage('\u5f53\u524d\u6ca1\u6709\u53ef\u622a\u56fe\u7684\u9875\u9762', true);
-                return;
-            }
-
-            const success = await this.captureScreenshot(rect, descriptors);
-            if (success) {
-                this.cancelScreenshotSelection(false);
-            }
-        }
-
         setControlsOpacity(opacity) {
             const hidden = opacity === '0';
             this.el.controls.classList.toggle('is-hidden', hidden);
@@ -2194,209 +2649,6 @@
 
         isTouchPanMode() {
             return this.touchPanLocked && this.scale > 1 + TOUCH_ZOOM_EPSILON;
-        }
-
-        setTransformTransition(value) {
-            if (!this.el.imgContainer) return;
-            this.el.imgContainer.style.transition = value;
-        }
-
-        animateTransform(duration = 180) {
-            if (this.transformTransitionTimer) clearTimeout(this.transformTransitionTimer);
-            this.setTransformTransition(`transform ${duration}ms ease-out`);
-            this.transformTransitionTimer = setTimeout(() => {
-                this.transformTransitionTimer = null;
-                this.setTransformTransition('none');
-            }, duration);
-        }
-
-        getImageGap() {
-            if (!this.el.imgContainer) return 0;
-            const styles = window.getComputedStyle(this.el.imgContainer);
-            const gap = parseFloat(styles.columnGap || styles.gap || '0');
-            return Number.isFinite(gap) ? gap : 0;
-        }
-
-        isSharpRenderMode() {
-            return this.imageRenderMode === 'sharp';
-        }
-
-        getEffectiveImageSize(img) {
-            const naturalWidth = img.naturalWidth || img.width || 0;
-            const naturalHeight = img.naturalHeight || img.height || 0;
-            const rotated = this.rotation === 90 || this.rotation === 270;
-            return {
-                width: rotated ? naturalHeight : naturalWidth,
-                height: rotated ? naturalWidth : naturalHeight
-            };
-        }
-
-        getSharpDisplaySizes(images, isFull) {
-            const naturalSizes = images.map(img => this.getEffectiveImageSize(img));
-            if (isFull || naturalSizes.length < 2) return naturalSizes;
-
-            const targetHeight = Math.max(...naturalSizes.map(size => size.height || 0));
-            if (!targetHeight) return naturalSizes;
-
-            return naturalSizes.map(size => {
-                if (!size.width || !size.height) return size;
-                const ratio = targetHeight / size.height;
-                return {
-                    width: size.width * ratio,
-                    height: targetHeight
-                };
-            });
-        }
-
-        getDisplayedImageSize(img) {
-            const displayWidth = Number.parseFloat(img.dataset.displayWidth || '');
-            const displayHeight = Number.parseFloat(img.dataset.displayHeight || '');
-            if (Number.isFinite(displayWidth) && displayWidth > 0
-                && Number.isFinite(displayHeight) && displayHeight > 0) {
-                return { width: displayWidth, height: displayHeight };
-            }
-            return this.getEffectiveImageSize(img);
-        }
-
-        updateFitScale(images = Array.from(this.el.imgContainer?.querySelectorAll('img') || [])) {
-            if (!this.isSharpRenderMode()) {
-                this.fitScale = 1;
-                this.contentNaturalWidth = 0;
-                this.contentNaturalHeight = 0;
-                return;
-            }
-
-            const readerRect = this.el.reader?.getBoundingClientRect();
-            if (!readerRect || !images.length) {
-                this.fitScale = 1;
-                this.contentNaturalWidth = 0;
-                this.contentNaturalHeight = 0;
-                return;
-            }
-
-            const sizes = images.map(img => this.getDisplayedImageSize(img));
-            const gap = this.getImageGap() * Math.max(0, images.length - 1);
-            const width = sizes.reduce((sum, size) => sum + size.width, 0) + gap;
-            const height = Math.max(...sizes.map(size => size.height));
-
-            this.contentNaturalWidth = width;
-            this.contentNaturalHeight = height;
-            if (!width || !height || !readerRect.width || !readerRect.height) {
-                this.fitScale = 1;
-                return;
-            }
-
-            this.fitScale = Math.min(1, readerRect.width / width, readerRect.height / height);
-        }
-
-        getRenderScale(scale = this.scale) {
-            return Math.max(0.001, this.fitScale * scale);
-        }
-
-        getMaxScale() {
-            if (!this.fitScale) return MAX_SCALE;
-            return Math.max(MAX_SCALE, MAX_RENDER_SCALE / this.fitScale);
-        }
-
-        getDoubleClickScale() {
-            if (!this.fitScale) return DOUBLE_CLICK_SCALE;
-            return Math.min(this.getMaxScale(), Math.max(DOUBLE_CLICK_SCALE, 1 / this.fitScale));
-        }
-
-        applyImageRenderMode() {
-            const images = Array.from(this.el.imgContainer?.querySelectorAll('img') || []);
-            const isFull = images.length === 1;
-            const displaySizes = this.isSharpRenderMode()
-                ? this.getSharpDisplaySizes(images, isFull)
-                : [];
-            images.forEach((img, index) => this.setupImg(img, isFull, displaySizes[index]));
-            this.scale = 1;
-            this.translateX = 0;
-            this.translateY = 0;
-            this.updateFitScale(images);
-            this.applyTransform();
-        }
-
-        getImageBounds() {
-            if (!this.el.imgContainer) return null;
-            const images = Array.from(this.el.imgContainer.querySelectorAll('img'));
-            if (!images.length) return null;
-            const containerRect = this.el.reader?.getBoundingClientRect()
-                || this.el.imgContainer.getBoundingClientRect();
-            const imageRects = images.map(img => img.getBoundingClientRect());
-            const left = Math.min(...imageRects.map(rect => rect.left));
-            const right = Math.max(...imageRects.map(rect => rect.right));
-            const top = Math.min(...imageRects.map(rect => rect.top));
-            const bottom = Math.max(...imageRects.map(rect => rect.bottom));
-            return {
-                containerRect,
-                left,
-                right,
-                top,
-                bottom,
-                width: right - left,
-                height: bottom - top
-            };
-        }
-
-        getPanLimits() {
-            const bounds = this.getImageBounds();
-            if (!bounds || this.scale <= 1) return { maxX: 0, maxY: 0 };
-
-            const renderScale = this.getRenderScale();
-            const allowance = PAN_EDGE_ALLOWANCE / renderScale;
-            return {
-                maxX: Math.max(0, (bounds.width - bounds.containerRect.width) / (2 * renderScale)) + allowance,
-                maxY: Math.max(0, (bounds.height - bounds.containerRect.height) / (2 * renderScale)) + allowance
-            };
-        }
-
-        clampPanValue(value, limit) {
-            return Math.max(-limit, Math.min(limit, value));
-        }
-
-        clampTransform() {
-            const limits = this.getPanLimits();
-            if (!limits.maxX && !limits.maxY) {
-                this.translateX = 0;
-                this.translateY = 0;
-                return;
-            }
-
-            this.translateX = this.clampPanValue(this.translateX, limits.maxX);
-            this.translateY = this.clampPanValue(this.translateY, limits.maxY);
-        }
-
-        zoomAt(clientX, clientY, nextScale) {
-            if (!this.el.imgContainer) return;
-            const clampedScale = Math.max(MIN_SCALE, Math.min(this.getMaxScale(), nextScale));
-            const previousScale = this.scale || 1;
-            if (Math.abs(clampedScale - previousScale) < 0.001) return;
-
-            const rect = this.el.reader?.getBoundingClientRect()
-                || this.el.imgContainer.getBoundingClientRect();
-            const offsetX = clientX - (rect.left + rect.width / 2);
-            const offsetY = clientY - (rect.top + rect.height / 2);
-            const previousRenderScale = this.getRenderScale(previousScale);
-
-            this.scale = clampedScale;
-            const nextRenderScale = this.getRenderScale(clampedScale);
-            this.translateX += offsetX * (1 / nextRenderScale - 1 / previousRenderScale);
-            this.translateY += offsetY * (1 / nextRenderScale - 1 / previousRenderScale);
-            if (this.isTouchDevice) {
-                this.touchPanLocked = clampedScale > 1 + TOUCH_ZOOM_EPSILON;
-            }
-            this.applyTransform();
-        }
-
-        resetScaleAndPan() {
-            this.scale = 1;
-            this.translateX = 0;
-            this.translateY = 0;
-            this.touchPanLocked = false;
-            this.touchDidMoveImage = false;
-            this.touchEdgePageStep = 0;
-            this.applyTransform();
         }
 
         async loadExportImageSafe(src) {
@@ -2657,7 +2909,7 @@
         }
 
         // 6. 智能图片加载逻辑（决定单双页）
-        async loadImages(renderIndex, animationMode = 'none', transitionDirection = 0) {
+        async loadImages(renderIndex, animationMode = animations.IMMEDIATE_RENDER_MODE, transitionDirection = 0) {
             if (renderIndex !== this.currentIndex) return;
 
             this.resetPageInteractionState();
@@ -2715,9 +2967,6 @@
             const displaySizes = this.isSharpRenderMode()
                 ? this.getSharpDisplaySizes(images, isFull)
                 : [];
-            if (animationMode === 'none') {
-                this.el.imgContainer.innerHTML = '';
-            }
             images.forEach((img, index) => {
                 this.setupImg(img, isFull, displaySizes[index]);
                 this.el.imgContainer.appendChild(img);
@@ -2878,58 +3127,7 @@
             if (this.el.imgContainer) this.el.imgContainer.style.flexDirection = this.isRightToLeft ? 'row-reverse' : 'row';
         }
 
-        resetTransform() {
-            this.clearPendingTap();
-            this.animateTransform(220);
-            this.scale = 1;
-            this.translateX = 0;
-            this.translateY = 0;
-            this.rotation = 0;
-            this.touchPanLocked = false;
-            this.touchDidMoveImage = false;
-            this.touchEdgePageStep = 0;
-            this.lastTapTime = 0;
-            this.twoFingerTapCandidate = false;
-            this.lastTwoFingerTapTime = 0;
-            this.lastTwoFingerTapCenterX = 0;
-            this.lastTwoFingerTapCenterY = 0;
-            this.syncRotateButton();
-            this.applyImageRenderMode();
-        }
-
-        getTransformStyle(screenTranslateX = 0, screenTranslateY = 0) {
-            const renderScale = this.getRenderScale();
-            return `scale(${renderScale}) translate(${this.translateX + screenTranslateX / renderScale}px,${this.translateY + screenTranslateY / renderScale}px)`;
-        }
-
-        writeTransform() {
-            if (this.el.imgContainer) this.el.imgContainer.style.transform = this.getTransformStyle();
-        }
-
-        applyTransform() {
-            this.writeTransform();
-            this.clampTransform();
-            if (this.isTouchDevice && this.scale <= 1 + TOUCH_ZOOM_EPSILON) {
-                this.touchPanLocked = false;
-            }
-            this.writeTransform();
-        }
-
         // 全局事件处理函数
-
-        handleMouseMove(e) {
-            if (!this.isDragging) return;
-            const renderScale = this.getRenderScale();
-            this.translateX = this.initX + (e.clientX - this.startX) / renderScale;
-            this.translateY = this.initY + (e.clientY - this.startY) / renderScale;
-            this.applyTransform();
-        }
-
-        handleMouseUp() {
-            if (!this.isDragging) return;
-            this.isDragging = false;
-            this.el.imgContainer.classList.remove('is-grabbing');
-        }
 
         handleFullscreenChange() {
             this.syncFullscreenButton();
@@ -2981,8 +3179,7 @@
     // ============ 入口函数 ============
     // 检查 URL 是否匹配漫画模式
     function shouldInitComicReader() {
-        const url = window.location.href;
-        return COMIC_URL_PATTERNS.some(pattern => url.includes(pattern));
+        return bilibiliDom.isComicReaderPage();
     }
 
     Toolbox.reader = {
@@ -2997,11 +3194,11 @@
     'use strict';
 
     if (!window.Shared) throw new Error('BilibiliToolbox: shared.js not loaded');
+    if (!window.BilibiliToolbox?.bilibiliDom) throw new Error('BilibiliToolbox: bilibili-dom-adapter.js not loaded');
 
     const Shared = window.Shared;
     const Toolbox = window.BilibiliToolbox;
-    const ARTICLE_URL_PATTERN = /^https?:\/\/(?:www\.|m\.)?bilibili\.com\/read\/(?:cv\d+|mobile|native)(?:[/?#]|$)/i;
-    const SPACE_OPUS_URL_PATTERN = /^https?:\/\/space\.bilibili\.com\/(\d+)\/upload\/opus(?:[/?#]|$)/i;
+    const bilibiliDom = Toolbox.bilibiliDom;
 
     function extractUserNameFromMeta() {
         const title = document.title || '';
@@ -3020,44 +3217,18 @@
 
     function normalizeImageUrl(src) {
         if (!src || typeof src !== 'string') return '';
-        if (src.startsWith('//')) return `https:${src}`;
-        return src;
-    }
-
-    function extractUidFromAuthorLink(link) {
-        const href = link?.getAttribute?.('href') || link?.href || '';
-        return href.match(/space\.bilibili\.com\/(\d+)/)?.[1]
-            || href.match(/\/space\/(\d+)/)?.[1]
-            || null;
-    }
-
-    function getArticleAuthorLink() {
-        const selectors = [
-            '.article-author a[href*="space"]',
-            '.article-info a[href*="space"]',
-            '.author-info a[href*="space"]',
-            '.up-info a[href*="space"]',
-            '.opus-module-author a[href*="space"]',
-            '[class*="author"] a[href*="space"]',
-            '[class*="up"] a[href*="space"]',
-            'a[href*="space.bilibili.com/"]',
-            'a[href*="/space/"]'
-        ];
-
-        return selectors
-            .flatMap(selector => Array.from(document.querySelectorAll(selector)))
-            .find(link => extractUidFromAuthorLink(link));
+        return bilibiliDom.normalizeProtocolUrl(src);
     }
 
     function getArticleAuthorInfo(url = window.location.href) {
-        if (!ARTICLE_URL_PATTERN.test(url)) return null;
+        if (!bilibiliDom.isArticlePage(url)) return null;
 
-        const link = getArticleAuthorLink();
-        const uid = extractUidFromAuthorLink(link)
+        const link = bilibiliDom.getArticleAuthorLink();
+        const uid = bilibiliDom.extractUidFromAuthorLink(link)
             || document.querySelector('[data-mid]')?.getAttribute('data-mid');
         if (!uid) return null;
 
-        const scope = link?.closest?.('.article-author, .article-info, .author-info, .up-info, [class*="author"], [class*="up"]')
+        const scope = link?.closest?.(bilibiliDom.AUTHOR_SCOPE_SELECTOR)
             || document;
         const uname = link?.textContent?.trim()
             || scope.querySelector('.user-name, .name, [class*="name"]')?.textContent?.trim()
@@ -3083,8 +3254,8 @@
             return { type: Shared.READLIST_TYPE, id: readlistMatch[1], title, cover };
         }
 
-        const opusMatch = url.match(SPACE_OPUS_URL_PATTERN);
-        if (opusMatch) return { type: Shared.OPUS_TYPE, uid: opusMatch[1] };
+        const opusUid = bilibiliDom.getSpaceOpusUid(url);
+        if (opusUid) return { type: Shared.OPUS_TYPE, uid: opusUid };
 
         const uid = Shared.extractUidFromUrl(url);
         if (uid) return { type: Shared.USER_TYPE, uid };
@@ -3093,7 +3264,7 @@
         if (articleAuthor) return articleAuthor;
 
         const pageUid = document.querySelector('[data-mid]')?.getAttribute('data-mid')
-            || document.querySelector('.user-name, .user-name-shadow, .name')?.closest('a')?.href?.match(/space\.bilibili\.com\/(\d+)/)?.[1];
+            || document.querySelector(bilibiliDom.USER_NAME_SELECTOR)?.closest('a')?.href?.match(/space\.bilibili\.com\/(\d+)/)?.[1];
 
         return pageUid ? { type: Shared.USER_TYPE, uid: pageUid } : null;
     }
@@ -3111,12 +3282,12 @@
         }
 
         const uname = pageInfo.uname
-            || document.querySelector('.user-name, .user-name-shadow, .name')?.textContent?.trim()
+            || document.querySelector(bilibiliDom.USER_NAME_SELECTOR)?.textContent?.trim()
             || document.querySelector('[data-mid]')?.getAttribute('data-uname')
             || extractUserNameFromMeta()
             || '\u7528\u6237';
         const face = pageInfo.face
-            || document.querySelector('.user-face img, .avatar img, [class*="face"] img')?.src
+            || document.querySelector(bilibiliDom.USER_FACE_SELECTOR)?.src
             || document.querySelector('[data-mid]')?.getAttribute('data-face')
             || '';
 
@@ -3144,33 +3315,57 @@
 
     const Toolbox = window.BilibiliToolbox;
     const URL_CHANGE_EVENT = 'bilibili-toolbox:urlchange';
+    let initialized = false;
+    let originalHistoryMethods = null;
+    let patchedHistoryMethods = null;
 
     function notifyUrlChange() {
         window.dispatchEvent(new Event(URL_CHANGE_EVENT));
     }
 
     function initUrlBridge() {
-        if (window.__bilibiliToolboxUrlChangePatched) return;
+        if (initialized) return;
         window.__bilibiliToolboxUrlChangePatched = true;
+        initialized = true;
+        originalHistoryMethods = {};
+        patchedHistoryMethods = {};
 
         ['pushState', 'replaceState'].forEach((methodName) => {
             const original = history[methodName];
             if (typeof original !== 'function') return;
 
-            history[methodName] = function(...args) {
+            originalHistoryMethods[methodName] = original;
+            patchedHistoryMethods[methodName] = function(...args) {
                 const result = original.apply(this, args);
                 notifyUrlChange();
                 return result;
             };
+            history[methodName] = patchedHistoryMethods[methodName];
         });
 
         window.addEventListener('popstate', notifyUrlChange);
         window.addEventListener('hashchange', notifyUrlChange);
     }
 
+    function destroyUrlBridge() {
+        if (!initialized) return;
+        window.removeEventListener('popstate', notifyUrlChange);
+        window.removeEventListener('hashchange', notifyUrlChange);
+        Object.entries(originalHistoryMethods || {}).forEach(([methodName, original]) => {
+            if (history[methodName] === patchedHistoryMethods?.[methodName]) {
+                history[methodName] = original;
+            }
+        });
+        initialized = false;
+        originalHistoryMethods = null;
+        patchedHistoryMethods = null;
+        window.__bilibiliToolboxUrlChangePatched = false;
+    }
+
     Toolbox.url = {
         URL_CHANGE_EVENT,
         init: initUrlBridge,
+        destroy: destroyUrlBridge,
         notifyUrlChange
     };
 })();
@@ -3181,12 +3376,12 @@
     'use strict';
 
     if (!window.Shared) throw new Error('BilibiliToolbox: shared.js not loaded');
+    if (!window.BilibiliToolbox?.bilibiliDom) throw new Error('BilibiliToolbox: bilibili-dom-adapter.js not loaded');
 
     const Shared = window.Shared;
     const Toolbox = window.BilibiliToolbox;
+    const bilibiliDom = Toolbox.bilibiliDom;
     const TOOLBOX_SETTINGS = Shared.TOOLBOX_SETTINGS;
-    const SPACE_DYNAMIC_URL_PATTERN = /^https?:\/\/space\.bilibili\.com\/\d+\/dynamic(?:[/?#]|$)/i;
-    const DYNAMIC_CARD_SELECTOR = '.bili-dyn-list__item, .bili-dyn-item, .bili-opus-view';
     const FORWARD_DYNAMIC_SELECTOR = [
         '.bili-dyn-content__forw__desc',
         '.bili-dyn-content__orig.reference',
@@ -3232,11 +3427,11 @@
     }
 
     function isSpaceDynamicPage(url = window.location.href) {
-        return SPACE_DYNAMIC_URL_PATTERN.test(url);
+        return bilibiliDom.isSpaceDynamicPage(url);
     }
 
     function getDynamicCardElements() {
-        const candidates = Array.from(document.querySelectorAll(DYNAMIC_CARD_SELECTOR));
+        const candidates = bilibiliDom.getDynamicCards();
         const set = new Set(candidates);
         return candidates.filter(card => {
             for (let parent = card.parentElement; parent; parent = parent.parentElement) {
@@ -3311,7 +3506,7 @@
 
     function markDynamicCardReady(card) {
         card.classList.add(FILTER_READY_CLASS);
-        card.querySelectorAll(DYNAMIC_CARD_SELECTOR).forEach(child => child.classList.add(FILTER_READY_CLASS));
+        card.querySelectorAll(bilibiliDom.DYNAMIC_CARD_SELECTOR).forEach(child => child.classList.add(FILTER_READY_CLASS));
     }
 
     function applyDynamicFilter() {
@@ -3436,11 +3631,11 @@
     'use strict';
 
     if (!window.Shared) throw new Error('BilibiliToolbox: shared.js not loaded');
+    if (!window.BilibiliToolbox?.bilibiliDom) throw new Error('BilibiliToolbox: bilibili-dom-adapter.js not loaded');
 
     const Shared = window.Shared;
     const Toolbox = window.BilibiliToolbox;
-    const SPACE_OPUS_URL_PATTERN = /^https?:\/\/space\.bilibili\.com\/(\d+)\/upload\/opus(?:[/?#]|$)/i;
-    const CONTENT_TAB_SELECTOR = '.content-filter .content-tab';
+    const bilibiliDom = Toolbox.bilibiliDom;
     const OPUS_TAB_TEXT = '\u4e13\u680f';
     const BURST_DELAYS = [0, 80, 250, 600, 1200, 2500, 5000];
     const INTENT_TTL_MS = 10000;
@@ -3453,11 +3648,11 @@
     let selectedForIntent = false;
 
     function isSpaceOpusUploadPage(url = window.location.href) {
-        return SPACE_OPUS_URL_PATTERN.test(url);
+        return bilibiliDom.isSpaceOpusUploadPage(url);
     }
 
     function getSpaceOpusUid(url = window.location.href) {
-        return url.match(SPACE_OPUS_URL_PATTERN)?.[1] || '';
+        return bilibiliDom.getSpaceOpusUid(url);
     }
 
     function consumeOpusTabIntent() {
@@ -3483,7 +3678,7 @@
     }
 
     function getContentTabs() {
-        return Array.from(document.querySelectorAll(CONTENT_TAB_SELECTOR));
+        return bilibiliDom.getContentTabs();
     }
 
     function findOpusTab() {
@@ -3765,16 +3960,6 @@
         });
     }
 
-    function getDynamicControlsStatus(forwardEnabled, keywordState, isDynamicPage = dynamicFilter?.isSpaceDynamicPage?.()) {
-        if (!isDynamicPage) return '\u5728\u7528\u6237\u52a8\u6001\u9875\u751f\u6548';
-
-        const states = [];
-        if (forwardEnabled) states.push('\u5df2\u9690\u85cf\u8f6c\u53d1\u52a8\u6001');
-        if (keywordState.enabled && !keywordState.hasKeyword) states.push('\u8bf7\u8f93\u5165\u5173\u952e\u8bcd\u540e\u5f00\u59cb\u7b5b\u9009');
-        if (keywordState.isActive) states.push(`\u4ec5\u663e\u793a\u5305\u542b\u201c${keywordState.displayText}\u201d\u7684\u52a8\u6001`);
-        return states.length ? states.join('\uff1b') : '\u5df2\u663e\u793a\u5168\u90e8\u52a8\u6001';
-    }
-
     function createSettingsPopoverPanel() {
         if (document.getElementById('bilibili-toolbox-settings-panel')) return;
 
@@ -3796,11 +3981,10 @@
                     </div>
                 </section>
                 <section class="bilibili-toolbox-control-section">
-                    <div class="bilibili-toolbox-section-title">\u52a8\u6001\u8fc7\u6ee4</div>
+                    <div class="bilibili-toolbox-section-title">\u52a8\u6001\u8fc7\u6ee4\uff08\u5728\u52a8\u6001\u9875\u751f\u6548\uff09</div>
                     <label class="bilibili-toolbox-control-row">
                         <span class="bilibili-toolbox-control-copy">
                             <span class="bilibili-toolbox-control-title">\u9690\u85cf\u8f6c\u53d1\u52a8\u6001</span>
-                            <span class="bilibili-toolbox-control-desc">\u4ec5\u5728\u7528\u6237\u52a8\u6001\u9875\u751f\u6548</span>
                         </span>
                         <span class="bilibili-toolbox-switch">
                             <input type="checkbox" class="bilibili-toolbox-forward-toggle">
@@ -3818,7 +4002,6 @@
                         </span>
                     </label>
                     <input type="text" class="bilibili-toolbox-keyword-input" placeholder="\u8f93\u5165\u8981\u5305\u542b\u7684\u5185\u5bb9" autocomplete="off" spellcheck="false">
-                    <div class="bilibili-toolbox-control-status"></div>
                 </section>
             </div>
             <div class="bilibili-toolbox-control-actions">
@@ -3858,6 +4041,10 @@
         return document.getElementById('bilibili-toolbox-settings-panel')?.classList.contains('show');
     }
 
+    function getSettingsPopoverPanel() {
+        return document.getElementById('bilibili-toolbox-settings-panel');
+    }
+
     function renderSettingsPopoverPanel() {
         const panel = document.getElementById('bilibili-toolbox-settings-panel');
         if (!panel || !dynamicFilter) return;
@@ -3877,7 +4064,6 @@
             button.setAttribute('aria-pressed', String(active));
         });
         if (keywordInput.value !== keywordState.text) keywordInput.value = keywordState.text;
-        panel.querySelector('.bilibili-toolbox-control-status').textContent = getDynamicControlsStatus(forwardEnabled, keywordState);
     }
 
     function showSettingsPopoverPanel() {
@@ -3920,8 +4106,10 @@
         init: initSettingsPopoverUi,
         render: renderSettingsPopoverPanel,
         toggle: toggleSettingsPopoverPanel,
-        destroy: destroySettingsPopoverUi,
-        getStatus: getDynamicControlsStatus
+        hide: () => hidePanel('bilibili-toolbox-settings-panel'),
+        isVisible: isSettingsPopoverPanelVisible,
+        contains: target => Boolean(getSettingsPopoverPanel()?.contains(target)),
+        destroy: destroySettingsPopoverUi
     };
 })();
 
@@ -3931,17 +4119,16 @@
     'use strict';
 
     if (!window.Shared) throw new Error('BilibiliToolbox: shared.js not loaded');
-    if (!window.BilibiliToolbox?.settingsPopoverUi) throw new Error('BilibiliToolbox: settings-popover-ui.js not loaded');
 
     const Shared = window.Shared;
     const Toolbox = window.BilibiliToolbox;
     const TOOLBOX_SETTINGS = Shared.TOOLBOX_SETTINGS;
-    const settingsPopoverUi = Toolbox.settingsPopoverUi;
 
     let dataProvider = () => Shared.createDefaultData();
     let favoritesService = null;
     let pageInfo = null;
     let dynamicFilter = null;
+    let settingsUi = null;
     let eventBag = null;
     let isTouchDevice = false;
     let useHoverInteractions = false;
@@ -3963,6 +4150,22 @@
 
     function isPanelVisible(id) {
         return document.getElementById(id)?.classList.contains('show') || false;
+    }
+
+    function isSettingsPanelVisible() {
+        return Boolean(settingsUi?.isVisible?.());
+    }
+
+    function settingsPanelContains(target) {
+        return Boolean(settingsUi?.contains?.(target));
+    }
+
+    function hideSettingsPanel() {
+        settingsUi?.hide?.();
+    }
+
+    function toggleSettingsPanel() {
+        settingsUi?.toggle?.();
     }
 
     function clearHideTimer(name) {
@@ -3989,10 +4192,10 @@
     function syncFloatBtnHideState() {
         const btn = document.getElementById('bilibili-fav-float-btn');
         if (!btn) return;
-        const keywordActive = Boolean(dynamicFilter?.getKeywordFilterState?.().isActive);
+        const keywordEnabled = Boolean(dynamicFilter?.getKeywordFilterState?.().enabled);
         btn.classList.toggle(
-            'hide-forward-active',
-            Boolean(getSettingValue(TOOLBOX_SETTINGS.hideForwardDynamics)) || keywordActive
+            'dynamic-filter-active',
+            Boolean(getSettingValue(TOOLBOX_SETTINGS.hideForwardDynamics)) || keywordEnabled
         );
     }
 
@@ -4026,7 +4229,7 @@
         clearHideTimer('videoButton');
         hideTimers.videoButton = setTimeout(() => {
             hideTimers.videoButton = 0;
-            if (!isHoveringFavoritesArea() && !isPanelVisible('bilibili-fav-panel') && !isPanelVisible('bilibili-toolbox-settings-panel')) {
+            if (!isHoveringFavoritesArea() && !isPanelVisible('bilibili-fav-panel') && !isSettingsPanelVisible()) {
                 setVideoFavoriteButtonVisible(false);
             }
         }, 220);
@@ -4061,7 +4264,7 @@
         clearHideTimer('panel');
         setVideoFavoriteButtonVisible(true);
         hidePanel('bilibili-fav-panel');
-        settingsPopoverUi.toggle();
+        toggleSettingsPanel();
         scheduleHideVideoFavoriteButton();
     }
 
@@ -4106,7 +4309,7 @@
                 longPressTimer = setTimeout(() => {
                     touchLongPressHandled = true;
                     hidePanel('bilibili-fav-panel');
-                    settingsPopoverUi.toggle();
+                    toggleSettingsPanel();
                 }, 520);
             }, { passive: true });
             eventBag.on(btn, 'touchmove', clearLongPress, { passive: true });
@@ -4191,7 +4394,7 @@
     function showFavoritesPanel() {
         const wasCreated = !document.getElementById('bilibili-fav-panel');
         const panel = createFavoritesPanel();
-        hidePanel('bilibili-toolbox-settings-panel');
+        hideSettingsPanel();
         renderFavoriteList();
         if (wasCreated) panel.getBoundingClientRect?.();
         panel.classList.add('show');
@@ -4260,20 +4463,19 @@
 
     function handleDocumentPointerDown(event) {
         const favoritesPanel = document.getElementById('bilibili-fav-panel');
-        const controlsPanel = document.getElementById('bilibili-toolbox-settings-panel');
         const button = document.getElementById('bilibili-fav-float-btn');
         const favoritesVisible = favoritesPanel?.classList.contains('show');
-        const controlsVisible = controlsPanel?.classList.contains('show');
+        const controlsVisible = isSettingsPanelVisible();
         if (!favoritesVisible && !controlsVisible) return;
-        if (favoritesPanel?.contains(event.target) || controlsPanel?.contains(event.target) || button?.contains(event.target)) return;
+        if (favoritesPanel?.contains(event.target) || settingsPanelContains(event.target) || button?.contains(event.target)) return;
         if (!useHoverInteractions) hidePanel('bilibili-fav-panel');
-        hidePanel('bilibili-toolbox-settings-panel');
+        hideSettingsPanel();
         scheduleHideVideoFavoriteButton();
     }
 
     function handleDocumentKeyDown(event) {
         if (event.key !== 'Escape') return;
-        hidePanel('bilibili-toolbox-settings-panel');
+        hideSettingsPanel();
         scheduleHideVideoFavoriteButton();
     }
 
@@ -4286,6 +4488,7 @@
         favoritesService = options.favoritesService;
         pageInfo = options.pageInfo;
         dynamicFilter = options.dynamicFilter;
+        settingsUi = options.settingsUi || null;
         setDataProvider(options.getData);
         eventBag = Toolbox.createEventBag();
         isTouchDevice = Shared.isTouchLikeDevice();
@@ -4305,6 +4508,7 @@
         clearHideTimer('videoButton');
         if (eventBag) eventBag.cleanup();
         eventBag = null;
+        settingsUi = null;
         resetHoverState();
         messageTimer = 0;
         document.getElementById('bilibili-fav-panel')?.remove();
@@ -4346,6 +4550,9 @@
     let toolboxData = window.Shared.createDefaultData();
     let unsubscribeStorage = null;
     let settingsEventBag = null;
+    let initialized = false;
+    let messageHandler = null;
+    let readerInstance = null;
 
     function syncAll(data) {
         toolboxData = window.Shared.normalizeToolboxData(data);
@@ -4354,14 +4561,18 @@
     }
 
     function setupMessageBridge() {
-        chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+        if (messageHandler) return;
+        messageHandler = (request, sender, sendResponse) => {
             if (request.type === 'GET_PAGE_FAVORITE_DATA') {
                 sendResponse(Toolbox.pageInfo.getCurrentFavoriteData());
             }
-        });
+        };
+        chrome.runtime.onMessage.addListener(messageHandler);
     }
 
     async function init() {
+        if (initialized) return;
+        initialized = true;
         toolboxData = await storage.init();
         unsubscribeStorage = storage.onChanged(syncAll);
 
@@ -4385,13 +4596,15 @@
             favoritesService: Toolbox.favorites,
             getData: () => toolboxData,
             pageInfo: Toolbox.pageInfo,
-            dynamicFilter: Toolbox.dynamicFilter
+            dynamicFilter: Toolbox.dynamicFilter,
+            settingsUi: Toolbox.settingsPopoverUi
         });
         window.addEventListener(Toolbox.url.URL_CHANGE_EVENT, handleUrlChange);
         setupMessageBridge();
 
         if (Toolbox.reader.shouldInitComicReader()) {
-            new Toolbox.reader.BiliComicReader().init();
+            readerInstance = new Toolbox.reader.BiliComicReader();
+            readerInstance.init();
         }
     }
 
@@ -4402,14 +4615,21 @@
 
     function destroy() {
         if (unsubscribeStorage) unsubscribeStorage();
+        unsubscribeStorage = null;
+        if (messageHandler) chrome.runtime.onMessage.removeListener(messageHandler);
+        messageHandler = null;
         window.removeEventListener(Toolbox.url.URL_CHANGE_EVENT, handleUrlChange);
+        readerInstance?.close?.();
+        readerInstance = null;
         Toolbox.spaceOpusTabs.destroy();
         Toolbox.settingsPopoverUi.destroy();
         if (settingsEventBag) settingsEventBag.cleanup();
         settingsEventBag = null;
         Toolbox.favoritesUi.destroy();
         Toolbox.dynamicFilter.destroy();
+        Toolbox.url.destroy();
         storage.destroy();
+        initialized = false;
     }
 
     Toolbox.contentApp = {

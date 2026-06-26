@@ -1,0 +1,102 @@
+﻿    #bilibili-fav-float-btn.bilibili-fav-touch {
+        bottom: max(76px, env(safe-area-inset-bottom));
+        right: max(16px, env(safe-area-inset-right));
+        width: 54px;
+        height: 54px;
+        font-size: 24px;
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
+
+    #bilibili-fav-panel,
+    #bilibili-toolbox-settings-panel {
+        right: max(12px, env(safe-area-inset-right));
+        bottom: max(140px, calc(env(safe-area-inset-bottom) + 84px));
+        max-height: min(70vh, 560px);
+        overflow: hidden;
+    }
+
+    #bilibili-fav-panel {
+        width: min(
+            calc(
+                var(--bilibili-fav-columns) * var(--bilibili-fav-item-width)
+                + (var(--bilibili-fav-columns) - 1) * var(--bilibili-fav-list-gap)
+                + var(--bilibili-fav-list-padding-x) * 2
+            ),
+            calc(100vw - 24px)
+        );
+    }
+
+    #bilibili-toolbox-settings-panel {
+        width: min(320px, calc(100vw - 24px));
+    }
+
+    .bilibili-fav-header {
+        gap: 8px;
+        padding: 10px 12px;
+    }
+
+    .bilibili-fav-header-actions {
+        flex-shrink: 0;
+    }
+
+    .bilibili-fav-control-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .bilibili-fav-add-btn,
+    .bilibili-fav-control-btn,
+    .bilibili-toolbox-export-btn,
+    .bilibili-toolbox-import-btn {
+        min-height: 42px;
+    }
+
+    .bilibili-fav-content {
+        max-height: min(52vh, 420px);
+    }
+
+    .bilibili-fav-delete {
+        width: 26px;
+        height: 26px;
+        font-size: 16px;
+        opacity: 1;
+    }
+
+    .bilibili-fav-item-link {
+        touch-action: manipulation;
+    }
+
+    .comic-sel-handle {
+        width: 36px;
+        height: 36px;
+    }
+
+    .comic-sel-handle[data-dir="n"],
+    .comic-sel-handle[data-dir="s"] {
+        width: max(36px, calc(100% - 48px));
+    }
+
+    .comic-sel-handle[data-dir="e"],
+    .comic-sel-handle[data-dir="w"] {
+        height: max(36px, calc(100% - 48px));
+    }
+
+    .comic-sel-handle[data-dir="nw"],
+    .comic-sel-handle[data-dir="ne"],
+    .comic-sel-handle[data-dir="se"],
+    .comic-sel-handle[data-dir="sw"] {
+        width: 44px;
+        height: 44px;
+    }
+
+    #comic-reader-overlay.reader-compact .comic-reader-row {
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+
+    #comic-reader-overlay.reader-compact .comic-settings-controls { gap: 8px; }
+
+    #comic-reader-overlay.reader-compact .comic-selection-hint { text-align: left; }
+}

@@ -3,17 +3,16 @@
     'use strict';
 
     if (!window.Shared) throw new Error('BilibiliToolbox: shared.js not loaded');
-    if (!window.BilibiliToolbox?.settingsPopoverUi) throw new Error('BilibiliToolbox: settings-popover-ui.js not loaded');
 
     const Shared = window.Shared;
     const Toolbox = window.BilibiliToolbox;
     const TOOLBOX_SETTINGS = Shared.TOOLBOX_SETTINGS;
-    const settingsPopoverUi = Toolbox.settingsPopoverUi;
 
     let dataProvider = () => Shared.createDefaultData();
     let favoritesService = null;
     let pageInfo = null;
     let dynamicFilter = null;
+    let settingsUi = null;
     let eventBag = null;
     let isTouchDevice = false;
     let useHoverInteractions = false;
@@ -35,6 +34,22 @@
 
     function isPanelVisible(id) {
         return document.getElementById(id)?.classList.contains('show') || false;
+    }
+
+    function isSettingsPanelVisible() {
+        return Boolean(settingsUi?.isVisible?.());
+    }
+
+    function settingsPanelContains(target) {
+        return Boolean(settingsUi?.contains?.(target));
+    }
+
+    function hideSettingsPanel() {
+        settingsUi?.hide?.();
+    }
+
+    function toggleSettingsPanel() {
+        settingsUi?.toggle?.();
     }
 
     function clearHideTimer(name) {
@@ -61,10 +76,10 @@
     function syncFloatBtnHideState() {
         const btn = document.getElementById('bilibili-fav-float-btn');
         if (!btn) return;
-        const keywordActive = Boolean(dynamicFilter?.getKeywordFilterState?.().isActive);
+        const keywordEnabled = Boolean(dynamicFilter?.getKeywordFilterState?.().enabled);
         btn.classList.toggle(
-            'hide-forward-active',
-            Boolean(getSettingValue(TOOLBOX_SETTINGS.hideForwardDynamics)) || keywordActive
+            'dynamic-filter-active',
+            Boolean(getSettingValue(TOOLBOX_SETTINGS.hideForwardDynamics)) || keywordEnabled
         );
     }
 
@@ -98,7 +113,7 @@
         clearHideTimer('videoButton');
         hideTimers.videoButton = setTimeout(() => {
             hideTimers.videoButton = 0;
-            if (!isHoveringFavoritesArea() && !isPanelVisible('bilibili-fav-panel') && !isPanelVisible('bilibili-toolbox-settings-panel')) {
+            if (!isHoveringFavoritesArea() && !isPanelVisible('bilibili-fav-panel') && !isSettingsPanelVisible()) {
                 setVideoFavoriteButtonVisible(false);
             }
         }, 220);
@@ -133,7 +148,7 @@
         clearHideTimer('panel');
         setVideoFavoriteButtonVisible(true);
         hidePanel('bilibili-fav-panel');
-        settingsPopoverUi.toggle();
+        toggleSettingsPanel();
         scheduleHideVideoFavoriteButton();
     }
 
@@ -178,7 +193,7 @@
                 longPressTimer = setTimeout(() => {
                     touchLongPressHandled = true;
                     hidePanel('bilibili-fav-panel');
-                    settingsPopoverUi.toggle();
+                    toggleSettingsPanel();
                 }, 520);
             }, { passive: true });
             eventBag.on(btn, 'touchmove', clearLongPress, { passive: true });
@@ -263,7 +278,7 @@
     function showFavoritesPanel() {
         const wasCreated = !document.getElementById('bilibili-fav-panel');
         const panel = createFavoritesPanel();
-        hidePanel('bilibili-toolbox-settings-panel');
+        hideSettingsPanel();
         renderFavoriteList();
         if (wasCreated) panel.getBoundingClientRect?.();
         panel.classList.add('show');
@@ -332,20 +347,19 @@
 
     function handleDocumentPointerDown(event) {
         const favoritesPanel = document.getElementById('bilibili-fav-panel');
-        const controlsPanel = document.getElementById('bilibili-toolbox-settings-panel');
         const button = document.getElementById('bilibili-fav-float-btn');
         const favoritesVisible = favoritesPanel?.classList.contains('show');
-        const controlsVisible = controlsPanel?.classList.contains('show');
+        const controlsVisible = isSettingsPanelVisible();
         if (!favoritesVisible && !controlsVisible) return;
-        if (favoritesPanel?.contains(event.target) || controlsPanel?.contains(event.target) || button?.contains(event.target)) return;
+        if (favoritesPanel?.contains(event.target) || settingsPanelContains(event.target) || button?.contains(event.target)) return;
         if (!useHoverInteractions) hidePanel('bilibili-fav-panel');
-        hidePanel('bilibili-toolbox-settings-panel');
+        hideSettingsPanel();
         scheduleHideVideoFavoriteButton();
     }
 
     function handleDocumentKeyDown(event) {
         if (event.key !== 'Escape') return;
-        hidePanel('bilibili-toolbox-settings-panel');
+        hideSettingsPanel();
         scheduleHideVideoFavoriteButton();
     }
 
@@ -358,6 +372,7 @@
         favoritesService = options.favoritesService;
         pageInfo = options.pageInfo;
         dynamicFilter = options.dynamicFilter;
+        settingsUi = options.settingsUi || null;
         setDataProvider(options.getData);
         eventBag = Toolbox.createEventBag();
         isTouchDevice = Shared.isTouchLikeDevice();
@@ -377,6 +392,7 @@
         clearHideTimer('videoButton');
         if (eventBag) eventBag.cleanup();
         eventBag = null;
+        settingsUi = null;
         resetHoverState();
         messageTimer = 0;
         document.getElementById('bilibili-fav-panel')?.remove();

@@ -3,11 +3,6 @@
     'use strict';
 
     // ============ 常量定义 ============
-    const COMIC_URL_PATTERNS = [
-        'bilibili.com/read/',
-        'bilibili.com/opus/',
-        't.bilibili.com/'
-    ];
     const MIN_SCALE = 0.5;
     const MAX_SCALE = 3;
     const DOUBLE_CLICK_SCALE = 2;
@@ -23,20 +18,28 @@
     const PRELOAD_COUNT = 4;
     const MOBILE_BREAKPOINT = 768;
     if (!window.Shared) throw new Error('BilibiliToolbox: shared.js not loaded');
+    if (!window.BilibiliToolbox?.bilibiliDom) throw new Error('BilibiliToolbox: bilibili-dom-adapter.js not loaded');
     if (!window.BilibiliToolbox?.storage) throw new Error('BilibiliToolbox: storage-service.js not loaded');
     if (!window.BilibiliToolbox?.comicImages) throw new Error('BilibiliToolbox: comic-reader-images.js not loaded');
     if (!window.BilibiliToolbox?.animations) throw new Error('BilibiliToolbox: animations.js not loaded');
     if (!window.BilibiliToolbox?.readerPreferences) throw new Error('BilibiliToolbox: reader-preferences.js not loaded');
     if (!window.BilibiliToolbox?.readerScreenshot) throw new Error('BilibiliToolbox: reader-screenshot.js not loaded');
+    if (!window.BilibiliToolbox?.readerTransform) throw new Error('BilibiliToolbox: reader-transform.js not loaded');
+    if (!window.BilibiliToolbox?.readerSelection) throw new Error('BilibiliToolbox: reader-selection.js not loaded');
+    if (!window.BilibiliToolbox?.readerDom) throw new Error('BilibiliToolbox: reader-dom.js not loaded');
     if (!window.BilibiliToolbox?.readerPageGroups) throw new Error('BilibiliToolbox: comic-reader-page-groups.js not loaded');
     if (!window.BilibiliToolbox?.readerInteractions) throw new Error('BilibiliToolbox: comic-reader-interactions.js not loaded');
 
     const Toolbox = window.BilibiliToolbox;
     const Shared = window.Shared;
+    const bilibiliDom = Toolbox.bilibiliDom;
     const animations = Toolbox.animations;
     const comicImages = Toolbox.comicImages;
     const readerPreferences = Toolbox.readerPreferences;
     const readerScreenshot = Toolbox.readerScreenshot;
+    const readerTransform = Toolbox.readerTransform;
+    const readerSelection = Toolbox.readerSelection;
+    const readerDom = Toolbox.readerDom;
     const readerPageGroups = Toolbox.readerPageGroups;
     const readerInteractions = Toolbox.readerInteractions;
     const READER_BACKGROUND_COLORS = Object.freeze({
@@ -152,6 +155,10 @@
             this.el = {};
             this.eventBag = null;
 
+            readerTransform.attach(this);
+            readerSelection.attach(this);
+            readerDom.attach(this);
+
             // 绑定全局事件的 this 指向，便于后续解绑
             this.handleKeyDown = this.handleKeyDown.bind(this);
             this.handleFullscreenChange = this.handleFullscreenChange.bind(this);
@@ -199,186 +206,6 @@
         }
 
         // 3. 创建 UI
-        createUI() {
-            const createBtn = (text, title, className = 'comic-btn') => {
-                const btn = document.createElement('button');
-                btn.innerText = text;
-                btn.title = title;
-                btn.className = className;
-                return btn;
-            };
-
-            this.el.reader = document.createElement('div');
-            this.el.reader.id = 'comic-reader-overlay';
-
-            this.el.imgContainer = document.createElement('div');
-            this.el.imgContainer.className = 'comic-img-container';
-
-            this.el.controls = document.createElement('div');
-            this.el.controls.className = 'comic-controls';
-
-            this.el.settingsControls = document.createElement('div');
-            this.el.settingsControls.className = 'comic-settings-controls';
-
-            this.el.settingsPanel = document.createElement('div');
-            this.el.settingsPanel.className = 'comic-settings-panel';
-            this.el.settingsPanel.setAttribute('aria-hidden', 'true');
-
-            const row = document.createElement('div');
-            row.className = 'comic-reader-row';
-            const secondRow = document.createElement('div');
-            secondRow.className = 'comic-reader-row comic-reader-row-wrap';
-
-            [
-                ['rightBtn', '\u2192', '\u5411\u53f3\u7ffb\u9875', 'comic-btn'],
-                ['leftBtn', '\u2190', '\u5411\u5de6\u7ffb\u9875', 'comic-btn'],
-                ['offsetIncBtn', '<', '\u5de6\u79fb\u4e00\u9875', 'comic-btn comic-btn-alt'],
-                ['offsetDecBtn', '>', '\u53f3\u79fb\u4e00\u9875', 'comic-btn comic-btn-alt'],
-                ['directionBtn', '', '', 'comic-btn comic-btn-alt'],
-                ['animationBtn', '', '', 'comic-btn comic-btn-alt'],
-                ['viewModeBtn', '', '', 'comic-btn comic-btn-alt'],
-                ['imageRenderBtn', '', '', 'comic-btn comic-btn-alt'],
-                ['backgroundBtn', '', '', 'comic-btn comic-btn-alt'],
-                ['tapPageBtn', '', '', 'comic-btn comic-btn-alt'],
-                ['resetViewBtn', '\u91cd\u7f6e', '\u91cd\u7f6e\u89c6\u56fe', 'comic-btn comic-btn-alt'],
-                ['screenshotBtn', '\u622a\u56fe', '\u62d6\u52a8\u9009\u62e9\u622a\u56fe\u8303\u56f4', 'comic-btn comic-btn-alt'],
-                ['fullScreenBtn', '', '', 'comic-btn comic-btn-alt'],
-                ['rotateBtn', '', '', 'comic-btn comic-btn-alt'],
-                ['settingsBtn', '\u8bbe\u7f6e', '\u6253\u5f00\u9605\u8bfb\u5668\u8bbe\u7f6e', 'comic-btn comic-btn-alt'],
-                ['closeBtn', '\u9000\u51fa', '\u9000\u51fa', 'comic-btn']
-            ].forEach(([key, text, title, style]) => {
-                this.el[key] = createBtn(text, title, style);
-            });
-
-            this.el.pageInfo = document.createElement('span');
-            this.el.pageInfo.className = 'comic-page-info';
-            this.el.pageInfo.title = '\u70b9\u51fb\u8f93\u5165\u9875\u7801';
-
-            this.el.pageDisplay = document.createElement('span');
-            this.el.pageDisplay.className = 'comic-page-display';
-
-            this.el.pageInput = document.createElement('input');
-            this.el.pageInput.className = 'comic-page-input';
-            this.el.pageInput.type = 'text';
-            this.el.pageInput.inputMode = 'numeric';
-            this.el.pageInput.pattern = '[0-9]*';
-            this.el.pageInput.autocomplete = 'off';
-            this.el.pageInput.spellcheck = false;
-            this.el.pageInput.title = '\u8f93\u5165\u9875\u7801\u540e\u56de\u8f66\u8df3\u8f6c';
-
-            this.el.pageRange = document.createElement('span');
-            this.el.pageRange.className = 'comic-page-range';
-            this.el.pageInfo.append(this.el.pageDisplay, this.el.pageInput, this.el.pageRange);
-
-            this.el.toast = document.createElement('div');
-            this.el.toast.className = 'comic-toast';
-
-            this.el.selectionOverlay = document.createElement('div');
-            this.el.selectionOverlay.className = 'comic-selection-overlay';
-
-            this.el.selectionHint = document.createElement('div');
-            this.el.selectionHint.className = 'comic-selection-hint';
-            this.el.selectionHint.textContent = '\u62d6\u52a8\u9009\u62e9\u622a\u56fe\u8303\u56f4\uff0c\u5b8c\u6210\u540e\u70b9\u51fb\u4fdd\u5b58';
-
-            this.el.selectionToolbar = document.createElement('div');
-            this.el.selectionToolbar.className = 'comic-selection-toolbar';
-
-            this.el.selectionCancelBtn = document.createElement('button');
-            this.el.selectionCancelBtn.type = 'button';
-            this.el.selectionCancelBtn.innerText = '\u53d6\u6d88\u622a\u56fe';
-            this.el.selectionCancelBtn.className = 'comic-selection-action comic-selection-cancel';
-
-            this.el.selectionSaveBtn = document.createElement('button');
-            this.el.selectionSaveBtn.type = 'button';
-            this.el.selectionSaveBtn.innerText = '\u4fdd\u5b58\u622a\u56fe';
-            this.el.selectionSaveBtn.className = 'comic-selection-action comic-selection-save';
-
-            this.el.selectionFullBtn = document.createElement('button');
-            this.el.selectionFullBtn.type = 'button';
-            this.el.selectionFullBtn.innerText = '\u4fdd\u5b58\u5168\u56fe';
-            this.el.selectionFullBtn.className = 'comic-selection-action comic-selection-full';
-
-            this.el.selectionBox = document.createElement('div');
-            this.el.selectionBox.className = 'comic-selection-box';
-
-            const handleCursors = {
-                nw: 'nwse-resize', n: 'ns-resize', ne: 'nesw-resize',
-                e: 'ew-resize', se: 'nwse-resize', s: 'ns-resize',
-                sw: 'nesw-resize', w: 'ew-resize'
-            };
-            for (const [dir, cursor] of Object.entries(handleCursors)) {
-                const h = document.createElement('div');
-                h.className = 'comic-sel-handle';
-                h.dataset.dir = dir;
-                h.style.cursor = cursor;
-                this.el.selectionBox.appendChild(h);
-                this.selectionHandles[dir] = h;
-            }
-
-            this.el.selectionToolbar.append(this.el.selectionFullBtn, this.el.selectionSaveBtn, this.el.selectionCancelBtn);
-            this.el.selectionOverlay.append(this.el.selectionHint, this.el.selectionToolbar, this.el.selectionBox);
-
-            const createSettingsRow = (title, desc, control) => {
-                const item = document.createElement('div');
-                item.className = 'comic-settings-item';
-                const copy = document.createElement('div');
-                copy.className = 'comic-settings-copy';
-                const titleEl = document.createElement('div');
-                titleEl.className = 'comic-settings-title';
-                titleEl.textContent = title;
-                const descEl = document.createElement('div');
-                descEl.className = 'comic-settings-desc';
-                descEl.textContent = desc;
-                const action = document.createElement('div');
-                action.className = 'comic-settings-action';
-                copy.append(titleEl, descEl);
-                action.append(control);
-                item.append(copy, action);
-                return item;
-            };
-
-            const settingsHeader = document.createElement('div');
-            settingsHeader.className = 'comic-settings-panel-header';
-            const settingsTitle = document.createElement('div');
-            settingsTitle.className = 'comic-settings-panel-title';
-            settingsTitle.textContent = '\u9605\u8bfb\u8bbe\u7f6e';
-            const settingsDesc = document.createElement('div');
-            settingsDesc.className = 'comic-settings-panel-desc';
-            settingsDesc.textContent = '\u8c03\u6574\u663e\u793a\u3001\u7ffb\u9875\u548c\u9605\u8bfb\u4e60\u60ef\uff0c\u66f4\u6539\u4f1a\u81ea\u52a8\u4fdd\u5b58\u3002';
-            settingsHeader.append(settingsTitle, settingsDesc);
-
-            row.append(this.el.leftBtn, this.el.offsetIncBtn, this.el.pageInfo, this.el.offsetDecBtn, this.el.rightBtn);
-            secondRow.append(this.el.resetViewBtn, this.el.fullScreenBtn);
-            this.el.controls.append(row, secondRow);
-
-            // 右上角设置按钮横向排列（退出在最上面）
-            this.el.settingsControls.append(this.el.closeBtn, this.el.screenshotBtn, this.el.rotateBtn, this.el.settingsBtn);
-            this.el.settingsPanel.append(
-                settingsHeader,
-                createSettingsRow('\u663e\u793a\u8d28\u91cf', '\u539f\u56fe\u4fdd\u7559\u7ec6\u8282\uff0c\u6d41\u7545\u51cf\u5c11\u7eb9\u7406\u95ea\u70c1\u3002', this.el.imageRenderBtn),
-                createSettingsRow('\u80cc\u666f\u989c\u8272', '\u5728\u9ed1\u8272\u3001\u6df1\u7070\u3001\u6d45\u7070\u548c\u767d\u8272\u9605\u8bfb\u80cc\u666f\u4e4b\u95f4\u5207\u6362\u3002', this.el.backgroundBtn),
-                createSettingsRow('\u7ffb\u9875\u52a8\u753b', '\u5728\u65e0\u52a8\u753b\u3001\u5e73\u6ed1\u548c\u6de1\u5165\u4e4b\u95f4\u5207\u6362\u3002', this.el.animationBtn),
-                createSettingsRow('\u663e\u793a\u5f20\u6570', '\u81ea\u52a8\u5224\u65ad\u5355\u56fe\u6216\u53cc\u56fe\uff0c\u4e5f\u53ef\u624b\u52a8\u6307\u5b9a\u3002', this.el.viewModeBtn),
-                createSettingsRow('\u70b9\u51fb\u7ffb\u9875\uff08\u4ec5\u79fb\u52a8\u7aef\uff09', '\u63a7\u5236\u70b9\u51fb\u5c4f\u5e55\u5de6\u53f3\u533a\u57df\u662f\u5426\u7ffb\u9875\u3002', this.el.tapPageBtn),
-                createSettingsRow('\u9605\u8bfb\u65b9\u5411', '\u9002\u914d\u4ece\u53f3\u5f80\u5de6\u6216\u4ece\u5de6\u5f80\u53f3\u7684\u9605\u8bfb\u4e60\u60ef\u3002', this.el.directionBtn)
-            );
-
-            this.el.reader.append(this.el.imgContainer, this.el.controls, this.el.settingsControls, this.el.settingsPanel, this.el.toast, this.el.selectionOverlay);
-
-            document.body.appendChild(this.el.reader);
-            this.updateDirection();
-            this.syncDirectionButton();
-            animations.syncAnimationButton(this.el.animationBtn, this.animationMode);
-            this.syncViewModeButton();
-            this.syncImageRenderButton();
-            this.syncBackgroundButton();
-            this.syncTapPageButton();
-            this.syncRotateButton();
-            this.syncFullscreenButton();
-            this.applyReaderBackground();
-            this.applyResponsiveLayout();
-        }
-
         // 4. 缁戝畾浜嬩欢
         bindEvents() {
             readerInteractions.bind(this);
@@ -506,195 +333,6 @@
             if (this.el.reader) this.el.reader.style.background = this.getReaderBackgroundColor();
         }
 
-        setSelectionHint(text) {
-            this.el.selectionHint.textContent = text;
-        }
-
-        getReaderPoint(clientX, clientY) {
-            const rect = this.el.reader.getBoundingClientRect();
-            return {
-                x: Math.max(0, Math.min(rect.width, clientX - rect.left)),
-                y: Math.max(0, Math.min(rect.height, clientY - rect.top))
-            };
-        }
-
-        normalizeSelectionRect(start = this.selectionStart, end = this.selectionCurrent) {
-            if (!start || !end) return null;
-            return { x: Math.min(start.x, end.x), y: Math.min(start.y, end.y), width: Math.abs(end.x - start.x), height: Math.abs(end.y - start.y) };
-        }
-
-        hasValidSelection(rect = this.normalizeSelectionRect()) {
-            return Boolean(rect && rect.width >= 8 && rect.height >= 8);
-        }
-
-        updateSelectionActions() {
-            const hasSelection = this.hasValidSelection();
-            this.el.selectionSaveBtn.disabled = !hasSelection;
-            this.el.selectionSaveBtn.classList.toggle('is-disabled', !hasSelection);
-        }
-
-        updateSelectionBox() {
-            const rect = this.normalizeSelectionRect();
-            if (!rect) {
-                this.el.selectionBox.style.display = 'none';
-                this._hideHandles();
-                return;
-            }
-            Object.assign(this.el.selectionBox.style, {
-                display: 'block', left: `${rect.x}px`, top: `${rect.y}px`,
-                width: `${rect.width}px`, height: `${rect.height}px`
-            });
-            const valid = this.hasValidSelection(rect);
-            const w = rect.width, h = rect.height;
-            const pos = { nw: [0,0], n: [w/2,0], ne: [w,0], e: [w,h/2], se: [w,h], s: [w/2,h], sw: [0,h], w: [0,h/2] };
-            for (const [dir, [x, y]] of Object.entries(pos)) {
-                const el = this.selectionHandles[dir];
-                if (!el) continue;
-                el.style.display = valid ? 'block' : 'none';
-                el.style.left = `${x}px`;
-                el.style.top = `${y}px`;
-            }
-        }
-
-        clearSelectionBox() {
-            this.isDraggingSelection = false;
-            this.selectionPointerId = null;
-            this.resizeDirection = null;
-            this.selectionStart = null;
-            this.selectionCurrent = null;
-            this.el.selectionBox.style.display = 'none';
-            this._hideHandles();
-            this.updateSelectionActions();
-        }
-
-        _hideHandles() {
-            for (const h of Object.values(this.selectionHandles)) {
-                h.style.display = 'none';
-            }
-        }
-
-        startScreenshotSelection() {
-            if (this.isSelectingScreenshot) return;
-            this.isSelectingScreenshot = true;
-            this.pageFlipToken += 1;
-            this.selectionWasControlsVisible = this.controlsVisible;
-            this.clearSelectionBox();
-            this.hideSettingsPanel();
-            this.el.selectionOverlay.style.display = 'block';
-            this.setSelectionHint('\u62d6\u52a8\u9009\u62e9\u622a\u56fe\u8303\u56f4\uff0c\u5b8c\u6210\u540e\u70b9\u51fb\u4fdd\u5b58');
-            this.hideControls();
-            if (this.hideTimer) clearTimeout(this.hideTimer);
-        }
-
-        cancelScreenshotSelection(showMessage = false, restoreControls = true) {
-            if (!this.isSelectingScreenshot) return;
-            this.isSelectingScreenshot = false;
-            this.clearSelectionBox();
-            this.el.selectionOverlay.style.display = 'none';
-            this.setSelectionHint('\u62d6\u52a8\u9009\u62e9\u622a\u56fe\u8303\u56f4\uff0c\u5b8c\u6210\u540e\u70b9\u51fb\u4fdd\u5b58');
-            if (restoreControls) { this.selectionWasControlsVisible ? this.showControls() : this.hideControls(); }
-            if (showMessage) this.showReaderMessage('\u5df2\u53d6\u6d88\u622a\u56fe');
-        }
-
-        handleSelectionPointerDown(e) {
-            if (!this.isSelectingScreenshot || e.button === 2 || e.target.closest?.('button')) return;
-            e.preventDefault();
-            this.selectionPointerId = e.pointerId;
-
-            const handle = e.target.closest?.('.comic-sel-handle');
-            if (handle && this.hasValidSelection()) {
-                const rect = this.normalizeSelectionRect();
-                this.selectionStart = { x: rect.x, y: rect.y };
-                this.selectionCurrent = { x: rect.x + rect.width, y: rect.y + rect.height };
-                this.resizeDirection = handle.dataset.dir;
-                this.isDraggingSelection = true;
-                this.setSelectionHint('\u62d6\u52a8\u8fb9\u89d2\u8c03\u6574\u9009\u533a\u8303\u56f4');
-                this.el.selectionOverlay.setPointerCapture?.(e.pointerId);
-                return;
-            }
-
-            if (e.target.closest?.('.comic-sel-handle') || e.target === this.el.selectionBox) return;
-
-            this.isDraggingSelection = true;
-            this.resizeDirection = null;
-            this.selectionStart = this.getReaderPoint(e.clientX, e.clientY);
-            this.selectionCurrent = this.selectionStart;
-            this.updateSelectionBox();
-            this.updateSelectionActions();
-            this.setSelectionHint('\u62d6\u52a8\u9009\u62e9\u622a\u56fe\u8303\u56f4\uff0c\u5b8c\u6210\u540e\u62d6\u52a8\u8fb9\u89d2\u5fae\u8c03');
-            this.el.selectionOverlay.setPointerCapture?.(e.pointerId);
-        }
-
-        handleSelectionPointerMove(e) {
-            if (!this.isSelectingScreenshot || !this.isDraggingSelection) return;
-            if (this.selectionPointerId !== null && e.pointerId !== this.selectionPointerId) return;
-            e.preventDefault();
-
-            const pt = this.getReaderPoint(e.clientX, e.clientY);
-            const MIN = 8;
-
-            if (this.resizeDirection) {
-                const d = this.resizeDirection;
-                if (d.includes('w')) this.selectionStart.x = Math.min(pt.x, this.selectionCurrent.x - MIN);
-                if (d.includes('e')) this.selectionCurrent.x = Math.max(pt.x, this.selectionStart.x + MIN);
-                if (d.includes('n')) this.selectionStart.y = Math.min(pt.y, this.selectionCurrent.y - MIN);
-                if (d.includes('s')) this.selectionCurrent.y = Math.max(pt.y, this.selectionStart.y + MIN);
-            } else {
-                this.selectionCurrent = pt;
-            }
-
-            this.updateSelectionBox();
-            this.updateSelectionActions();
-        }
-
-        handleSelectionPointerUp(e) {
-            if (!this.isSelectingScreenshot || !this.isDraggingSelection) return;
-            if (this.selectionPointerId !== null && e.pointerId !== this.selectionPointerId) return;
-            e.preventDefault();
-            this.isDraggingSelection = false;
-            this.selectionPointerId = null;
-            this.resizeDirection = null;
-
-            if (!this.selectionStart && !this.selectionCurrent) return;
-
-            this.el.selectionOverlay.releasePointerCapture?.(e.pointerId);
-            this.updateSelectionBox();
-            this.updateSelectionActions();
-
-            if (this.hasValidSelection()) {
-                this.setSelectionHint('\u9009\u533a\u5df2\u5c31\u7eea\uff0c\u62d6\u52a8\u8fb9\u89d2\u5fae\u8c03\uff0c\u6216\u70b9\u51fb\u4fdd\u5b58');
-            } else {
-                this.clearSelectionBox();
-                this.setSelectionHint('\u9009\u533a\u592a\u5c0f\uff0c\u8bf7\u91cd\u65b0\u62d6\u52a8\u9009\u62e9');
-            }
-        }
-
-        async saveSelectionScreenshot() {
-            if (!this.hasValidSelection()) {
-                this.showReaderMessage('\u8bf7\u5148\u62d6\u52a8\u9009\u51fa\u622a\u56fe\u8303\u56f4', true);
-                return;
-            }
-
-            const success = await this.captureScreenshot(this.normalizeSelectionRect());
-            if (success) {
-                this.cancelScreenshotSelection(false);
-            }
-        }
-
-        async saveFullScreenshot() {
-            const descriptors = this.getVisibleImageDescriptors();
-            const rect = readerScreenshot.getBounds(descriptors);
-            if (!rect) {
-                this.showReaderMessage('\u5f53\u524d\u6ca1\u6709\u53ef\u622a\u56fe\u7684\u9875\u9762', true);
-                return;
-            }
-
-            const success = await this.captureScreenshot(rect, descriptors);
-            if (success) {
-                this.cancelScreenshotSelection(false);
-            }
-        }
-
         setControlsOpacity(opacity) {
             const hidden = opacity === '0';
             this.el.controls.classList.toggle('is-hidden', hidden);
@@ -800,209 +438,6 @@
 
         isTouchPanMode() {
             return this.touchPanLocked && this.scale > 1 + TOUCH_ZOOM_EPSILON;
-        }
-
-        setTransformTransition(value) {
-            if (!this.el.imgContainer) return;
-            this.el.imgContainer.style.transition = value;
-        }
-
-        animateTransform(duration = 180) {
-            if (this.transformTransitionTimer) clearTimeout(this.transformTransitionTimer);
-            this.setTransformTransition(`transform ${duration}ms ease-out`);
-            this.transformTransitionTimer = setTimeout(() => {
-                this.transformTransitionTimer = null;
-                this.setTransformTransition('none');
-            }, duration);
-        }
-
-        getImageGap() {
-            if (!this.el.imgContainer) return 0;
-            const styles = window.getComputedStyle(this.el.imgContainer);
-            const gap = parseFloat(styles.columnGap || styles.gap || '0');
-            return Number.isFinite(gap) ? gap : 0;
-        }
-
-        isSharpRenderMode() {
-            return this.imageRenderMode === 'sharp';
-        }
-
-        getEffectiveImageSize(img) {
-            const naturalWidth = img.naturalWidth || img.width || 0;
-            const naturalHeight = img.naturalHeight || img.height || 0;
-            const rotated = this.rotation === 90 || this.rotation === 270;
-            return {
-                width: rotated ? naturalHeight : naturalWidth,
-                height: rotated ? naturalWidth : naturalHeight
-            };
-        }
-
-        getSharpDisplaySizes(images, isFull) {
-            const naturalSizes = images.map(img => this.getEffectiveImageSize(img));
-            if (isFull || naturalSizes.length < 2) return naturalSizes;
-
-            const targetHeight = Math.max(...naturalSizes.map(size => size.height || 0));
-            if (!targetHeight) return naturalSizes;
-
-            return naturalSizes.map(size => {
-                if (!size.width || !size.height) return size;
-                const ratio = targetHeight / size.height;
-                return {
-                    width: size.width * ratio,
-                    height: targetHeight
-                };
-            });
-        }
-
-        getDisplayedImageSize(img) {
-            const displayWidth = Number.parseFloat(img.dataset.displayWidth || '');
-            const displayHeight = Number.parseFloat(img.dataset.displayHeight || '');
-            if (Number.isFinite(displayWidth) && displayWidth > 0
-                && Number.isFinite(displayHeight) && displayHeight > 0) {
-                return { width: displayWidth, height: displayHeight };
-            }
-            return this.getEffectiveImageSize(img);
-        }
-
-        updateFitScale(images = Array.from(this.el.imgContainer?.querySelectorAll('img') || [])) {
-            if (!this.isSharpRenderMode()) {
-                this.fitScale = 1;
-                this.contentNaturalWidth = 0;
-                this.contentNaturalHeight = 0;
-                return;
-            }
-
-            const readerRect = this.el.reader?.getBoundingClientRect();
-            if (!readerRect || !images.length) {
-                this.fitScale = 1;
-                this.contentNaturalWidth = 0;
-                this.contentNaturalHeight = 0;
-                return;
-            }
-
-            const sizes = images.map(img => this.getDisplayedImageSize(img));
-            const gap = this.getImageGap() * Math.max(0, images.length - 1);
-            const width = sizes.reduce((sum, size) => sum + size.width, 0) + gap;
-            const height = Math.max(...sizes.map(size => size.height));
-
-            this.contentNaturalWidth = width;
-            this.contentNaturalHeight = height;
-            if (!width || !height || !readerRect.width || !readerRect.height) {
-                this.fitScale = 1;
-                return;
-            }
-
-            this.fitScale = Math.min(1, readerRect.width / width, readerRect.height / height);
-        }
-
-        getRenderScale(scale = this.scale) {
-            return Math.max(0.001, this.fitScale * scale);
-        }
-
-        getMaxScale() {
-            if (!this.fitScale) return MAX_SCALE;
-            return Math.max(MAX_SCALE, MAX_RENDER_SCALE / this.fitScale);
-        }
-
-        getDoubleClickScale() {
-            if (!this.fitScale) return DOUBLE_CLICK_SCALE;
-            return Math.min(this.getMaxScale(), Math.max(DOUBLE_CLICK_SCALE, 1 / this.fitScale));
-        }
-
-        applyImageRenderMode() {
-            const images = Array.from(this.el.imgContainer?.querySelectorAll('img') || []);
-            const isFull = images.length === 1;
-            const displaySizes = this.isSharpRenderMode()
-                ? this.getSharpDisplaySizes(images, isFull)
-                : [];
-            images.forEach((img, index) => this.setupImg(img, isFull, displaySizes[index]));
-            this.scale = 1;
-            this.translateX = 0;
-            this.translateY = 0;
-            this.updateFitScale(images);
-            this.applyTransform();
-        }
-
-        getImageBounds() {
-            if (!this.el.imgContainer) return null;
-            const images = Array.from(this.el.imgContainer.querySelectorAll('img'));
-            if (!images.length) return null;
-            const containerRect = this.el.reader?.getBoundingClientRect()
-                || this.el.imgContainer.getBoundingClientRect();
-            const imageRects = images.map(img => img.getBoundingClientRect());
-            const left = Math.min(...imageRects.map(rect => rect.left));
-            const right = Math.max(...imageRects.map(rect => rect.right));
-            const top = Math.min(...imageRects.map(rect => rect.top));
-            const bottom = Math.max(...imageRects.map(rect => rect.bottom));
-            return {
-                containerRect,
-                left,
-                right,
-                top,
-                bottom,
-                width: right - left,
-                height: bottom - top
-            };
-        }
-
-        getPanLimits() {
-            const bounds = this.getImageBounds();
-            if (!bounds || this.scale <= 1) return { maxX: 0, maxY: 0 };
-
-            const renderScale = this.getRenderScale();
-            const allowance = PAN_EDGE_ALLOWANCE / renderScale;
-            return {
-                maxX: Math.max(0, (bounds.width - bounds.containerRect.width) / (2 * renderScale)) + allowance,
-                maxY: Math.max(0, (bounds.height - bounds.containerRect.height) / (2 * renderScale)) + allowance
-            };
-        }
-
-        clampPanValue(value, limit) {
-            return Math.max(-limit, Math.min(limit, value));
-        }
-
-        clampTransform() {
-            const limits = this.getPanLimits();
-            if (!limits.maxX && !limits.maxY) {
-                this.translateX = 0;
-                this.translateY = 0;
-                return;
-            }
-
-            this.translateX = this.clampPanValue(this.translateX, limits.maxX);
-            this.translateY = this.clampPanValue(this.translateY, limits.maxY);
-        }
-
-        zoomAt(clientX, clientY, nextScale) {
-            if (!this.el.imgContainer) return;
-            const clampedScale = Math.max(MIN_SCALE, Math.min(this.getMaxScale(), nextScale));
-            const previousScale = this.scale || 1;
-            if (Math.abs(clampedScale - previousScale) < 0.001) return;
-
-            const rect = this.el.reader?.getBoundingClientRect()
-                || this.el.imgContainer.getBoundingClientRect();
-            const offsetX = clientX - (rect.left + rect.width / 2);
-            const offsetY = clientY - (rect.top + rect.height / 2);
-            const previousRenderScale = this.getRenderScale(previousScale);
-
-            this.scale = clampedScale;
-            const nextRenderScale = this.getRenderScale(clampedScale);
-            this.translateX += offsetX * (1 / nextRenderScale - 1 / previousRenderScale);
-            this.translateY += offsetY * (1 / nextRenderScale - 1 / previousRenderScale);
-            if (this.isTouchDevice) {
-                this.touchPanLocked = clampedScale > 1 + TOUCH_ZOOM_EPSILON;
-            }
-            this.applyTransform();
-        }
-
-        resetScaleAndPan() {
-            this.scale = 1;
-            this.translateX = 0;
-            this.translateY = 0;
-            this.touchPanLocked = false;
-            this.touchDidMoveImage = false;
-            this.touchEdgePageStep = 0;
-            this.applyTransform();
         }
 
         async loadExportImageSafe(src) {
@@ -1263,7 +698,7 @@
         }
 
         // 6. 智能图片加载逻辑（决定单双页）
-        async loadImages(renderIndex, animationMode = 'none', transitionDirection = 0) {
+        async loadImages(renderIndex, animationMode = animations.IMMEDIATE_RENDER_MODE, transitionDirection = 0) {
             if (renderIndex !== this.currentIndex) return;
 
             this.resetPageInteractionState();
@@ -1321,9 +756,6 @@
             const displaySizes = this.isSharpRenderMode()
                 ? this.getSharpDisplaySizes(images, isFull)
                 : [];
-            if (animationMode === 'none') {
-                this.el.imgContainer.innerHTML = '';
-            }
             images.forEach((img, index) => {
                 this.setupImg(img, isFull, displaySizes[index]);
                 this.el.imgContainer.appendChild(img);
@@ -1484,58 +916,7 @@
             if (this.el.imgContainer) this.el.imgContainer.style.flexDirection = this.isRightToLeft ? 'row-reverse' : 'row';
         }
 
-        resetTransform() {
-            this.clearPendingTap();
-            this.animateTransform(220);
-            this.scale = 1;
-            this.translateX = 0;
-            this.translateY = 0;
-            this.rotation = 0;
-            this.touchPanLocked = false;
-            this.touchDidMoveImage = false;
-            this.touchEdgePageStep = 0;
-            this.lastTapTime = 0;
-            this.twoFingerTapCandidate = false;
-            this.lastTwoFingerTapTime = 0;
-            this.lastTwoFingerTapCenterX = 0;
-            this.lastTwoFingerTapCenterY = 0;
-            this.syncRotateButton();
-            this.applyImageRenderMode();
-        }
-
-        getTransformStyle(screenTranslateX = 0, screenTranslateY = 0) {
-            const renderScale = this.getRenderScale();
-            return `scale(${renderScale}) translate(${this.translateX + screenTranslateX / renderScale}px,${this.translateY + screenTranslateY / renderScale}px)`;
-        }
-
-        writeTransform() {
-            if (this.el.imgContainer) this.el.imgContainer.style.transform = this.getTransformStyle();
-        }
-
-        applyTransform() {
-            this.writeTransform();
-            this.clampTransform();
-            if (this.isTouchDevice && this.scale <= 1 + TOUCH_ZOOM_EPSILON) {
-                this.touchPanLocked = false;
-            }
-            this.writeTransform();
-        }
-
         // 全局事件处理函数
-
-        handleMouseMove(e) {
-            if (!this.isDragging) return;
-            const renderScale = this.getRenderScale();
-            this.translateX = this.initX + (e.clientX - this.startX) / renderScale;
-            this.translateY = this.initY + (e.clientY - this.startY) / renderScale;
-            this.applyTransform();
-        }
-
-        handleMouseUp() {
-            if (!this.isDragging) return;
-            this.isDragging = false;
-            this.el.imgContainer.classList.remove('is-grabbing');
-        }
 
         handleFullscreenChange() {
             this.syncFullscreenButton();
@@ -1587,8 +968,7 @@
     // ============ 入口函数 ============
     // 检查 URL 是否匹配漫画模式
     function shouldInitComicReader() {
-        const url = window.location.href;
-        return COMIC_URL_PATTERNS.some(pattern => url.includes(pattern));
+        return bilibiliDom.isComicReaderPage();
     }
 
     Toolbox.reader = {

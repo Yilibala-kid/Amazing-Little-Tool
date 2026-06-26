@@ -63,16 +63,6 @@
         });
     }
 
-    function getDynamicControlsStatus(forwardEnabled, keywordState, isDynamicPage = dynamicFilter?.isSpaceDynamicPage?.()) {
-        if (!isDynamicPage) return '\u5728\u7528\u6237\u52a8\u6001\u9875\u751f\u6548';
-
-        const states = [];
-        if (forwardEnabled) states.push('\u5df2\u9690\u85cf\u8f6c\u53d1\u52a8\u6001');
-        if (keywordState.enabled && !keywordState.hasKeyword) states.push('\u8bf7\u8f93\u5165\u5173\u952e\u8bcd\u540e\u5f00\u59cb\u7b5b\u9009');
-        if (keywordState.isActive) states.push(`\u4ec5\u663e\u793a\u5305\u542b\u201c${keywordState.displayText}\u201d\u7684\u52a8\u6001`);
-        return states.length ? states.join('\uff1b') : '\u5df2\u663e\u793a\u5168\u90e8\u52a8\u6001';
-    }
-
     function createSettingsPopoverPanel() {
         if (document.getElementById('bilibili-toolbox-settings-panel')) return;
 
@@ -94,11 +84,10 @@
                     </div>
                 </section>
                 <section class="bilibili-toolbox-control-section">
-                    <div class="bilibili-toolbox-section-title">\u52a8\u6001\u8fc7\u6ee4</div>
+                    <div class="bilibili-toolbox-section-title">\u52a8\u6001\u8fc7\u6ee4\uff08\u5728\u52a8\u6001\u9875\u751f\u6548\uff09</div>
                     <label class="bilibili-toolbox-control-row">
                         <span class="bilibili-toolbox-control-copy">
                             <span class="bilibili-toolbox-control-title">\u9690\u85cf\u8f6c\u53d1\u52a8\u6001</span>
-                            <span class="bilibili-toolbox-control-desc">\u4ec5\u5728\u7528\u6237\u52a8\u6001\u9875\u751f\u6548</span>
                         </span>
                         <span class="bilibili-toolbox-switch">
                             <input type="checkbox" class="bilibili-toolbox-forward-toggle">
@@ -116,7 +105,6 @@
                         </span>
                     </label>
                     <input type="text" class="bilibili-toolbox-keyword-input" placeholder="\u8f93\u5165\u8981\u5305\u542b\u7684\u5185\u5bb9" autocomplete="off" spellcheck="false">
-                    <div class="bilibili-toolbox-control-status"></div>
                 </section>
             </div>
             <div class="bilibili-toolbox-control-actions">
@@ -156,6 +144,10 @@
         return document.getElementById('bilibili-toolbox-settings-panel')?.classList.contains('show');
     }
 
+    function getSettingsPopoverPanel() {
+        return document.getElementById('bilibili-toolbox-settings-panel');
+    }
+
     function renderSettingsPopoverPanel() {
         const panel = document.getElementById('bilibili-toolbox-settings-panel');
         if (!panel || !dynamicFilter) return;
@@ -175,7 +167,6 @@
             button.setAttribute('aria-pressed', String(active));
         });
         if (keywordInput.value !== keywordState.text) keywordInput.value = keywordState.text;
-        panel.querySelector('.bilibili-toolbox-control-status').textContent = getDynamicControlsStatus(forwardEnabled, keywordState);
     }
 
     function showSettingsPopoverPanel() {
@@ -218,7 +209,9 @@
         init: initSettingsPopoverUi,
         render: renderSettingsPopoverPanel,
         toggle: toggleSettingsPopoverPanel,
-        destroy: destroySettingsPopoverUi,
-        getStatus: getDynamicControlsStatus
+        hide: () => hidePanel('bilibili-toolbox-settings-panel'),
+        isVisible: isSettingsPopoverPanelVisible,
+        contains: target => Boolean(getSettingsPopoverPanel()?.contains(target)),
+        destroy: destroySettingsPopoverUi
     };
 })();

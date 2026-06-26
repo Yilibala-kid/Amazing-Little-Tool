@@ -2,9 +2,10 @@
 (function() {
     'use strict';
 
-    if (!window.BilibiliToolbox) throw new Error('BilibiliToolbox: shared.js not loaded');
+    if (!window.BilibiliToolbox?.bilibiliDom) throw new Error('BilibiliToolbox: bilibili-dom-adapter.js not loaded');
 
     const Toolbox = window.BilibiliToolbox;
+    const bilibiliDom = Toolbox.bilibiliDom;
     const IMAGE_ATTRS = [
         'data-origin-src',
         'data-original',
@@ -15,23 +16,13 @@
         'data-src',
         'src'
     ];
-    const PRIMARY_IMAGE_SELECTOR = `
-        .opus-module-content img,
-        .article-content img,
-        .bili-rich-text img,
-        .opus-read-content img,
-        .horizontal-scroll-album__pic__img img
-    `;
-    const FALLBACK_IMAGE_SELECTOR = `
-        .horizontal-scroll-album__indicator__thumbnail img
-    `;
     const IMAGE_FILE_PATTERN = /\.(?:jpe?g|png|webp|gif|avif)(?:$|[?#])/i;
 
     function normalizeImageUrl(rawSrc) {
         if (!rawSrc || typeof rawSrc !== 'string') return '';
         let src = rawSrc.trim().replace(/^["']|["']$/g, '');
         if (!src || src.includes('base64')) return '';
-        if (src.startsWith('//')) src = 'https:' + src;
+        src = bilibiliDom.normalizeProtocolUrl(src);
         if (src.startsWith('http:')) src = 'https:' + src.slice(5);
         if (!src.startsWith('http')) return '';
 
@@ -126,14 +117,13 @@
     function collectDynamicImagesFromDom() {
         const fileSet = new Set();
         const images = [];
-        const primaryImages = Array.from(document.querySelectorAll(PRIMARY_IMAGE_SELECTOR));
+        const primaryImages = bilibiliDom.getPrimaryImages();
         primaryImages.forEach(img => pushBestImage(images, fileSet, img));
 
         // Thumbnail strips are a last resort. They are useful on some album
         // pages, but preferring them can make the reader display low-res images.
         if (images.length === 0) {
-            Array.from(document.querySelectorAll(FALLBACK_IMAGE_SELECTOR))
-                .forEach(img => pushBestImage(images, fileSet, img));
+            bilibiliDom.getFallbackImages().forEach(img => pushBestImage(images, fileSet, img));
         }
 
         return images;

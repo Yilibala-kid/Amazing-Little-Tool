@@ -198,6 +198,7 @@ function createFakeDocument() {
 function loadDynamicFilterContext() {
     const context = createBaseContext();
     runFile(context, 'shared.js');
+    runFile(context, 'bilibili-dom-adapter.js');
     runFile(context, 'dynamic-filter.js');
     return context;
 }
@@ -225,6 +226,7 @@ function loadDynamicFilterObserverContext() {
         clearTimeout() {}
     });
     runFile(context, 'shared.js');
+    runFile(context, 'bilibili-dom-adapter.js');
     runFile(context, 'dynamic-filter.js');
     return { context, getObservedOptions: () => observedOptions };
 }
@@ -234,6 +236,37 @@ function loadReaderPageGroupsContext() {
     runFile(context, 'shared.js');
     runFile(context, 'comic-reader-page-groups.js');
     return context;
+}
+
+function loadUrlBridgeContext() {
+    const listeners = {};
+    const history = {
+        pushCalls: 0,
+        replaceCalls: 0,
+        pushState() { this.pushCalls += 1; },
+        replaceState() { this.replaceCalls += 1; }
+    };
+    const context = createBaseContext({
+        history,
+        Event: class {
+            constructor(type) {
+                this.type = type;
+            }
+        },
+        dispatchEvent(event) {
+            (listeners[event.type] || []).forEach(listener => listener(event));
+        },
+        addEventListener(type, listener) {
+            listeners[type] = listeners[type] || [];
+            listeners[type].push(listener);
+        },
+        removeEventListener(type, listener) {
+            listeners[type] = (listeners[type] || []).filter(item => item !== listener);
+        }
+    });
+    runFile(context, 'shared.js');
+    runFile(context, 'content-url.js');
+    return { context, history, listeners };
 }
 
 function loadPageInfoContext(href) {
@@ -257,6 +290,7 @@ function loadPageInfoContext(href) {
         location: { href }
     });
     runFile(context, 'shared.js');
+    runFile(context, 'bilibili-dom-adapter.js');
     runFile(context, 'content-page-info.js');
     return context;
 }
@@ -281,6 +315,7 @@ function loadSpaceOpusTabsContext(tabs = [], href = 'https://space.bilibili.com/
         }
     });
     runFile(context, 'shared.js');
+    runFile(context, 'bilibili-dom-adapter.js');
     runFile(context, 'space-opus-tabs.js');
     return context;
 }
@@ -322,6 +357,25 @@ function createFakeCard({ dataset = {}, attrs = {}, actionText = '', hasForwardC
     context.BilibiliToolbox.dynamicFilter.init();
 
     assert.deepEqual(plain(getObservedOptions()), { childList: true, subtree: true });
+}
+
+{
+    const { context, history } = loadUrlBridgeContext();
+    const originalPush = history.pushState;
+    const originalReplace = history.replaceState;
+    let changes = 0;
+    context.addEventListener(context.BilibiliToolbox.url.URL_CHANGE_EVENT, () => { changes += 1; });
+
+    context.BilibiliToolbox.url.init();
+    history.pushState({}, '', '/a');
+    history.replaceState({}, '', '/b');
+    assert.equal(changes, 2);
+    assert.notEqual(history.pushState, originalPush);
+    assert.notEqual(history.replaceState, originalReplace);
+
+    context.BilibiliToolbox.url.destroy();
+    assert.equal(history.pushState, originalPush);
+    assert.equal(history.replaceState, originalReplace);
 }
 
 {
@@ -408,14 +462,6 @@ function createFakeCard({ dataset = {}, attrs = {}, actionText = '', hasForwardC
     assert.equal(fallbackClicks, 0);
 }
 
-function loadSettingsPopoverContext() {
-    const context = createBaseContext();
-    runFile(context, 'shared.js');
-    runFile(context, 'favorites-text-dialog.js');
-    runFile(context, 'settings-popover-ui.js');
-    return context;
-}
-
 function loadSettingsPopoverDomContext(data) {
     const document = createFakeDocument();
     const context = createBaseContext({
@@ -447,7 +493,7 @@ function loadSettingsPopoverDomContext(data) {
     return { context, document };
 }
 
-function loadFavoritesUiContext(data) {
+function loadFavoritesUiContext(data, keywordState = { enabled: false, isActive: false }) {
     const document = createFakeDocument();
     const context = createBaseContext({
         document,
@@ -475,25 +521,11 @@ function loadFavoritesUiContext(data) {
         dynamicFilter: {
             init() {},
             sync() {},
-            getKeywordFilterState() { return { isActive: false }; }
+            getKeywordFilterState() { return keywordState; }
         },
         getData: () => data
     });
     return { context, document };
-}
-
-{
-    const { BilibiliToolbox } = loadSettingsPopoverContext();
-    const controls = BilibiliToolbox.settingsPopoverUi;
-    const emptyKeyword = { enabled: false, hasKeyword: false, isActive: false, displayText: '' };
-    const waitingKeyword = { enabled: true, hasKeyword: false, isActive: false, displayText: '' };
-    const activeKeyword = { enabled: true, hasKeyword: true, isActive: true, displayText: 'abc' };
-
-    assert.equal(controls.getStatus(false, emptyKeyword, false), '\u5728\u7528\u6237\u52a8\u6001\u9875\u751f\u6548');
-    assert.equal(controls.getStatus(false, emptyKeyword, true), '\u5df2\u663e\u793a\u5168\u90e8\u52a8\u6001');
-    assert.equal(controls.getStatus(true, emptyKeyword, true), '\u5df2\u9690\u85cf\u8f6c\u53d1\u52a8\u6001');
-    assert.equal(controls.getStatus(false, waitingKeyword, true), '\u8bf7\u8f93\u5165\u5173\u952e\u8bcd\u540e\u5f00\u59cb\u7b5b\u9009');
-    assert.equal(controls.getStatus(true, activeKeyword, true), '\u5df2\u9690\u85cf\u8f6c\u53d1\u52a8\u6001\uff1b\u4ec5\u663e\u793a\u5305\u542b\u201cabc\u201d\u7684\u52a8\u6001');
 }
 
 {
@@ -505,6 +537,8 @@ function loadFavoritesUiContext(data) {
     const panel = document.getElementById('bilibili-toolbox-settings-panel');
     const buttons = panel.querySelectorAll('.bilibili-toolbox-favorite-columns button');
 
+    assert.equal(panel.innerHTML.includes('\u52a8\u6001\u8fc7\u6ee4\uff08\u5728\u52a8\u6001\u9875\u751f\u6548\uff09'), true);
+    assert.equal(panel.innerHTML.includes('bilibili-toolbox-control-status'), false);
     assert.equal(buttons.find(button => button.dataset.columns === '4').classList.contains('active'), true);
     assert.equal(buttons.find(button => button.dataset.columns === '4')['aria-pressed'], 'true');
     assert.equal(buttons.find(button => button.dataset.columns === '2').classList.contains('active'), false);
@@ -525,6 +559,36 @@ function loadFavoritesUiContext(data) {
     data.settings.favoriteColumns = 5;
     context.BilibiliToolbox.favoritesUi.sync();
     assert.equal(panel.style['--bilibili-fav-columns'], '5');
+}
+
+{
+    const baseData = loadDynamicFilterContext().Shared.createDefaultData();
+    const inactive = loadFavoritesUiContext({
+        ...baseData,
+        settings: { ...baseData.settings, hideForwardDynamics: false }
+    });
+    assert.equal(
+        inactive.document.getElementById('bilibili-fav-float-btn').classList.contains('dynamic-filter-active'),
+        false
+    );
+
+    const forwardEnabled = loadFavoritesUiContext({
+        ...baseData,
+        settings: { ...baseData.settings, hideForwardDynamics: true }
+    });
+    assert.equal(
+        forwardEnabled.document.getElementById('bilibili-fav-float-btn').classList.contains('dynamic-filter-active'),
+        true
+    );
+
+    const keywordEnabled = loadFavoritesUiContext({
+        ...baseData,
+        settings: { ...baseData.settings, hideForwardDynamics: false }
+    }, { enabled: true, isActive: false });
+    assert.equal(
+        keywordEnabled.document.getElementById('bilibili-fav-float-btn').classList.contains('dynamic-filter-active'),
+        true
+    );
 }
 
 {
@@ -613,10 +677,12 @@ function createAnimationContainer() {
     const noop = () => {};
     const getTransform = () => 'scale(1) translate(0px,0px)';
 
-    const noneContainer = createAnimationContainer();
-    animations.resetImageContainer(noneContainer, 'none', 0, noop, getTransform, null);
-    assert.equal(noneContainer.children.length, 1);
-    assert.equal(noneContainer.style.opacity, '1');
+    assert.deepEqual(plain(animations.ANIMATION_MODES), ['smooth', 'fade']);
+
+    const immediateContainer = createAnimationContainer();
+    animations.resetImageContainer(immediateContainer, animations.IMMEDIATE_RENDER_MODE, 0, noop, getTransform, null);
+    assert.equal(immediateContainer.children.length, 0);
+    assert.equal(immediateContainer.style.opacity, '1');
 
     const fadeContainer = createAnimationContainer();
     animations.resetImageContainer(fadeContainer, 'fade', 0, noop, getTransform, null);

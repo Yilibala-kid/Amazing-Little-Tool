@@ -20,6 +20,9 @@
     let toolboxData = window.Shared.createDefaultData();
     let unsubscribeStorage = null;
     let settingsEventBag = null;
+    let initialized = false;
+    let messageHandler = null;
+    let readerInstance = null;
 
     function syncAll(data) {
         toolboxData = window.Shared.normalizeToolboxData(data);
@@ -28,14 +31,18 @@
     }
 
     function setupMessageBridge() {
-        chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+        if (messageHandler) return;
+        messageHandler = (request, sender, sendResponse) => {
             if (request.type === 'GET_PAGE_FAVORITE_DATA') {
                 sendResponse(Toolbox.pageInfo.getCurrentFavoriteData());
             }
-        });
+        };
+        chrome.runtime.onMessage.addListener(messageHandler);
     }
 
     async function init() {
+        if (initialized) return;
+        initialized = true;
         toolboxData = await storage.init();
         unsubscribeStorage = storage.onChanged(syncAll);
 
@@ -59,13 +66,15 @@
             favoritesService: Toolbox.favorites,
             getData: () => toolboxData,
             pageInfo: Toolbox.pageInfo,
-            dynamicFilter: Toolbox.dynamicFilter
+            dynamicFilter: Toolbox.dynamicFilter,
+            settingsUi: Toolbox.settingsPopoverUi
         });
         window.addEventListener(Toolbox.url.URL_CHANGE_EVENT, handleUrlChange);
         setupMessageBridge();
 
         if (Toolbox.reader.shouldInitComicReader()) {
-            new Toolbox.reader.BiliComicReader().init();
+            readerInstance = new Toolbox.reader.BiliComicReader();
+            readerInstance.init();
         }
     }
 
@@ -76,14 +85,21 @@
 
     function destroy() {
         if (unsubscribeStorage) unsubscribeStorage();
+        unsubscribeStorage = null;
+        if (messageHandler) chrome.runtime.onMessage.removeListener(messageHandler);
+        messageHandler = null;
         window.removeEventListener(Toolbox.url.URL_CHANGE_EVENT, handleUrlChange);
+        readerInstance?.close?.();
+        readerInstance = null;
         Toolbox.spaceOpusTabs.destroy();
         Toolbox.settingsPopoverUi.destroy();
         if (settingsEventBag) settingsEventBag.cleanup();
         settingsEventBag = null;
         Toolbox.favoritesUi.destroy();
         Toolbox.dynamicFilter.destroy();
+        Toolbox.url.destroy();
         storage.destroy();
+        initialized = false;
     }
 
     Toolbox.contentApp = {
