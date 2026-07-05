@@ -87,6 +87,7 @@
             this.isRightToLeft = preferences.isRightToLeft;
             this.scale = 1;
             this.fitScale = 1;
+            this.sharpDisplayFitRatio = 1;
             this.contentNaturalWidth = 0;
             this.contentNaturalHeight = 0;
             this.translateX = 0;
@@ -317,6 +318,8 @@
         applyResponsiveLayout() {
             this.isCompactLayout = this.isCompactViewport();
             this.el.reader.classList.toggle('reader-compact', this.isCompactLayout);
+            const images = Array.from(this.el.imgContainer?.querySelectorAll('img') || []);
+            if (this.isSharpRenderMode() && images.length) this.setupImagesForRenderMode(images);
             this.updateFitScale();
             this.applyTransform();
         }
@@ -727,6 +730,7 @@
         resetPageInteractionState() {
             this.scale = 1;
             this.fitScale = 1;
+            this.sharpDisplayFitRatio = 1;
             this.contentNaturalWidth = 0;
             this.contentNaturalHeight = 0;
             this.translateX = 0;
@@ -752,14 +756,10 @@
         }
 
         commitImages(images, animationMode, preloadStart, transitionDirection = 0) {
-            const isFull = images.length === 1;
-            const displaySizes = this.isSharpRenderMode()
-                ? this.getSharpDisplaySizes(images, isFull)
-                : [];
-            images.forEach((img, index) => {
-                this.setupImg(img, isFull, displaySizes[index]);
+            images.forEach(img => {
                 this.el.imgContainer.appendChild(img);
             });
+            this.setupImagesForRenderMode(images);
             this.updateFitScale(images);
             this.updatePageInfo(images.length);
             animations.finishRender(

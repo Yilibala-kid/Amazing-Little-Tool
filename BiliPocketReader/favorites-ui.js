@@ -70,7 +70,7 @@
     }
 
     function sortFavorites(favorites) {
-        return [...favorites].sort((a, b) => Shared.isReadlistFavorite(a) - Shared.isReadlistFavorite(b));
+        return [...favorites];
     }
 
     function syncFloatBtnHideState() {

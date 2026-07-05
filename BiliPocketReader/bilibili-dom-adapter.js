@@ -13,7 +13,10 @@
     const ARTICLE_URL_PATTERN = /^https?:\/\/(?:www\.|m\.)?bilibili\.com\/read\/(?:cv\d+|mobile|native)(?:[/?#]|$)/i;
     const SPACE_OPUS_URL_PATTERN = /^https?:\/\/space\.bilibili\.com\/(\d+)\/upload\/opus(?:[/?#]|$)/i;
     const SPACE_DYNAMIC_URL_PATTERN = /^https?:\/\/space\.bilibili\.com\/\d+\/dynamic(?:[/?#]|$)/i;
+    const CONTENT_FILTER_SELECTOR = '.opus .opus-header__top .content-filter, .content-filter';
     const CONTENT_TAB_SELECTOR = '.content-filter .content-tab';
+    const OPUS_BODY_SELECTOR = '.opus .opus-body';
+    const OPUS_FEED_SELECTOR = '.opus .opus-feed, .opus .opus-collection';
     const DYNAMIC_CARD_SELECTOR = '.bili-dyn-list__item, .bili-dyn-item, .bili-opus-view';
     const PRIMARY_IMAGE_SELECTOR = `
         .opus-module-content img,
@@ -87,8 +90,20 @@
             .find(link => extractUidFromAuthorLink(link)) || null;
     }
 
+    function getContentFilter() {
+        return query(CONTENT_FILTER_SELECTOR);
+    }
+
     function getContentTabs() {
         return queryAll(CONTENT_TAB_SELECTOR);
+    }
+
+    function getSpaceOpusBody() {
+        return query(OPUS_BODY_SELECTOR);
+    }
+
+    function getSpaceOpusFeed() {
+        return query(OPUS_FEED_SELECTOR);
     }
 
     function getDynamicCards() {
@@ -119,7 +134,10 @@
         isSpaceDynamicPage,
         extractUidFromAuthorLink,
         getArticleAuthorLink,
+        getContentFilter,
         getContentTabs,
+        getSpaceOpusBody,
+        getSpaceOpusFeed,
         getDynamicCards,
         getPrimaryImages,
         getFallbackImages

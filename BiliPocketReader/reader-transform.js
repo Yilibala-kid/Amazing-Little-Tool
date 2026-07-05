@@ -50,12 +50,23 @@
 
         getSharpDisplaySizes(images, isFull) {
             const naturalSizes = images.map(img => this.getEffectiveImageSize(img));
-            if (isFull || naturalSizes.length < 2) return naturalSizes;
+            const baseSizes = isFull || naturalSizes.length < 2
+                ? naturalSizes
+                : this.alignSharpDisplayHeights(naturalSizes);
+            const fitRatio = this.getSharpDisplayFitRatio(baseSizes);
+            this.sharpDisplayFitRatio = fitRatio;
 
-            const targetHeight = Math.max(...naturalSizes.map(size => size.height || 0));
-            if (!targetHeight) return naturalSizes;
+            return baseSizes.map(size => ({
+                width: size.width * fitRatio,
+                height: size.height * fitRatio
+            }));
+        },
 
-            return naturalSizes.map(size => {
+        alignSharpDisplayHeights(sizes) {
+            const targetHeight = Math.max(...sizes.map(size => size.height || 0));
+            if (!targetHeight) return sizes;
+
+            return sizes.map(size => {
                 if (!size.width || !size.height) return size;
                 const ratio = targetHeight / size.height;
                 return {
@@ -63,6 +74,19 @@
                     height: targetHeight
                 };
             });
+        },
+
+        getSharpDisplayFitRatio(sizes) {
+            const readerRect = this.el.reader?.getBoundingClientRect();
+            if (!readerRect || !sizes.length) return 1;
+
+            const gap = this.getImageGap() * Math.max(0, sizes.length - 1);
+            const width = sizes.reduce((sum, size) => sum + size.width, 0) + gap;
+            const height = Math.max(...sizes.map(size => size.height || 0));
+            if (!width || !height || !readerRect.width || !readerRect.height) return 1;
+
+            const ratio = Math.min(readerRect.width / width, readerRect.height / height);
+            return Number.isFinite(ratio) && ratio > 0 ? ratio : 1;
         },
 
         getDisplayedImageSize(img) {
@@ -103,30 +127,42 @@
                 return;
             }
 
-            this.fitScale = Math.min(1, readerRect.width / width, readerRect.height / height);
+            this.fitScale = 1;
         },
 
         getRenderScale(scale = this.scale) {
             return Math.max(0.001, this.fitScale * scale);
         },
 
+        getBaseFitRatio() {
+            return this.isSharpRenderMode() ? (this.sharpDisplayFitRatio || 1) : (this.fitScale || 1);
+        },
+
         getMaxScale() {
-            if (!this.fitScale) return MAX_SCALE;
-            return Math.max(MAX_SCALE, MAX_RENDER_SCALE / this.fitScale);
+            const baseFitRatio = this.getBaseFitRatio();
+            return Math.max(MAX_SCALE, MAX_RENDER_SCALE / baseFitRatio);
         },
 
         getDoubleClickScale() {
-            if (!this.fitScale) return DOUBLE_CLICK_SCALE;
-            return Math.min(this.getMaxScale(), Math.max(DOUBLE_CLICK_SCALE, 1 / this.fitScale));
+            const baseFitRatio = this.getBaseFitRatio();
+            return Math.min(this.getMaxScale(), Math.max(DOUBLE_CLICK_SCALE, 1 / baseFitRatio));
+        },
+
+        setupImagesForRenderMode(images) {
+            const isFull = images.length === 1;
+            if (this.isSharpRenderMode()) {
+                const displaySizes = this.getSharpDisplaySizes(images, isFull);
+                images.forEach((img, index) => this.setupImg(img, isFull, displaySizes[index]));
+                return;
+            }
+
+            this.sharpDisplayFitRatio = 1;
+            images.forEach(img => this.setupImg(img, isFull));
         },
 
         applyImageRenderMode() {
             const images = Array.from(this.el.imgContainer?.querySelectorAll('img') || []);
-            const isFull = images.length === 1;
-            const displaySizes = this.isSharpRenderMode()
-                ? this.getSharpDisplaySizes(images, isFull)
-                : [];
-            images.forEach((img, index) => this.setupImg(img, isFull, displaySizes[index]));
+            this.setupImagesForRenderMode(images);
             this.scale = 1;
             this.translateX = 0;
             this.translateY = 0;

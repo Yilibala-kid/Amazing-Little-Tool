@@ -273,26 +273,44 @@ function createFakeSpaceTab(text, active = false) {
     const classList = new FakeClassList();
     if (active) classList.add('active');
 
-    return {
+    const tab = {
         textContent: text,
         className: active ? 'content-tab active' : 'content-tab',
         classList,
         clickCount: 0,
+        setActive(enabled) {
+            this.className = enabled ? 'content-tab active' : 'content-tab';
+            this.classList.toggle('active', enabled);
+        },
+        getBoundingClientRect() {
+            return { width: 80, height: 32 };
+        },
         click() {
             this.clickCount += 1;
-            this.className = 'content-tab active';
-            this.classList.add('active');
+            this.setActive(true);
         }
     };
+    return tab;
 }
 
-function loadSpaceOpusTabsContext(href, tabs) {
+function loadSpaceOpusTabsContext(href, tabs, options = {}) {
     let nextTimerId = 1;
+    let currentTime = options.now || 0;
     const timers = [];
     const clearedTimers = [];
+    const clearedTimerIds = new Set();
     let observer = null;
+    const opusBody = options.hasBody === false ? null : { className: 'opus-body' };
+    const opusFeed = options.hasFeed === false ? null : { className: 'opus-feed' };
+    const contentFilter = { className: 'content-filter' };
     const document = {
         body: {},
+        querySelector(selector) {
+            if (selector === '.opus .opus-header__top .content-filter, .content-filter') return contentFilter;
+            if (selector === '.opus .opus-body') return opusBody;
+            if (selector === '.opus .opus-feed, .opus .opus-collection') return opusFeed;
+            return null;
+        },
         querySelectorAll(selector) {
             return selector === '.content-filter .content-tab' ? tabs : [];
         }
@@ -300,14 +318,20 @@ function loadSpaceOpusTabsContext(href, tabs) {
     const context = createBaseContext({
         document,
         location: { href },
+        Date: {
+            now() {
+                return currentTime;
+            }
+        },
         setTimeout(callback, delay) {
             const id = nextTimerId;
             nextTimerId += 1;
-            timers.push({ id, callback, delay });
+            timers.push({ id, callback, delay, dueAt: currentTime + delay });
             return id;
         },
         clearTimeout(id) {
             clearedTimers.push(id);
+            clearedTimerIds.add(id);
         },
         MutationObserver: class {
             constructor(callback) {
@@ -333,7 +357,21 @@ function loadSpaceOpusTabsContext(href, tabs) {
         context,
         timers,
         clearedTimers,
-        getObserver: () => observer
+        getObserver: () => observer,
+        advance(ms) {
+            currentTime += ms;
+        },
+        runDueTimers() {
+            timers
+                .filter(timer => !clearedTimerIds.has(timer.id) && timer.dueAt <= currentTime && !timer.ran)
+                .forEach(timer => {
+                    timer.ran = true;
+                    timer.callback();
+                });
+        },
+        triggerMutation() {
+            observer?.callback?.();
+        }
     };
 }
 
@@ -427,14 +465,34 @@ function createFakeCard({ dataset = {}, attrs = {}, actionText = '', hasForwardC
         createFakeSpaceTab('\u4e13\u680f'),
         createFakeSpaceTab('\u52a8\u6001')
     ];
-    const { context, timers } = loadSpaceOpusTabsContext('https://space.bilibili.com/16290759/upload/opus', tabs);
+    const { context } = loadSpaceOpusTabsContext(
+        'https://space.bilibili.com/16290759/upload/opus',
+        tabs,
+        { hasBody: false }
+    );
 
     context.BilibiliToolbox.spaceOpusTabs.init();
 
+    assert.equal(context.BilibiliToolbox.spaceOpusTabs.selectNow(), false);
+    assert.equal(tabs[1].clickCount, 0);
+}
+
+{
+    const tabs = [
+        createFakeSpaceTab('\u5168\u90e8\u56fe\u6587', true),
+        createFakeSpaceTab('\u4e13\u680f'),
+        createFakeSpaceTab('\u52a8\u6001')
+    ];
+    const { context, advance } = loadSpaceOpusTabsContext('https://space.bilibili.com/16290759/upload/opus', tabs);
+
+    context.BilibiliToolbox.spaceOpusTabs.init();
+
+    assert.equal(context.BilibiliToolbox.spaceOpusTabs.selectNow(), false);
+    assert.equal(tabs[1].clickCount, 0);
+
+    advance(500);
     assert.equal(context.BilibiliToolbox.spaceOpusTabs.selectNow(), true);
     assert.equal(tabs[1].clickCount, 1);
-    assert.equal(tabs[1].classList.contains('active'), true);
-    assert.equal(timers[timers.length - 1].delay, 700);
 }
 
 {
@@ -456,9 +514,10 @@ function createFakeCard({ dataset = {}, attrs = {}, actionText = '', hasForwardC
         createFakeSpaceTab('\u5168\u90e8\u56fe\u6587', true),
         createFakeSpaceTab('\u4e13\u680f')
     ];
-    const { context } = loadSpaceOpusTabsContext('https://space.bilibili.com/16290759/upload/opus', tabs);
+    const { context, advance } = loadSpaceOpusTabsContext('https://space.bilibili.com/16290759/upload/opus', tabs);
 
     context.BilibiliToolbox.spaceOpusTabs.init();
+    advance(500);
 
     assert.equal(context.BilibiliToolbox.spaceOpusTabs.selectNow(), false);
     assert.equal(tabs[1].clickCount, 0);
@@ -470,13 +529,47 @@ function createFakeCard({ dataset = {}, attrs = {}, actionText = '', hasForwardC
         createFakeSpaceTab('\u4e13\u680f', true),
         createFakeSpaceTab('\u52a8\u6001')
     ];
-    const { context } = loadSpaceOpusTabsContext('https://space.bilibili.com/16290759/upload/opus', tabs);
+    const { context, advance, getObserver } =
+        loadSpaceOpusTabsContext('https://space.bilibili.com/16290759/upload/opus', tabs);
 
     context.BilibiliToolbox.spaceOpusTabs.init();
+    advance(500);
 
-    assert.equal(context.BilibiliToolbox.spaceOpusTabs.selectNow(), true);
     assert.equal(context.BilibiliToolbox.spaceOpusTabs.selectNow(), false);
+    assert.equal(getObserver().disconnected, false);
+    advance(1199);
+    assert.equal(context.BilibiliToolbox.spaceOpusTabs.selectNow(), false);
+    assert.equal(getObserver().disconnected, false);
+    advance(1);
+    assert.equal(context.BilibiliToolbox.spaceOpusTabs.selectNow(), true);
+    assert.equal(getObserver().disconnected, true);
     assert.equal(tabs[1].clickCount, 0);
+}
+
+{
+    const tabs = [
+        createFakeSpaceTab('\u5168\u90e8\u56fe\u6587', true),
+        createFakeSpaceTab('\u4e13\u680f'),
+        createFakeSpaceTab('\u52a8\u6001')
+    ];
+    const { context, advance, runDueTimers, triggerMutation, getObserver } =
+        loadSpaceOpusTabsContext('https://space.bilibili.com/16290759/upload/opus', tabs);
+
+    context.BilibiliToolbox.spaceOpusTabs.init();
+    advance(500);
+    assert.equal(context.BilibiliToolbox.spaceOpusTabs.selectNow(), true);
+    assert.equal(tabs[1].clickCount, 1);
+
+    advance(800);
+    runDueTimers();
+    tabs[1].setActive(false);
+    tabs[0].setActive(true);
+    triggerMutation();
+    advance(500);
+    runDueTimers();
+
+    assert.equal(tabs[1].clickCount, 2);
+    assert.equal(getObserver().disconnected, false);
 }
 
 {
@@ -490,7 +583,7 @@ function createFakeCard({ dataset = {}, attrs = {}, actionText = '', hasForwardC
 
     context.BilibiliToolbox.spaceOpusTabs.init();
     assert.equal(timers.length, 7);
-    assert.deepEqual(timers.map(timer => timer.delay), [300, 800, 1500, 2500, 4000, 6500, 9000]);
+    assert.deepEqual(timers.map(timer => timer.delay), [600, 1200, 2200, 3500, 5500, 8000, 12000]);
     assert.deepEqual(
         plain(getObserver().options),
         { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] }
@@ -632,6 +725,24 @@ function loadFavoritesUiContext(data, keywordState = { enabled: false, isActive:
 
 {
     const baseData = loadDynamicFilterContext().Shared.createDefaultData();
+    const data = {
+        ...baseData,
+        favorites: [
+            { type: 'readlist', id: '3001', title: 'First Readlist', cover: 'readlist.jpg' },
+            { type: 'user', uid: '1001', uname: 'Second User', face: 'user.jpg' },
+            { type: 'opus', uid: '2001', uname: 'Third Opus', face: 'opus.jpg' }
+        ]
+    };
+    const { document } = loadFavoritesUiContext(data);
+    document.getElementById('bilibili-fav-float-btn').dispatch('mouseenter');
+
+    const html = document.querySelector('.bilibili-fav-list').innerHTML;
+    assert.ok(html.indexOf('First Readlist') < html.indexOf('Second User'));
+    assert.ok(html.indexOf('Second User') < html.indexOf('Third Opus'));
+}
+
+{
+    const baseData = loadDynamicFilterContext().Shared.createDefaultData();
     const inactive = loadFavoritesUiContext({
         ...baseData,
         settings: { ...baseData.settings, hideForwardDynamics: false }
@@ -720,6 +831,43 @@ function loadAnimationsContext() {
     return context;
 }
 
+function loadReaderTransformContext(readerRect = { width: 1200, height: 900 }, gap = 0) {
+    const context = createBaseContext({
+        getComputedStyle() {
+            return { columnGap: String(gap), gap: String(gap) };
+        }
+    });
+    runFile(context, 'shared.js');
+    runFile(context, 'reader-transform.js');
+    const reader = {
+        imageRenderMode: 'sharp',
+        rotation: 0,
+        scale: 1,
+        fitScale: 1,
+        sharpDisplayFitRatio: 1,
+        translateX: 0,
+        translateY: 0,
+        isTouchDevice: false,
+        touchPanLocked: false,
+        el: {
+            reader: {
+                getBoundingClientRect() {
+                    return readerRect;
+                }
+            },
+            imgContainer: {}
+        },
+        setupImg(img, isFull, displaySize) {
+            img.appliedIsFull = isFull;
+            img.appliedDisplaySize = displaySize;
+        },
+        clearPendingTap() {},
+        syncRotateButton() {}
+    };
+    context.BilibiliToolbox.readerTransform.attach(reader);
+    return { context, reader };
+}
+
 function createAnimationContainer() {
     return {
         children: [{}],
@@ -757,6 +905,41 @@ function createAnimationContainer() {
     animations.resetImageContainer(fadeContainer, 'fade', 0, noop, getTransform, null);
     assert.equal(fadeContainer.children.length, 0);
     assert.equal(fadeContainer.style.opacity, '0');
+}
+
+{
+    const { reader } = loadReaderTransformContext();
+    const [small] = reader.getSharpDisplaySizes([{ naturalWidth: 400, naturalHeight: 300 }], true);
+    assert.deepEqual(plain(small), { width: 1200, height: 900 });
+    assert.equal(reader.sharpDisplayFitRatio, 3);
+    assert.equal(reader.getMaxScale(), 3);
+}
+
+{
+    const { reader } = loadReaderTransformContext();
+    const [large] = reader.getSharpDisplaySizes([{ naturalWidth: 2400, naturalHeight: 1800 }], true);
+    assert.deepEqual(plain(large), { width: 1200, height: 900 });
+    assert.equal(reader.sharpDisplayFitRatio, 0.5);
+    assert.equal(reader.getMaxScale(), 4);
+    assert.equal(reader.getDoubleClickScale(), 2);
+}
+
+{
+    const { reader } = loadReaderTransformContext();
+    const images = [
+        { naturalWidth: 1000, naturalHeight: 1000 },
+        { naturalWidth: 500, naturalHeight: 1000 }
+    ];
+    const sizes = reader.getSharpDisplaySizes(images, false);
+    assert.deepEqual(plain(sizes), [
+        { width: 800, height: 800 },
+        { width: 400, height: 800 }
+    ]);
+    reader.setupImagesForRenderMode(images);
+    assert.deepEqual(plain(images.map(img => img.appliedDisplaySize)), [
+        { width: 800, height: 800 },
+        { width: 400, height: 800 }
+    ]);
 }
 
 function loadReaderPreferencesContext() {
@@ -896,8 +1079,8 @@ function loadReaderPreferencesContext() {
         viewMode: 'double',
         animationMode: 'fade',
         imageRenderMode: 'sharp',
-        backgroundMode: 'darkGray',
-        tapPageNavigation: false
+        backgroundMode: 'white',
+        tapPageNavigation: true
     };
     await preferences.save(custom);
     assert.deepEqual(plain(preferences.load()), custom);

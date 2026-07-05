@@ -17,8 +17,8 @@
         viewMode: 'auto',
         animationMode: 'smooth',
         imageRenderMode: 'smooth',
-        backgroundMode: 'black',
-        tapPageNavigation: true
+        backgroundMode: 'darkGray',
+        tapPageNavigation: false
     });
 
     function normalizeAnimationMode(mode) {
