@@ -10,8 +10,8 @@
     if (!window.BilibiliToolbox?.reader) throw new Error('BilibiliToolbox: comic-reader.js not loaded');
     if (!window.BilibiliToolbox?.pageInfo) throw new Error('BilibiliToolbox: content-page-info.js not loaded');
     if (!window.BilibiliToolbox?.url) throw new Error('BilibiliToolbox: content-url.js not loaded');
-    if (!window.BilibiliToolbox?.dynamicFilter) throw new Error('BilibiliToolbox: dynamic-filter.js not loaded');
     if (!window.BilibiliToolbox?.spaceOpusTabs) throw new Error('BilibiliToolbox: space-opus-tabs.js not loaded');
+    if (!window.BilibiliToolbox?.dynamicFilter) throw new Error('BilibiliToolbox: dynamic-filter.js not loaded');
     if (!window.BilibiliToolbox?.settingsPopoverUi) throw new Error('BilibiliToolbox: settings-popover-ui.js not loaded');
     if (!window.BilibiliToolbox?.favoritesUi) throw new Error('BilibiliToolbox: favorites-ui.js not loaded');
 
@@ -26,7 +26,6 @@
 
     function syncAll(data) {
         toolboxData = window.Shared.normalizeToolboxData(data);
-        Toolbox.spaceOpusTabs.sync();
         Toolbox.favoritesUi.sync();
         Toolbox.dynamicFilter.sync();
     }
@@ -48,9 +47,7 @@
         unsubscribeStorage = storage.onChanged(syncAll);
 
         Toolbox.url.init();
-        Toolbox.spaceOpusTabs.init({
-            getData: () => toolboxData
-        });
+        Toolbox.spaceOpusTabs.init();
         settingsEventBag = Toolbox.createEventBag();
         Toolbox.dynamicFilter.init({
             getData: () => toolboxData,
@@ -82,6 +79,7 @@
     }
 
     function handleUrlChange() {
+        Toolbox.spaceOpusTabs.sync();
         Toolbox.dynamicFilter.sync();
         Toolbox.favoritesUi.syncPageMode();
     }

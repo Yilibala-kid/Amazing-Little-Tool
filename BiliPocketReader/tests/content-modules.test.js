@@ -269,6 +269,74 @@ function loadUrlBridgeContext() {
     return { context, history, listeners };
 }
 
+function createFakeSpaceTab(text, active = false) {
+    const classList = new FakeClassList();
+    if (active) classList.add('active');
+
+    return {
+        textContent: text,
+        className: active ? 'content-tab active' : 'content-tab',
+        classList,
+        clickCount: 0,
+        click() {
+            this.clickCount += 1;
+            this.className = 'content-tab active';
+            this.classList.add('active');
+        }
+    };
+}
+
+function loadSpaceOpusTabsContext(href, tabs) {
+    let nextTimerId = 1;
+    const timers = [];
+    const clearedTimers = [];
+    let observer = null;
+    const document = {
+        body: {},
+        querySelectorAll(selector) {
+            return selector === '.content-filter .content-tab' ? tabs : [];
+        }
+    };
+    const context = createBaseContext({
+        document,
+        location: { href },
+        setTimeout(callback, delay) {
+            const id = nextTimerId;
+            nextTimerId += 1;
+            timers.push({ id, callback, delay });
+            return id;
+        },
+        clearTimeout(id) {
+            clearedTimers.push(id);
+        },
+        MutationObserver: class {
+            constructor(callback) {
+                this.callback = callback;
+                this.disconnected = false;
+                observer = this;
+            }
+
+            observe(target, options) {
+                this.target = target;
+                this.options = options;
+            }
+
+            disconnect() {
+                this.disconnected = true;
+            }
+        }
+    });
+    runFile(context, 'shared.js');
+    runFile(context, 'bilibili-dom-adapter.js');
+    runFile(context, 'space-opus-tabs.js');
+    return {
+        context,
+        timers,
+        clearedTimers,
+        getObserver: () => observer
+    };
+}
+
 function loadPageInfoContext(href) {
     const document = {
         title: 'Ottergeist\u7684\u4e2a\u4eba\u7a7a\u95f4',
@@ -292,43 +360,6 @@ function loadPageInfoContext(href) {
     runFile(context, 'shared.js');
     runFile(context, 'bilibili-dom-adapter.js');
     runFile(context, 'content-page-info.js');
-    return context;
-}
-
-function loadSpaceOpusTabsContext(tabs = [], href = 'https://space.bilibili.com/41700837/upload/opus', clock = { now: 1000 }, data = null) {
-    const location = { href };
-    const context = createBaseContext({
-        Date: { now: () => clock.now },
-        URL,
-        location,
-        setTimeout() { return 1; },
-        clearTimeout() {},
-        addEventListener() {},
-        removeEventListener() {},
-        MutationObserver: class {
-            observe() {}
-            disconnect() {}
-        },
-        history: {
-            state: null,
-            replaceState(state, title, url) {
-                location.href = url;
-            }
-        },
-        document: {
-            title: '',
-            body: {},
-            querySelectorAll(selector) {
-                return selector === '.content-filter .content-tab' ? tabs : [];
-            }
-        }
-    });
-    runFile(context, 'shared.js');
-    runFile(context, 'bilibili-dom-adapter.js');
-    runFile(context, 'space-opus-tabs.js');
-    if (data) {
-        context.BilibiliToolbox.spaceOpusTabs.init({ getData: () => data });
-    }
     return context;
 }
 
@@ -391,6 +422,87 @@ function createFakeCard({ dataset = {}, attrs = {}, actionText = '', hasForwardC
 }
 
 {
+    const tabs = [
+        createFakeSpaceTab('\u5168\u90e8\u56fe\u6587', true),
+        createFakeSpaceTab('\u4e13\u680f'),
+        createFakeSpaceTab('\u52a8\u6001')
+    ];
+    const { context, timers } = loadSpaceOpusTabsContext('https://space.bilibili.com/16290759/upload/opus', tabs);
+
+    context.BilibiliToolbox.spaceOpusTabs.init();
+
+    assert.equal(context.BilibiliToolbox.spaceOpusTabs.selectNow(), true);
+    assert.equal(tabs[1].clickCount, 1);
+    assert.equal(tabs[1].classList.contains('active'), true);
+    assert.equal(timers[timers.length - 1].delay, 700);
+}
+
+{
+    const tabs = [
+        createFakeSpaceTab('\u5168\u90e8\u56fe\u6587', true),
+        createFakeSpaceTab('\u4e13\u680f'),
+        createFakeSpaceTab('\u52a8\u6001')
+    ];
+    const { context } = loadSpaceOpusTabsContext('https://space.bilibili.com/16290759/dynamic', tabs);
+
+    context.BilibiliToolbox.spaceOpusTabs.init();
+
+    assert.equal(context.BilibiliToolbox.spaceOpusTabs.selectNow(), false);
+    assert.equal(tabs[1].clickCount, 0);
+}
+
+{
+    const tabs = [
+        createFakeSpaceTab('\u5168\u90e8\u56fe\u6587', true),
+        createFakeSpaceTab('\u4e13\u680f')
+    ];
+    const { context } = loadSpaceOpusTabsContext('https://space.bilibili.com/16290759/upload/opus', tabs);
+
+    context.BilibiliToolbox.spaceOpusTabs.init();
+
+    assert.equal(context.BilibiliToolbox.spaceOpusTabs.selectNow(), false);
+    assert.equal(tabs[1].clickCount, 0);
+}
+
+{
+    const tabs = [
+        createFakeSpaceTab('\u5168\u90e8\u56fe\u6587'),
+        createFakeSpaceTab('\u4e13\u680f', true),
+        createFakeSpaceTab('\u52a8\u6001')
+    ];
+    const { context } = loadSpaceOpusTabsContext('https://space.bilibili.com/16290759/upload/opus', tabs);
+
+    context.BilibiliToolbox.spaceOpusTabs.init();
+
+    assert.equal(context.BilibiliToolbox.spaceOpusTabs.selectNow(), true);
+    assert.equal(context.BilibiliToolbox.spaceOpusTabs.selectNow(), false);
+    assert.equal(tabs[1].clickCount, 0);
+}
+
+{
+    const tabs = [
+        createFakeSpaceTab('\u5168\u90e8\u56fe\u6587', true),
+        createFakeSpaceTab('\u4e13\u680f'),
+        createFakeSpaceTab('\u52a8\u6001')
+    ];
+    const { context, timers, clearedTimers, getObserver } =
+        loadSpaceOpusTabsContext('https://space.bilibili.com/16290759/upload/opus', tabs);
+
+    context.BilibiliToolbox.spaceOpusTabs.init();
+    assert.equal(timers.length, 7);
+    assert.deepEqual(timers.map(timer => timer.delay), [300, 800, 1500, 2500, 4000, 6500, 9000]);
+    assert.deepEqual(
+        plain(getObserver().options),
+        { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] }
+    );
+
+    context.BilibiliToolbox.spaceOpusTabs.destroy();
+
+    assert.deepEqual(clearedTimers, timers.map(timer => timer.id));
+    assert.equal(getObserver().disconnected, true);
+}
+
+{
     const { Shared } = loadDynamicFilterContext();
 
     assert.deepEqual(plain(Shared.FAVORITE_COLUMN_OPTIONS), [2, 3, 4, 5]);
@@ -415,85 +527,6 @@ function createFakeCard({ dataset = {}, attrs = {}, actionText = '', hasForwardC
             face: 'https://i.example/otter.jpg'
         }
     );
-}
-
-{
-    let clicked = 0;
-    const createTabs = () => [
-        { textContent: '\u5168\u90e8\u56fe\u6587', className: 'content-tab', click() {} },
-        {
-            textContent: '\u4e13\u680f',
-            className: 'content-tab',
-            click() {
-                clicked += 1;
-                this.className = 'content-tab active';
-            }
-        },
-        { textContent: '\u52a8\u6001', className: 'content-tab', click() {} }
-    ];
-    const { BilibiliToolbox } = loadSpaceOpusTabsContext(createTabs());
-    const opusTabs = BilibiliToolbox.spaceOpusTabs;
-
-    assert.equal(opusTabs.isSpaceOpusUploadPage('https://space.bilibili.com/41700837/upload/opus'), true);
-    assert.equal(opusTabs.isSpaceOpusUploadPage('https://space.bilibili.com/41700837/dynamic'), false);
-    assert.equal(opusTabs.selectNow(), true);
-    assert.equal(clicked, 1);
-    assert.equal(opusTabs.selectNow(), false);
-    assert.equal(clicked, 1);
-
-    const clock = { now: 1000 };
-    const delayedTabs = [];
-    const delayed = loadSpaceOpusTabsContext(delayedTabs, 'https://space.bilibili.com/41700837/upload/opus', clock);
-    const delayedOpusTabs = delayed.BilibiliToolbox.spaceOpusTabs;
-    assert.equal(delayedOpusTabs.selectNow(), false);
-    assert.equal(delayed.location.href, 'https://space.bilibili.com/41700837/upload/opus');
-
-    delayed.location.href = 'https://space.bilibili.com/41700837/upload/opus?spm_id_from=333.1387.0.0';
-    delayedTabs.push(...createTabs());
-    clock.now += 400;
-    assert.equal(delayedOpusTabs.selectNow(), true);
-    assert.equal(clicked, 2);
-    assert.equal(delayedOpusTabs.selectNow(), false);
-    assert.equal(clicked, 2);
-
-    let activeClicks = 0;
-    let fallbackClicks = 0;
-    const activeTabs = [
-        {
-            textContent: '\u5168\u90e8\u56fe\u6587',
-            className: 'content-tab',
-            click() { fallbackClicks += 1; }
-        },
-        {
-            textContent: '\u4e13\u680f',
-            className: 'content-tab active',
-            click() { activeClicks += 1; }
-        }
-    ];
-    const activePage = loadSpaceOpusTabsContext(activeTabs, 'https://space.bilibili.com/41700837/upload/opus');
-    assert.equal(activePage.BilibiliToolbox.spaceOpusTabs.selectNow(), true);
-    assert.equal(activeClicks, 0);
-    assert.equal(fallbackClicks, 0);
-
-    let disabledClicks = 0;
-    const disabledTabs = [
-        { textContent: '\u5168\u90e8\u56fe\u6587', className: 'content-tab', click() {} },
-        {
-            textContent: '\u4e13\u680f',
-            className: 'content-tab',
-            click() {
-                disabledClicks += 1;
-                this.className = 'content-tab active';
-            }
-        }
-    ];
-    const disabledData = {
-        favorites: [],
-        settings: { autoSelectOpusTab: false }
-    };
-    const disabledPage = loadSpaceOpusTabsContext(disabledTabs, 'https://space.bilibili.com/41700837/upload/opus', { now: 1000 }, disabledData);
-    assert.equal(disabledPage.BilibiliToolbox.spaceOpusTabs.selectNow(), false);
-    assert.equal(disabledClicks, 0);
 }
 
 function loadSettingsPopoverDomContext(data) {
@@ -572,9 +605,9 @@ function loadFavoritesUiContext(data, keywordState = { enabled: false, isActive:
     const buttons = panel.querySelectorAll('.bilibili-toolbox-favorite-columns button');
 
     assert.equal(panel.innerHTML.includes('\u52a8\u6001\u8fc7\u6ee4\uff08\u5728\u52a8\u6001\u9875\u751f\u6548\uff09'), true);
-    assert.equal(panel.innerHTML.includes('\u81ea\u52a8\u5207\u5230\u4e13\u680f'), true);
+    assert.equal(panel.innerHTML.includes('\u81ea\u52a8\u5207\u5230\u4e13\u680f'), false);
+    assert.equal(panel.innerHTML.includes('bilibili-toolbox-opus-tab-toggle'), false);
     assert.equal(panel.innerHTML.includes('bilibili-toolbox-control-status'), false);
-    assert.equal(panel.querySelector('.bilibili-toolbox-opus-tab-toggle').checked, true);
     assert.equal(buttons.find(button => button.dataset.columns === '4').classList.contains('active'), true);
     assert.equal(buttons.find(button => button.dataset.columns === '4')['aria-pressed'], 'true');
     assert.equal(buttons.find(button => button.dataset.columns === '2').classList.contains('active'), false);

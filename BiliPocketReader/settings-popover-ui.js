@@ -84,19 +84,6 @@
                     </div>
                 </section>
                 <section class="bilibili-toolbox-control-section">
-                    <div class="bilibili-toolbox-section-title">\u7a7a\u95f4\u56fe\u6587</div>
-                    <label class="bilibili-toolbox-control-row">
-                        <span class="bilibili-toolbox-control-copy">
-                            <span class="bilibili-toolbox-control-title">\u81ea\u52a8\u5207\u5230\u4e13\u680f</span>
-                            <span class="bilibili-toolbox-control-desc">\u8fdb\u5165\u7a7a\u95f4\u56fe\u6587\u9875\u65f6\u751f\u6548</span>
-                        </span>
-                        <span class="bilibili-toolbox-switch">
-                            <input type="checkbox" class="bilibili-toolbox-opus-tab-toggle">
-                            <span class="bilibili-toolbox-switch-slider"></span>
-                        </span>
-                    </label>
-                </section>
-                <section class="bilibili-toolbox-control-section">
                     <div class="bilibili-toolbox-section-title">\u52a8\u6001\u8fc7\u6ee4\uff08\u5728\u52a8\u6001\u9875\u751f\u6548\uff09</div>
                     <label class="bilibili-toolbox-control-row">
                         <span class="bilibili-toolbox-control-copy">
@@ -129,9 +116,6 @@
 
         eventBag.on(panel.querySelector('.bilibili-toolbox-forward-toggle'), 'change', async (event) => {
             await storage.setSetting(TOOLBOX_SETTINGS.hideForwardDynamics, Boolean(event.target.checked));
-        });
-        eventBag.on(panel.querySelector('.bilibili-toolbox-opus-tab-toggle'), 'change', async (event) => {
-            await storage.setSetting(TOOLBOX_SETTINGS.autoSelectOpusTab, Boolean(event.target.checked));
         });
         eventBag.on(panel.querySelector('.bilibili-toolbox-keyword-toggle'), 'change', (event) => {
             const enabled = Boolean(event.target.checked);
@@ -169,7 +153,6 @@
         if (!panel || !dynamicFilter) return;
 
         const forwardEnabled = Boolean(getSettingValue(TOOLBOX_SETTINGS.hideForwardDynamics));
-        const autoSelectOpusTab = Boolean(getSettingValue(TOOLBOX_SETTINGS.autoSelectOpusTab, true));
         const favoriteColumns = getSettingValue(
             TOOLBOX_SETTINGS.favoriteColumns,
             Shared.DEFAULT_FAVORITE_COLUMNS
@@ -177,7 +160,6 @@
         const keywordState = dynamicFilter.getKeywordFilterState();
         const keywordInput = panel.querySelector('.bilibili-toolbox-keyword-input');
         panel.querySelector('.bilibili-toolbox-forward-toggle').checked = forwardEnabled;
-        panel.querySelector('.bilibili-toolbox-opus-tab-toggle').checked = autoSelectOpusTab;
         panel.querySelector('.bilibili-toolbox-keyword-toggle').checked = keywordState.enabled;
         panel.querySelectorAll('.bilibili-toolbox-favorite-columns button').forEach(button => {
             const active = Number(button.dataset.columns) === favoriteColumns;

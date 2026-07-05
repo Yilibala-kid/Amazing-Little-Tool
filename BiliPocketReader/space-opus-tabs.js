@@ -2,32 +2,25 @@
 (function() {
     'use strict';
 
-    if (!window.Shared) throw new Error('BilibiliToolbox: shared.js not loaded');
     if (!window.BilibiliToolbox?.bilibiliDom) throw new Error('BilibiliToolbox: bilibili-dom-adapter.js not loaded');
 
-    const Shared = window.Shared;
     const Toolbox = window.BilibiliToolbox;
     const bilibiliDom = Toolbox.bilibiliDom;
-    const TOOLBOX_SETTINGS = Shared.TOOLBOX_SETTINGS;
+    const ALL_OPUS_TAB_TEXT = '\u5168\u90e8\u56fe\u6587';
     const OPUS_TAB_TEXT = '\u4e13\u680f';
-    const BURST_DELAYS = [0, 80, 250, 600, 1200, 2500, 5000];
-    const INTENT_TTL_MS = 10000;
+    const DYNAMIC_TAB_TEXT = '\u52a8\u6001';
+    const REQUIRED_TAB_TEXTS = [ALL_OPUS_TAB_TEXT, OPUS_TAB_TEXT, DYNAMIC_TAB_TEXT];
+    const BURST_DELAYS = [300, 800, 1500, 2500, 4000, 6500, 9000];
+    const OBSERVER_RETRY_DELAY = 300;
+    const CLICK_VERIFY_DELAY = 700;
+    const CLICK_RETRY_DELAY = 1000;
 
     let tabObserver = null;
     let tabTimers = [];
-    let urlChangeHandler = null;
+    let clickVerifyTimer = null;
     let intentUid = '';
-    let intentUntil = 0;
     let selectedForIntent = false;
-    let dataProvider = () => Shared.createDefaultData();
-
-    function getSettingValue(key, fallback = false) {
-        return Shared.getSettingValue(dataProvider(), key, fallback);
-    }
-
-    function isAutoSelectEnabled() {
-        return Boolean(getSettingValue(TOOLBOX_SETTINGS.autoSelectOpusTab, true));
-    }
+    let clickPending = false;
 
     function isSpaceOpusUploadPage(url = window.location.href) {
         return bilibiliDom.isSpaceOpusUploadPage(url);
@@ -35,19 +28,6 @@
 
     function getSpaceOpusUid(url = window.location.href) {
         return bilibiliDom.getSpaceOpusUid(url);
-    }
-
-    function ensureOpusTabIntent() {
-        if (!isAutoSelectEnabled()) return false;
-        if (!isSpaceOpusUploadPage()) return false;
-
-        const uid = getSpaceOpusUid();
-        if (!uid) return false;
-
-        intentUid = uid;
-        intentUntil = Date.now() + INTENT_TTL_MS;
-        selectedForIntent = false;
-        return Boolean(intentUid);
     }
 
     function normalizeTabText(tab) {
@@ -66,46 +46,17 @@
         return getContentTabs().find(tab => normalizeTabText(tab) === OPUS_TAB_TEXT) || null;
     }
 
-    function hasFreshIntentForCurrentUrl() {
-        if (!isAutoSelectEnabled()) {
-            intentUid = '';
-            return false;
-        }
-
-        const uid = getSpaceOpusUid();
-        const hasFreshIntent = intentUid
-            && uid === intentUid
-            && Date.now() <= intentUntil;
-
-        if (!hasFreshIntent) {
-            if (uid !== intentUid || Date.now() > intentUntil) intentUid = '';
-            return false;
-        }
-
-        return !selectedForIntent;
+    function hasCompleteTabGroup() {
+        const tabTexts = new Set(getContentTabs().map(normalizeTabText));
+        return REQUIRED_TAB_TEXTS.every(text => tabTexts.has(text));
     }
 
-    function clickTab(tab) {
-        if (!tab) return;
-        tab.click();
-    }
+    function isTabReady(tab) {
+        if (!tab || typeof tab.click !== 'function' || !hasCompleteTabGroup()) return false;
+        if (typeof tab.getBoundingClientRect !== 'function') return true;
 
-    function selectOpusTabNow() {
-        if (!intentUid) ensureOpusTabIntent();
-        if (!hasFreshIntentForCurrentUrl()) return false;
-
-        const tab = findOpusTab();
-        if (!tab) return false;
-
-        if (isActiveTab(tab)) {
-            selectedForIntent = true;
-            return true;
-        }
-
-        clickTab(tab);
-        if (!isActiveTab(tab)) return false;
-        selectedForIntent = true;
-        return true;
+        const rect = tab.getBoundingClientRect();
+        return !rect || rect.width !== 0 || rect.height !== 0;
     }
 
     function clearTabTimers() {
@@ -113,7 +64,85 @@
         tabTimers = [];
     }
 
+    function clearClickVerifyTimer() {
+        if (clickVerifyTimer) clearTimeout(clickVerifyTimer);
+        clickVerifyTimer = null;
+        clickPending = false;
+    }
+
+    function stopTabObserver() {
+        if (tabObserver) tabObserver.disconnect();
+        tabObserver = null;
+    }
+
+    function clearIntent() {
+        clearTabTimers();
+        clearClickVerifyTimer();
+        stopTabObserver();
+        intentUid = '';
+        selectedForIntent = false;
+    }
+
+    function markSelectionComplete() {
+        selectedForIntent = true;
+        clearTabTimers();
+        clearClickVerifyTimer();
+        stopTabObserver();
+    }
+
+    function ensureTabObserver() {
+        if (tabObserver || !document.body || typeof MutationObserver !== 'function') return;
+        tabObserver = new MutationObserver(() => {
+            if (intentUid && !selectedForIntent) scheduleSelect(OBSERVER_RETRY_DELAY);
+        });
+        tabObserver.observe(document.body, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['class']
+        });
+    }
+
+    function verifyClickedTab() {
+        clickVerifyTimer = null;
+        clickPending = false;
+
+        if (!intentUid || selectedForIntent || !isSpaceOpusUploadPage()) return false;
+
+        const tab = findOpusTab();
+        if (tab && isActiveTab(tab)) {
+            markSelectionComplete();
+            return true;
+        }
+
+        scheduleSelect(CLICK_RETRY_DELAY);
+        return false;
+    }
+
+    function scheduleClickVerify() {
+        if (clickVerifyTimer) clearTimeout(clickVerifyTimer);
+        clickVerifyTimer = window.setTimeout(verifyClickedTab, CLICK_VERIFY_DELAY);
+    }
+
+    function selectOpusTabNow() {
+        if (!intentUid || selectedForIntent || clickPending || !isSpaceOpusUploadPage()) return false;
+
+        const tab = findOpusTab();
+        if (!isTabReady(tab)) return false;
+
+        if (isActiveTab(tab)) {
+            markSelectionComplete();
+            return true;
+        }
+
+        clickPending = true;
+        tab.click();
+        scheduleClickVerify();
+        return true;
+    }
+
     function scheduleSelect(delay = 80) {
+        if (!intentUid || selectedForIntent) return;
         const timer = window.setTimeout(() => {
             tabTimers = tabTimers.filter(item => item !== timer);
             selectOpusTabNow();
@@ -123,53 +152,43 @@
 
     function scheduleSelectBurst() {
         clearTabTimers();
-        ensureOpusTabIntent();
-        if (!hasFreshIntentForCurrentUrl()) return;
         BURST_DELAYS.forEach(scheduleSelect);
     }
 
     function syncSpaceOpusTabs() {
-        if (!isAutoSelectEnabled()) {
-            clearTabTimers();
-            intentUid = '';
-            intentUntil = 0;
-            selectedForIntent = false;
+        if (!isSpaceOpusUploadPage()) {
+            clearIntent();
             return;
         }
+
+        const uid = getSpaceOpusUid();
+        if (!uid) {
+            clearIntent();
+            return;
+        }
+
+        if (intentUid === uid && selectedForIntent) return;
+        if (intentUid !== uid) {
+            clearTabTimers();
+            clearClickVerifyTimer();
+            stopTabObserver();
+            selectedForIntent = false;
+        } else {
+            clearTabTimers();
+            clearClickVerifyTimer();
+        }
+
+        intentUid = uid;
+        ensureTabObserver();
         scheduleSelectBurst();
     }
 
-    function initSpaceOpusTabs(options = {}) {
-        if (tabObserver) return;
-        dataProvider = typeof options.getData === 'function' ? options.getData : dataProvider;
-
-        tabObserver = new MutationObserver(() => {
-            if (hasFreshIntentForCurrentUrl()) scheduleSelect();
-        });
-        tabObserver.observe(document.body, {
-            childList: true,
-            subtree: true,
-            attributes: true,
-            attributeFilter: ['class']
-        });
-
-        urlChangeHandler = scheduleSelectBurst;
-        window.addEventListener(Toolbox.url?.URL_CHANGE_EVENT || 'bilibili-toolbox:urlchange', urlChangeHandler);
+    function initSpaceOpusTabs() {
         syncSpaceOpusTabs();
     }
 
     function destroySpaceOpusTabs() {
-        if (tabObserver) tabObserver.disconnect();
-        if (urlChangeHandler) {
-            window.removeEventListener(Toolbox.url?.URL_CHANGE_EVENT || 'bilibili-toolbox:urlchange', urlChangeHandler);
-        }
-        clearTabTimers();
-        tabObserver = null;
-        urlChangeHandler = null;
-        dataProvider = () => Shared.createDefaultData();
-        intentUid = '';
-        intentUntil = 0;
-        selectedForIntent = false;
+        clearIntent();
     }
 
     Toolbox.spaceOpusTabs = {

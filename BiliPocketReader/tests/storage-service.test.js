@@ -90,11 +90,11 @@ assert.equal(Shared.getFavoriteLink({ type: 'user', uid: '42' }), 'https://space
 assert.equal(Shared.getFavoriteLink({ type: 'opus', uid: '42' }), 'https://space.bilibili.com/42/upload/opus');
 assert.equal(Shared.getFavoriteLink({ type: 'readlist', id: '9' }), 'https://www.bilibili.com/read/readlist/rl9');
 assert.deepEqual(
-    plain(Shared.normalizeSettings({ hideForwardDynamics: true, autoSelectOpusTab: false, favoriteColumns: 5, readerPreferences: { viewMode: 'single' } })),
-    { hideForwardDynamics: true, autoSelectOpusTab: false, favoriteColumns: 5, readerPreferences: { viewMode: 'single' } }
+    plain(Shared.normalizeSettings({ hideForwardDynamics: true, favoriteColumns: 5, readerPreferences: { viewMode: 'single' } })),
+    { hideForwardDynamics: true, favoriteColumns: 5, readerPreferences: { viewMode: 'single' } }
 );
 assert.deepEqual(
-    plain(Shared.normalizeSettings({ hideForwardDynamics: 'yes', autoSelectOpusTab: 'no', favoriteColumns: 9, readerPreferences: 'bad' })),
+    plain(Shared.normalizeSettings({ hideForwardDynamics: 'yes', favoriteColumns: 9, readerPreferences: 'bad' })),
     plain(Shared.DEFAULT_SETTINGS)
 );
 

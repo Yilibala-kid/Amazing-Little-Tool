@@ -13,7 +13,6 @@ BiliPocketReader 是运行在 bilibili 页面上的 MV3 内容脚本扩展，同
 - 收藏显示设置：收藏面板每行 2 到 5 个收藏，保持收藏块固定宽度，通过调整面板宽度改变列数。
 - 动态过滤：在用户动态页隐藏转发动态，或临时按关键词只显示匹配动态。
 - 收藏导入/导出：文本格式导入导出收藏。
-- 空间图文页深链：进入 `/upload/opus` 后自动尝试切到“专栏”tab。
 
 ## 加载顺序
 
@@ -36,8 +35,8 @@ BiliPocketReader 是运行在 bilibili 页面上的 MV3 内容脚本扩展，同
 13. `comic-reader.js`
 14. `content-page-info.js`
 15. `content-url.js`
-16. `dynamic-filter.js`
-17. `space-opus-tabs.js`
+16. `space-opus-tabs.js`
+17. `dynamic-filter.js`
 18. `favorites-text-dialog.js`
 19. `settings-popover-ui.js`
 20. `favorites-ui.js`
@@ -54,7 +53,6 @@ BiliPocketReader 是运行在 bilibili 页面上的 MV3 内容脚本扩展，同
   favorites: [],
   settings: {
     hideForwardDynamics: false,
-    autoSelectOpusTab: true,
     favoriteColumns: 2,
     readerPreferences: { ... }
   }
@@ -81,7 +79,6 @@ BiliPocketReader 是运行在 bilibili 页面上的 MV3 内容脚本扩展，同
 设置项：
 
 - `hideForwardDynamics`：是否隐藏转发动态，持久化。
-- `autoSelectOpusTab`：进入空间图文页时是否自动切到“专栏”tab，持久化，默认开启。
 - `favoriteColumns`：收藏面板列数，合法值 `2, 3, 4, 5`，默认 `2`。
 - `readerPreferences`：阅读器偏好，包含阅读方向、显示张数、翻页动画、显示质量、背景色、移动端点击翻页。
 
@@ -136,7 +133,7 @@ B 站 URL、页面类型和 DOM 选择器适配层。
 
 - 集中判断漫画/图文阅读页、文章页、空间图文页、空间动态页。
 - 集中维护动态卡片、图文图片、空间 tab、作者信息等 B 站 DOM 选择器。
-- 提供 `getPrimaryImages()`、`getDynamicCards()`、`getContentTabs()`、`getArticleAuthorLink()` 等 DOM 查询入口。
+- 提供 `getPrimaryImages()`、`getDynamicCards()`、`getArticleAuthorLink()` 等 DOM 查询入口。
 
 维护要点：
 
@@ -172,7 +169,7 @@ storage 和收藏服务。
 职责：
 
 - 初始化 storage。
-- 初始化 URL 监听、空间图文 tab 切换、动态过滤、设置弹窗、收藏 UI。
+- 初始化 URL 监听、动态过滤、设置弹窗、收藏 UI。
 - 在可阅读页面初始化漫画阅读器入口按钮。
 - 设置 `storage.onChanged(syncAll)`。
 - 提供简单 message bridge：`GET_PAGE_FAVORITE_DATA`。
@@ -204,6 +201,25 @@ SPA URL 变化桥。
 
 - B 站 SPA 页面变化依赖这个事件触发后续模块重扫。
 - 如果新增 URL 监听来源，需要保持 `init()` / `destroy()` 成对可逆。
+
+### `space-opus-tabs.js`
+
+空间图文页 tab 自动选择。
+
+导出：
+
+- `Toolbox.spaceOpusTabs`
+
+职责：
+
+- 在 `/upload/opus` 页面等待 B 站渲染 `.content-filter .content-tab`。
+- 自动点击文本为“专栏”的 tab。
+- 每次进入空间图文页只自动选择一次，成功后停止当前 intent，避免和用户手动切换冲突。
+
+维护要点：
+
+- tab selector 集中在 `bilibili-dom-adapter.js` 的 `getContentTabs()`。
+- 该功能固定开启，不写入 storage，也不提供设置项。
 
 ### `content-page-info.js`
 
@@ -259,10 +275,9 @@ SPA URL 变化桥。
 
 职责：
 
-- 展示“收藏显示”“空间图文”和“动态过滤”三组设置。
+- 展示“收藏显示”和“动态过滤”设置。
 - 修改 `favoriteColumns`。
 - 修改 `hideForwardDynamics`。
-- 修改 `autoSelectOpusTab`。
 - 控制临时关键词过滤。
 - 提供收藏导入/导出入口。
 
@@ -312,24 +327,6 @@ SPA URL 变化桥。
 - `MutationObserver` 只监听 `childList + subtree`，避免自身改 class 触发重复过滤。
 - `apply()` 不负责主动渲染设置 UI。
 - URL/SPA 加载使用 burst retry，延迟数组是 `DYNAMIC_FILTER_BURST_DELAYS`。
-
-### `space-opus-tabs.js`
-
-空间图文页“专栏”tab 自动切换。
-
-导出：
-
-- `Toolbox.spaceOpusTabs`
-
-职责：
-
-- 检测 `/upload/opus` 页面并记录短期切 tab intent。
-- 在短时间窗口内尝试点击“专栏”tab。
-- 监听 SPA URL 变化后重新尝试。
-
-维护要点：
-
-- 这个模块服务进入空间图文页后的“专栏”tab 自动切换体验，可通过 `autoSelectOpusTab` 关闭。
 
 ### `comic-reader-images.js`
 
@@ -633,10 +630,7 @@ https://space.bilibili.com/<uid>/upload/opus
 
 进入页面后：
 
-1. `space-opus-tabs.js` 检测 `/upload/opus` 页面。
-2. 记录短期 intent。
-3. burst retry 查找“专栏”tab。
-4. 找到后点击，若已经 active 不重复点击。
+扩展会等待空间图文页内的“全部图文 / 专栏 / 动态”tab 渲染出来，并自动点击“专栏”。该行为固定开启，不持久化设置；每次进入同一个空间图文页只自动选择一次。
 
 ## 常见维护任务
 
@@ -665,7 +659,6 @@ https://space.bilibili.com/<uid>/upload/opus
 - 收藏页面信息提取：`content-page-info.js`
 - 阅读器图片收集：`comic-reader-images.js`
 - 动态卡片识别/转发识别：`dynamic-filter.js`
-- 空间图文 tab：`space-opus-tabs.js`
 
 ### 调整阅读器分页
 

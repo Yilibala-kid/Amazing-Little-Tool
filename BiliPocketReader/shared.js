@@ -13,13 +13,11 @@
     const BILIBILI_READLIST_URL = 'https://www.bilibili.com/read/readlist/rl';
     const TOOLBOX_SETTINGS = Object.freeze({
         hideForwardDynamics: 'hideForwardDynamics',
-        autoSelectOpusTab: 'autoSelectOpusTab',
         readerPreferences: 'readerPreferences',
         favoriteColumns: 'favoriteColumns'
     });
     const DEFAULT_SETTINGS = Object.freeze({
         hideForwardDynamics: false,
-        autoSelectOpusTab: true,
         favoriteColumns: DEFAULT_FAVORITE_COLUMNS,
         readerPreferences: {}
     });
@@ -42,7 +40,6 @@
     function createDefaultSettings() {
         return {
             hideForwardDynamics: DEFAULT_SETTINGS.hideForwardDynamics,
-            autoSelectOpusTab: DEFAULT_SETTINGS.autoSelectOpusTab,
             favoriteColumns: DEFAULT_SETTINGS.favoriteColumns,
             readerPreferences: { ...DEFAULT_SETTINGS.readerPreferences }
         };
@@ -98,9 +95,6 @@
             hideForwardDynamics: typeof input.hideForwardDynamics === 'boolean'
                 ? input.hideForwardDynamics
                 : DEFAULT_SETTINGS.hideForwardDynamics,
-            autoSelectOpusTab: typeof input.autoSelectOpusTab === 'boolean'
-                ? input.autoSelectOpusTab
-                : DEFAULT_SETTINGS.autoSelectOpusTab,
             favoriteColumns: normalizeFavoriteColumns(input.favoriteColumns),
             readerPreferences: normalizeObject(input.readerPreferences)
         };
