@@ -383,7 +383,8 @@
     border: 2px dashed var(--acc);
     background: rgba(251,114,153,0.18);
     box-shadow: 0 0 0 1px rgba(255,255,255,0.25) inset;
-    pointer-events: none;
+    cursor: move;
+    pointer-events: auto;
 }
 
 .comic-sel-handle {

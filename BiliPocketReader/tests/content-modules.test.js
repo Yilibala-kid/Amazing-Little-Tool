@@ -914,6 +914,69 @@ function loadReaderScreenshotContext() {
     return context;
 }
 
+function loadReaderSelectionContext(readerRect = { width: 1000, height: 800 }) {
+    const context = createBaseContext();
+    runFile(context, 'shared.js');
+    Object.assign(context.BilibiliToolbox, {
+        readerScreenshot: {
+            getBounds() {
+                return null;
+            }
+        }
+    });
+    runFile(context, 'reader-selection.js');
+
+    const selectionBox = {
+        style: {},
+        closest(selector) {
+            return selector === '.comic-sel-handle' ? null : null;
+        }
+    };
+    const selectionSaveBtn = {
+        disabled: false,
+        classList: new FakeClassList()
+    };
+    const reader = {
+        isSelectingScreenshot: true,
+        isDraggingSelection: false,
+        selectionPointerId: null,
+        resizeDirection: null,
+        selectionDragMode: null,
+        selectionMoveStart: null,
+        selectionMoveRect: null,
+        selectionStart: { x: 100, y: 120 },
+        selectionCurrent: { x: 300, y: 420 },
+        selectionHandles: {},
+        el: {
+            reader: {
+                getBoundingClientRect() {
+                    return { left: 0, top: 0, ...readerRect };
+                }
+            },
+            selectionBox,
+            selectionOverlay: {
+                style: {},
+                setPointerCapture() {},
+                releasePointerCapture() {}
+            },
+            selectionSaveBtn,
+            selectionHint: { textContent: '' }
+        },
+        setSelectionHint(text) {
+            this.el.selectionHint.textContent = text;
+        },
+        showReaderMessage(message, isError) {
+            this.lastMessage = { message, isError };
+        },
+        hideSettingsPanel() {},
+        hideControls() {},
+        showControls() {},
+        captureScreenshot: async () => true
+    };
+    context.BilibiliToolbox.readerSelection.attach(reader);
+    return { context, reader, selectionBox };
+}
+
 {
     const { BilibiliToolbox } = loadReaderScreenshotContext();
     const screenshot = BilibiliToolbox.readerScreenshot;
@@ -926,6 +989,27 @@ function loadReaderScreenshotContext() {
         { x: 10, y: 5, width: 120, height: 80 }
     );
     assert.equal(screenshot.getBounds([]), null);
+}
+
+{
+    const { reader, selectionBox } = loadReaderSelectionContext();
+    const eventBase = {
+        button: 0,
+        pointerId: 1,
+        target: selectionBox,
+        preventDefault() {}
+    };
+
+    reader.handleSelectionPointerDown({ ...eventBase, clientX: 150, clientY: 180 });
+    reader.handleSelectionPointerMove({ ...eventBase, clientX: 250, clientY: 280 });
+    reader.handleSelectionPointerUp({ ...eventBase, clientX: 250, clientY: 280 });
+
+    assert.deepEqual(plain(reader.normalizeSelectionRect()), {
+        x: 200,
+        y: 220,
+        width: 200,
+        height: 300
+    });
 }
 
 function loadAnimationsContext() {
@@ -1179,6 +1263,20 @@ function loadComicReaderCoreContext(ImageClass, overrides = {}) {
 }
 
 (async () => {
+    {
+        const { reader } = loadReaderSelectionContext();
+
+        await reader.saveSelectionScreenshot();
+
+        assert.equal(reader.isSelectingScreenshot, true);
+        assert.deepEqual(plain(reader.normalizeSelectionRect()), {
+            x: 100,
+            y: 120,
+            width: 200,
+            height: 300
+        });
+        assert.equal(reader.el.selectionBox.style.display, 'block');
+    }
     {
         const { BilibiliToolbox } = loadReaderPageGroupsContext();
         const pageGroups = BilibiliToolbox.readerPageGroups;

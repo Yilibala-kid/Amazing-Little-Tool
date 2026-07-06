@@ -111,6 +111,9 @@
             this.selectionWasControlsVisible = true;
             this.selectionPointerId = null;
             this.resizeDirection = null;
+            this.selectionDragMode = null;
+            this.selectionMoveStart = null;
+            this.selectionMoveRect = null;
             this.selectionHandles = {};
             this.pageFlipToken = 0;
             this.transformTransitionTimer = null;

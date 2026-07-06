@@ -62,6 +62,9 @@
             this.isDraggingSelection = false;
             this.selectionPointerId = null;
             this.resizeDirection = null;
+            this.selectionDragMode = null;
+            this.selectionMoveStart = null;
+            this.selectionMoveRect = null;
             this.selectionStart = null;
             this.selectionCurrent = null;
             this.el.selectionBox.style.display = 'none';
@@ -115,10 +118,27 @@
                 return;
             }
 
-            if (e.target.closest?.('.comic-sel-handle') || e.target === this.el.selectionBox) return;
+            if (e.target === this.el.selectionBox && this.hasValidSelection()) {
+                const rect = this.normalizeSelectionRect();
+                this.selectionStart = { x: rect.x, y: rect.y };
+                this.selectionCurrent = { x: rect.x + rect.width, y: rect.y + rect.height };
+                this.resizeDirection = null;
+                this.selectionDragMode = 'move';
+                this.selectionMoveStart = this.getReaderPoint(e.clientX, e.clientY);
+                this.selectionMoveRect = rect;
+                this.isDraggingSelection = true;
+                this.setSelectionHint('\u62d6\u52a8\u9009\u533a\u79fb\u52a8\u622a\u56fe\u8303\u56f4');
+                this.el.selectionOverlay.setPointerCapture?.(e.pointerId);
+                return;
+            }
+
+            if (e.target.closest?.('.comic-sel-handle')) return;
 
             this.isDraggingSelection = true;
             this.resizeDirection = null;
+            this.selectionDragMode = 'create';
+            this.selectionMoveStart = null;
+            this.selectionMoveRect = null;
             this.selectionStart = this.getReaderPoint(e.clientX, e.clientY);
             this.selectionCurrent = this.selectionStart;
             this.updateSelectionBox();
@@ -135,7 +155,16 @@
             const pt = this.getReaderPoint(e.clientX, e.clientY);
             const MIN = 8;
 
-            if (this.resizeDirection) {
+            if (this.selectionDragMode === 'move' && this.selectionMoveStart && this.selectionMoveRect) {
+                const readerRect = this.el.reader.getBoundingClientRect();
+                const dx = pt.x - this.selectionMoveStart.x;
+                const dy = pt.y - this.selectionMoveStart.y;
+                const rect = this.selectionMoveRect;
+                const x = Math.max(0, Math.min(readerRect.width - rect.width, rect.x + dx));
+                const y = Math.max(0, Math.min(readerRect.height - rect.height, rect.y + dy));
+                this.selectionStart = { x, y };
+                this.selectionCurrent = { x: x + rect.width, y: y + rect.height };
+            } else if (this.resizeDirection) {
                 const d = this.resizeDirection;
                 if (d.includes('w')) this.selectionStart.x = Math.min(pt.x, this.selectionCurrent.x - MIN);
                 if (d.includes('e')) this.selectionCurrent.x = Math.max(pt.x, this.selectionStart.x + MIN);
@@ -156,6 +185,9 @@
             this.isDraggingSelection = false;
             this.selectionPointerId = null;
             this.resizeDirection = null;
+            this.selectionDragMode = null;
+            this.selectionMoveStart = null;
+            this.selectionMoveRect = null;
 
             if (!this.selectionStart && !this.selectionCurrent) return;
 
@@ -179,7 +211,9 @@
 
             const success = await this.captureScreenshot(this.normalizeSelectionRect());
             if (success) {
-                this.cancelScreenshotSelection(false);
+                this.updateSelectionBox();
+                this.updateSelectionActions();
+                this.setSelectionHint('\u622a\u56fe\u5df2\u4fdd\u5b58\uff0c\u53ef\u7ee7\u7eed\u8c03\u6574\u9009\u533a\u6216\u70b9\u51fb\u53d6\u6d88\u622a\u56fe\u9000\u51fa');
             }
         },
 
@@ -193,7 +227,7 @@
 
             const success = await this.captureScreenshot(rect, descriptors);
             if (success) {
-                this.cancelScreenshotSelection(false);
+                this.setSelectionHint('\u6574\u9875\u622a\u56fe\u5df2\u4fdd\u5b58\uff0c\u53ef\u7ee7\u7eed\u622a\u56fe\u6216\u70b9\u51fb\u53d6\u6d88\u622a\u56fe\u9000\u51fa');
             }
         }
     };
