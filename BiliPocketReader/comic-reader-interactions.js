@@ -64,7 +64,7 @@
             reader.imageRenderMode = IMAGE_RENDER_MODES[(currentIdx + 1) % IMAGE_RENDER_MODES.length];
             reader.syncImageRenderButton();
             reader.savePreferences();
-            reader.applyImageRenderMode();
+            reader.refreshImagesForRenderMode();
             reader.showReaderMessage(reader.imageRenderMode === 'sharp' ? '\u539f\u56fe\u6a21\u5f0f' : '\u6d41\u7545\u6a21\u5f0f');
         });
 

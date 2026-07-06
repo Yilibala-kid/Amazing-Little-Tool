@@ -16,6 +16,12 @@ Thumbs.db
 # Claude
 .claude/
 
+# BiliPocketReader generated/local files
+BiliPocketReader/sample/
+BiliPocketReader/dist/*
+!BiliPocketReader/dist/
+!BiliPocketReader/dist/BiliPocketReader.user.js
+
 # Split into D:\letsgo\forMath
 MathCollection/
 MathPPT/

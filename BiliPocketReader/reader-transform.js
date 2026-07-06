@@ -50,10 +50,25 @@
 
         getSharpDisplaySizes(images, isFull) {
             const naturalSizes = images.map(img => this.getEffectiveImageSize(img));
-            const fitRatio = this.getSharpDisplayFitRatio(naturalSizes);
+            const displaySizes = isFull ? naturalSizes : this.alignSharpDisplayHeights(naturalSizes);
+            const fitRatio = this.getSharpDisplayFitRatio(displaySizes);
             this.sharpDisplayFitRatio = fitRatio;
 
-            return naturalSizes;
+            return displaySizes;
+        },
+
+        alignSharpDisplayHeights(sizes) {
+            const targetHeight = Math.max(...sizes.map(size => size.height || 0));
+            if (!targetHeight) return sizes;
+
+            return sizes.map(size => {
+                if (!size.width || !size.height || size.height >= targetHeight) return size;
+                const ratio = targetHeight / size.height;
+                return {
+                    width: size.width * ratio,
+                    height: targetHeight
+                };
+            });
         },
 
         getSharpDisplayFitRatio(sizes) {
@@ -65,7 +80,7 @@
             const height = Math.max(...sizes.map(size => size.height || 0));
             if (!width || !height || !readerRect.width || !readerRect.height) return 1;
 
-            const ratio = Math.min(1, readerRect.width / width, readerRect.height / height);
+            const ratio = Math.min(readerRect.width / width, readerRect.height / height);
             return Number.isFinite(ratio) && ratio > 0 ? ratio : 1;
         },
 
@@ -80,13 +95,6 @@
         },
 
         updateFitScale(images = Array.from(this.el.imgContainer?.querySelectorAll('img') || [])) {
-            if (!this.isSharpRenderMode()) {
-                this.fitScale = 1;
-                this.contentNaturalWidth = 0;
-                this.contentNaturalHeight = 0;
-                return;
-            }
-
             const readerRect = this.el.reader?.getBoundingClientRect();
             if (!readerRect || !images.length) {
                 this.fitScale = 1;
@@ -116,7 +124,7 @@
         },
 
         getBaseFitRatio() {
-            return this.isSharpRenderMode() ? (this.sharpDisplayFitRatio || 1) : (this.fitScale || 1);
+            return this.fitScale || 1;
         },
 
         getMaxScale() {
@@ -131,14 +139,8 @@
 
         setupImagesForRenderMode(images) {
             const isFull = images.length === 1;
-            if (this.isSharpRenderMode()) {
-                const displaySizes = this.getSharpDisplaySizes(images, isFull);
-                images.forEach((img, index) => this.setupImg(img, isFull, displaySizes[index]));
-                return;
-            }
-
-            this.sharpDisplayFitRatio = 1;
-            images.forEach(img => this.setupImg(img, isFull));
+            const displaySizes = this.getSharpDisplaySizes(images, isFull);
+            images.forEach((img, index) => this.setupImg(img, isFull, displaySizes[index]));
         },
 
         applyImageRenderMode() {

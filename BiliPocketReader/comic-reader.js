@@ -15,8 +15,8 @@
     const TOUCH_ZOOM_EPSILON = 0.01;
     const TOUCH_EDGE_EPSILON = 0.5;
     const PAN_EDGE_ALLOWANCE = 72;
-    const PRELOAD_COUNT = 4;
     const MOBILE_BREAKPOINT = 768;
+    const PRELOAD_COUNT = 4;
     if (!window.Shared) throw new Error('BilibiliToolbox: shared.js not loaded');
     if (!window.BilibiliToolbox?.bilibiliDom) throw new Error('BilibiliToolbox: bilibili-dom-adapter.js not loaded');
     if (!window.BilibiliToolbox?.storage) throw new Error('BilibiliToolbox: storage-service.js not loaded');
@@ -114,6 +114,7 @@
             this.selectionHandles = {};
             this.pageFlipToken = 0;
             this.transformTransitionTimer = null;
+            this.imageCache = new Map();
 
             // 拖拽状态
             this.isDragging = false;
@@ -183,11 +184,13 @@
             document.body.appendChild(entryBtn);
 
             entryBtn.onclick = () => this.start();
+            this.prepareInitialImages();
         }
 
         // 2. 启动阅读器
         start() {
-            this.imgList = comicImages.collectImages();
+            const images = this.collectReaderImages();
+            if (images.length > 0) this.imgList = images;
 
             if (this.imgList.length === 0) return alert('\u672a\u627e\u5230\u6f2b\u753b\u56fe\u7247');
 
@@ -204,6 +207,29 @@
             this.createUI();
             this.bindEvents();
             this.render();
+        }
+
+        prepareInitialImages() {
+            this.imgList = this.collectReaderImages();
+            if (this.imgList.length > 0) this.preloadImages(0);
+        }
+
+        getImageCollectionOptions() {
+            return { preserveBiliSuffix: this.imageRenderMode === 'smooth' };
+        }
+
+        collectReaderImages() {
+            return comicImages.collectImages(this.getImageCollectionOptions());
+        }
+
+        refreshImagesForRenderMode() {
+            const images = this.collectReaderImages();
+            if (images.length === 0) return;
+            this.imgList = images;
+            this.imageCache.clear();
+            this.currentIndex = Math.min(this.currentIndex, this.imgList.length - 1);
+            this.preloadImages(this.currentIndex);
+            this.render(false);
         }
 
         // 3. 创建 UI
@@ -319,7 +345,7 @@
             this.isCompactLayout = this.isCompactViewport();
             this.el.reader.classList.toggle('reader-compact', this.isCompactLayout);
             const images = Array.from(this.el.imgContainer?.querySelectorAll('img') || []);
-            if (this.isSharpRenderMode() && images.length) this.setupImagesForRenderMode(images);
+            if (images.length) this.setupImagesForRenderMode(images);
             this.updateFitScale();
             this.applyTransform();
         }
@@ -719,12 +745,12 @@
                 currentIndex: this.currentIndex,
                 imgList: this.imgList,
                 viewMode: this.viewMode,
-                loadImage: (src) => this.loadImage(src, { priority: 'high', decode: true }),
+                loadImage: (src) => this.loadImage(src),
                 isWideImage: (img) => this.isWideImage(img)
             });
             if (!result || renderIndex !== this.currentIndex) return;
 
-            this.commitImages(result.images, animationMode, result.preloadStart, transitionDirection);
+            this.commitImages(result.images, animationMode, transitionDirection, result.preloadStart);
         }
 
         resetPageInteractionState() {
@@ -742,30 +768,53 @@
             this.clearPendingTap();
         }
 
-        loadImage(src, options = {}) {
-            return new Promise((resolve) => {
-                const img = new Image();
-                const priority = options.priority || 'auto';
-                img.decoding = 'async';
-                if (priority !== 'auto') img.fetchPriority = priority;
-                img.onload = async () => {
-                    if (options.decode && typeof img.decode === 'function') {
-                        try {
-                            await img.decode();
-                        } catch (_) {}
-                    }
-                    resolve(img);
+        loadImage(src) {
+            if (!src) return Promise.resolve(null);
+            const cached = this.imageCache.get(src);
+            if (cached) return cached;
+
+            let img = null;
+            const promise = new Promise((resolve) => {
+                img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = () => {
+                    this.imageCache.delete(src);
+                    resolve(null);
                 };
-                img.onerror = () => resolve(null);
-                img.src = src;
             });
+            this.imageCache.set(src, promise);
+            img.src = src;
+            return promise;
+        }
+
+        preloadImages(startIndex = 0) {
+            if (!Array.isArray(this.imgList) || this.imgList.length === 0) return;
+            const start = Math.max(0, Math.min(startIndex, this.imgList.length));
+            const end = Math.min(this.imgList.length, start + PRELOAD_COUNT);
+            for (let index = start; index < end; index += 1) {
+                void this.loadImage(this.imgList[index]);
+            }
+            this.pruneImageCache(start);
+        }
+
+        pruneImageCache(preloadStart = this.currentIndex) {
+            if (!this.imageCache.size || !Array.isArray(this.imgList)) return;
+            const keepStart = Math.max(0, this.currentIndex - PRELOAD_COUNT);
+            const keepEnd = Math.min(
+                this.imgList.length,
+                Math.max(this.currentIndex + this.activePageCount, preloadStart + PRELOAD_COUNT)
+            );
+            const keepUrls = new Set(this.imgList.slice(keepStart, keepEnd));
+            for (const src of this.imageCache.keys()) {
+                if (!keepUrls.has(src)) this.imageCache.delete(src);
+            }
         }
 
         isWideImage(img) {
             return readerPageGroups.isWideImage(img, this.rotation);
         }
 
-        commitImages(images, animationMode, preloadStart, transitionDirection = 0) {
+        commitImages(images, animationMode, transitionDirection = 0, preloadStart = this.currentIndex + images.length) {
             images.forEach(img => {
                 this.el.imgContainer.appendChild(img);
             });
@@ -792,24 +841,15 @@
             img.style.transformOrigin = 'center center';
             img.style.imageRendering = 'auto';
 
-            if (this.isSharpRenderMode()) {
-                const effectiveSize = displaySize || this.getEffectiveImageSize(img);
-                const effectiveWidth = Math.max(1, Math.round(effectiveSize.width || 1));
-                const effectiveHeight = Math.max(1, Math.round(effectiveSize.height || 1));
-                img.dataset.displayWidth = String(effectiveWidth);
-                img.dataset.displayHeight = String(effectiveHeight);
-                img.style.width = `${rotated ? effectiveHeight : effectiveWidth}px`;
-                img.style.height = `${rotated ? effectiveWidth : effectiveHeight}px`;
-                img.style.maxWidth = 'none';
-                img.style.maxHeight = 'none';
-            } else {
-                delete img.dataset.displayWidth;
-                delete img.dataset.displayHeight;
-                img.style.width = '';
-                img.style.height = '';
-                img.style.maxWidth = rotated ? '100vh' : (isFull ? '100%' : '50%');
-                img.style.maxHeight = rotated ? (isFull ? '100vw' : '50vw') : '100%';
-            }
+            const effectiveSize = displaySize || this.getEffectiveImageSize(img);
+            const effectiveWidth = Math.max(1, Math.round(effectiveSize.width || 1));
+            const effectiveHeight = Math.max(1, Math.round(effectiveSize.height || 1));
+            img.dataset.displayWidth = String(effectiveWidth);
+            img.dataset.displayHeight = String(effectiveHeight);
+            img.style.width = `${rotated ? effectiveHeight : effectiveWidth}px`;
+            img.style.height = `${rotated ? effectiveWidth : effectiveHeight}px`;
+            img.style.maxWidth = 'none';
+            img.style.maxHeight = 'none';
 
             img.style.transform = this.rotation ? `rotate(${this.rotation}deg)` : '';
         }
@@ -893,7 +933,7 @@
             return readerPageGroups.getPreviousIndex({
                 currentIndex: this.currentIndex,
                 viewMode: this.viewMode,
-                loadImage: (index) => this.loadImage(this.imgList[index], { priority: 'low', decode: false }),
+                loadImage: (index) => this.loadImage(this.imgList[index]),
                 isWideImage: (img) => this.isWideImage(img)
             });
         }
@@ -914,15 +954,6 @@
             this.el.pageInput.value = '';
             this.el.pageInput.max = String(total);
             this.el.pageRange.textContent = '';
-        }
-
-        preloadImages(start, count = PRELOAD_COUNT) {
-            for (let i = start; i < start + count && i < this.imgList.length; i++) {
-                const img = new Image();
-                img.decoding = 'async';
-                img.fetchPriority = 'low';
-                img.src = this.imgList[i];
-            }
         }
 
         updateDirection() {
@@ -970,6 +1001,7 @@
                 this.el.reader.remove();
                 this.el = {};
             }
+            this.imageCache.clear();
 
             // 显示收藏夹悬浮按钮
             const favBtn = document.getElementById('bilibili-fav-float-btn');

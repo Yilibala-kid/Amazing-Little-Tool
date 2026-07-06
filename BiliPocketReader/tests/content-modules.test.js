@@ -256,30 +256,14 @@ function loadComicImagesContext(initialState = null) {
     return context;
 }
 
-function createFakeImageNode({ attrs = {}, currentSrc = '', picture = null, link = null } = {}) {
+function createFakeImageNode({ attrs = {} } = {}) {
     return {
-        currentSrc,
         classList: { contains() { return false; } },
         getAttribute(name) {
             return attrs[name] || null;
         },
         closest(selector) {
-            if (selector === 'picture') return picture;
-            if (selector === 'a') return link;
             return null;
-        }
-    };
-}
-
-function createFakePicture(srcset) {
-    return {
-        querySelectorAll(selector) {
-            if (selector !== 'source') return [];
-            return [{
-                getAttribute(name) {
-                    return name === 'srcset' ? srcset : null;
-                }
-            }];
         }
     };
 }
@@ -510,20 +494,26 @@ function createFakeCard({ dataset = {}, attrs = {}, actionText = '', hasForwardC
     const images = BilibiliToolbox.comicImages;
     const img = createFakeImageNode({
         attrs: {
-            'data-original': '//i0.hdslb.com/bfs/new_dyn/original-small.png@1000w_1000h.webp',
-            'data-original-src': '//i0.hdslb.com/bfs/new_dyn/original-large.png@2000w_2000h.webp',
-            src: '//i0.hdslb.com/bfs/new_dyn/regular-huge.png@4000w_4000h.webp'
+            'data-original': '//i0.hdslb.com/bfs/new_dyn/original.png@1000w_1000h.webp',
+            src: '//i0.hdslb.com/bfs/new_dyn/regular.png@4000w_4000h.webp'
         }
     });
 
-    assert.deepEqual(plain(images.parseImageSizeHint('//i0.hdslb.com/a.png@1110w_1570h.webp')), {
-        width: 1110,
-        height: 1570,
-        density: 0
-    });
     assert.equal(
-        images.getImageSourceCandidates(img)[0],
-        'https://i0.hdslb.com/bfs/new_dyn/original-large.png'
+        images.normalizeImageUrl('//i0.hdslb.com/bfs/new_dyn/page.png@1110w_1570h.webp'),
+        'https://i0.hdslb.com/bfs/new_dyn/page.png'
+    );
+    assert.equal(
+        images.normalizeImageUrl('//i0.hdslb.com/bfs/new_dyn/page.png@1110w_1570h.webp', { preserveBiliSuffix: true }),
+        'https://i0.hdslb.com/bfs/new_dyn/page.png@1110w_1570h.webp'
+    );
+    assert.equal(
+        images.getImageSource(img),
+        'https://i0.hdslb.com/bfs/new_dyn/original.png'
+    );
+    assert.equal(
+        images.getImageSource(img, { preserveBiliSuffix: true }),
+        'https://i0.hdslb.com/bfs/new_dyn/original.png@1000w_1000h.webp'
     );
 }
 
@@ -532,18 +522,15 @@ function createFakeCard({ dataset = {}, attrs = {}, actionText = '', hasForwardC
     const images = BilibiliToolbox.comicImages;
     const img = createFakeImageNode({
         attrs: {
-            src: '//i0.hdslb.com/bfs/new_dyn/regular-huge.png@4000w_4000h.webp'
-        },
-        currentSrc: '//i0.hdslb.com/bfs/new_dyn/current-medium.png@1200w_1200h.webp',
-        picture: createFakePicture([
-            '//i0.hdslb.com/bfs/new_dyn/source-small.png@600w_600h.webp 1x',
-            '//i0.hdslb.com/bfs/new_dyn/source-large.png@1600w_1600h.webp 2x'
-        ].join(', '))
+            srcset: '//i0.hdslb.com/bfs/new_dyn/source-large.png@1600w_1600h.webp 2x',
+            currentSrc: '//i0.hdslb.com/bfs/new_dyn/current-medium.png@1200w_1200h.webp',
+            src: '//i0.hdslb.com/bfs/new_dyn/regular.png@800w_800h.webp'
+        }
     });
 
     assert.equal(
-        images.getImageSourceCandidates(img)[0],
-        'https://i0.hdslb.com/bfs/new_dyn/source-large.png'
+        images.getImageSource(img),
+        'https://i0.hdslb.com/bfs/new_dyn/regular.png'
     );
 }
 
@@ -569,6 +556,10 @@ function createFakeCard({ dataset = {}, attrs = {}, actionText = '', hasForwardC
     assert.deepEqual(plain(BilibiliToolbox.comicImages.collectDynamicImagesFromState()), [
         'https://i0.hdslb.com/bfs/new_dyn/page-one.png',
         'https://i0.hdslb.com/bfs/new_dyn/page-two.png'
+    ]);
+    assert.deepEqual(plain(BilibiliToolbox.comicImages.collectDynamicImagesFromState({ preserveBiliSuffix: true })), [
+        'https://i0.hdslb.com/bfs/new_dyn/page-one.png@400w_400h.webp',
+        'https://i0.hdslb.com/bfs/new_dyn/page-two.png@2000w_2000h.webp'
     ]);
 }
 
@@ -973,6 +964,11 @@ function loadReaderTransformContext(readerRect = { width: 1200, height: 900 }, g
         setupImg(img, isFull, displaySize) {
             img.appliedIsFull = isFull;
             img.appliedDisplaySize = displaySize;
+            img.dataset = img.dataset || {};
+            if (displaySize) {
+                img.dataset.displayWidth = String(displaySize.width);
+                img.dataset.displayHeight = String(displaySize.height);
+            }
         },
         clearPendingTap() {},
         syncRotateButton() {}
@@ -1024,7 +1020,9 @@ function createAnimationContainer() {
     const { reader } = loadReaderTransformContext();
     const [small] = reader.getSharpDisplaySizes([{ naturalWidth: 400, naturalHeight: 300 }], true);
     assert.deepEqual(plain(small), { width: 400, height: 300 });
-    assert.equal(reader.sharpDisplayFitRatio, 1);
+    assert.equal(reader.sharpDisplayFitRatio, 3);
+    reader.updateFitScale([{ naturalWidth: 400, naturalHeight: 300, dataset: {} }]);
+    assert.equal(reader.getRenderScale(), 3);
     assert.equal(reader.getMaxScale(), 3);
 }
 
@@ -1046,18 +1044,34 @@ function createAnimationContainer() {
     const { reader } = loadReaderTransformContext();
     const images = [
         { naturalWidth: 1000, naturalHeight: 1000 },
-        { naturalWidth: 500, naturalHeight: 1000 }
+        { naturalWidth: 500, naturalHeight: 500 }
     ];
     const sizes = reader.getSharpDisplaySizes(images, false);
     assert.deepEqual(plain(sizes), [
         { width: 1000, height: 1000 },
-        { width: 500, height: 1000 }
+        { width: 1000, height: 1000 }
     ]);
     reader.setupImagesForRenderMode(images);
     assert.deepEqual(plain(images.map(img => img.appliedDisplaySize)), [
         { width: 1000, height: 1000 },
-        { width: 500, height: 1000 }
+        { width: 1000, height: 1000 }
     ]);
+}
+
+{
+    const { reader } = loadReaderTransformContext();
+    reader.imageRenderMode = 'smooth';
+    const images = [
+        { naturalWidth: 1000, naturalHeight: 1000 },
+        { naturalWidth: 500, naturalHeight: 500 }
+    ];
+    reader.setupImagesForRenderMode(images);
+    assert.deepEqual(plain(images.map(img => img.appliedDisplaySize)), [
+        { width: 1000, height: 1000 },
+        { width: 1000, height: 1000 }
+    ]);
+    reader.updateFitScale(images);
+    assert.equal(reader.getRenderScale(), 0.6);
 }
 
 function loadReaderPreferencesContext() {
@@ -1092,13 +1106,10 @@ function loadReaderPreferencesContext() {
     return context;
 }
 
-function createFakeImageClass({ hasDecode = true, decodeRejects = false, failLoad = false } = {}) {
+function createFakeImageClass({ failLoad = false } = {}) {
     const created = [];
     class FakeImage {
         constructor() {
-            this.decoding = '';
-            this.fetchPriority = '';
-            this.decodeCalls = 0;
             created.push(this);
         }
 
@@ -1113,17 +1124,10 @@ function createFakeImageClass({ hasDecode = true, decodeRejects = false, failLoa
         }
     }
 
-    if (hasDecode) {
-        FakeImage.prototype.decode = function() {
-            this.decodeCalls += 1;
-            return decodeRejects ? Promise.reject(new Error('decode failed')) : Promise.resolve();
-        };
-    }
-
     return { Image: FakeImage, created };
 }
 
-function loadComicReaderCoreContext(ImageClass) {
+function loadComicReaderCoreContext(ImageClass, overrides = {}) {
     const context = createBaseContext({
         Image: ImageClass,
         document: createFakeDocument(),
@@ -1134,7 +1138,7 @@ function loadComicReaderCoreContext(ImageClass) {
     Object.assign(context.BilibiliToolbox, {
         bilibiliDom: { isComicReaderPage() { return true; } },
         storage: {},
-        comicImages: {},
+        comicImages: overrides.comicImages || { collectImages() { return []; } },
         animations: { IMMEDIATE_RENDER_MODE: 'immediate' },
         readerPreferences: {
             normalize(value) { return value; },
@@ -1269,40 +1273,84 @@ function loadComicReaderCoreContext(ImageClass) {
     {
         const { Image, created } = createFakeImageClass();
         const reader = loadComicReaderCoreContext(Image);
-        const img = await reader.loadImage('https://i0.hdslb.com/bfs/new_dyn/page.png', { priority: 'high', decode: true });
+        const img = await reader.loadImage('https://i0.hdslb.com/bfs/new_dyn/page.png');
 
         assert.equal(img, created[0]);
         assert.equal(created[0].src, 'https://i0.hdslb.com/bfs/new_dyn/page.png');
-        assert.equal(created[0].decoding, 'async');
-        assert.equal(created[0].fetchPriority, 'high');
-        assert.equal(created[0].decodeCalls, 1);
-    }
-    {
-        const { Image, created } = createFakeImageClass({ decodeRejects: true });
-        const reader = loadComicReaderCoreContext(Image);
-        const img = await reader.loadImage('https://i0.hdslb.com/bfs/new_dyn/page.png', { priority: 'high', decode: true });
-
-        assert.equal(img, created[0]);
-        assert.equal(created[0].decodeCalls, 1);
-    }
-    {
-        const { Image, created } = createFakeImageClass({ hasDecode: false });
-        const reader = loadComicReaderCoreContext(Image);
-        const img = await reader.loadImage('https://i0.hdslb.com/bfs/new_dyn/page.png', { priority: 'high', decode: true });
-
-        assert.equal(img, created[0]);
-        assert.equal(typeof created[0].decode, 'undefined');
     }
     {
         const { Image, created } = createFakeImageClass();
         const reader = loadComicReaderCoreContext(Image);
-        reader.imgList = ['a.png', 'b.png', 'c.png', 'd.png', 'e.png'];
-        reader.preloadImages(0);
+        const first = reader.loadImage('https://i0.hdslb.com/bfs/new_dyn/cached.png');
+        const second = reader.loadImage('https://i0.hdslb.com/bfs/new_dyn/cached.png');
 
-        assert.equal(created.length, 4);
-        assert.deepEqual(created.map(img => img.src), ['a.png', 'b.png', 'c.png', 'd.png']);
-        assert.deepEqual(created.map(img => img.decoding), ['async', 'async', 'async', 'async']);
-        assert.deepEqual(created.map(img => img.fetchPriority), ['low', 'low', 'low', 'low']);
+        assert.equal(await first, await second);
+        assert.equal(created.length, 1);
+    }
+    {
+        const { Image, created } = createFakeImageClass({ failLoad: true });
+        const reader = loadComicReaderCoreContext(Image);
+        const img = await reader.loadImage('https://i0.hdslb.com/bfs/new_dyn/missing.png');
+
+        assert.equal(img, null);
+        assert.equal(created[0].src, 'https://i0.hdslb.com/bfs/new_dyn/missing.png');
+        assert.equal(reader.imageCache.has('https://i0.hdslb.com/bfs/new_dyn/missing.png'), false);
+    }
+    {
+        const urls = ['p0', 'p1', 'p2', 'p3', 'p4'];
+        const { Image, created } = createFakeImageClass();
+        const reader = loadComicReaderCoreContext(Image, {
+            comicImages: { collectImages() { return urls; } }
+        });
+
+        reader.init();
+
+        assert.deepEqual(created.map(img => img.src), ['p0', 'p1', 'p2', 'p3']);
+        assert.deepEqual(reader.imgList, urls);
+    }
+    {
+        const { Image, created } = createFakeImageClass();
+        const reader = loadComicReaderCoreContext(Image);
+        reader.imgList = ['p0', 'p1', 'p2', 'p3', 'p4', 'p5', 'p6'];
+        reader.currentIndex = 1;
+        reader.activePageCount = 1;
+
+        reader.preloadImages(2);
+
+        assert.deepEqual(created.map(img => img.src), ['p2', 'p3', 'p4', 'p5']);
+        assert.deepEqual(Array.from(reader.imageCache.keys()), ['p2', 'p3', 'p4', 'p5']);
+    }
+    {
+        let receivedOptions = null;
+        const { Image } = createFakeImageClass();
+        const reader = loadComicReaderCoreContext(Image, {
+            comicImages: {
+                collectImages(options) {
+                    receivedOptions = options;
+                    return ['p0'];
+                }
+            }
+        });
+
+        reader.imageRenderMode = 'smooth';
+        assert.deepEqual(reader.collectReaderImages(), ['p0']);
+        assert.deepEqual(plain(receivedOptions), { preserveBiliSuffix: true });
+    }
+    {
+        const { Image } = createFakeImageClass();
+        const reader = loadComicReaderCoreContext(Image);
+        const img = { style: {}, dataset: {} };
+
+        reader.imageRenderMode = 'smooth';
+        reader.isSharpRenderMode = function() { return this.imageRenderMode === 'sharp'; };
+        reader.rotation = 0;
+        reader.setupImg(img, true, { width: 900, height: 1200 });
+
+        assert.equal(img.style.width, '900px');
+        assert.equal(img.style.height, '1200px');
+        assert.equal(img.style.maxWidth, 'none');
+        assert.equal(img.style.maxHeight, 'none');
+        assert.equal(img.style.objectFit, 'contain');
     }
 
     const { BilibiliToolbox } = loadReaderPreferencesContext();

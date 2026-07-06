@@ -883,21 +883,9 @@
         'data-src',
         'src'
     ];
-    const ORIGINAL_IMAGE_ATTRS = new Set([
-        'data-origin-src',
-        'data-original',
-        'data-original-src',
-        'data-large-src'
-    ]);
-    const CANDIDATE_PRIORITY = Object.freeze({
-        original: 4,
-        state: 3,
-        responsive: 2,
-        regular: 1
-    });
     const IMAGE_FILE_PATTERN = /\.(?:jpe?g|png|webp|gif|avif)(?:$|[?#])/i;
 
-    function normalizeImageUrl(rawSrc) {
+    function normalizeImageUrl(rawSrc, options = {}) {
         if (!rawSrc || typeof rawSrc !== 'string') return '';
         let src = rawSrc.trim().replace(/^["']|["']$/g, '');
         if (!src || src.includes('base64')) return '';
@@ -908,7 +896,7 @@
         // Bilibili image URLs often append resize/format directives after "@"
         // (for example @672w_378h_1c.webp). Removing them asks the CDN for the
         // original file instead of a thumbnail-sized derivative.
-        src = src.replace(/@[^?#]*/, '');
+        if (!options.preserveBiliSuffix) src = src.replace(/@[^?#]*/, '');
         return src.startsWith('http') ? src : '';
     }
 
@@ -921,112 +909,13 @@
         return IMAGE_FILE_PATTERN.test(src);
     }
 
-    function parseSrcsetEntries(srcset) {
-        if (!srcset || typeof srcset !== 'string') return [];
-        return srcset
-            .split(',')
-            .map((part, index) => {
-                const [url, descriptor = ''] = part.trim().split(/\s+/);
-                return url ? { url, descriptor, index } : null;
-            })
-            .filter(Boolean);
-    }
-
-    function parseSrcset(srcset) {
-        return parseSrcsetEntries(srcset).map(entry => entry.url);
-    }
-
-    function parseImageSizeHint(rawSrc, descriptor = '') {
-        const hint = { width: 0, height: 0, density: 0 };
-        const suffix = String(rawSrc || '').match(/@([^?#]*)/)?.[1] || '';
-        const width = suffix.match(/(?:^|_)(\d+)w(?:_|$|\.)/i)?.[1];
-        const height = suffix.match(/(?:^|_)(\d+)h(?:_|$|\.)/i)?.[1];
-        if (width) hint.width = Number.parseInt(width, 10) || 0;
-        if (height) hint.height = Number.parseInt(height, 10) || 0;
-
-        const descriptorText = String(descriptor || '').trim();
-        const widthDescriptor = descriptorText.match(/^(\d+(?:\.\d+)?)w$/i);
-        const densityDescriptor = descriptorText.match(/^(\d+(?:\.\d+)?)x$/i);
-        if (widthDescriptor) hint.width = Math.max(hint.width, Number.parseFloat(widthDescriptor[1]) || 0);
-        if (densityDescriptor) hint.density = Number.parseFloat(densityDescriptor[1]) || 0;
-
-        return hint;
-    }
-
-    function getSizeScore(rawSrc, descriptor = '') {
-        const size = parseImageSizeHint(rawSrc, descriptor);
-        if (size.width && size.height) return size.width * size.height;
-        if (size.width) return size.width * 1000;
-        if (size.height) return size.height * 1000;
-        if (size.density) return size.density * 100000;
-        return 0;
-    }
-
-    function createImageCandidate(rawSrc, tier, order, descriptor = '') {
-        const src = normalizeImageUrl(rawSrc);
-        if (!src || !isLikelyImageUrl(src)) return null;
-        return {
-            src,
-            priority: CANDIDATE_PRIORITY[tier] || CANDIDATE_PRIORITY.regular,
-            sizeScore: getSizeScore(rawSrc, descriptor),
-            order
-        };
-    }
-
-    function addCandidate(candidates, rawSrc, tier, order, descriptor = '') {
-        const candidate = createImageCandidate(rawSrc, tier, order, descriptor);
-        if (candidate) candidates.push(candidate);
-    }
-
-    function sortCandidates(candidates) {
-        const bestBySrc = new Map();
-        candidates.forEach(candidate => {
-            const existing = bestBySrc.get(candidate.src);
-            if (!existing
-                || candidate.priority > existing.priority
-                || (candidate.priority === existing.priority && candidate.sizeScore > existing.sizeScore)
-                || (candidate.priority === existing.priority && candidate.sizeScore === existing.sizeScore && candidate.order < existing.order)) {
-                bestBySrc.set(candidate.src, candidate);
-            }
-        });
-
-        return Array.from(bestBySrc.values()).sort((a, b) => {
-            if (b.priority !== a.priority) return b.priority - a.priority;
-            if (b.sizeScore !== a.sizeScore) return b.sizeScore - a.sizeScore;
-            return a.order - b.order;
-        });
-    }
-
-    function getImageSourceCandidates(img) {
-        const candidates = [];
-        let order = 0;
-        IMAGE_ATTRS.forEach(attr => {
+    function getImageSource(img, options = {}) {
+        for (const attr of IMAGE_ATTRS) {
             const value = img.getAttribute(attr);
-            if (value) addCandidate(candidates, value, ORIGINAL_IMAGE_ATTRS.has(attr) ? 'original' : 'regular', order++);
-        });
-
-        if (img.currentSrc) addCandidate(candidates, img.currentSrc, 'responsive', order++);
-        parseSrcsetEntries(img.getAttribute('srcset')).forEach(entry => {
-            addCandidate(candidates, entry.url, 'responsive', order++, entry.descriptor);
-        });
-        parseSrcsetEntries(img.getAttribute('data-srcset')).forEach(entry => {
-            addCandidate(candidates, entry.url, 'responsive', order++, entry.descriptor);
-        });
-
-        const picture = img.closest('picture');
-        picture?.querySelectorAll('source').forEach(source => {
-            parseSrcsetEntries(source.getAttribute('srcset')).forEach(entry => {
-                addCandidate(candidates, entry.url, 'responsive', order++, entry.descriptor);
-            });
-            parseSrcsetEntries(source.getAttribute('data-srcset')).forEach(entry => {
-                addCandidate(candidates, entry.url, 'responsive', order++, entry.descriptor);
-            });
-        });
-
-        const link = img.closest('a')?.href;
-        if (link) addCandidate(candidates, link, 'responsive', order++);
-
-        return sortCandidates(candidates).map(candidate => candidate.src);
+            const src = normalizeImageUrl(value, options);
+            if (src && isLikelyImageUrl(src)) return src;
+        }
+        return '';
     }
 
     function isNoiseImage(img, src) {
@@ -1037,9 +926,8 @@
             || src.includes('garb');
     }
 
-    function pushBestImage(images, fileSet, img) {
-        const candidates = getImageSourceCandidates(img);
-        const src = candidates[0] || '';
+    function pushBestImage(images, fileSet, img, options = {}) {
+        const src = getImageSource(img, options);
         if (!src || isNoiseImage(img, src)) return;
 
         const fileName = getImageIdentity(src);
@@ -1049,7 +937,7 @@
         images.push(src);
     }
 
-    function collectDynamicImagesFromState() {
+    function collectDynamicImagesFromState(options = {}) {
         const modules = window.__INITIAL_STATE__?.detail?.modules;
         if (!Array.isArray(modules)) return [];
 
@@ -1057,23 +945,21 @@
             const pics = module?.module_top?.display?.album?.pics;
             if (!Array.isArray(pics)) return [];
             return pics
-                .map((pic, index) => createImageCandidate(pic?.url || '', 'state', index))
-                .filter(Boolean)
-                .map(candidate => candidate.src)
-                .filter(Boolean);
+                .map(pic => normalizeImageUrl(pic?.url || '', options))
+                .filter(isLikelyImageUrl);
         });
     }
 
-    function collectDynamicImagesFromDom() {
+    function collectDynamicImagesFromDom(options = {}) {
         const fileSet = new Set();
         const images = [];
         const primaryImages = bilibiliDom.getPrimaryImages();
-        primaryImages.forEach(img => pushBestImage(images, fileSet, img));
+        primaryImages.forEach(img => pushBestImage(images, fileSet, img, options));
 
         // Thumbnail strips are a last resort. They are useful on some album
         // pages, but preferring them can make the reader display low-res images.
         if (images.length === 0) {
-            bilibiliDom.getFallbackImages().forEach(img => pushBestImage(images, fileSet, img));
+            bilibiliDom.getFallbackImages().forEach(img => pushBestImage(images, fileSet, img, options));
         }
 
         return images;
@@ -1090,29 +976,23 @@
         });
     }
 
-    function collectImages() {
-        const mergedImages = [
-            ...collectDynamicImagesFromState(),
-            ...collectDynamicImagesFromDom()
-        ];
+    function collectImages(options = {}) {
+        const stateImages = collectDynamicImagesFromState(options);
+        const mergedImages = stateImages.length ? stateImages : sortImagesByDomPosition(collectDynamicImagesFromDom(options));
         const seen = new Set();
-        const uniqueImages = mergedImages.filter(src => {
+        return mergedImages.filter(src => {
             const fileName = getImageIdentity(src);
             if (!fileName || seen.has(fileName)) return false;
             seen.add(fileName);
             return true;
         });
-
-        return sortImagesByDomPosition(uniqueImages);
     }
 
     Toolbox.comicImages = {
         normalizeImageUrl,
         getImageIdentity,
         isLikelyImageUrl,
-        parseSrcset,
-        parseImageSizeHint,
-        getImageSourceCandidates,
+        getImageSource,
         collectDynamicImagesFromState,
         collectDynamicImagesFromDom,
         sortImagesByDomPosition,
@@ -1426,10 +1306,25 @@
 
         getSharpDisplaySizes(images, isFull) {
             const naturalSizes = images.map(img => this.getEffectiveImageSize(img));
-            const fitRatio = this.getSharpDisplayFitRatio(naturalSizes);
+            const displaySizes = isFull ? naturalSizes : this.alignSharpDisplayHeights(naturalSizes);
+            const fitRatio = this.getSharpDisplayFitRatio(displaySizes);
             this.sharpDisplayFitRatio = fitRatio;
 
-            return naturalSizes;
+            return displaySizes;
+        },
+
+        alignSharpDisplayHeights(sizes) {
+            const targetHeight = Math.max(...sizes.map(size => size.height || 0));
+            if (!targetHeight) return sizes;
+
+            return sizes.map(size => {
+                if (!size.width || !size.height || size.height >= targetHeight) return size;
+                const ratio = targetHeight / size.height;
+                return {
+                    width: size.width * ratio,
+                    height: targetHeight
+                };
+            });
         },
 
         getSharpDisplayFitRatio(sizes) {
@@ -1441,7 +1336,7 @@
             const height = Math.max(...sizes.map(size => size.height || 0));
             if (!width || !height || !readerRect.width || !readerRect.height) return 1;
 
-            const ratio = Math.min(1, readerRect.width / width, readerRect.height / height);
+            const ratio = Math.min(readerRect.width / width, readerRect.height / height);
             return Number.isFinite(ratio) && ratio > 0 ? ratio : 1;
         },
 
@@ -1456,13 +1351,6 @@
         },
 
         updateFitScale(images = Array.from(this.el.imgContainer?.querySelectorAll('img') || [])) {
-            if (!this.isSharpRenderMode()) {
-                this.fitScale = 1;
-                this.contentNaturalWidth = 0;
-                this.contentNaturalHeight = 0;
-                return;
-            }
-
             const readerRect = this.el.reader?.getBoundingClientRect();
             if (!readerRect || !images.length) {
                 this.fitScale = 1;
@@ -1492,7 +1380,7 @@
         },
 
         getBaseFitRatio() {
-            return this.isSharpRenderMode() ? (this.sharpDisplayFitRatio || 1) : (this.fitScale || 1);
+            return this.fitScale || 1;
         },
 
         getMaxScale() {
@@ -1507,14 +1395,8 @@
 
         setupImagesForRenderMode(images) {
             const isFull = images.length === 1;
-            if (this.isSharpRenderMode()) {
-                const displaySizes = this.getSharpDisplaySizes(images, isFull);
-                images.forEach((img, index) => this.setupImg(img, isFull, displaySizes[index]));
-                return;
-            }
-
-            this.sharpDisplayFitRatio = 1;
-            images.forEach(img => this.setupImg(img, isFull));
+            const displaySizes = this.getSharpDisplaySizes(images, isFull);
+            images.forEach((img, index) => this.setupImg(img, isFull, displaySizes[index]));
         },
 
         applyImageRenderMode() {
@@ -2212,7 +2094,7 @@
             reader.imageRenderMode = IMAGE_RENDER_MODES[(currentIdx + 1) % IMAGE_RENDER_MODES.length];
             reader.syncImageRenderButton();
             reader.savePreferences();
-            reader.applyImageRenderMode();
+            reader.refreshImagesForRenderMode();
             reader.showReaderMessage(reader.imageRenderMode === 'sharp' ? '\u539f\u56fe\u6a21\u5f0f' : '\u6d41\u7545\u6a21\u5f0f');
         });
 
@@ -2343,8 +2225,8 @@
     const TOUCH_ZOOM_EPSILON = 0.01;
     const TOUCH_EDGE_EPSILON = 0.5;
     const PAN_EDGE_ALLOWANCE = 72;
-    const PRELOAD_COUNT = 4;
     const MOBILE_BREAKPOINT = 768;
+    const PRELOAD_COUNT = 4;
     if (!window.Shared) throw new Error('BilibiliToolbox: shared.js not loaded');
     if (!window.BilibiliToolbox?.bilibiliDom) throw new Error('BilibiliToolbox: bilibili-dom-adapter.js not loaded');
     if (!window.BilibiliToolbox?.storage) throw new Error('BilibiliToolbox: storage-service.js not loaded');
@@ -2442,6 +2324,7 @@
             this.selectionHandles = {};
             this.pageFlipToken = 0;
             this.transformTransitionTimer = null;
+            this.imageCache = new Map();
 
             // 拖拽状态
             this.isDragging = false;
@@ -2511,11 +2394,13 @@
             document.body.appendChild(entryBtn);
 
             entryBtn.onclick = () => this.start();
+            this.prepareInitialImages();
         }
 
         // 2. 启动阅读器
         start() {
-            this.imgList = comicImages.collectImages();
+            const images = this.collectReaderImages();
+            if (images.length > 0) this.imgList = images;
 
             if (this.imgList.length === 0) return alert('\u672a\u627e\u5230\u6f2b\u753b\u56fe\u7247');
 
@@ -2532,6 +2417,29 @@
             this.createUI();
             this.bindEvents();
             this.render();
+        }
+
+        prepareInitialImages() {
+            this.imgList = this.collectReaderImages();
+            if (this.imgList.length > 0) this.preloadImages(0);
+        }
+
+        getImageCollectionOptions() {
+            return { preserveBiliSuffix: this.imageRenderMode === 'smooth' };
+        }
+
+        collectReaderImages() {
+            return comicImages.collectImages(this.getImageCollectionOptions());
+        }
+
+        refreshImagesForRenderMode() {
+            const images = this.collectReaderImages();
+            if (images.length === 0) return;
+            this.imgList = images;
+            this.imageCache.clear();
+            this.currentIndex = Math.min(this.currentIndex, this.imgList.length - 1);
+            this.preloadImages(this.currentIndex);
+            this.render(false);
         }
 
         // 3. 创建 UI
@@ -2647,7 +2555,7 @@
             this.isCompactLayout = this.isCompactViewport();
             this.el.reader.classList.toggle('reader-compact', this.isCompactLayout);
             const images = Array.from(this.el.imgContainer?.querySelectorAll('img') || []);
-            if (this.isSharpRenderMode() && images.length) this.setupImagesForRenderMode(images);
+            if (images.length) this.setupImagesForRenderMode(images);
             this.updateFitScale();
             this.applyTransform();
         }
@@ -3047,12 +2955,12 @@
                 currentIndex: this.currentIndex,
                 imgList: this.imgList,
                 viewMode: this.viewMode,
-                loadImage: (src) => this.loadImage(src, { priority: 'high', decode: true }),
+                loadImage: (src) => this.loadImage(src),
                 isWideImage: (img) => this.isWideImage(img)
             });
             if (!result || renderIndex !== this.currentIndex) return;
 
-            this.commitImages(result.images, animationMode, result.preloadStart, transitionDirection);
+            this.commitImages(result.images, animationMode, transitionDirection, result.preloadStart);
         }
 
         resetPageInteractionState() {
@@ -3070,30 +2978,53 @@
             this.clearPendingTap();
         }
 
-        loadImage(src, options = {}) {
-            return new Promise((resolve) => {
-                const img = new Image();
-                const priority = options.priority || 'auto';
-                img.decoding = 'async';
-                if (priority !== 'auto') img.fetchPriority = priority;
-                img.onload = async () => {
-                    if (options.decode && typeof img.decode === 'function') {
-                        try {
-                            await img.decode();
-                        } catch (_) {}
-                    }
-                    resolve(img);
+        loadImage(src) {
+            if (!src) return Promise.resolve(null);
+            const cached = this.imageCache.get(src);
+            if (cached) return cached;
+
+            let img = null;
+            const promise = new Promise((resolve) => {
+                img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = () => {
+                    this.imageCache.delete(src);
+                    resolve(null);
                 };
-                img.onerror = () => resolve(null);
-                img.src = src;
             });
+            this.imageCache.set(src, promise);
+            img.src = src;
+            return promise;
+        }
+
+        preloadImages(startIndex = 0) {
+            if (!Array.isArray(this.imgList) || this.imgList.length === 0) return;
+            const start = Math.max(0, Math.min(startIndex, this.imgList.length));
+            const end = Math.min(this.imgList.length, start + PRELOAD_COUNT);
+            for (let index = start; index < end; index += 1) {
+                void this.loadImage(this.imgList[index]);
+            }
+            this.pruneImageCache(start);
+        }
+
+        pruneImageCache(preloadStart = this.currentIndex) {
+            if (!this.imageCache.size || !Array.isArray(this.imgList)) return;
+            const keepStart = Math.max(0, this.currentIndex - PRELOAD_COUNT);
+            const keepEnd = Math.min(
+                this.imgList.length,
+                Math.max(this.currentIndex + this.activePageCount, preloadStart + PRELOAD_COUNT)
+            );
+            const keepUrls = new Set(this.imgList.slice(keepStart, keepEnd));
+            for (const src of this.imageCache.keys()) {
+                if (!keepUrls.has(src)) this.imageCache.delete(src);
+            }
         }
 
         isWideImage(img) {
             return readerPageGroups.isWideImage(img, this.rotation);
         }
 
-        commitImages(images, animationMode, preloadStart, transitionDirection = 0) {
+        commitImages(images, animationMode, transitionDirection = 0, preloadStart = this.currentIndex + images.length) {
             images.forEach(img => {
                 this.el.imgContainer.appendChild(img);
             });
@@ -3120,24 +3051,15 @@
             img.style.transformOrigin = 'center center';
             img.style.imageRendering = 'auto';
 
-            if (this.isSharpRenderMode()) {
-                const effectiveSize = displaySize || this.getEffectiveImageSize(img);
-                const effectiveWidth = Math.max(1, Math.round(effectiveSize.width || 1));
-                const effectiveHeight = Math.max(1, Math.round(effectiveSize.height || 1));
-                img.dataset.displayWidth = String(effectiveWidth);
-                img.dataset.displayHeight = String(effectiveHeight);
-                img.style.width = `${rotated ? effectiveHeight : effectiveWidth}px`;
-                img.style.height = `${rotated ? effectiveWidth : effectiveHeight}px`;
-                img.style.maxWidth = 'none';
-                img.style.maxHeight = 'none';
-            } else {
-                delete img.dataset.displayWidth;
-                delete img.dataset.displayHeight;
-                img.style.width = '';
-                img.style.height = '';
-                img.style.maxWidth = rotated ? '100vh' : (isFull ? '100%' : '50%');
-                img.style.maxHeight = rotated ? (isFull ? '100vw' : '50vw') : '100%';
-            }
+            const effectiveSize = displaySize || this.getEffectiveImageSize(img);
+            const effectiveWidth = Math.max(1, Math.round(effectiveSize.width || 1));
+            const effectiveHeight = Math.max(1, Math.round(effectiveSize.height || 1));
+            img.dataset.displayWidth = String(effectiveWidth);
+            img.dataset.displayHeight = String(effectiveHeight);
+            img.style.width = `${rotated ? effectiveHeight : effectiveWidth}px`;
+            img.style.height = `${rotated ? effectiveWidth : effectiveHeight}px`;
+            img.style.maxWidth = 'none';
+            img.style.maxHeight = 'none';
 
             img.style.transform = this.rotation ? `rotate(${this.rotation}deg)` : '';
         }
@@ -3221,7 +3143,7 @@
             return readerPageGroups.getPreviousIndex({
                 currentIndex: this.currentIndex,
                 viewMode: this.viewMode,
-                loadImage: (index) => this.loadImage(this.imgList[index], { priority: 'low', decode: false }),
+                loadImage: (index) => this.loadImage(this.imgList[index]),
                 isWideImage: (img) => this.isWideImage(img)
             });
         }
@@ -3242,15 +3164,6 @@
             this.el.pageInput.value = '';
             this.el.pageInput.max = String(total);
             this.el.pageRange.textContent = '';
-        }
-
-        preloadImages(start, count = PRELOAD_COUNT) {
-            for (let i = start; i < start + count && i < this.imgList.length; i++) {
-                const img = new Image();
-                img.decoding = 'async';
-                img.fetchPriority = 'low';
-                img.src = this.imgList[i];
-            }
         }
 
         updateDirection() {
@@ -3298,6 +3211,7 @@
                 this.el.reader.remove();
                 this.el = {};
             }
+            this.imageCache.clear();
 
             // 显示收藏夹悬浮按钮
             const favBtn = document.getElementById('bilibili-fav-float-btn');
