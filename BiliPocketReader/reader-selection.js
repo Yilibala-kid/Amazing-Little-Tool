@@ -98,7 +98,6 @@
             this.el.selectionOverlay.style.display = 'none';
             this.setSelectionHint('\u62d6\u52a8\u9009\u62e9\u622a\u56fe\u8303\u56f4\uff0c\u5b8c\u6210\u540e\u70b9\u51fb\u4fdd\u5b58');
             if (restoreControls) { this.selectionWasControlsVisible ? this.showControls() : this.hideControls(); }
-            if (showMessage) this.showReaderMessage('\u5df2\u53d6\u6d88\u622a\u56fe');
         },
 
         handleSelectionPointerDown(e) {

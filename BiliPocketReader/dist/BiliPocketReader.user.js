@@ -1657,7 +1657,6 @@
             this.el.selectionOverlay.style.display = 'none';
             this.setSelectionHint('\u62d6\u52a8\u9009\u62e9\u622a\u56fe\u8303\u56f4\uff0c\u5b8c\u6210\u540e\u70b9\u51fb\u4fdd\u5b58');
             if (restoreControls) { this.selectionWasControlsVisible ? this.showControls() : this.hideControls(); }
-            if (showMessage) this.showReaderMessage('\u5df2\u53d6\u6d88\u622a\u56fe');
         },
 
         handleSelectionPointerDown(e) {
@@ -2129,7 +2128,6 @@
             reader.syncImageRenderButton();
             reader.savePreferences();
             reader.refreshImagesForRenderMode();
-            reader.showReaderMessage(reader.imageRenderMode === 'sharp' ? '\u539f\u56fe\u6a21\u5f0f' : '\u6d41\u7545\u6a21\u5f0f');
         });
 
         el.backgroundBtn.onclick = stop(() => {
@@ -2138,14 +2136,12 @@
             reader.syncBackgroundButton();
             reader.applyReaderBackground();
             reader.savePreferences();
-            reader.showReaderMessage(`\u80cc\u666f\uff1a${reader.getReaderBackgroundLabel()}`);
         });
 
         el.tapPageBtn.onclick = stop(() => {
             reader.tapPageNavigation = !reader.tapPageNavigation;
             reader.syncTapPageButton();
             reader.savePreferences();
-            reader.showReaderMessage(reader.tapPageNavigation ? '\u70b9\u51fb\u7ffb\u9875\u5df2\u5f00\u542f' : '\u70b9\u51fb\u7ffb\u9875\u5df2\u5173\u95ed');
         });
 
         el.settingsBtn.onclick = stop(() => reader.toggleSettingsPanel());

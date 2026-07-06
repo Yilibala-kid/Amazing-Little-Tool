@@ -65,7 +65,6 @@
             reader.syncImageRenderButton();
             reader.savePreferences();
             reader.refreshImagesForRenderMode();
-            reader.showReaderMessage(reader.imageRenderMode === 'sharp' ? '\u539f\u56fe\u6a21\u5f0f' : '\u6d41\u7545\u6a21\u5f0f');
         });
 
         el.backgroundBtn.onclick = stop(() => {
@@ -74,14 +73,12 @@
             reader.syncBackgroundButton();
             reader.applyReaderBackground();
             reader.savePreferences();
-            reader.showReaderMessage(`\u80cc\u666f\uff1a${reader.getReaderBackgroundLabel()}`);
         });
 
         el.tapPageBtn.onclick = stop(() => {
             reader.tapPageNavigation = !reader.tapPageNavigation;
             reader.syncTapPageButton();
             reader.savePreferences();
-            reader.showReaderMessage(reader.tapPageNavigation ? '\u70b9\u51fb\u7ffb\u9875\u5df2\u5f00\u542f' : '\u70b9\u51fb\u7ffb\u9875\u5df2\u5173\u95ed');
         });
 
         el.settingsBtn.onclick = stop(() => reader.toggleSettingsPanel());
