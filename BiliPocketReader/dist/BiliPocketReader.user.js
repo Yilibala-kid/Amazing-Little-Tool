@@ -883,6 +883,18 @@
         'data-src',
         'src'
     ];
+    const ORIGINAL_IMAGE_ATTRS = new Set([
+        'data-origin-src',
+        'data-original',
+        'data-original-src',
+        'data-large-src'
+    ]);
+    const CANDIDATE_PRIORITY = Object.freeze({
+        original: 4,
+        state: 3,
+        responsive: 2,
+        regular: 1
+    });
     const IMAGE_FILE_PATTERN = /\.(?:jpe?g|png|webp|gif|avif)(?:$|[?#])/i;
 
     function normalizeImageUrl(rawSrc) {
@@ -909,43 +921,112 @@
         return IMAGE_FILE_PATTERN.test(src);
     }
 
-    function parseSrcset(srcset) {
+    function parseSrcsetEntries(srcset) {
         if (!srcset || typeof srcset !== 'string') return [];
         return srcset
             .split(',')
-            .map(part => part.trim().split(/\s+/)[0])
+            .map((part, index) => {
+                const [url, descriptor = ''] = part.trim().split(/\s+/);
+                return url ? { url, descriptor, index } : null;
+            })
             .filter(Boolean);
     }
 
-    function getImageSourceCandidates(img) {
-        const rawCandidates = [];
-        IMAGE_ATTRS.forEach(attr => {
-            const value = img.getAttribute(attr);
-            if (value) rawCandidates.push(value);
+    function parseSrcset(srcset) {
+        return parseSrcsetEntries(srcset).map(entry => entry.url);
+    }
+
+    function parseImageSizeHint(rawSrc, descriptor = '') {
+        const hint = { width: 0, height: 0, density: 0 };
+        const suffix = String(rawSrc || '').match(/@([^?#]*)/)?.[1] || '';
+        const width = suffix.match(/(?:^|_)(\d+)w(?:_|$|\.)/i)?.[1];
+        const height = suffix.match(/(?:^|_)(\d+)h(?:_|$|\.)/i)?.[1];
+        if (width) hint.width = Number.parseInt(width, 10) || 0;
+        if (height) hint.height = Number.parseInt(height, 10) || 0;
+
+        const descriptorText = String(descriptor || '').trim();
+        const widthDescriptor = descriptorText.match(/^(\d+(?:\.\d+)?)w$/i);
+        const densityDescriptor = descriptorText.match(/^(\d+(?:\.\d+)?)x$/i);
+        if (widthDescriptor) hint.width = Math.max(hint.width, Number.parseFloat(widthDescriptor[1]) || 0);
+        if (densityDescriptor) hint.density = Number.parseFloat(densityDescriptor[1]) || 0;
+
+        return hint;
+    }
+
+    function getSizeScore(rawSrc, descriptor = '') {
+        const size = parseImageSizeHint(rawSrc, descriptor);
+        if (size.width && size.height) return size.width * size.height;
+        if (size.width) return size.width * 1000;
+        if (size.height) return size.height * 1000;
+        if (size.density) return size.density * 100000;
+        return 0;
+    }
+
+    function createImageCandidate(rawSrc, tier, order, descriptor = '') {
+        const src = normalizeImageUrl(rawSrc);
+        if (!src || !isLikelyImageUrl(src)) return null;
+        return {
+            src,
+            priority: CANDIDATE_PRIORITY[tier] || CANDIDATE_PRIORITY.regular,
+            sizeScore: getSizeScore(rawSrc, descriptor),
+            order
+        };
+    }
+
+    function addCandidate(candidates, rawSrc, tier, order, descriptor = '') {
+        const candidate = createImageCandidate(rawSrc, tier, order, descriptor);
+        if (candidate) candidates.push(candidate);
+    }
+
+    function sortCandidates(candidates) {
+        const bestBySrc = new Map();
+        candidates.forEach(candidate => {
+            const existing = bestBySrc.get(candidate.src);
+            if (!existing
+                || candidate.priority > existing.priority
+                || (candidate.priority === existing.priority && candidate.sizeScore > existing.sizeScore)
+                || (candidate.priority === existing.priority && candidate.sizeScore === existing.sizeScore && candidate.order < existing.order)) {
+                bestBySrc.set(candidate.src, candidate);
+            }
         });
 
-        if (img.currentSrc) rawCandidates.push(img.currentSrc);
-        rawCandidates.push(...parseSrcset(img.getAttribute('srcset')));
-        rawCandidates.push(...parseSrcset(img.getAttribute('data-srcset')));
+        return Array.from(bestBySrc.values()).sort((a, b) => {
+            if (b.priority !== a.priority) return b.priority - a.priority;
+            if (b.sizeScore !== a.sizeScore) return b.sizeScore - a.sizeScore;
+            return a.order - b.order;
+        });
+    }
+
+    function getImageSourceCandidates(img) {
+        const candidates = [];
+        let order = 0;
+        IMAGE_ATTRS.forEach(attr => {
+            const value = img.getAttribute(attr);
+            if (value) addCandidate(candidates, value, ORIGINAL_IMAGE_ATTRS.has(attr) ? 'original' : 'regular', order++);
+        });
+
+        if (img.currentSrc) addCandidate(candidates, img.currentSrc, 'responsive', order++);
+        parseSrcsetEntries(img.getAttribute('srcset')).forEach(entry => {
+            addCandidate(candidates, entry.url, 'responsive', order++, entry.descriptor);
+        });
+        parseSrcsetEntries(img.getAttribute('data-srcset')).forEach(entry => {
+            addCandidate(candidates, entry.url, 'responsive', order++, entry.descriptor);
+        });
 
         const picture = img.closest('picture');
         picture?.querySelectorAll('source').forEach(source => {
-            rawCandidates.push(...parseSrcset(source.getAttribute('srcset')));
-            rawCandidates.push(...parseSrcset(source.getAttribute('data-srcset')));
+            parseSrcsetEntries(source.getAttribute('srcset')).forEach(entry => {
+                addCandidate(candidates, entry.url, 'responsive', order++, entry.descriptor);
+            });
+            parseSrcsetEntries(source.getAttribute('data-srcset')).forEach(entry => {
+                addCandidate(candidates, entry.url, 'responsive', order++, entry.descriptor);
+            });
         });
 
         const link = img.closest('a')?.href;
-        if (link) rawCandidates.push(link);
+        if (link) addCandidate(candidates, link, 'responsive', order++);
 
-        const seen = new Set();
-        return rawCandidates
-            .map(normalizeImageUrl)
-            .filter(isLikelyImageUrl)
-            .filter(src => {
-                if (!src || seen.has(src)) return false;
-                seen.add(src);
-                return true;
-            });
+        return sortCandidates(candidates).map(candidate => candidate.src);
     }
 
     function isNoiseImage(img, src) {
@@ -976,7 +1057,9 @@
             const pics = module?.module_top?.display?.album?.pics;
             if (!Array.isArray(pics)) return [];
             return pics
-                .map(pic => normalizeImageUrl(pic?.url || ''))
+                .map((pic, index) => createImageCandidate(pic?.url || '', 'state', index))
+                .filter(Boolean)
+                .map(candidate => candidate.src)
                 .filter(Boolean);
         });
     }
@@ -1028,6 +1111,7 @@
         getImageIdentity,
         isLikelyImageUrl,
         parseSrcset,
+        parseImageSizeHint,
         getImageSourceCandidates,
         collectDynamicImagesFromState,
         collectDynamicImagesFromDom,
@@ -1342,30 +1426,10 @@
 
         getSharpDisplaySizes(images, isFull) {
             const naturalSizes = images.map(img => this.getEffectiveImageSize(img));
-            const baseSizes = isFull || naturalSizes.length < 2
-                ? naturalSizes
-                : this.alignSharpDisplayHeights(naturalSizes);
-            const fitRatio = this.getSharpDisplayFitRatio(baseSizes);
+            const fitRatio = this.getSharpDisplayFitRatio(naturalSizes);
             this.sharpDisplayFitRatio = fitRatio;
 
-            return baseSizes.map(size => ({
-                width: size.width * fitRatio,
-                height: size.height * fitRatio
-            }));
-        },
-
-        alignSharpDisplayHeights(sizes) {
-            const targetHeight = Math.max(...sizes.map(size => size.height || 0));
-            if (!targetHeight) return sizes;
-
-            return sizes.map(size => {
-                if (!size.width || !size.height) return size;
-                const ratio = targetHeight / size.height;
-                return {
-                    width: size.width * ratio,
-                    height: targetHeight
-                };
-            });
+            return naturalSizes;
         },
 
         getSharpDisplayFitRatio(sizes) {
@@ -1377,7 +1441,7 @@
             const height = Math.max(...sizes.map(size => size.height || 0));
             if (!width || !height || !readerRect.width || !readerRect.height) return 1;
 
-            const ratio = Math.min(readerRect.width / width, readerRect.height / height);
+            const ratio = Math.min(1, readerRect.width / width, readerRect.height / height);
             return Number.isFinite(ratio) && ratio > 0 ? ratio : 1;
         },
 
@@ -1419,7 +1483,8 @@
                 return;
             }
 
-            this.fitScale = 1;
+            this.sharpDisplayFitRatio = this.getSharpDisplayFitRatio(sizes);
+            this.fitScale = this.sharpDisplayFitRatio;
         },
 
         getRenderScale(scale = this.scale) {
@@ -1988,7 +2053,7 @@
         reader.el.settingsControls.append(reader.el.closeBtn, reader.el.screenshotBtn, reader.el.rotateBtn, reader.el.settingsBtn);
         reader.el.settingsPanel.append(
             settingsHeader,
-            createSettingsRow('\u663e\u793a\u8d28\u91cf', '\u539f\u56fe\u4fdd\u7559\u7ec6\u8282\uff0c\u6d41\u7545\u51cf\u5c11\u7eb9\u7406\u95ea\u70c1\u3002', reader.el.imageRenderBtn),
+            createSettingsRow('\u663e\u793a\u8d28\u91cf', '\u539f\u56fe\u4fdd\u7559\u81ea\u7136\u50cf\u7d20\uff0c\u53cc\u51fb 1:1 \u67e5\u770b\uff1b\u6d41\u7545\u9002\u5c4f\u7f29\u653e\uff0c\u7ffb\u9875\u548c\u7f29\u653e\u66f4\u67d4\u548c\u3002', reader.el.imageRenderBtn),
             createSettingsRow('\u80cc\u666f\u989c\u8272', '\u5728\u9ed1\u8272\u3001\u6df1\u7070\u3001\u6d45\u7070\u548c\u767d\u8272\u9605\u8bfb\u80cc\u666f\u4e4b\u95f4\u5207\u6362\u3002', reader.el.backgroundBtn),
             createSettingsRow('\u7ffb\u9875\u52a8\u753b', '\u5728\u5e73\u6ed1\u548c\u6de1\u5165\u4e4b\u95f4\u5207\u6362\u3002', reader.el.animationBtn),
             createSettingsRow('\u663e\u793a\u5f20\u6570', '\u81ea\u52a8\u5224\u65ad\u5355\u56fe\u6216\u53cc\u56fe\uff0c\u4e5f\u53ef\u624b\u52a8\u6307\u5b9a\u3002', reader.el.viewModeBtn),
@@ -2495,8 +2560,8 @@
             const sharp = this.imageRenderMode === 'sharp';
             this.el.imageRenderBtn.innerText = sharp ? '\u539f\u56fe' : '\u6d41\u7545';
             this.el.imageRenderBtn.title = sharp
-                ? '\u663e\u793a\u6a21\u5f0f\uff1a\u539f\u56fe\uff08\u7ec6\u8282\u66f4\u597d\uff0c\u53ef\u80fd\u6709\u6469\u5c14\u7eb9\uff09'
-                : '\u663e\u793a\u6a21\u5f0f\uff1a\u6d41\u7545\uff08\u6469\u5c14\u7eb9\u66f4\u5c11\uff0c\u653e\u5927\u540e\u7ec6\u8282\u7a0d\u8f6f\uff09';
+                ? '\u663e\u793a\u6a21\u5f0f\uff1a\u539f\u56fe\uff08\u4fdd\u7559\u81ea\u7136\u50cf\u7d20\uff0c\u53cc\u51fb 1:1 \u67e5\u770b\uff09'
+                : '\u663e\u793a\u6a21\u5f0f\uff1a\u6d41\u7545\uff08\u6d4f\u89c8\u5668\u9002\u5c4f\u7f29\u653e\uff0c\u7ffb\u9875\u548c\u7f29\u653e\u66f4\u67d4\u548c\uff09';
             this.el.imageRenderBtn.classList.remove('active');
         }
 
@@ -2982,7 +3047,7 @@
                 currentIndex: this.currentIndex,
                 imgList: this.imgList,
                 viewMode: this.viewMode,
-                loadImage: (src) => this.loadImage(src),
+                loadImage: (src) => this.loadImage(src, { priority: 'high', decode: true }),
                 isWideImage: (img) => this.isWideImage(img)
             });
             if (!result || renderIndex !== this.currentIndex) return;
@@ -3005,10 +3070,20 @@
             this.clearPendingTap();
         }
 
-        loadImage(src) {
+        loadImage(src, options = {}) {
             return new Promise((resolve) => {
                 const img = new Image();
-                img.onload = () => resolve(img);
+                const priority = options.priority || 'auto';
+                img.decoding = 'async';
+                if (priority !== 'auto') img.fetchPriority = priority;
+                img.onload = async () => {
+                    if (options.decode && typeof img.decode === 'function') {
+                        try {
+                            await img.decode();
+                        } catch (_) {}
+                    }
+                    resolve(img);
+                };
                 img.onerror = () => resolve(null);
                 img.src = src;
             });
@@ -3146,7 +3221,7 @@
             return readerPageGroups.getPreviousIndex({
                 currentIndex: this.currentIndex,
                 viewMode: this.viewMode,
-                loadImage: (index) => this.loadImage(this.imgList[index]),
+                loadImage: (index) => this.loadImage(this.imgList[index], { priority: 'low', decode: false }),
                 isWideImage: (img) => this.isWideImage(img)
             });
         }
@@ -3171,7 +3246,10 @@
 
         preloadImages(start, count = PRELOAD_COUNT) {
             for (let i = start; i < start + count && i < this.imgList.length; i++) {
-                new Image().src = this.imgList[i];
+                const img = new Image();
+                img.decoding = 'async';
+                img.fetchPriority = 'low';
+                img.src = this.imgList[i];
             }
         }
 

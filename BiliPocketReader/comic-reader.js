@@ -232,8 +232,8 @@
             const sharp = this.imageRenderMode === 'sharp';
             this.el.imageRenderBtn.innerText = sharp ? '\u539f\u56fe' : '\u6d41\u7545';
             this.el.imageRenderBtn.title = sharp
-                ? '\u663e\u793a\u6a21\u5f0f\uff1a\u539f\u56fe\uff08\u7ec6\u8282\u66f4\u597d\uff0c\u53ef\u80fd\u6709\u6469\u5c14\u7eb9\uff09'
-                : '\u663e\u793a\u6a21\u5f0f\uff1a\u6d41\u7545\uff08\u6469\u5c14\u7eb9\u66f4\u5c11\uff0c\u653e\u5927\u540e\u7ec6\u8282\u7a0d\u8f6f\uff09';
+                ? '\u663e\u793a\u6a21\u5f0f\uff1a\u539f\u56fe\uff08\u4fdd\u7559\u81ea\u7136\u50cf\u7d20\uff0c\u53cc\u51fb 1:1 \u67e5\u770b\uff09'
+                : '\u663e\u793a\u6a21\u5f0f\uff1a\u6d41\u7545\uff08\u6d4f\u89c8\u5668\u9002\u5c4f\u7f29\u653e\uff0c\u7ffb\u9875\u548c\u7f29\u653e\u66f4\u67d4\u548c\uff09';
             this.el.imageRenderBtn.classList.remove('active');
         }
 
@@ -719,7 +719,7 @@
                 currentIndex: this.currentIndex,
                 imgList: this.imgList,
                 viewMode: this.viewMode,
-                loadImage: (src) => this.loadImage(src),
+                loadImage: (src) => this.loadImage(src, { priority: 'high', decode: true }),
                 isWideImage: (img) => this.isWideImage(img)
             });
             if (!result || renderIndex !== this.currentIndex) return;
@@ -742,10 +742,20 @@
             this.clearPendingTap();
         }
 
-        loadImage(src) {
+        loadImage(src, options = {}) {
             return new Promise((resolve) => {
                 const img = new Image();
-                img.onload = () => resolve(img);
+                const priority = options.priority || 'auto';
+                img.decoding = 'async';
+                if (priority !== 'auto') img.fetchPriority = priority;
+                img.onload = async () => {
+                    if (options.decode && typeof img.decode === 'function') {
+                        try {
+                            await img.decode();
+                        } catch (_) {}
+                    }
+                    resolve(img);
+                };
                 img.onerror = () => resolve(null);
                 img.src = src;
             });
@@ -883,7 +893,7 @@
             return readerPageGroups.getPreviousIndex({
                 currentIndex: this.currentIndex,
                 viewMode: this.viewMode,
-                loadImage: (index) => this.loadImage(this.imgList[index]),
+                loadImage: (index) => this.loadImage(this.imgList[index], { priority: 'low', decode: false }),
                 isWideImage: (img) => this.isWideImage(img)
             });
         }
@@ -908,7 +918,10 @@
 
         preloadImages(start, count = PRELOAD_COUNT) {
             for (let i = start; i < start + count && i < this.imgList.length; i++) {
-                new Image().src = this.imgList[i];
+                const img = new Image();
+                img.decoding = 'async';
+                img.fetchPriority = 'low';
+                img.src = this.imgList[i];
             }
         }
 

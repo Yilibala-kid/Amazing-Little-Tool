@@ -50,30 +50,10 @@
 
         getSharpDisplaySizes(images, isFull) {
             const naturalSizes = images.map(img => this.getEffectiveImageSize(img));
-            const baseSizes = isFull || naturalSizes.length < 2
-                ? naturalSizes
-                : this.alignSharpDisplayHeights(naturalSizes);
-            const fitRatio = this.getSharpDisplayFitRatio(baseSizes);
+            const fitRatio = this.getSharpDisplayFitRatio(naturalSizes);
             this.sharpDisplayFitRatio = fitRatio;
 
-            return baseSizes.map(size => ({
-                width: size.width * fitRatio,
-                height: size.height * fitRatio
-            }));
-        },
-
-        alignSharpDisplayHeights(sizes) {
-            const targetHeight = Math.max(...sizes.map(size => size.height || 0));
-            if (!targetHeight) return sizes;
-
-            return sizes.map(size => {
-                if (!size.width || !size.height) return size;
-                const ratio = targetHeight / size.height;
-                return {
-                    width: size.width * ratio,
-                    height: targetHeight
-                };
-            });
+            return naturalSizes;
         },
 
         getSharpDisplayFitRatio(sizes) {
@@ -85,7 +65,7 @@
             const height = Math.max(...sizes.map(size => size.height || 0));
             if (!width || !height || !readerRect.width || !readerRect.height) return 1;
 
-            const ratio = Math.min(readerRect.width / width, readerRect.height / height);
+            const ratio = Math.min(1, readerRect.width / width, readerRect.height / height);
             return Number.isFinite(ratio) && ratio > 0 ? ratio : 1;
         },
 
@@ -127,7 +107,8 @@
                 return;
             }
 
-            this.fitScale = 1;
+            this.sharpDisplayFitRatio = this.getSharpDisplayFitRatio(sizes);
+            this.fitScale = this.sharpDisplayFitRatio;
         },
 
         getRenderScale(scale = this.scale) {
