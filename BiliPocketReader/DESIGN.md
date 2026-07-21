@@ -8,7 +8,7 @@ BiliPocketReader 是运行在 bilibili 页面上的 MV3 内容脚本扩展，同
 
 主要功能：
 
-- 漫画/图文阅读器：在专栏、动态图文等页面收集图片，打开全屏阅读器，支持单双页、自动宽图判断、缩放、拖拽、触摸手势、翻页动画、背景色、显示质量、截图。
+- 漫画/图文阅读器：在专栏、动态图文等页面收集图片，打开全屏阅读器，支持单双页、自动宽图判断、缩放、拖拽、触摸手势、翻页动画、背景色、显示质量、图像滤镜、截图。
 - 收藏面板：悬浮星标按钮，收藏用户空间、空间图文页、阅读列表，快速跳转。
 - 收藏显示设置：收藏面板每行 2 到 5 个收藏，保持收藏块固定宽度，通过调整面板宽度改变列数。
 - 动态过滤：在用户动态页隐藏转发动态，或临时按关键词只显示匹配动态。
@@ -80,7 +80,7 @@ BiliPocketReader 是运行在 bilibili 页面上的 MV3 内容脚本扩展，同
 
 - `hideForwardDynamics`：是否隐藏转发动态，持久化。
 - `favoriteColumns`：收藏面板列数，合法值 `2, 3, 4, 5`，默认 `2`。
-- `readerPreferences`：阅读器偏好，包含阅读方向、显示张数、翻页动画、显示质量、背景色、移动端点击翻页。
+- `readerPreferences`：阅读器偏好，包含阅读方向、显示张数、翻页动画、显示质量、背景色、图像滤镜、移动端点击翻页。
 
 关键词过滤是临时内存状态，不写入 storage。
 
@@ -362,6 +362,7 @@ SPA URL 变化桥。
   - `VIEW_MODES`: `auto`, `single`, `double`
   - `IMAGE_RENDER_MODES`: `sharp`, `smooth`
   - `BACKGROUND_MODES`: `black`, `darkGray`, `lightGray`, `white`
+  - `FILTER_MODES`: `original`, `soft`, `warm`, `grayscale`
 - 归一化阅读器偏好。
 - 从统一 storage 的 `readerPreferences` 读取/保存。
 
@@ -601,6 +602,7 @@ SPA URL 变化桥。
 - `animationMode`：`smooth` / `fade`。
 - `imageRenderMode`：`sharp` / `smooth`。
 - `backgroundMode`：阅读背景色。
+- `filterMode`：`original` / `soft` / `warm` / `grayscale`，只影响阅读显示，不写入截图。
 - `scale`、`translateX/Y`、`rotation`：视图变换。
 
 分页规则：

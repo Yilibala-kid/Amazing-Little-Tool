@@ -12,12 +12,14 @@
     const VIEW_MODES = Object.freeze(['auto', 'single', 'double']);
     const IMAGE_RENDER_MODES = Object.freeze(['sharp', 'smooth']);
     const BACKGROUND_MODES = Object.freeze(['black', 'darkGray', 'lightGray', 'white']);
+    const FILTER_MODES = Object.freeze(['original', 'soft', 'warm', 'grayscale']);
     const DEFAULT_READER_PREFERENCES = Object.freeze({
         isRightToLeft: true,
         viewMode: 'auto',
         animationMode: 'smooth',
         imageRenderMode: 'smooth',
         backgroundMode: 'darkGray',
+        filterMode: 'original',
         tapPageNavigation: false
     });
 
@@ -33,6 +35,10 @@
         return BACKGROUND_MODES.includes(mode) ? mode : DEFAULT_READER_PREFERENCES.backgroundMode;
     }
 
+    function normalizeFilterMode(mode) {
+        return FILTER_MODES.includes(mode) ? mode : DEFAULT_READER_PREFERENCES.filterMode;
+    }
+
     function normalizePreferences(value = {}) {
         const input = value && typeof value === 'object' ? value : {};
         return {
@@ -45,6 +51,7 @@
             animationMode: normalizeAnimationMode(input.animationMode || DEFAULT_READER_PREFERENCES.animationMode),
             imageRenderMode: normalizeImageRenderMode(input.imageRenderMode || DEFAULT_READER_PREFERENCES.imageRenderMode),
             backgroundMode: normalizeBackgroundMode(input.backgroundMode || DEFAULT_READER_PREFERENCES.backgroundMode),
+            filterMode: normalizeFilterMode(input.filterMode || DEFAULT_READER_PREFERENCES.filterMode),
             tapPageNavigation: typeof input.tapPageNavigation === 'boolean'
                 ? input.tapPageNavigation
                 : DEFAULT_READER_PREFERENCES.tapPageNavigation
@@ -63,10 +70,12 @@
         VIEW_MODES,
         IMAGE_RENDER_MODES,
         BACKGROUND_MODES,
+        FILTER_MODES,
         DEFAULT_READER_PREFERENCES,
         normalizeAnimationMode,
         normalizeImageRenderMode,
         normalizeBackgroundMode,
+        normalizeFilterMode,
         normalize: normalizePreferences,
         load: loadPreferences,
         save: savePreferences

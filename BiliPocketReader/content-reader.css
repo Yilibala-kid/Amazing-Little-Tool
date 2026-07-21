@@ -60,6 +60,10 @@
 .comic-img-container.is-grabbing,
 .comic-img-container.is-grabbing img { cursor: grabbing; }
 
+.comic-img-container img {
+    filter: var(--comic-image-filter, none);
+}
+
 /* ===== Reader control panels ===== */
 .comic-controls,
 .comic-settings-controls {
@@ -126,24 +130,6 @@
     white-space: nowrap;
 }
 
-.comic-settings-panel-header {
-    padding: 2px 2px 10px;
-    border-bottom: 1px solid var(--border-subtle);
-}
-
-.comic-settings-panel-title {
-    font-size: 15px;
-    font-weight: 700;
-    color: var(--text-primary);
-}
-
-.comic-settings-panel-desc {
-    margin-top: 4px;
-    font-size: 12px;
-    line-height: 1.5;
-    color: var(--text-secondary);
-}
-
 .comic-settings-item {
     display: flex;
     align-items: center;
@@ -177,6 +163,66 @@
     flex-shrink: 0;
     align-items: center;
     justify-content: flex-end;
+}
+
+.comic-settings-inline-group {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    padding: 10px 4px;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.035);
+}
+
+.comic-settings-inline-item {
+    display: flex;
+    min-width: 0;
+    align-items: stretch;
+    justify-content: space-between;
+    flex-direction: column;
+    gap: 8px;
+    padding: 0 8px;
+}
+
+.comic-settings-inline-item + .comic-settings-inline-item {
+    border-left: 1px solid var(--border-subtle);
+}
+
+.comic-settings-inline-item .comic-settings-title {
+    text-align: center;
+    white-space: nowrap;
+}
+
+.comic-settings-inline-item .comic-settings-action {
+    width: 100%;
+    justify-content: center;
+}
+
+.comic-settings-inline-item .comic-btn {
+    width: auto;
+}
+
+.comic-settings-panel .comic-settings-inline-item .comic-btn {
+    min-width: 0;
+    padding-inline: 6px;
+}
+
+.comic-settings-select {
+    min-width: 118px;
+    min-height: 36px;
+    padding: 7px 30px 7px 10px;
+    color: var(--text-primary);
+    background: var(--bg-deepest);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    font: inherit;
+    cursor: pointer;
+    outline: none;
+}
+
+.comic-settings-select:focus {
+    border-color: var(--acc);
+    box-shadow: 0 0 0 2px rgba(251, 114, 153, 0.18);
 }
 
 .comic-reader-row {
@@ -353,6 +399,7 @@
     position: fixed;
     top: 18px;
     right: 18px;
+    z-index: 4;
     display: flex;
     gap: 10px;
     align-items: center;
@@ -474,12 +521,32 @@
     gap: 14px;
 }
 
+#comic-reader-overlay.reader-compact .comic-settings-inline-item {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 8px;
+}
+
 #comic-reader-overlay.reader-compact .comic-settings-action {
     justify-content: flex-end;
 }
 
 #comic-reader-overlay.reader-compact .comic-settings-action .comic-btn {
     width: auto;
+}
+
+#comic-reader-overlay.reader-compact .comic-settings-inline-item .comic-settings-action {
+    width: 100%;
+    justify-content: center;
+}
+
+#comic-reader-overlay.reader-compact .comic-settings-inline-item .comic-btn {
+    width: auto;
+}
+
+#comic-reader-overlay.reader-compact .comic-settings-select {
+    min-height: 44px;
+    max-width: 132px;
 }
 
 #comic-reader-overlay.reader-compact .comic-toast {

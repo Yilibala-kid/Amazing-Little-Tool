@@ -1233,8 +1233,12 @@ function loadComicReaderCoreContext(ImageClass, overrides = {}) {
                     animationMode: 'smooth',
                     imageRenderMode: 'sharp',
                     backgroundMode: 'black',
+                    filterMode: 'original',
                     tapPageNavigation: true
                 };
+            },
+            normalizeFilterMode(mode) {
+                return ['original', 'soft', 'warm', 'grayscale'].includes(mode) ? mode : 'original';
             }
         },
         readerScreenshot: {},
@@ -1450,12 +1454,31 @@ function loadComicReaderCoreContext(ImageClass, overrides = {}) {
         assert.equal(img.style.maxHeight, 'none');
         assert.equal(img.style.objectFit, 'contain');
     }
+    {
+        const { Image } = createFakeImageClass();
+        const reader = loadComicReaderCoreContext(Image);
+        const style = {
+            setProperty(name, value) {
+                this[name] = value;
+            }
+        };
+        reader.el.reader = { style };
+
+        reader.filterMode = 'grayscale';
+        reader.applyReaderFilter();
+        assert.equal(style['--comic-image-filter'], 'grayscale(1)');
+
+        reader.filterMode = 'unknown';
+        reader.applyReaderFilter();
+        assert.equal(style['--comic-image-filter'], 'none');
+    }
 
     const { BilibiliToolbox } = loadReaderPreferencesContext();
     const preferences = BilibiliToolbox.readerPreferences;
     const storage = BilibiliToolbox.storage;
 
     await storage.init();
+    assert.deepEqual(plain(preferences.FILTER_MODES), ['original', 'soft', 'warm', 'grayscale']);
     assert.deepEqual(plain(preferences.load()), plain(preferences.DEFAULT_READER_PREFERENCES));
 
     const custom = {
@@ -1464,6 +1487,7 @@ function loadComicReaderCoreContext(ImageClass, overrides = {}) {
         animationMode: 'fade',
         imageRenderMode: 'sharp',
         backgroundMode: 'white',
+        filterMode: 'warm',
         tapPageNavigation: true
     };
     await preferences.save(custom);
@@ -1476,6 +1500,7 @@ function loadComicReaderCoreContext(ImageClass, overrides = {}) {
             animationMode: 'book',
             imageRenderMode: 'raw',
             backgroundMode: 'purple',
+            filterMode: 'unknown',
             tapPageNavigation: 'yes'
         })),
         plain(preferences.DEFAULT_READER_PREFERENCES)

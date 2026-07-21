@@ -34,6 +34,44 @@
         return item;
     }
 
+    function createCompactSettingsItem(title, control) {
+        const item = document.createElement('div');
+        item.className = 'comic-settings-inline-item';
+        const titleEl = document.createElement('div');
+        titleEl.className = 'comic-settings-title';
+        titleEl.textContent = title;
+        const action = document.createElement('div');
+        action.className = 'comic-settings-action';
+        action.append(control);
+        item.append(titleEl, action);
+        return item;
+    }
+
+    function createInlineSettingsGroup(items) {
+        const group = document.createElement('div');
+        group.className = 'comic-settings-inline-group';
+        items.forEach(item => group.appendChild(item));
+        return group;
+    }
+
+    function createFilterSelect() {
+        const select = document.createElement('select');
+        select.className = 'comic-settings-select';
+        select.setAttribute('aria-label', '\u56fe\u50cf\u6ee4\u955c');
+        [
+            ['original', '\u539f\u56fe'],
+            ['soft', '\u67d4\u548c'],
+            ['warm', '\u6696\u8272\u62a4\u773c'],
+            ['grayscale', '\u9ed1\u767d']
+        ].forEach(([value, label]) => {
+            const option = document.createElement('option');
+            option.value = value;
+            option.textContent = label;
+            select.appendChild(option);
+        });
+        return select;
+    }
+
     function createReaderUi(reader) {
         reader.el.reader = document.createElement('div');
         reader.el.reader.id = 'comic-reader-overlay';
@@ -50,6 +88,8 @@
         reader.el.settingsPanel = document.createElement('div');
         reader.el.settingsPanel.className = 'comic-settings-panel';
         reader.el.settingsPanel.setAttribute('aria-hidden', 'true');
+
+        reader.el.filterSelect = createFilterSelect();
 
         const row = document.createElement('div');
         row.className = 'comic-reader-row';
@@ -145,29 +185,21 @@
         reader.el.selectionToolbar.append(reader.el.selectionFullBtn, reader.el.selectionSaveBtn, reader.el.selectionCancelBtn);
         reader.el.selectionOverlay.append(reader.el.selectionHint, reader.el.selectionToolbar, reader.el.selectionBox);
 
-        const settingsHeader = document.createElement('div');
-        settingsHeader.className = 'comic-settings-panel-header';
-        const settingsTitle = document.createElement('div');
-        settingsTitle.className = 'comic-settings-panel-title';
-        settingsTitle.textContent = '\u9605\u8bfb\u8bbe\u7f6e';
-        const settingsDesc = document.createElement('div');
-        settingsDesc.className = 'comic-settings-panel-desc';
-        settingsDesc.textContent = '\u8c03\u6574\u663e\u793a\u3001\u7ffb\u9875\u548c\u9605\u8bfb\u4e60\u60ef\uff0c\u66f4\u6539\u4f1a\u81ea\u52a8\u4fdd\u5b58\u3002';
-        settingsHeader.append(settingsTitle, settingsDesc);
-
         row.append(reader.el.leftBtn, reader.el.offsetIncBtn, reader.el.pageInfo, reader.el.offsetDecBtn, reader.el.rightBtn);
         secondRow.append(reader.el.resetViewBtn, reader.el.fullScreenBtn);
         reader.el.controls.append(row, secondRow);
 
         reader.el.settingsControls.append(reader.el.closeBtn, reader.el.screenshotBtn, reader.el.rotateBtn, reader.el.settingsBtn);
         reader.el.settingsPanel.append(
-            settingsHeader,
-            createSettingsRow('\u663e\u793a\u8d28\u91cf', '\u539f\u56fe\u4fdd\u7559\u81ea\u7136\u50cf\u7d20\uff0c\u53cc\u51fb 1:1 \u67e5\u770b\uff1b\u6d41\u7545\u9002\u5c4f\u7f29\u653e\uff0c\u7ffb\u9875\u548c\u7f29\u653e\u66f4\u67d4\u548c\u3002', reader.el.imageRenderBtn),
-            createSettingsRow('\u80cc\u666f\u989c\u8272', '\u5728\u9ed1\u8272\u3001\u6df1\u7070\u3001\u6d45\u7070\u548c\u767d\u8272\u9605\u8bfb\u80cc\u666f\u4e4b\u95f4\u5207\u6362\u3002', reader.el.backgroundBtn),
-            createSettingsRow('\u7ffb\u9875\u52a8\u753b', '\u5728\u5e73\u6ed1\u548c\u6de1\u5165\u4e4b\u95f4\u5207\u6362\u3002', reader.el.animationBtn),
-            createSettingsRow('\u663e\u793a\u5f20\u6570', '\u81ea\u52a8\u5224\u65ad\u5355\u56fe\u6216\u53cc\u56fe\uff0c\u4e5f\u53ef\u624b\u52a8\u6307\u5b9a\u3002', reader.el.viewModeBtn),
-            createSettingsRow('\u70b9\u51fb\u7ffb\u9875\uff08\u4ec5\u79fb\u52a8\u7aef\uff09', '\u63a7\u5236\u70b9\u51fb\u5c4f\u5e55\u5de6\u53f3\u533a\u57df\u662f\u5426\u7ffb\u9875\u3002', reader.el.tapPageBtn),
-            createSettingsRow('\u9605\u8bfb\u65b9\u5411', '\u9002\u914d\u4ece\u53f3\u5f80\u5de6\u6216\u4ece\u5de6\u5f80\u53f3\u7684\u9605\u8bfb\u4e60\u60ef\u3002', reader.el.directionBtn)
+            createSettingsRow('\u663e\u793a\u8d28\u91cf', '\u539f\u56fe\u66f4\u6e05\u6670\uff1b\u6d41\u7545\u6a21\u5f0f\u7f29\u653e\u66f4\u987a\u6ed1\u3002', reader.el.imageRenderBtn),
+            createSettingsRow('\u56fe\u50cf\u6ee4\u955c', '\u4ec5\u5f71\u54cd\u663e\u793a\uff0c\u4e0d\u5f71\u54cd\u539f\u56fe\u548c\u622a\u56fe\u3002', reader.el.filterSelect),
+            createInlineSettingsGroup([
+                createCompactSettingsItem('\u80cc\u666f\u989c\u8272', reader.el.backgroundBtn),
+                createCompactSettingsItem('\u7ffb\u9875\u52a8\u753b', reader.el.animationBtn),
+                createCompactSettingsItem('\u663e\u793a\u5f20\u6570', reader.el.viewModeBtn)
+            ]),
+            createSettingsRow('\u70b9\u51fb\u7ffb\u9875\uff08\u4ec5\u79fb\u52a8\u7aef\uff09', '\u5f00\u542f\u540e\uff0c\u70b9\u51fb\u5c4f\u5e55\u4e24\u4fa7\u7ffb\u9875\u3002', reader.el.tapPageBtn),
+            createSettingsRow('\u9605\u8bfb\u65b9\u5411', '\u5207\u6362\u4ece\u53f3\u5230\u5de6\u6216\u4ece\u5de6\u5230\u53f3\u3002', reader.el.directionBtn)
         );
 
         reader.el.reader.append(reader.el.imgContainer, reader.el.controls, reader.el.settingsControls, reader.el.settingsPanel, reader.el.toast, reader.el.selectionOverlay);
@@ -178,11 +210,13 @@
         animations.syncAnimationButton(reader.el.animationBtn, reader.animationMode);
         reader.syncViewModeButton();
         reader.syncImageRenderButton();
+        reader.syncFilterControl();
         reader.syncBackgroundButton();
         reader.syncTapPageButton();
         reader.syncRotateButton();
         reader.syncFullscreenButton();
         reader.applyReaderBackground();
+        reader.applyReaderFilter();
         reader.applyResponsiveLayout();
     }
 

@@ -54,6 +54,18 @@
         lightGray: '\u6d45\u7070',
         white: '\u767d\u8272'
     });
+    const READER_FILTER_CSS = Object.freeze({
+        original: 'none',
+        soft: 'brightness(.94) contrast(.92) saturate(.92)',
+        warm: 'sepia(.18) saturate(.9) brightness(.96)',
+        grayscale: 'grayscale(1)'
+    });
+    const READER_FILTER_LABELS = Object.freeze({
+        original: '\u539f\u56fe',
+        soft: '\u67d4\u548c',
+        warm: '\u6696\u8272\u62a4\u773c',
+        grayscale: '\u9ed1\u767d'
+    });
 
     // ============ 漫画模式功能 ============
 
@@ -73,6 +85,7 @@
                 animationMode: this.animationMode,
                 imageRenderMode: this.imageRenderMode,
                 backgroundMode: this.backgroundMode,
+                filterMode: this.filterMode,
                 tapPageNavigation: this.tapPageNavigation
             });
             void readerPreferences.save(preferences).catch(() => {});
@@ -98,6 +111,7 @@
             this.animationMode = preferences.animationMode;
             this.imageRenderMode = preferences.imageRenderMode;
             this.backgroundMode = preferences.backgroundMode;
+            this.filterMode = preferences.filterMode;
             this.tapPageNavigation = preferences.tapPageNavigation;
             this.rotation = 0;
             this.activePageCount = 1;
@@ -273,6 +287,13 @@
             this.el.backgroundBtn.classList.remove('active');
         }
 
+        syncFilterControl() {
+            if (!this.el.filterSelect) return;
+            const mode = readerPreferences.normalizeFilterMode(this.filterMode);
+            this.el.filterSelect.value = mode;
+            this.el.filterSelect.title = `\u56fe\u50cf\u6ee4\u955c\uff1a${READER_FILTER_LABELS[mode]}`;
+        }
+
         syncTapPageButton() {
             const enabled = Boolean(this.tapPageNavigation);
             this.el.tapPageBtn.innerText = enabled ? '\u70b9\u51fb\u7ffb\u9875' : '\u70b9\u51fb\u5173\u95ed';
@@ -363,6 +384,17 @@
 
         applyReaderBackground() {
             if (this.el.reader) this.el.reader.style.background = this.getReaderBackgroundColor();
+        }
+
+        getReaderFilterCss() {
+            const mode = readerPreferences.normalizeFilterMode(this.filterMode);
+            return READER_FILTER_CSS[mode] || READER_FILTER_CSS.original;
+        }
+
+        applyReaderFilter() {
+            if (this.el.reader) {
+                this.el.reader.style.setProperty('--comic-image-filter', this.getReaderFilterCss());
+            }
         }
 
         setControlsOpacity(opacity) {

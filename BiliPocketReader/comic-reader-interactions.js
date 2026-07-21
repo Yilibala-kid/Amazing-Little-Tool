@@ -67,6 +67,13 @@
             reader.refreshImagesForRenderMode();
         });
 
+        on(el.filterSelect, 'change', stop(() => {
+            reader.filterMode = readerPreferences.normalizeFilterMode(el.filterSelect.value);
+            reader.syncFilterControl();
+            reader.applyReaderFilter();
+            reader.savePreferences();
+        }));
+
         el.backgroundBtn.onclick = stop(() => {
             const currentIdx = BACKGROUND_MODES.indexOf(reader.backgroundMode);
             reader.backgroundMode = BACKGROUND_MODES[(currentIdx + 1) % BACKGROUND_MODES.length];
