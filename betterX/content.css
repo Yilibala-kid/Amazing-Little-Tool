@@ -1,0 +1,271 @@
+:root {
+    --betterx-acc: #1d9bf0;
+    --betterx-acc-hover: #3aa8f2;
+    --betterx-bg-overlay: rgba(15, 15, 15, 0.94);
+    --betterx-bg-elevated: #1f1f1f;
+    --betterx-bg-surface: #171717;
+    --betterx-text-primary: #ffffff;
+    --betterx-text-secondary: #b3b3b3;
+    --betterx-text-muted: #777777;
+    --betterx-border-subtle: rgba(255, 255, 255, 0.12);
+    --betterx-error: #f3727f;
+    --betterx-shadow-heavy: 0 8px 24px rgba(0, 0, 0, 0.45);
+    --betterx-shadow-float: 0 4px 16px rgba(29, 155, 240, 0.28);
+    --betterx-radius: 8px;
+    --betterx-radius-pill: 9999px;
+    --betterx-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.betterx-hidden-video-tweet {
+    display: none !important;
+}
+
+#betterx-manager-button {
+    position: fixed;
+    right: 20px;
+    bottom: 80px;
+    z-index: 999999;
+    display: flex;
+    width: 50px;
+    height: 50px;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    background: var(--betterx-acc);
+    border-radius: 50%;
+    box-shadow: var(--betterx-shadow-float);
+    cursor: pointer;
+    font: 800 18px/1 var(--betterx-font);
+    user-select: none;
+    transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s, background 0.2s;
+}
+
+#betterx-manager-button:hover {
+    transform: scale(1.08);
+    box-shadow: 0 6px 20px rgba(29, 155, 240, 0.42);
+}
+
+#betterx-manager-button.betterx-paused {
+    background: #555555;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+.betterx-manager-badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    box-sizing: border-box;
+    color: #ffffff;
+    background: var(--betterx-error);
+    border: 2px solid #000000;
+    border-radius: var(--betterx-radius-pill);
+    font: 700 11px/14px var(--betterx-font);
+    text-align: center;
+}
+
+#betterx-manager-panel {
+    position: fixed;
+    right: 20px;
+    bottom: 140px;
+    z-index: 1000000;
+    width: 320px;
+    overflow: hidden;
+    color: var(--betterx-text-primary);
+    background: var(--betterx-bg-overlay);
+    border: 1px solid var(--betterx-border-subtle);
+    border-radius: var(--betterx-radius);
+    box-shadow: var(--betterx-shadow-heavy);
+    font-family: var(--betterx-font);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: opacity 0.2s, transform 0.2s, visibility 0.2s;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+}
+
+#betterx-manager-panel.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.betterx-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 44px;
+    padding: 0 14px;
+    background: var(--betterx-bg-elevated);
+    border-bottom: 1px solid var(--betterx-border-subtle);
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.betterx-panel-content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 14px;
+}
+
+.betterx-status-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.betterx-stat {
+    padding: 10px;
+    background: var(--betterx-bg-surface);
+    border: 1px solid var(--betterx-border-subtle);
+    border-radius: var(--betterx-radius);
+}
+
+.betterx-stat-value {
+    display: block;
+    color: var(--betterx-text-primary);
+    font-size: 22px;
+    font-weight: 800;
+    line-height: 1.1;
+}
+
+.betterx-stat-label {
+    display: block;
+    margin-top: 4px;
+    color: var(--betterx-text-secondary);
+    font-size: 12px;
+}
+
+.betterx-control-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px;
+    background: var(--betterx-bg-surface);
+    border: 1px solid var(--betterx-border-subtle);
+    border-radius: var(--betterx-radius);
+    cursor: pointer;
+}
+
+.betterx-control-copy {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.betterx-control-title {
+    color: var(--betterx-text-primary);
+    font-size: 14px;
+    font-weight: 650;
+}
+
+.betterx-control-desc {
+    color: var(--betterx-text-secondary);
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.betterx-switch {
+    position: relative;
+    flex: 0 0 auto;
+    width: 46px;
+    height: 28px;
+}
+
+.betterx-switch input {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.betterx-switch-slider {
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: var(--betterx-radius-pill);
+    transition: background 0.2s;
+}
+
+.betterx-switch-slider::before {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 22px;
+    height: 22px;
+    background: #ffffff;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    transition: transform 0.2s;
+}
+
+.betterx-switch input:checked + .betterx-switch-slider {
+    background: var(--betterx-acc);
+}
+
+.betterx-switch input:checked + .betterx-switch-slider::before {
+    transform: translateX(18px);
+}
+
+.betterx-panel-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.betterx-action-button {
+    flex: 1;
+    min-height: 36px;
+    padding: 0 12px;
+    color: #ffffff;
+    background: var(--betterx-acc);
+    border: none;
+    border-radius: var(--betterx-radius-pill);
+    cursor: pointer;
+    font: 700 13px/1 var(--betterx-font);
+    transition: background 0.2s;
+}
+
+.betterx-action-button:hover {
+    background: var(--betterx-acc-hover);
+}
+
+.betterx-action-button.secondary {
+    color: var(--betterx-text-primary);
+    background: var(--betterx-bg-elevated);
+    border: 1px solid var(--betterx-border-subtle);
+}
+
+.betterx-action-button.secondary:hover {
+    background: #2a2a2a;
+}
+
+.betterx-message {
+    min-height: 16px;
+    color: var(--betterx-text-muted);
+    font-size: 12px;
+    line-height: 1.4;
+    text-align: center;
+}
+
+@media (max-width: 520px) {
+    #betterx-manager-button {
+        right: 14px;
+        bottom: 72px;
+        width: 46px;
+        height: 46px;
+    }
+
+    #betterx-manager-panel {
+        right: 14px;
+        bottom: 128px;
+        width: min(320px, calc(100vw - 28px));
+    }
+}

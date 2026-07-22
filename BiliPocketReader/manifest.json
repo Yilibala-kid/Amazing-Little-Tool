@@ -1,8 +1,11 @@
-﻿{
+{
   "manifest_version": 3,
   "name": "BiliPocketReader",
   "version": "1.0",
   "description": "B\u7ad9\u6f2b\u753b\u6a21\u5f0f\u9605\u8bfb\u5668 + \u6536\u85cf\u5939\u5feb\u6377\u8df3\u8f6c",
+  "action": {
+    "default_title": "BiliPocketReader"
+  },
   "permissions": [
     "storage"
   ],
