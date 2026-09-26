@@ -1,19 +1,41 @@
 {
   "manifest_version": 3,
+  "minimum_chrome_version": "109",
   "name": "betterX",
-  "version": "1.0.0",
-  "description": "Hide video tweets on X.com with an in-page manager.",
+  "version": "1.2.0",
+  "description": "Filter video tweets and download media from X/Twitter status pages.",
   "action": {
     "default_title": "betterX"
   },
   "permissions": [
-    "storage"
+    "storage",
+    "downloads",
+    "offscreen"
   ],
   "host_permissions": [
     "https://x.com/*",
-    "https://twitter.com/*"
+    "https://twitter.com/*",
+    "https://pbs.twimg.com/*",
+    "https://video.twimg.com/*"
   ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; worker-src 'self'"
+  },
   "content_scripts": [
+    {
+      "matches": [
+        "https://x.com/*",
+        "https://twitter.com/*"
+      ],
+      "js": [
+        "page-observer.js"
+      ],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
     {
       "matches": [
         "https://x.com/*",

@@ -3,6 +3,7 @@
     'use strict';
 
     const STORAGE_KEY = 'betterX.settings.v1';
+    const PAGE_OBSERVER_SOURCE = 'betterX.page-observer.v1';
     const DEFAULT_SETTINGS = Object.freeze({
         hideVideos: true,
         revealHidden: false
@@ -23,6 +24,10 @@
     let hiddenCount = 0;
     let videoTweetCount = 0;
     let messageTimer = 0;
+    let currentStatusId = '';
+    let downloadBusy = false;
+    let activeDownloadRequestId = '';
+    const mediaByTweet = new Map();
 
     function getStorageArea() {
         return globalThis.chrome?.storage?.local || null;
@@ -78,6 +83,23 @@
         return cell ? [article, cell] : [article];
     }
 
+    function getCurrentStatus() {
+        const match = location.pathname.match(/^\/([^/]+)\/status\/(\d+)(?:\/|$)/);
+        return match ? { handle: match[1], tweetId: match[2] } : null;
+    }
+
+    function isCurrentStatusArticle(article) {
+        const status = getCurrentStatus();
+        if (!status || !article) return false;
+        return [...article.querySelectorAll('a[href]')].some(link => {
+            try {
+                return new URL(link.href).pathname.match(/\/status\/(\d+)/)?.[1] === status.tweetId;
+            } catch (_error) {
+                return false;
+            }
+        });
+    }
+
     function hasVideoMedia(article) {
         if (!article?.isConnected) return false;
         const media = article.querySelector(VIDEO_SELECTOR);
@@ -101,7 +123,7 @@
         let hidden = 0;
 
         articles.forEach(article => {
-            const isVideoTweet = hasVideoMedia(article);
+            const isVideoTweet = hasVideoMedia(article) && !isCurrentStatusArticle(article);
             if (isVideoTweet) found += 1;
             if (isVideoTweet && isFilterActive()) hidden += 1;
             setArticleHidden(article, isVideoTweet);
@@ -111,7 +133,261 @@
         hiddenCount = isFilterActive() ? videoTweetCount : 0;
 
         renderManagerState();
+        refreshDownloadState();
         return { scanned: articles.length, found, hidden };
+    }
+
+    function isAllowedMediaUrl(value, expectedHost) {
+        try {
+            const url = new URL(value);
+            return url.protocol === 'https:' && url.hostname === expectedHost;
+        } catch (_error) {
+            return false;
+        }
+    }
+
+    function getOriginalImageUrl(value) {
+        if (!isAllowedMediaUrl(value, 'pbs.twimg.com')) return '';
+        const url = new URL(value);
+        const mediaPath = url.pathname.match(/^\/media\/([^/]+)$/i);
+        if (!mediaPath) return '';
+
+        // Keep X's original file extension/format. In particular, do not ask the
+        // CDN to transcode a PNG to JPEG/WebP because that can change color data.
+        const format = url.searchParams.get('format');
+        url.search = '';
+        if (format) url.searchParams.set('format', format);
+        url.searchParams.set('name', 'orig');
+        return url.href;
+    }
+
+    function getImageIdentity(value) {
+        if (!isAllowedMediaUrl(value, 'pbs.twimg.com')) return '';
+        const url = new URL(value);
+        const mediaPath = url.pathname.match(/^\/media\/([^/]+)$/i);
+        if (!mediaPath) return '';
+        const baseName = mediaPath[1].replace(/\.(?:avif|gif|jpe?g|png|webp)$/i, '');
+        return `pbs-media:${baseName}`;
+    }
+
+    function selectBestVideoVariant(variants) {
+        return (Array.isArray(variants) ? variants : [])
+            .filter(variant => {
+                const contentType = variant?.contentType || variant?.content_type;
+                return contentType === 'video/mp4'
+                    && isAllowedMediaUrl(variant.url, 'video.twimg.com');
+            })
+            .sort((left, right) => (Number(right.bitrate) || 0) - (Number(left.bitrate) || 0))[0] || null;
+    }
+
+    function getCurrentStatusArticle(tweetId) {
+        const links = document.querySelectorAll(`article a[href*="/status/${tweetId}"]`);
+        for (const link of links) {
+            const article = link.closest('article[data-testid="tweet"], article');
+            if (article && isCurrentStatusArticle(article)) return article;
+        }
+        return null;
+    }
+
+    function getPerformanceVideoUrls() {
+        const bestByFile = new Map();
+        performance.getEntriesByType('resource').forEach(entry => {
+            if (!isAllowedMediaUrl(entry.name, 'video.twimg.com')) return;
+            const url = new URL(entry.name);
+            if (!url.pathname.endsWith('.mp4')) return;
+            const filename = url.pathname.split('/').pop();
+            const dimensions = url.pathname.match(/\/(\d+)x(\d+)\//);
+            const score = dimensions ? Number(dimensions[1]) * Number(dimensions[2]) : 0;
+            const existing = bestByFile.get(filename);
+            if (!existing || score > existing.score) {
+                bestByFile.set(filename, { url: url.href, score });
+            }
+        });
+        return [...bestByFile.values()].map(item => item.url);
+    }
+
+    function collectCurrentMedia() {
+        const status = getCurrentStatus();
+        if (!status) return [];
+        const result = [];
+        const seen = new Set();
+        const add = (url, type, identity = url) => {
+            if (!url || !identity || seen.has(identity)) return;
+            seen.add(identity);
+            result.push({ url, type });
+        };
+
+        const apiMedia = mediaByTweet.get(status.tweetId) || [];
+        const hasApiPhotos = apiMedia.some(media => media.type === 'photo');
+        apiMedia.forEach(media => {
+            if (media.type === 'photo') {
+                const url = getOriginalImageUrl(media.imageUrl);
+                add(url, 'image', getImageIdentity(url));
+                return;
+            }
+            const variant = selectBestVideoVariant(media.variants);
+            if (variant) add(variant.url, media.type === 'animated_gif' ? 'gif' : 'video');
+        });
+
+        const article = getCurrentStatusArticle(status.tweetId);
+        if (!hasApiPhotos) {
+            article?.querySelectorAll('img[src*="pbs.twimg.com/media/"]').forEach(image => {
+                const url = getOriginalImageUrl(image.currentSrc || image.src);
+                add(url, 'image', getImageIdentity(url));
+            });
+        }
+
+        if (article?.querySelector('video') && !result.some(item => item.type !== 'image')) {
+            article.querySelectorAll('video, video source').forEach(video => {
+                const url = video.currentSrc || video.src;
+                if (isAllowedMediaUrl(url, 'video.twimg.com')) add(url, 'video');
+            });
+            getPerformanceVideoUrls().forEach(url => add(url, 'video'));
+        }
+
+        return result;
+    }
+
+    function requestTweetMedia(tweetId) {
+        if (!/^\d+$/.test(String(tweetId || ''))) return;
+        window.postMessage({
+            source: PAGE_OBSERVER_SOURCE,
+            type: 'request',
+            tweetId: String(tweetId)
+        }, window.location.origin);
+    }
+
+    function handlePageMessage(event) {
+        if (event.source !== window || event.origin !== window.location.origin) return;
+        const data = event.data;
+        if (data?.source !== PAGE_OBSERVER_SOURCE || data?.type !== 'media') return;
+        if (!/^\d+$/.test(String(data.tweetId)) || !Array.isArray(data.media)) return;
+
+        const safeMedia = data.media.slice(0, 20).filter(media => {
+            if (!media || !['photo', 'video', 'animated_gif'].includes(media.type)) return false;
+            if (media.type === 'photo') return isAllowedMediaUrl(media.imageUrl, 'pbs.twimg.com');
+            return Boolean(selectBestVideoVariant(media.variants));
+        });
+        if (safeMedia.length) mediaByTweet.set(String(data.tweetId), safeMedia);
+        renderDownloadState();
+    }
+
+    function getMediaSummary(items) {
+        const counts = items.reduce((result, item) => {
+            result[item.type] = (result[item.type] || 0) + 1;
+            return result;
+        }, {});
+        return [
+            counts.image ? `${counts.image} 张图片` : '',
+            counts.gif ? `${counts.gif} 个 GIF` : '',
+            counts.video ? `${counts.video} 个视频` : ''
+        ].filter(Boolean).join('、');
+    }
+
+    function renderDownloadState() {
+        const section = document.querySelector('.betterx-download-section');
+        if (!section) return;
+        const status = getCurrentStatus();
+        section.hidden = !status;
+        if (!status) return;
+
+        const media = collectCurrentMedia();
+        const copy = section.querySelector('[data-betterx-download-summary]');
+        const button = section.querySelector('[data-betterx-action="download"]');
+        copy.textContent = media.length
+            ? `已找到 ${getMediaSummary(media)}`
+            : '正在识别图片、GIF 或视频';
+        button.textContent = media.length ? `下载全部（${media.length}）` : '重新识别媒体';
+        button.disabled = downloadBusy;
+    }
+
+    function refreshDownloadState() {
+        const status = getCurrentStatus();
+        const nextStatusId = status?.tweetId || '';
+        if (nextStatusId !== currentStatusId) {
+            currentStatusId = nextStatusId;
+            if (currentStatusId) requestTweetMedia(currentStatusId);
+        }
+        renderDownloadState();
+    }
+
+    function buildDownloadItems(media, status) {
+        const safeHandle = status.handle.replace(/[^a-zA-Z0-9_-]/g, '_') || 'tweet';
+        return media.map((item, index) => {
+            const number = String(index + 1).padStart(2, '0');
+            const extension = item.type === 'image'
+                ? 'png'
+                : (item.type === 'gif' ? 'gif' : 'mp4');
+            return {
+                url: item.url,
+                type: item.type,
+                filename: `betterX/${safeHandle}_${status.tweetId}_${number}_${item.type}.${extension}`
+            };
+        });
+    }
+
+    if (globalThis.__betterXTestHooks) {
+        Object.assign(globalThis.__betterXTestHooks, {
+            getOriginalImageUrl,
+            getImageIdentity,
+            buildDownloadItems
+        });
+    }
+
+    async function downloadCurrentMedia() {
+        const status = getCurrentStatus();
+        if (!status || downloadBusy) return;
+        let media = collectCurrentMedia();
+
+        if (!media.length) {
+            requestTweetMedia(status.tweetId);
+            showMessage('正在读取本帖媒体…');
+            await new Promise(resolve => window.setTimeout(resolve, 700));
+            media = collectCurrentMedia();
+        }
+        if (!media.length) {
+            showMessage('未发现媒体；如果是视频，请先播放一下再重试');
+            renderDownloadState();
+            return;
+        }
+
+        downloadBusy = true;
+        activeDownloadRequestId = globalThis.crypto?.randomUUID?.()
+            || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+        renderDownloadState();
+        const needsImageConversion = media.some(item => item.type === 'image');
+        const needsGifConversion = media.some(item => item.type === 'gif');
+        if (needsGifConversion) showMessage('正在本地转换 GIF，请保持页面开启…');
+        else if (needsImageConversion) showMessage('正在转换标准 sRGB PNG…');
+        try {
+            const response = await chrome.runtime.sendMessage({
+                type: 'betterx.download',
+                requestId: activeDownloadRequestId,
+                items: buildDownloadItems(media, status)
+            });
+            if (response?.started) {
+                const details = [
+                    response.errors?.length ? `${response.errors.length} 项失败` : '',
+                    response.warnings?.[0] || ''
+                ].filter(Boolean).join('；');
+                showMessage(`已开始下载 ${response.started} 项媒体${details ? `；${details}` : ''}`);
+            } else {
+                showMessage(response?.errors?.[0] || '下载启动失败');
+            }
+        } catch (error) {
+            showMessage(`下载失败：${error?.message || error}`);
+        } finally {
+            downloadBusy = false;
+            activeDownloadRequestId = '';
+            renderDownloadState();
+        }
+    }
+
+    function handleRuntimeMessage(message) {
+        if (message?.type !== 'betterx.conversion-progress') return false;
+        if (!activeDownloadRequestId || message.requestId !== activeDownloadRequestId) return false;
+        if (typeof message.text === 'string') showMessage(message.text);
+        return false;
     }
 
     function scheduleScan(root = document) {
@@ -164,6 +440,13 @@
                         <span class="betterx-stat-label">当前隐藏</span>
                     </div>
                 </div>
+                <section class="betterx-download-section" hidden>
+                    <div class="betterx-download-copy">
+                        <span class="betterx-control-title">下载本帖媒体</span>
+                        <span class="betterx-control-desc" data-betterx-download-summary>正在识别图片、GIF 或视频</span>
+                    </div>
+                    <button class="betterx-action-button betterx-download-action" data-betterx-action="download">重新识别媒体</button>
+                </section>
                 <label class="betterx-control-row">
                     <span class="betterx-control-copy">
                         <span class="betterx-control-title">隐藏视频推文</span>
@@ -202,6 +485,7 @@
             const result = scanTweets();
             showMessage(`已扫描 ${result.scanned} 条推文，识别 ${videoTweetCount} 条视频推文`);
         });
+        panel.querySelector('[data-betterx-action="download"]').addEventListener('click', downloadCurrentMedia);
         panel.querySelector('[data-betterx-action="close"]').addEventListener('click', hidePanel);
     }
 
@@ -219,6 +503,7 @@
         panel.querySelector('[data-betterx-stat="hidden"]').textContent = String(hiddenCount);
         panel.querySelector('[data-betterx-setting="hideVideos"]').checked = settings.hideVideos;
         panel.querySelector('[data-betterx-setting="revealHidden"]').checked = settings.revealHidden;
+        renderDownloadState();
     }
 
     function showMessage(text) {
@@ -277,6 +562,8 @@
         createManagerPanel();
         document.addEventListener('pointerdown', handleDocumentPointerDown, true);
         document.addEventListener('keydown', handleDocumentKeyDown);
+        window.addEventListener('message', handlePageMessage);
+        chrome.runtime.onMessage.addListener(handleRuntimeMessage);
         observeTimeline();
         scanTweets();
     }

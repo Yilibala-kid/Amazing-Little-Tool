@@ -152,6 +152,33 @@
     cursor: pointer;
 }
 
+.betterx-download-section {
+    padding: 12px;
+    background: linear-gradient(135deg, rgba(29, 155, 240, 0.18), rgba(29, 155, 240, 0.06));
+    border: 1px solid rgba(29, 155, 240, 0.45);
+    border-radius: var(--betterx-radius);
+}
+
+.betterx-download-section[hidden] {
+    display: none;
+}
+
+.betterx-download-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 10px;
+}
+
+.betterx-download-action {
+    width: 100%;
+}
+
+.betterx-action-button:disabled {
+    cursor: wait;
+    opacity: 0.55;
+}
+
 .betterx-control-copy {
     display: flex;
     min-width: 0;
