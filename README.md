@@ -11,6 +11,7 @@
 | [`BiliPocketReader`](./BiliPocketReader/) | B 站漫画模式阅读器，提供漫画阅读、收藏夹快捷跳转等功能。 | Chrome / Edge 扩展，或 Tampermonkey 用户脚本 |
 | [`ForceDarkModeExtension`](./ForceDarkModeExtension/) | 将当前网页临时切换为深色模式，可随时恢复。 | Chrome / Edge 扩展 |
 | [`gifcut`](./gifcut/) | GIF 裁剪工具，支持帧范围选择、预览、播放速度调整、输出缩放和重新导出。 | Windows，.NET 10 WPF |
+| [`LoopScroller`](./LoopScroller/) | 全屏循环滚动图片、TXT、DOCX、PDF 和 PPT/PPTX，支持暂停、调速及缩放。 | Windows x64；PPT/PPTX 自动转换需要桌面版 PowerPoint |
 | [`PSPlugin`](./PSPlugin/) | Photoshop JSX 脚本，用于批量将 PSD 文件导出为 PNG。 | Adobe Photoshop |
 
 ## BiliPocketReader
@@ -43,6 +44,16 @@
 ```powershell
 dotnet run --project .\gifcut\GIFcut.csproj
 ```
+
+## LoopScroller
+
+Windows 全屏循环滚动播放器，支持图片、TXT、DOCX、PDF 和 PPT/PPTX。可以打开或拖入文件，暂停、调速、缩放，也可以用滚轮回看内容。
+
+直接运行 [`LoopScroller/LoopScroller-Portable-Net8/LoopScroller.exe`](./LoopScroller/LoopScroller-Portable-Net8/LoopScroller.exe)，无需安装 .NET。下载或分享便携版时，请同时保留该目录中的 `ThirdPartyNotices.txt`。
+
+PPT/PPTX 通过本机 Microsoft PowerPoint 转换为静态 PDF 后播放，不播放动画、声音或视频；没有 PowerPoint 时可先手动导出 PDF。
+
+源码、测试、构建方法及详细使用说明见 [`LoopScroller/README.md`](./LoopScroller/README.md)。
 
 ## PSPlugin
 

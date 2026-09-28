@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <LoopScrollerFramework Condition="'$(LoopScrollerFramework)' == ''">net8.0-windows</LoopScrollerFramework>
+    <TargetFramework>$(LoopScrollerFramework)</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\LoopScroller\LoopScroller.csproj" />
+  </ItemGroup>
+
+</Project>

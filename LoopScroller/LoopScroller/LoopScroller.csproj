@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <LoopScrollerFramework Condition="'$(LoopScrollerFramework)' == ''">net8.0-windows</LoopScrollerFramework>
+    <TargetFramework>$(LoopScrollerFramework)</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>LoopScroller</AssemblyName>
+    <Version>1.3.1</Version>
+    <ApplicationIcon>Assets\LoopScroller.ico</ApplicationIcon>
+    <RootNamespace>LoopScroller</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\LoopScroller.ico" />
+    <None Update="ThirdPartyNotices.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <PackageReference Include="DocumentFormat.OpenXml" Version="3.3.0" />
+    <PackageReference Include="bblanchon.PDFium.Win32" Version="156.0.8066" />
+  </ItemGroup>
+
+</Project>

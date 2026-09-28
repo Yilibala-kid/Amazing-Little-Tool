@@ -1,0 +1,9 @@
+**/bin/
+**/obj/
+publish/
+.vs/
+*.user
+*.suo
+
+# Local documents used for optional manual regression tests
+/LoopScroller.Tests/*.docx
