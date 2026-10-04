@@ -42,6 +42,10 @@
         "https://twitter.com/*"
       ],
       "js": [
+        "media.js",
+        "timeline.js",
+        "downloads.js",
+        "manager.js",
         "content.js"
       ],
       "css": [

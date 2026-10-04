@@ -13,6 +13,7 @@
     const IMAGE_RENDER_MODES = Object.freeze(['sharp', 'smooth']);
     const BACKGROUND_MODES = Object.freeze(['black', 'darkGray', 'lightGray', 'white']);
     const FILTER_MODES = Object.freeze(['original', 'soft', 'warm', 'grayscale']);
+    const ANIMATION_MODES = Object.freeze([...Toolbox.animations.ANIMATION_MODES]);
     const DEFAULT_READER_PREFERENCES = Object.freeze({
         isRightToLeft: true,
         viewMode: 'auto',
@@ -22,40 +23,41 @@
         filterMode: 'original',
         tapPageNavigation: false
     });
+    const MODES_BY_KEY = Object.freeze({
+        viewMode: VIEW_MODES,
+        animationMode: ANIMATION_MODES,
+        imageRenderMode: IMAGE_RENDER_MODES,
+        backgroundMode: BACKGROUND_MODES,
+        filterMode: FILTER_MODES
+    });
+
+    function normalizeMode(key, value) {
+        return MODES_BY_KEY[key].includes(value) ? value : DEFAULT_READER_PREFERENCES[key];
+    }
 
     function normalizeAnimationMode(mode) {
-        return Toolbox.animations.normalizeAnimationMode(mode);
+        return normalizeMode('animationMode', mode);
     }
 
     function normalizeImageRenderMode(mode) {
-        return IMAGE_RENDER_MODES.includes(mode) ? mode : DEFAULT_READER_PREFERENCES.imageRenderMode;
+        return normalizeMode('imageRenderMode', mode);
     }
 
     function normalizeBackgroundMode(mode) {
-        return BACKGROUND_MODES.includes(mode) ? mode : DEFAULT_READER_PREFERENCES.backgroundMode;
+        return normalizeMode('backgroundMode', mode);
     }
 
     function normalizeFilterMode(mode) {
-        return FILTER_MODES.includes(mode) ? mode : DEFAULT_READER_PREFERENCES.filterMode;
+        return normalizeMode('filterMode', mode);
     }
 
     function normalizePreferences(value = {}) {
         const input = value && typeof value === 'object' ? value : {};
-        return {
-            isRightToLeft: typeof input.isRightToLeft === 'boolean'
-                ? input.isRightToLeft
-                : DEFAULT_READER_PREFERENCES.isRightToLeft,
-            viewMode: VIEW_MODES.includes(input.viewMode)
-                ? input.viewMode
-                : DEFAULT_READER_PREFERENCES.viewMode,
-            animationMode: normalizeAnimationMode(input.animationMode || DEFAULT_READER_PREFERENCES.animationMode),
-            imageRenderMode: normalizeImageRenderMode(input.imageRenderMode || DEFAULT_READER_PREFERENCES.imageRenderMode),
-            backgroundMode: normalizeBackgroundMode(input.backgroundMode || DEFAULT_READER_PREFERENCES.backgroundMode),
-            filterMode: normalizeFilterMode(input.filterMode || DEFAULT_READER_PREFERENCES.filterMode),
-            tapPageNavigation: typeof input.tapPageNavigation === 'boolean'
-                ? input.tapPageNavigation
-                : DEFAULT_READER_PREFERENCES.tapPageNavigation
-        };
+        return Object.fromEntries(Object.entries(DEFAULT_READER_PREFERENCES).map(([key, fallback]) => [
+            key, MODES_BY_KEY[key]
+                ? normalizeMode(key, input[key])
+                : (typeof input[key] === 'boolean' ? input[key] : fallback)
+        ]));
     }
 
     function loadPreferences() {
@@ -71,6 +73,7 @@
         IMAGE_RENDER_MODES,
         BACKGROUND_MODES,
         FILTER_MODES,
+        ANIMATION_MODES,
         DEFAULT_READER_PREFERENCES,
         normalizeAnimationMode,
         normalizeImageRenderMode,

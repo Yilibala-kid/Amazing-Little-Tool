@@ -3,20 +3,7 @@
     'use strict';
 
     // ============ 常量定义 ============
-    const MIN_SCALE = 0.5;
-    const MAX_SCALE = 3;
-    const DOUBLE_CLICK_SCALE = 2;
-    const MAX_RENDER_SCALE = 2;
-    const CONTROLS_HIDE_DELAY = 500;
-    const SWIPE_THRESHOLD = 50;
-    const TAP_DELAY = 220;
-    const DOUBLE_TAP_DELAY = 300;
-    const TAP_ZONE_RATIO = 0.28;
-    const TOUCH_ZOOM_EPSILON = 0.01;
-    const TOUCH_EDGE_EPSILON = 0.5;
-    const PAN_EDGE_ALLOWANCE = 72;
     const MOBILE_BREAKPOINT = 768;
-    const PRELOAD_COUNT = 4;
     if (!window.Shared) throw new Error('BilibiliToolbox: shared.js not loaded');
     if (!window.BilibiliToolbox?.bilibiliDom) throw new Error('BilibiliToolbox: bilibili-dom-adapter.js not loaded');
     if (!window.BilibiliToolbox?.storage) throw new Error('BilibiliToolbox: storage-service.js not loaded');
@@ -27,7 +14,10 @@
     if (!window.BilibiliToolbox?.readerTransform) throw new Error('BilibiliToolbox: reader-transform.js not loaded');
     if (!window.BilibiliToolbox?.readerSelection) throw new Error('BilibiliToolbox: reader-selection.js not loaded');
     if (!window.BilibiliToolbox?.readerDom) throw new Error('BilibiliToolbox: reader-dom.js not loaded');
+    if (!window.BilibiliToolbox?.readerSettings) throw new Error('BilibiliToolbox: reader-settings.js not loaded');
+    if (!window.BilibiliToolbox?.readerTouch) throw new Error('BilibiliToolbox: reader-touch.js not loaded');
     if (!window.BilibiliToolbox?.readerPageGroups) throw new Error('BilibiliToolbox: comic-reader-page-groups.js not loaded');
+    if (!window.BilibiliToolbox?.ReaderImageLoader) throw new Error('BilibiliToolbox: reader-image-loader.js not loaded');
     if (!window.BilibiliToolbox?.readerInteractions) throw new Error('BilibiliToolbox: comic-reader-interactions.js not loaded');
 
     const Toolbox = window.BilibiliToolbox;
@@ -42,62 +32,16 @@
     const readerDom = Toolbox.readerDom;
     const readerPageGroups = Toolbox.readerPageGroups;
     const readerInteractions = Toolbox.readerInteractions;
-    const READER_BACKGROUND_COLORS = Object.freeze({
-        black: '#0a0a0a',
-        darkGray: '#1f1f1f',
-        lightGray: '#d8d8d8',
-        white: '#ffffff'
-    });
-    const READER_BACKGROUND_LABELS = Object.freeze({
-        black: '\u9ed1\u8272',
-        darkGray: '\u6df1\u7070',
-        lightGray: '\u6d45\u7070',
-        white: '\u767d\u8272'
-    });
-    const READER_FILTER_CSS = Object.freeze({
-        original: 'none',
-        soft: 'brightness(.94) contrast(.92) saturate(.92)',
-        warm: 'sepia(.18) saturate(.9) brightness(.96)',
-        grayscale: 'grayscale(1)'
-    });
-    const READER_FILTER_LABELS = Object.freeze({
-        original: '\u539f\u56fe',
-        soft: '\u67d4\u548c',
-        warm: '\u6696\u8272\u62a4\u773c',
-        grayscale: '\u9ed1\u767d'
-    });
-
     // ============ 漫画模式功能 ============
 
     class BiliComicReader {
-        normalizePreferences(value = {}) {
-            return readerPreferences.normalize(value);
-        }
-
-        loadPreferences() {
-            return readerPreferences.load();
-        }
-
-        savePreferences() {
-            const preferences = this.normalizePreferences({
-                isRightToLeft: this.isRightToLeft,
-                viewMode: this.viewMode,
-                animationMode: this.animationMode,
-                imageRenderMode: this.imageRenderMode,
-                backgroundMode: this.backgroundMode,
-                filterMode: this.filterMode,
-                tapPageNavigation: this.tapPageNavigation
-            });
-            void readerPreferences.save(preferences).catch(() => {});
-        }
-
         constructor() {
-            const preferences = this.loadPreferences();
+            Object.assign(this, readerPreferences.load());
             // 状态管理
             this.imgList = [];
             this.currentIndex = 0;
+            this.displayedIndex = 0;
             this.lastStep = 2;
-            this.isRightToLeft = preferences.isRightToLeft;
             this.scale = 1;
             this.fitScale = 1;
             this.sharpDisplayFitRatio = 1;
@@ -107,12 +51,6 @@
             this.translateY = 0;
             this.hideTimer = null;
             this.messageTimer = null;
-            this.viewMode = preferences.viewMode;
-            this.animationMode = preferences.animationMode;
-            this.imageRenderMode = preferences.imageRenderMode;
-            this.backgroundMode = preferences.backgroundMode;
-            this.filterMode = preferences.filterMode;
-            this.tapPageNavigation = preferences.tapPageNavigation;
             this.rotation = 0;
             this.activePageCount = 1;
             this.controlsVisible = true;
@@ -131,7 +69,11 @@
             this.selectionHandles = {};
             this.pageFlipToken = 0;
             this.transformTransitionTimer = null;
-            this.imageCache = new Map();
+            this.isOpen = false;
+            this.entryButton = null;
+            this.screenshotTask = null;
+            this.focusTimer = null;
+            this.resizeFrame = null;
 
             // 拖拽状态
             this.isDragging = false;
@@ -140,78 +82,50 @@
             this.initX = 0;
             this.initY = 0;
 
-            // 触摸滑动状态
-            this.touchStartX = 0;
-            this.touchStartY = 0;
-            this.touchEndX = 0;
-            this.touchEndY = 0;
-            this.isTouchSwiping = false;
-            this.touchStartTime = 0;
-            this.touchStartedOnInteractive = false;
-            this.touchPanLocked = false;
-            this.touchDidMoveImage = false;
-            this.touchEdgePageStep = 0;
-            this.pendingTapTimer = null;
-            this.lastTapTime = 0;
-            this.lastTapX = 0;
-            this.lastTapY = 0;
-
-            // 双指缩放状态
-            this.isTwoFingerGesturing = false;
-            this.initialPinchDistance = 0;
-            this.initialScale = 1;
-            this.initialCenterX = 0;
-            this.initialCenterY = 0;
-            this.twoFingerTapCandidate = false;
-            this.twoFingerTapStartTime = 0;
-            this.twoFingerTapCenterX = 0;
-            this.twoFingerTapCenterY = 0;
-            this.lastTwoFingerTapTime = 0;
-            this.lastTwoFingerTapCenterX = 0;
-            this.lastTwoFingerTapCenterY = 0;
 
             // DOM 元素引用
             this.el = {};
+            this.imageLoader = new Toolbox.ReaderImageLoader(() => ({
+                isOpen: this.isOpen, imgList: this.imgList,
+                currentIndex: this.currentIndex, activePageCount: this.activePageCount,
+                visibleSources: Array.from(this.el.imgContainer?.querySelectorAll?.('img') || [], img => img.src)
+            }));
             this.eventBag = null;
 
             readerTransform.attach(this);
             readerSelection.attach(this);
             readerDom.attach(this);
+            Toolbox.readerSettings.attach(this);
+            Toolbox.readerTouch.attach(this);
 
-            // 绑定全局事件的 this 指向，便于后续解绑
-            this.handleKeyDown = this.handleKeyDown.bind(this);
-            this.handleFullscreenChange = this.handleFullscreenChange.bind(this);
-            this.handleMouseMove = this.handleMouseMove.bind(this);
-            this.handleMouseUp = this.handleMouseUp.bind(this);
-            this.boundHandleTouchStart = this.handleTouchStart.bind(this);
-            this.boundHandleTouchMove = this.handleTouchMove.bind(this);
-            this.boundHandleTouchEnd = this.handleTouchEnd.bind(this);
-            this.handleSelectionPointerDown = this.handleSelectionPointerDown.bind(this);
-            this.handleSelectionPointerMove = this.handleSelectionPointerMove.bind(this);
-            this.handleSelectionPointerUp = this.handleSelectionPointerUp.bind(this);
-            this.handleSettingsOutsidePointerDown = this.handleSettingsOutsidePointerDown.bind(this);
-            this.handleResize = this.handleResize.bind(this);
+            // Mixins bind their own methods; only core handlers need binding here.
+            ['handleKeyDown', 'handleFullscreenChange', 'handleResize'].forEach(name => {
+                this[name] = this[name].bind(this);
+            });
         }
 
         // 1. 初始化入口按钮
         init() {
+            if (this.entryButton) return;
             const entryBtn = document.createElement('button');
+            this.entryButton = entryBtn;
             entryBtn.innerHTML = '&#128214;';
             entryBtn.className = `comic-entry-btn${this.isTouchDevice ? ' comic-entry-btn-touch' : ''}`;
             document.body.appendChild(entryBtn);
 
             entryBtn.onclick = () => this.start();
-            this.prepareInitialImages();
         }
 
         // 2. 启动阅读器
         start() {
-            const images = this.collectReaderImages();
-            if (images.length > 0) this.imgList = images;
+            if (this.isOpen || !shouldInitComicReader()) return;
+            this.imgList = this.collectReaderImages();
 
             if (this.imgList.length === 0) return alert('\u672a\u627e\u5230\u6f2b\u753b\u56fe\u7247');
 
+            this.isOpen = true;
             this.currentIndex = 0;
+            this.displayedIndex = 0;
             this.lastStep = 2;
             this.isDragging = false;
             this.animationMode = readerPreferences.normalizeAnimationMode(this.animationMode);
@@ -226,11 +140,6 @@
             this.render();
         }
 
-        prepareInitialImages() {
-            this.imgList = this.collectReaderImages();
-            if (this.imgList.length > 0) this.preloadImages(0);
-        }
-
         getImageCollectionOptions() {
             return { preserveBiliSuffix: this.imageRenderMode === 'smooth' };
         }
@@ -240,109 +149,20 @@
         }
 
         refreshImagesForRenderMode() {
+            if (!this.isOpen) return;
             const images = this.collectReaderImages();
             if (images.length === 0) return;
             this.imgList = images;
-            this.imageCache.clear();
+            this.cancelPreload();
+            // Keep the visible originals until their replacements are decoded.
+            this.pruneImageCache();
             this.currentIndex = Math.min(this.currentIndex, this.imgList.length - 1);
-            this.preloadImages(this.currentIndex);
             this.render(false);
         }
 
-        // 3. 创建 UI
-        // 4. 缁戝畾浜嬩欢
+        // Bind reader controls and input events.
         bindEvents() {
             readerInteractions.bind(this);
-        }
-
-        syncDirectionButton() {
-            const dir = this.isRightToLeft;
-            this.el.directionBtn.innerText = dir ? '\u4ece\u53f3\u5f80\u5de6 \u2190' : '\u4ece\u5de6\u5f80\u53f3 \u2192';
-            this.el.directionBtn.title = dir ? '\u5f53\u524d\uff1a\u4ece\u53f3\u5f80\u5de6' : '\u5f53\u524d\uff1a\u4ece\u5de6\u5f80\u53f3';
-        }
-
-        syncViewModeButton() {
-            const map = {
-                auto: ['\u81ea\u52a8', '\u89c6\u56fe\u6a21\u5f0f\uff1a\u81ea\u52a8'],
-                single: ['\u5355\u56fe', '\u89c6\u56fe\u6a21\u5f0f\uff1a\u5355\u56fe'],
-                double: ['\u53cc\u56fe', '\u89c6\u56fe\u6a21\u5f0f\uff1a\u53cc\u56fe']
-            };
-            const [text, title] = map[this.viewMode] || map.auto;
-            Object.assign(this.el.viewModeBtn, { innerText: text, title });
-        }
-
-        syncImageRenderButton() {
-            const sharp = this.imageRenderMode === 'sharp';
-            this.el.imageRenderBtn.innerText = sharp ? '\u539f\u56fe' : '\u6d41\u7545';
-            this.el.imageRenderBtn.title = sharp
-                ? '\u663e\u793a\u6a21\u5f0f\uff1a\u539f\u56fe\uff08\u4fdd\u7559\u81ea\u7136\u50cf\u7d20\uff0c\u53cc\u51fb 1:1 \u67e5\u770b\uff09'
-                : '\u663e\u793a\u6a21\u5f0f\uff1a\u6d41\u7545\uff08\u6d4f\u89c8\u5668\u9002\u5c4f\u7f29\u653e\uff0c\u7ffb\u9875\u548c\u7f29\u653e\u66f4\u67d4\u548c\uff09';
-            this.el.imageRenderBtn.classList.remove('active');
-        }
-
-        syncBackgroundButton() {
-            const label = this.getReaderBackgroundLabel();
-            this.el.backgroundBtn.innerText = label;
-            this.el.backgroundBtn.title = `\u80cc\u666f\u989c\u8272\uff1a${label}`;
-            this.el.backgroundBtn.classList.remove('active');
-        }
-
-        syncFilterControl() {
-            if (!this.el.filterSelect) return;
-            const mode = readerPreferences.normalizeFilterMode(this.filterMode);
-            this.el.filterSelect.value = mode;
-            this.el.filterSelect.title = `\u56fe\u50cf\u6ee4\u955c\uff1a${READER_FILTER_LABELS[mode]}`;
-        }
-
-        syncTapPageButton() {
-            const enabled = Boolean(this.tapPageNavigation);
-            this.el.tapPageBtn.innerText = enabled ? '\u70b9\u51fb\u7ffb\u9875' : '\u70b9\u51fb\u5173\u95ed';
-            this.el.tapPageBtn.title = enabled
-                ? '\u70b9\u51fb\u5c4f\u5e55\u5de6\u53f3\u533a\u57df\u7ffb\u9875\uff08\u6ed1\u52a8\u7ffb\u9875\u59cb\u7ec8\u5f00\u542f\uff09'
-                : '\u70b9\u51fb\u5c4f\u5e55\u4e0d\u7ffb\u9875\uff08\u6ed1\u52a8\u7ffb\u9875\u59cb\u7ec8\u5f00\u542f\uff09';
-            this.el.tapPageBtn.classList.toggle('active', enabled);
-        }
-
-        syncRotateButton() {
-            const rot = this.rotation;
-            this.el.rotateBtn.innerText = rot === 0 ? '\u65cb\u8f6c' : `${rot}\u5ea6`;
-            this.el.rotateBtn.title = rot === 0 ? '\u65cb\u8f6c90\u5ea6' : `\u5f53\u524d\u65cb\u8f6c\uff1a${rot}\u5ea6`;
-        }
-
-        syncFullscreenButton() {
-            if (this.el.fullScreenBtn) {
-                this.el.fullScreenBtn.innerText = document.fullscreenElement ? '\u9000\u51fa\u5168\u5c4f' : '\u5168\u5c4f';
-                this.el.fullScreenBtn.title = this.el.fullScreenBtn.innerText;
-            }
-        }
-
-        isSettingsPanelVisible() {
-            return Boolean(this.el.settingsPanel?.classList.contains('show'));
-        }
-
-        toggleSettingsPanel() {
-            if (this.isSettingsPanelVisible()) {
-                this.hideSettingsPanel();
-                return;
-            }
-            this.showControls();
-            this.el.settingsPanel.classList.add('show');
-            this.el.settingsPanel.setAttribute('aria-hidden', 'false');
-            this.el.settingsBtn.classList.add('active');
-        }
-
-        hideSettingsPanel() {
-            if (!this.el.settingsPanel) return;
-            this.el.settingsPanel.classList.remove('show');
-            this.el.settingsPanel.setAttribute('aria-hidden', 'true');
-            this.el.settingsBtn?.classList.remove('active');
-        }
-
-        handleSettingsOutsidePointerDown(e) {
-            if (!this.isSettingsPanelVisible()) return;
-            const target = e.target instanceof Element ? e.target : null;
-            if (target && (this.el.settingsPanel.contains(target) || this.el.settingsBtn.contains(target))) return;
-            this.hideSettingsPanel();
         }
 
         toggleFullscreen() {
@@ -372,29 +192,6 @@
             if (images.length) this.setupImagesForRenderMode(images);
             this.updateFitScale();
             this.applyTransform();
-        }
-
-        getReaderBackgroundColor() {
-            return READER_BACKGROUND_COLORS[this.backgroundMode] || READER_BACKGROUND_COLORS.black;
-        }
-
-        getReaderBackgroundLabel() {
-            return READER_BACKGROUND_LABELS[this.backgroundMode] || READER_BACKGROUND_LABELS.black;
-        }
-
-        applyReaderBackground() {
-            if (this.el.reader) this.el.reader.style.background = this.getReaderBackgroundColor();
-        }
-
-        getReaderFilterCss() {
-            const mode = readerPreferences.normalizeFilterMode(this.filterMode);
-            return READER_FILTER_CSS[mode] || READER_FILTER_CSS.original;
-        }
-
-        applyReaderFilter() {
-            if (this.el.reader) {
-                this.el.reader.style.setProperty('--comic-image-filter', this.getReaderFilterCss());
-            }
         }
 
         setControlsOpacity(opacity) {
@@ -430,96 +227,14 @@
             this.messageTimer = setTimeout(() => { this.el.toast.classList.remove('is-visible'); }, duration);
         }
 
-        isInteractiveTouchTarget(target) {
-            const el = target instanceof Element ? target : null;
-            return el?.closest('button, a, input, textarea, select')
-                || this.el.controls.contains(el)
-                || this.el.settingsControls.contains(el)
-                || this.el.settingsPanel.contains(el);
-        }
-
         handleResize() {
-            this.pageFlipToken += 1;
-            this.applyResponsiveLayout();
-        }
-
-        handleTapNavigation(clientX) {
-            if (!this.isTouchDevice || !this.el.reader) {
-                this.controlsVisible ? this.hideControls() : this.showControls();
-                return;
-            }
-
-            const rect = this.el.reader.getBoundingClientRect();
-            const x = clientX - rect.left;
-            if (this.tapPageNavigation && x < rect.width * TAP_ZONE_RATIO) {
-                this.turnPage(null, this.isRightToLeft ? this.lastStep : -this.lastStep);
-                return;
-            }
-            if (this.tapPageNavigation && x > rect.width * (1 - TAP_ZONE_RATIO)) {
-                this.turnPage(null, this.isRightToLeft ? -this.lastStep : this.lastStep);
-                return;
-            }
-
-            this.controlsVisible ? this.hideControls() : this.showControls();
-        }
-
-        clearPendingTap() {
-            if (!this.pendingTapTimer) return;
-            clearTimeout(this.pendingTapTimer);
-            this.pendingTapTimer = null;
-        }
-
-        handleSingleFingerTap(clientX, clientY) {
-            const now = Date.now();
-            const isDoubleTap = now - this.lastTapTime < DOUBLE_TAP_DELAY
-                && Math.abs(clientX - this.lastTapX) < 36
-                && Math.abs(clientY - this.lastTapY) < 36;
-
-            this.clearPendingTap();
-            if (isDoubleTap) {
-                this.lastTapTime = 0;
-                this.lastTapX = 0;
-                this.lastTapY = 0;
-                this.animateTransform(220);
-                if (Math.abs(this.scale - 1) < 0.05) {
-                    this.zoomAt(clientX, clientY, this.getDoubleClickScale());
-                    this.touchPanLocked = this.scale > 1 + TOUCH_ZOOM_EPSILON;
-                    return;
-                }
-                this.resetScaleAndPan();
-                this.touchPanLocked = false;
-                return;
-            }
-
-            this.lastTapTime = now;
-            this.lastTapX = clientX;
-            this.lastTapY = clientY;
-            this.pendingTapTimer = setTimeout(() => {
-                this.pendingTapTimer = null;
-                this.handleTapNavigation(clientX);
-            }, TAP_DELAY);
-        }
-
-        isTouchPanMode() {
-            return this.touchPanLocked && this.scale > 1 + TOUCH_ZOOM_EPSILON;
-        }
-
-        async loadExportImageSafe(src) {
-            try {
-                const res = await fetch(src);
-                if (!res.ok) return this.loadImage(src);
-                const blob = await res.blob();
-                const url = URL.createObjectURL(blob);
-                const img = await new Promise((resolve) => {
-                    const el = new Image();
-                    el.onload = () => { URL.revokeObjectURL(url); resolve(el); };
-                    el.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
-                    el.src = url;
-                });
-                return img || this.loadImage(src);
-            } catch (_) {
-                return this.loadImage(src);
-            }
+            if (!this.isOpen || this.resizeFrame !== null) return;
+            this.resizeFrame = window.requestAnimationFrame(() => {
+                this.resizeFrame = null;
+                if (!this.isOpen) return;
+                animations.cancel(this.el.imgContainer, true);
+                this.applyResponsiveLayout();
+            });
         }
 
         getVisibleImageDescriptors() {
@@ -536,214 +251,23 @@
             return readerScreenshot.capture(this, selectionRect, descriptors);
         }
 
-        // 触摸事件处理
-        handleTouchStart(e) {
-            if (this.isSelectingScreenshot) return;
-            if (e.touches.length === 2) {
-                // 双指缩放开启
-                e.preventDefault();
-                this.clearPendingTap();
-                this.setTransformTransition('none');
-                this.isTwoFingerGesturing = true;
-                this.touchPanLocked = true;
-                this.touchDidMoveImage = false;
-                this.touchEdgePageStep = 0;
-                const dx = e.touches[0].clientX - e.touches[1].clientX;
-                const dy = e.touches[0].clientY - e.touches[1].clientY;
-                this.initialPinchDistance = Math.sqrt(dx * dx + dy * dy);
-                this.initialScale = this.scale;
-                this.initialCenterX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-                this.initialCenterY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-                this.twoFingerTapCandidate = true;
-                this.twoFingerTapStartTime = Date.now();
-                this.twoFingerTapCenterX = this.initialCenterX;
-                this.twoFingerTapCenterY = this.initialCenterY;
-                return;
-            }
-
-            if (e.touches.length === 1) {
-                this.touchStartX = e.touches[0].clientX;
-                this.touchStartY = e.touches[0].clientY;
-                this.touchEndX = this.touchStartX;
-                this.touchEndY = this.touchStartY;
-                this.isTouchSwiping = false;
-                this.touchDidMoveImage = false;
-                this.touchEdgePageStep = 0;
-                this.touchStartTime = Date.now();
-                this.touchStartedOnInteractive = this.isInteractiveTouchTarget(e.target);
-                this.initX = this.translateX;
-                this.initY = this.translateY;
-                if (this.touchStartedOnInteractive) {
-                    this.showControls();
-                }
-            }
-        }
-
-        handleTouchMove(e) {
-            if (this.isSelectingScreenshot) return;
-            if (e.touches.length === 2 && this.isTwoFingerGesturing) {
-                // 双指缩放中
-                e.preventDefault();
-                const dx = e.touches[0].clientX - e.touches[1].clientX;
-                const dy = e.touches[0].clientY - e.touches[1].clientY;
-                const currentDistance = Math.sqrt(dx * dx + dy * dy);
-
-                const scaleFactor = currentDistance / this.initialPinchDistance;
-                this.scale = Math.max(MIN_SCALE, Math.min(this.getMaxScale(), this.initialScale * scaleFactor));
-
-                const currentCenterX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-                const currentCenterY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-                if (Math.abs(currentDistance - this.initialPinchDistance) > 8
-                    || Math.abs(currentCenterX - this.twoFingerTapCenterX) > 8
-                    || Math.abs(currentCenterY - this.twoFingerTapCenterY) > 8) {
-                    this.twoFingerTapCandidate = false;
-                }
-                const renderScale = this.getRenderScale();
-                this.translateX += (currentCenterX - this.initialCenterX) / renderScale;
-                this.translateY += (currentCenterY - this.initialCenterY) / renderScale;
-                this.initialCenterX = currentCenterX;
-                this.initialCenterY = currentCenterY;
-
-                this.applyTransform();
-                return;
-            }
-
-            if (e.touches.length === 1) {
-                this.touchEndX = e.touches[0].clientX;
-                this.touchEndY = e.touches[0].clientY;
-
-                const moveX = this.touchEndX - this.touchStartX;
-                const moveY = this.touchEndY - this.touchStartY;
-                const deltaX = Math.abs(moveX);
-                const deltaY = Math.abs(moveY);
-
-                if (!this.touchStartedOnInteractive) {
-                    if (deltaX > 4 || deltaY > 4) {
-                        e.preventDefault();
-                        this.setTransformTransition('none');
-                        const renderScale = this.getRenderScale();
-                        const limits = this.getPanLimits();
-                        const nextX = this.initX + moveX / renderScale;
-                        const nextY = this.initY + moveY / renderScale;
-                        const clampedX = this.clampPanValue(nextX, limits.maxX);
-                        const clampedY = this.clampPanValue(nextY, limits.maxY);
-
-                        this.translateX = clampedX;
-                        this.translateY = clampedY;
-                        this.applyTransform();
-
-                        const movedImage = Math.abs(clampedX - this.initX) > TOUCH_EDGE_EPSILON
-                            || Math.abs(clampedY - this.initY) > TOUCH_EDGE_EPSILON;
-                        const blockedHorizontally = limits.maxX <= TOUCH_EDGE_EPSILON
-                            || Math.abs(nextX - clampedX) > TOUCH_EDGE_EPSILON;
-
-                        this.touchDidMoveImage = movedImage;
-                        this.isTouchSwiping = deltaX > 10 || deltaY > 10;
-                        this.touchEdgePageStep = 0;
-                        if (deltaX > deltaY && deltaX > SWIPE_THRESHOLD && blockedHorizontally) {
-                            this.touchEdgePageStep = (moveX > 0) !== this.isRightToLeft ? -this.lastStep : this.lastStep;
-                        }
-                    }
-                    return;
-                }
-
-                if (deltaX > 10 || deltaY > 10) {
-                    this.isTouchSwiping = true;
-                    if (deltaX > deltaY) {
-                        e.preventDefault();
-                    }
-                }
-            }
-        }
-
-        handleTouchEnd(e) {
-            if (this.isSelectingScreenshot) return;
-            if (e.type === 'touchcancel') {
-                this.clearPendingTap();
-                this.isTwoFingerGesturing = false;
-                this.isTouchSwiping = false;
-                this.touchDidMoveImage = false;
-                this.touchEdgePageStep = 0;
-                this.twoFingerTapCandidate = false;
-                return;
-            }
-
-            if (this.isTwoFingerGesturing) {
-                const isTwoFingerTap = this.twoFingerTapCandidate
-                    && Date.now() - this.twoFingerTapStartTime < 300;
-                this.isTwoFingerGesturing = false;
-                this.twoFingerTapCandidate = false;
-                if (this.scale <= 1 + TOUCH_ZOOM_EPSILON) {
-                    this.touchPanLocked = false;
-                }
-                if (isTwoFingerTap) {
-                    const now = Date.now();
-                    const isDoubleTwoFingerTap = now - this.lastTwoFingerTapTime < 320
-                        && Math.abs(this.twoFingerTapCenterX - this.lastTwoFingerTapCenterX) < 40
-                        && Math.abs(this.twoFingerTapCenterY - this.lastTwoFingerTapCenterY) < 40;
-
-                    if (isDoubleTwoFingerTap) {
-                        this.lastTwoFingerTapTime = 0;
-                        this.lastTwoFingerTapCenterX = 0;
-                        this.lastTwoFingerTapCenterY = 0;
-                        this.resetTransform();
-                    } else {
-                        this.lastTwoFingerTapTime = now;
-                        this.lastTwoFingerTapCenterX = this.twoFingerTapCenterX;
-                        this.lastTwoFingerTapCenterY = this.twoFingerTapCenterY;
-                    }
-                }
-                return;
-            }
-
-            const deltaX = this.touchEndX - this.touchStartX;
-            const deltaY = this.touchEndY - this.touchStartY;
-            const threshold = SWIPE_THRESHOLD;
-            const isTap = Math.abs(deltaX) < 10 && Math.abs(deltaY) < 10 && Date.now() - this.touchStartTime < 300;
-
-            if (this.touchEdgePageStep && Math.abs(deltaX) > threshold && Math.abs(deltaX) > Math.abs(deltaY)) {
-                const step = this.touchEdgePageStep;
-                this.touchEdgePageStep = 0;
-                this.touchDidMoveImage = false;
-                this.isTouchSwiping = false;
-                this.turnPage(null, step);
-                return;
-            }
-
-            if (this.touchDidMoveImage) {
-                this.isTouchSwiping = false;
-                this.touchDidMoveImage = false;
-                this.touchEdgePageStep = 0;
-                return;
-            }
-
-            if (isTap) {
-                if (!this.touchStartedOnInteractive) {
-                    e.preventDefault();
-                    this.handleSingleFingerTap(this.touchEndX, this.touchEndY);
-                }
-                this.isTouchSwiping = false;
-                return;
-            }
-
-            this.clearPendingTap();
-            if (!this.isTouchSwiping || (Math.abs(deltaX) < threshold && Math.abs(deltaY) < threshold)) {
-                return;
-            }
-
-            if (Math.abs(deltaX) > threshold) {
-                const dir = (deltaX > 0) !== this.isRightToLeft ? -this.lastStep : this.lastStep;
-                this.turnPage(null, dir);
-            }
-
-            this.isTouchSwiping = false;
-            this.touchEdgePageStep = 0;
-        }
-
-        // 5. 核心渲染逻辑（处理动画切换）
-        render(animate = true, step = 0) {
+        // Keep the current page visible until the next group is decoded.
+        async render(animate = true, step = 0) {
+            const container = this.el.imgContainer;
+            if (!container) return;
             const renderIndex = this.currentIndex;
             const transitionToken = ++this.pageFlipToken;
+            this.cancelPreload();
+            animations.cancel(container);
+            this.pruneImageCache();
+            this.applyTransform();
+            const result = await this.loadImages(renderIndex, transitionToken);
+            if (transitionToken !== this.pageFlipToken || container !== this.el.imgContainer) return;
+            if (!result) {
+                if (container.firstChild) this.currentIndex = this.displayedIndex;
+                this.showReaderMessage('图片加载失败，请重试', true);
+                return;
+            }
             animations.runTransition({
                 animate,
                 imgContainer: this.el.imgContainer,
@@ -757,35 +281,27 @@
                 getTransitionToken: () => this.pageFlipToken,
                 getTransform: () => this.getTransformStyle(),
                 getShiftedTransform: (screenTranslateX) => this.getTransformStyle(screenTranslateX),
-                loadImages: (index, mode, direction) => { void this.loadImages(index, mode, direction); }
+                rotation: this.rotation,
+                loadImages: (_index, mode, direction) => {
+                    if (transitionToken !== this.pageFlipToken || container !== this.el.imgContainer) return;
+                    this.commitImages(result.images, mode, direction, result.preloadStart);
+                    this.displayedIndex = renderIndex;
+                }
             });
         }
 
         // 6. 智能图片加载逻辑（决定单双页）
-        async loadImages(renderIndex, animationMode = animations.IMMEDIATE_RENDER_MODE, transitionDirection = 0) {
+        async loadImages(renderIndex, transitionToken = this.pageFlipToken) {
             if (renderIndex !== this.currentIndex) return;
-
-            this.resetPageInteractionState();
-
-            animations.resetImageContainer(
-                this.el.imgContainer,
-                animationMode,
-                transitionDirection,
-                () => this.applyTransform(),
-                () => this.getTransformStyle(),
-                (screenTranslateX) => this.getTransformStyle(screenTranslateX)
-            );
-
             const result = await readerPageGroups.loadVisibleImages({
-                currentIndex: this.currentIndex,
+                currentIndex: renderIndex,
                 imgList: this.imgList,
                 viewMode: this.viewMode,
-                loadImage: (src) => this.loadImage(src),
+                loadImage: (src) => transitionToken === this.pageFlipToken ? this.loadImage(src) : Promise.resolve(null),
                 isWideImage: (img) => this.isWideImage(img)
             });
-            if (!result || renderIndex !== this.currentIndex) return;
-
-            this.commitImages(result.images, animationMode, transitionDirection, result.preloadStart);
+            if (renderIndex !== this.currentIndex || transitionToken !== this.pageFlipToken) return;
+            return result;
         }
 
         resetPageInteractionState() {
@@ -803,58 +319,30 @@
             this.clearPendingTap();
         }
 
-        loadImage(src) {
-            if (!src) return Promise.resolve(null);
-            const cached = this.imageCache.get(src);
-            if (cached) return cached;
-
-            let img = null;
-            const promise = new Promise((resolve) => {
-                img = new Image();
-                img.onload = () => resolve(img);
-                img.onerror = () => {
-                    this.imageCache.delete(src);
-                    resolve(null);
-                };
-            });
-            this.imageCache.set(src, promise);
-            img.src = src;
-            return promise;
-        }
-
-        preloadImages(startIndex = 0) {
-            if (!Array.isArray(this.imgList) || this.imgList.length === 0) return;
-            const start = Math.max(0, Math.min(startIndex, this.imgList.length));
-            const end = Math.min(this.imgList.length, start + PRELOAD_COUNT);
-            for (let index = start; index < end; index += 1) {
-                void this.loadImage(this.imgList[index]);
-            }
-            this.pruneImageCache(start);
-        }
-
-        pruneImageCache(preloadStart = this.currentIndex) {
-            if (!this.imageCache.size || !Array.isArray(this.imgList)) return;
-            const keepStart = Math.max(0, this.currentIndex - PRELOAD_COUNT);
-            const keepEnd = Math.min(
-                this.imgList.length,
-                Math.max(this.currentIndex + this.activePageCount, preloadStart + PRELOAD_COUNT)
-            );
-            const keepUrls = new Set(this.imgList.slice(keepStart, keepEnd));
-            for (const src of this.imageCache.keys()) {
-                if (!keepUrls.has(src)) this.imageCache.delete(src);
-            }
-        }
+        get imageCache() { return this.imageLoader.imageCache; }
+        get preloadActive() { return this.imageLoader.preloadActive; }
+        loadImage(src, preload = false) { return this.imageLoader.loadImage(src, preload); }
+        cancelPreload() { this.imageLoader.cancelPreload(); }
+        preloadImages(start = 0, delay = 800) { this.imageLoader.preloadImages(start, delay); }
+        pruneImageCache(start, reserve) { this.imageLoader.pruneImageCache(start, reserve); }
 
         isWideImage(img) {
             return readerPageGroups.isWideImage(img, this.rotation);
         }
 
         commitImages(images, animationMode, transitionDirection = 0, preloadStart = this.currentIndex + images.length) {
-            images.forEach(img => {
-                this.el.imgContainer.appendChild(img);
-            });
+            if (this.transformTransitionTimer) clearTimeout(this.transformTransitionTimer);
+            this.transformTransitionTimer = null;
+            this.el.imgContainer.style.transition = 'none';
+            this.resetPageInteractionState();
             this.setupImagesForRenderMode(images);
             this.updateFitScale(images);
+            animations.resetImageContainer(
+                this.el.imgContainer, animationMode, transitionDirection,
+                () => this.applyTransform(), () => this.getTransformStyle(),
+                (offset) => this.getTransformStyle(offset)
+            );
+            this.el.imgContainer.replaceChildren(...images);
             this.updatePageInfo(images.length);
             animations.finishRender(
                 this.el.imgContainer,
@@ -898,10 +386,11 @@
             const direction = Math.sign(step);
             if (!this.canTurnPage(direction)) return;
             const requestIndex = this.currentIndex;
+            const token = this.pageFlipToken;
             const nextIndex = direction < 0
                 ? await this.getPreviousPageGroupIndex()
                 : this.getNextPageGroupIndex(step);
-            if (requestIndex !== this.currentIndex) return;
+            if (!this.isOpen || token !== this.pageFlipToken || requestIndex !== this.currentIndex) return;
             if (nextIndex < 0 || nextIndex >= this.imgList.length || nextIndex === this.currentIndex) return;
             const actualStep = nextIndex - this.currentIndex;
             this.currentIndex = nextIndex;
@@ -922,7 +411,11 @@
             this.el.pageInfo.classList.add('is-editing');
             this.el.pageInput.value = '';
             this.el.pageRange.textContent = ` / ${this.imgList.length}`;
-            window.setTimeout(() => this.el.pageInput.focus(), 0);
+            clearTimeout(this.focusTimer);
+            this.focusTimer = window.setTimeout(() => {
+                this.focusTimer = null;
+                this.el.pageInput?.focus();
+            }, 0);
         }
 
         hidePageInput() {
@@ -992,6 +485,7 @@
         }
 
         updateDirection() {
+            this.panGeometry = null;
             if (this.el.imgContainer) this.el.imgContainer.style.flexDirection = this.isRightToLeft ? 'row-reverse' : 'row';
         }
 
@@ -999,7 +493,7 @@
 
         handleFullscreenChange() {
             this.syncFullscreenButton();
-            this.applyResponsiveLayout();
+            this.handleResize();
         }
 
         handleKeyDown(e) {
@@ -1020,10 +514,21 @@
 
         // 清理并关闭
         close() {
+            this.isOpen = false;
+            if (this.resizeFrame !== null) window.cancelAnimationFrame(this.resizeFrame);
+            this.resizeFrame = null;
             if (this.hideTimer) clearTimeout(this.hideTimer);
             if (this.messageTimer) clearTimeout(this.messageTimer);
+            clearTimeout(this.focusTimer);
+            this.hideTimer = this.messageTimer = this.focusTimer = null;
             this.clearPendingTap();
             this.pageFlipToken += 1;
+            this.cancelPreload();
+            animations.cancel(this.el.imgContainer);
+            this.screenshotTask?.cancel();
+            this.screenshotTask = null;
+            if (this.transformTransitionTimer) clearTimeout(this.transformTransitionTimer);
+            this.transformTransitionTimer = null;
             this.cancelScreenshotSelection(false, false);
             this.hideSettingsPanel();
 
@@ -1033,14 +538,31 @@
             }
 
             if (this.el.reader) {
+                for (const element of Object.values(this.el)) element.onclick = null;
+                this.el.imgContainer?.replaceChildren();
                 this.el.reader.remove();
                 this.el = {};
             }
-            this.imageCache.clear();
+            this.imageLoader.clear();
+            this.imgList = [];
+            this.selectionHandles = {};
+            this.selectionStart = this.selectionCurrent = null;
+            this.selectionMoveStart = this.selectionMoveRect = null;
+            this.panGeometry = this.viewportRect = null;
+            this.isDragging = false;
 
             // 显示收藏夹悬浮按钮
             const favBtn = document.getElementById('bilibili-fav-float-btn');
             if (favBtn) favBtn.style.display = '';
+        }
+
+        destroy() {
+            this.close();
+            if (this.entryButton) {
+                this.entryButton.onclick = null;
+                this.entryButton.remove();
+                this.entryButton = null;
+            }
         }
     }
 

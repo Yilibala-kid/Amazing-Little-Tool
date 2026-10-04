@@ -299,6 +299,8 @@
         };
     }
 
+    const listSignatures = new WeakMap();
+
     function renderFavoriteList() {
         const listEl = document.querySelector('.bilibili-fav-list');
         if (!listEl) return;
@@ -310,6 +312,9 @@
         document.getElementById('bilibili-fav-panel')?.style.setProperty('--bilibili-fav-columns', String(columns));
 
         const favorites = dataProvider().favorites || [];
+        const signature = JSON.stringify(favorites);
+        if (listSignatures.get(listEl) === signature) return;
+        listSignatures.set(listEl, signature);
         if (favorites.length === 0) {
             listEl.innerHTML = '<div class="bilibili-fav-empty">\u6682\u65e0\u6536\u85cf<br>\u70b9\u51fb\u4e0b\u65b9\u6309\u94ae\u6dfb\u52a0</div>';
             return;

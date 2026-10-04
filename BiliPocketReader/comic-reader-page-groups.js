@@ -31,7 +31,12 @@
     }
 
     async function loadVisibleImages({ currentIndex, imgList, viewMode, loadImage, isWideImage: isWideImageForReader }) {
-        const img1 = await loadImage(imgList[currentIndex]);
+        const first = loadImage(imgList[currentIndex]);
+        // Explicit double-page mode already needs both images; do not make the
+        // second original wait for the first one's network and decode work.
+        const second = viewMode === 'double' && currentIndex + 1 < imgList.length
+            ? loadImage(imgList[currentIndex + 1]) : null;
+        const img1 = await first;
         if (!img1) return null;
 
         const canUseDoubleMode = viewMode === 'double' || (viewMode === 'auto' && !isWideImageForReader(img1));
@@ -39,7 +44,7 @@
             return { images: [img1], preloadStart: currentIndex + 1 };
         }
 
-        const img2 = await loadImage(imgList[currentIndex + 1]);
+        const img2 = await (second || loadImage(imgList[currentIndex + 1]));
         if (!img2) return { images: [img1], preloadStart: currentIndex + 1 };
 
         const images = viewMode === 'auto' && isWideImageForReader(img2) ? [img1] : [img1, img2];

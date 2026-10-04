@@ -24,42 +24,12 @@ public partial class MainWindow : Window
 
     private void Thumbnail_Click(object sender, MouseButtonEventArgs e)
     {
-        if (sender is Image img && img.DataContext is System.Windows.Media.Imaging.BitmapSource)
+        if (sender is Image { DataContext: System.Windows.Media.Imaging.BitmapSource bitmap } &&
+            DataContext is MainViewModel vm)
         {
-            var itemsControl = FindParent<ItemsControl>(img);
-            if (itemsControl?.ItemsSource is System.Collections.IEnumerable items)
-            {
-                int index = 0;
-                foreach (var item in items)
-                {
-                    if (item == img.DataContext)
-                    {
-                        if (DataContext is MainViewModel vm)
-                        {
-                            vm.SelectFrameCommand.Execute(index);
-                        }
-                        return;
-                    }
-                    index++;
-                }
-            }
+            var index = vm.Thumbnails.IndexOf(bitmap);
+            if (index >= 0) vm.SelectFrameCommand.Execute(index);
         }
-    }
-
-    private static T? FindParent<T>(DependencyObject child) where T : DependencyObject
-    {
-        var parent = System.Windows.Media.VisualTreeHelper.GetParent(child);
-        while (parent != null)
-        {
-            if (parent is T t) return t;
-            parent = System.Windows.Media.VisualTreeHelper.GetParent(parent);
-        }
-        return null;
-    }
-
-    private void OnHandleMouseDown(object sender, MouseButtonEventArgs e)
-    {
-        // 手柄点击由父级 Canvas 的 Behavior 处理
     }
 
     private void SpeedComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)

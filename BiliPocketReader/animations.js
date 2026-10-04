@@ -7,12 +7,32 @@
     const FADE_SHIFT_DISTANCE = 60;
     const SMOOTH_SCALE_START = 0.95;
     const DEFAULT_ANIMATION_MODE = 'smooth';
-    const ANIMATION_MODES = ['smooth', 'fade'];
+    const ANIMATION_MODES = ['smooth', 'fade', 'paper'];
+    const activeTransitions = new WeakMap();
     const IMMEDIATE_RENDER_MODE = 'immediate';
     const ANIMATION_BUTTON_MAP = {
         smooth: ['\u5e73\u6ed1', '\u7ffb\u9875\u52a8\u753b\uff1a\u6de1\u5165 + \u5e73\u79fb + \u7ec6\u5fae\u7f29\u653e'],
-        fade: ['\u6de1\u5165', '\u7ffb\u9875\u52a8\u753b\uff1a\u6de1\u5165\u6de1\u51fa']
+        fade: ['\u6de1\u5165', '\u7ffb\u9875\u52a8\u753b\uff1a\u6de1\u5165\u6de1\u51fa'],
+        paper: ['类纸', '翻页动画：弯曲纸面、书脊与光影翻书效果']
     };
+
+    function cancelTransition(container, settle = false) {
+        if (!container) return;
+        activeTransitions.get(container)?.(settle);
+        activeTransitions.delete(container);
+        Object.assign(container.style, { transition: 'none', opacity: '1', visibility: '' });
+    }
+
+    function scheduleCommit(container, commit) {
+        const timer = window.setTimeout(() => {
+            activeTransitions.delete(container);
+            commit();
+        }, FADE_ANIMATION_DURATION);
+        activeTransitions.set(container, settle => {
+            window.clearTimeout(timer);
+            if (settle) commit();
+        });
+    }
 
     function normalizeMode(animationMode) {
         return ANIMATION_MODES.includes(animationMode) ? animationMode : DEFAULT_ANIMATION_MODE;
@@ -60,11 +80,11 @@
             filter: 'none',
             transform: withSubtleScale(getShiftedTransform(getShiftedTransformFn, getTransform, direction * FADE_SHIFT_DISTANCE))
         });
-        window.setTimeout(() => {
+        scheduleCommit(imgContainer, () => {
             if (renderIndex !== getCurrentIndex()) return;
             if (transitionToken !== getTransitionToken()) return;
             loadImages(renderIndex, 'smooth', direction);
-        }, FADE_ANIMATION_DURATION);
+        });
     }
 
     function playFadeTransition(imgContainer, renderIndex, getCurrentIndex, transitionToken, getTransitionToken, loadImages, direction) {
@@ -73,11 +93,11 @@
             opacity: '0',
             filter: 'none'
         });
-        window.setTimeout(() => {
+        scheduleCommit(imgContainer, () => {
             if (renderIndex !== getCurrentIndex()) return;
             if (transitionToken !== getTransitionToken()) return;
             loadImages(renderIndex, 'fade', direction);
-        }, FADE_ANIMATION_DURATION);
+        });
     }
 
     function runTransitionFlow(options) {
@@ -86,8 +106,21 @@
             renderIndex, getCurrentIndex, transitionToken, getTransitionToken, loadImages,
             getTransform, getShiftedTransform
         } = options;
-        const renderMode = resolveRenderMode(animate, Boolean(imgContainer.firstChild), animationMode);
+        cancelTransition(imgContainer);
+        const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+        const renderMode = resolveRenderMode(animate && !reduceMotion, Boolean(imgContainer.firstChild), animationMode);
         const direction = resolveTransitionDirection(step, isRightToLeft, lastStep);
+
+        if (renderMode === 'paper' && window.BilibiliToolbox.paperTurn) {
+            const stop = window.BilibiliToolbox.paperTurn.play({
+                container: imgContainer, direction, rotation: options.rotation || 0,
+                commit: () => loadImages(renderIndex, IMMEDIATE_RENDER_MODE, direction),
+                isCurrent: () => transitionToken === getTransitionToken() && renderIndex === getCurrentIndex(),
+                onFinish: () => activeTransitions.delete(imgContainer)
+            });
+            if (stop) activeTransitions.set(imgContainer, stop);
+            return;
+        }
 
         if (renderMode === 'smooth') {
             playSmoothTransition(imgContainer, renderIndex, getCurrentIndex, transitionToken, getTransitionToken, loadImages, direction, getTransform, getShiftedTransform);
@@ -102,7 +135,6 @@
 
     function resetAnimatedContainer(imgContainer, animationMode, transitionDirection, applyTransform, getTransform, getShiftedTransformFn) {
         const mode = ANIMATION_MODES.includes(animationMode) ? animationMode : IMMEDIATE_RENDER_MODE;
-        imgContainer.innerHTML = '';
         imgContainer.style.transition = 'none';
         applyTransform();
         if (mode === 'smooth') {
@@ -159,7 +191,8 @@
         syncAnimationButton: syncAnimationButtonState,
         runTransition: runTransitionFlow,
         resetImageContainer: resetAnimatedContainer,
-        finishRender: finishAnimatedRender
+        finishRender: finishAnimatedRender,
+        cancel: cancelTransition
     };
 
     window.BilibiliToolbox.animations = animationsApi;

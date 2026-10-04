@@ -2,20 +2,12 @@
 (function() {
     'use strict';
 
-    if (!window.Shared) throw new Error('BilibiliToolbox: shared.js not loaded');
-    if (!window.BilibiliToolbox?.storage) throw new Error('BilibiliToolbox: storage-service.js not loaded');
-    if (!window.BilibiliToolbox?.favorites) throw new Error('BilibiliToolbox: favorites service not loaded');
-    if (!window.BilibiliToolbox?.comicImages) throw new Error('BilibiliToolbox: comic-reader-images.js not loaded');
-    if (!window.BilibiliToolbox?.animations) throw new Error('BilibiliToolbox: animations.js not loaded');
-    if (!window.BilibiliToolbox?.reader) throw new Error('BilibiliToolbox: comic-reader.js not loaded');
-    if (!window.BilibiliToolbox?.pageInfo) throw new Error('BilibiliToolbox: content-page-info.js not loaded');
-    if (!window.BilibiliToolbox?.url) throw new Error('BilibiliToolbox: content-url.js not loaded');
-    if (!window.BilibiliToolbox?.spaceOpusTabs) throw new Error('BilibiliToolbox: space-opus-tabs.js not loaded');
-    if (!window.BilibiliToolbox?.dynamicFilter) throw new Error('BilibiliToolbox: dynamic-filter.js not loaded');
-    if (!window.BilibiliToolbox?.settingsPopoverUi) throw new Error('BilibiliToolbox: settings-popover-ui.js not loaded');
-    if (!window.BilibiliToolbox?.favoritesUi) throw new Error('BilibiliToolbox: favorites-ui.js not loaded');
-
     const Toolbox = window.BilibiliToolbox;
+    if (!window.Shared) throw new Error('BilibiliToolbox: shared.js not loaded');
+    for (const service of ['storage', 'favorites', 'comicImages', 'animations', 'reader',
+        'pageInfo', 'url', 'spaceOpusTabs', 'dynamicFilter', 'settingsPopoverUi', 'favoritesUi']) {
+        if (!Toolbox?.[service]) throw new Error(`BilibiliToolbox: ${service} service not loaded`);
+    }
     const storage = Toolbox.storage;
     let toolboxData = window.Shared.createDefaultData();
     let unsubscribeStorage = null;
@@ -23,11 +15,21 @@
     let initialized = false;
     let messageHandler = null;
     let readerInstance = null;
+    let readerPage = null;
+    let lifecycleToken = 0;
 
     function syncAll(data) {
+        const previous = toolboxData;
         toolboxData = window.Shared.normalizeToolboxData(data);
-        Toolbox.favoritesUi.sync();
-        Toolbox.dynamicFilter.sync();
+        const columnsChanged = previous.settings.favoriteColumns !== toolboxData.settings.favoriteColumns;
+        if (columnsChanged || JSON.stringify(previous.favorites) !== JSON.stringify(toolboxData.favorites)) {
+            Toolbox.favoritesUi.sync();
+        }
+        if (previous.settings.hideForwardDynamics !== toolboxData.settings.hideForwardDynamics) {
+            Toolbox.dynamicFilter.sync();
+        } else if (columnsChanged) {
+            Toolbox.settingsPopoverUi.render();
+        }
     }
 
     function setupMessageBridge() {
@@ -43,7 +45,9 @@
     async function init() {
         if (initialized) return;
         initialized = true;
+        const token = ++lifecycleToken;
         toolboxData = await storage.init();
+        if (!initialized || token !== lifecycleToken) return;
         unsubscribeStorage = storage.onChanged(syncAll);
 
         Toolbox.url.init();
@@ -70,28 +74,47 @@
             settingsUi: Toolbox.settingsPopoverUi
         });
         window.addEventListener(Toolbox.url.URL_CHANGE_EVENT, handleUrlChange);
+        window.addEventListener('pagehide', handlePageHide);
         setupMessageBridge();
 
-        if (Toolbox.reader.shouldInitComicReader()) {
+        syncReaderPage();
+    }
+
+    function syncReaderPage() {
+        const url = new URL(window.location.href);
+        const page = Toolbox.reader.shouldInitComicReader() ? url.origin + url.pathname : null;
+        if (page === readerPage) return;
+        readerInstance?.destroy();
+        readerInstance = null;
+        readerPage = page;
+        if (page) {
             readerInstance = new Toolbox.reader.BiliComicReader();
             readerInstance.init();
         }
     }
 
+    function handlePageHide() {
+        readerInstance?.close();
+    }
+
     function handleUrlChange() {
+        syncReaderPage();
         Toolbox.spaceOpusTabs.sync();
         Toolbox.dynamicFilter.sync();
         Toolbox.favoritesUi.syncPageMode();
     }
 
     function destroy() {
+        lifecycleToken += 1;
         if (unsubscribeStorage) unsubscribeStorage();
         unsubscribeStorage = null;
         if (messageHandler) chrome.runtime.onMessage.removeListener(messageHandler);
         messageHandler = null;
         window.removeEventListener(Toolbox.url.URL_CHANGE_EVENT, handleUrlChange);
-        readerInstance?.close?.();
+        window.removeEventListener('pagehide', handlePageHide);
+        readerInstance?.destroy();
         readerInstance = null;
+        readerPage = null;
         Toolbox.spaceOpusTabs.destroy();
         Toolbox.settingsPopoverUi.destroy();
         if (settingsEventBag) settingsEventBag.cleanup();

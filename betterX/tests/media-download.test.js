@@ -213,15 +213,8 @@ test('background starts trusted downloads and rejects untrusted URLs', async () 
     assert.equal(releaseMessage.urls.length, 2);
 });
 
-test('content script preserves original formats, deduplicates by media identity, and uses flat filenames', () => {
-    const hooks = {};
-    const document = {
-        readyState: 'loading',
-        addEventListener: () => {}
-    };
-    runScript('content.js', {
-        __betterXTestHooks: hooks,
-        document,
+test('media utilities preserve original formats, deduplicate by media identity, and use flat filenames', () => {
+    const context = {
         location: { pathname: '/sample/status/123' },
         URL,
         Map,
@@ -231,7 +224,9 @@ test('content script preserves original formats, deduplicates by media identity,
         String,
         Number,
         Promise
-    });
+    };
+    runScript('media.js', context);
+    const hooks = context.BetterX.media;
 
     const apiUrl = hooks.getOriginalImageUrl('https://pbs.twimg.com/media/example.jpg');
     const domUrl = hooks.getOriginalImageUrl(

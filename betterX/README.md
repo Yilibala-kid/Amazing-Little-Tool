@@ -36,3 +36,36 @@ If a video has not been discovered yet, play it once and click **重新识别媒
 
 The bundled `gif.js` 0.2.0 encoder is distributed under the MIT license; its
 license is included under `vendor/gif.js-0.2.0/LICENSE`.
+
+## Code structure
+
+The isolated-world scripts load in the order listed in `manifest.json`. They
+share a small `globalThis.BetterX` namespace; each page service owns its state.
+
+| File | Responsibility |
+| --- | --- |
+| `media.js` | Status parsing, trusted media URLs, original image URLs, deduplication identities, video variants and filenames. |
+| `timeline.js` | Tweet detection, hiding/restoring cells, counts and debounced observation. |
+| `downloads.js` | Page/API media discovery, download state, runtime requests and conversion progress. |
+| `manager.js` | Floating button, panel, setting controls and user messages. |
+| `content.js` | Settings storage and composition of the page services. |
+| `page-observer.js` | Main-world API response observation; sends metadata over the validated page-message bridge. |
+| `background.js` | Revalidates download requests and coordinates direct downloads and offscreen conversion. |
+| `offscreen.js` | Local PNG/GIF conversion and temporary blob URLs. |
+
+Page services communicate through callbacks supplied by `content.js`. The
+main-world observer and extension worker stay in their separate execution
+contexts. URL validation in the worker remains the final download boundary.
+
+The entrypoint exposes `BetterX.contentApp.init()` and `destroy()` for explicit
+lifecycle management. Initialization is idempotent and discards late storage
+reads after destruction. Failed settings reads use defaults; queued saves retain
+their order and restore persisted settings after failure. Final page exits remove
+observers, listeners, UI and hidden-tweet markers; cached pages retain services
+for browser restoration.
+
+Run the tests from the repository root with:
+
+```powershell
+node --test betterX/tests/*.test.js
+```

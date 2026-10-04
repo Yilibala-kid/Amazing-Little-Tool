@@ -210,6 +210,7 @@ function loadDynamicFilterContext() {
 function loadDynamicFilterObserverContext() {
     let observedOptions = null;
     const context = createBaseContext({
+        location: { href: 'https://space.bilibili.com/123/dynamic' },
         document: {
             body: {},
             documentElement: { classList: new FakeClassList() },
@@ -270,14 +271,15 @@ function createFakeImageNode({ attrs = {} } = {}) {
 
 function loadUrlBridgeContext() {
     const listeners = {};
+    const location = { href: 'https://www.bilibili.com/' };
     const history = {
         pushCalls: 0,
         replaceCalls: 0,
-        pushState() { this.pushCalls += 1; },
-        replaceState() { this.replaceCalls += 1; }
+        pushState(_state, _title, url) { this.pushCalls += 1; location.href = new URL(url, location.href).href; },
+        replaceState(_state, _title, url) { this.replaceCalls += 1; location.href = new URL(url, location.href).href; }
     };
     const context = createBaseContext({
-        history,
+        history, location,
         Event: class {
             constructor(type) {
                 this.type = type;
@@ -467,7 +469,12 @@ function createFakeCard({ dataset = {}, attrs = {}, actionText = '', hasForwardC
     const { context, getObservedOptions } = loadDynamicFilterObserverContext();
     context.BilibiliToolbox.dynamicFilter.init();
 
-    assert.deepEqual(plain(getObservedOptions()), { childList: true, subtree: true });
+    assert.equal(getObservedOptions(), null, 'disabled filters do not observe the page');
+    context.BilibiliToolbox.dynamicFilter.setKeywordFilterState({ enabled: true, text: 'comic' });
+    assert.deepEqual(plain(getObservedOptions()), {
+        childList: true, subtree: true, characterData: true, attributes: true,
+        attributeOldValue: true, attributeFilter: ['class', 'data-type', 'data-dyn-type']
+    });
 }
 
 {
@@ -1087,16 +1094,16 @@ function createAnimationContainer() {
     const noop = () => {};
     const getTransform = () => 'scale(1) translate(0px,0px)';
 
-    assert.deepEqual(plain(animations.ANIMATION_MODES), ['smooth', 'fade']);
+    assert.deepEqual(plain(animations.ANIMATION_MODES), ['smooth', 'fade', 'paper']);
 
     const immediateContainer = createAnimationContainer();
     animations.resetImageContainer(immediateContainer, animations.IMMEDIATE_RENDER_MODE, 0, noop, getTransform, null);
-    assert.equal(immediateContainer.children.length, 0);
+    assert.equal(immediateContainer.children.length, 1);
     assert.equal(immediateContainer.style.opacity, '1');
 
     const fadeContainer = createAnimationContainer();
     animations.resetImageContainer(fadeContainer, 'fade', 0, noop, getTransform, null);
-    assert.equal(fadeContainer.children.length, 0);
+    assert.equal(fadeContainer.children.length, 1);
     assert.equal(fadeContainer.style.opacity, '0');
 }
 
@@ -1194,6 +1201,8 @@ function createFakeImageClass({ failLoad = false } = {}) {
     const created = [];
     class FakeImage {
         constructor() {
+            this.naturalWidth = 1200;
+            this.naturalHeight = 1800;
             created.push(this);
         }
 
@@ -1206,6 +1215,7 @@ function createFakeImageClass({ failLoad = false } = {}) {
         get src() {
             return this._src;
         }
+        removeAttribute(name) { if (name === 'src') delete this._src; }
     }
 
     return { Image: FakeImage, created };
@@ -1216,7 +1226,7 @@ function loadComicReaderCoreContext(ImageClass, overrides = {}) {
         Image: ImageClass,
         document: createFakeDocument(),
         clearTimeout() {},
-        setTimeout() { return 1; }
+        setTimeout: overrides.setTimeout || (() => 1)
     });
     runFile(context, 'shared.js');
     Object.assign(context.BilibiliToolbox, {
@@ -1262,8 +1272,13 @@ function loadComicReaderCoreContext(ImageClass, overrides = {}) {
         readerPageGroups: {},
         readerInteractions: {}
     });
+    runFile(context, 'reader-settings.js');
+    runFile(context, 'reader-touch.js');
+    runFile(context, 'reader-image-loader.js');
     runFile(context, 'comic-reader.js');
-    return new context.BilibiliToolbox.reader.BiliComicReader();
+    const reader = new context.BilibiliToolbox.reader.BiliComicReader();
+    reader.isOpen = true;
+    return reader;
 }
 
 (async () => {
@@ -1395,32 +1410,44 @@ function loadComicReaderCoreContext(ImageClass, overrides = {}) {
         const img = await reader.loadImage('https://i0.hdslb.com/bfs/new_dyn/missing.png');
 
         assert.equal(img, null);
-        assert.equal(created[0].src, 'https://i0.hdslb.com/bfs/new_dyn/missing.png');
+        assert.match(created[0].src, /^data:image\/gif/, 'failed images release their original source');
         assert.equal(reader.imageCache.has('https://i0.hdslb.com/bfs/new_dyn/missing.png'), false);
     }
     {
         const urls = ['p0', 'p1', 'p2', 'p3', 'p4'];
+        const scheduled = [];
         const { Image, created } = createFakeImageClass();
         const reader = loadComicReaderCoreContext(Image, {
-            comicImages: { collectImages() { return urls; } }
+            comicImages: { collectImages() { return urls; } },
+            setTimeout(fn) { scheduled.push(fn); return scheduled.length; }
         });
 
+        reader.isOpen = false;
+        reader.init();
         reader.init();
 
-        assert.deepEqual(created.map(img => img.src), ['p0', 'p1', 'p2', 'p3']);
-        assert.deepEqual(reader.imgList, urls);
+        assert.equal(created.length, 0, 'entry buttons never preload originals');
+        assert.equal(scheduled.length, 0);
+        assert.equal(reader.imgList.length, 0);
+        assert.ok(reader.entryButton);
     }
     {
         const { Image, created } = createFakeImageClass();
-        const reader = loadComicReaderCoreContext(Image);
+        const scheduled = [];
+        const reader = loadComicReaderCoreContext(Image, {
+            setTimeout(fn) { scheduled.push(fn); return scheduled.length; }
+        });
         reader.imgList = ['p0', 'p1', 'p2', 'p3', 'p4', 'p5', 'p6'];
         reader.currentIndex = 1;
         reader.activePageCount = 1;
 
         reader.preloadImages(2);
 
-        assert.deepEqual(created.map(img => img.src), ['p2', 'p3', 'p4', 'p5']);
-        assert.deepEqual(Array.from(reader.imageCache.keys()), ['p2', 'p3', 'p4', 'p5']);
+        assert.equal(created.length, 0);
+        await scheduled.shift()();
+        await scheduled.shift()();
+        assert.deepEqual(created.map(img => img.src), ['p2', 'p3']);
+        assert.deepEqual(Array.from(reader.imageCache.keys()), ['p2', 'p3']);
     }
     {
         let receivedOptions = null;
