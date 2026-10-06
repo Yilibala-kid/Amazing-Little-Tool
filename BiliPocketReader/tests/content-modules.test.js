@@ -1245,7 +1245,9 @@ function loadComicReaderCoreContext(ImageClass, overrides = {}) {
                     imageRenderMode: 'sharp',
                     backgroundMode: 'black',
                     filterMode: 'original',
-                    tapPageNavigation: true
+                    tapPageNavigation: true,
+                    preloadPages: '4',
+                    imageMemoryPolicy: 'page'
                 };
             },
             normalizeFilterMode(mode) {
@@ -1525,7 +1527,9 @@ function loadComicReaderCoreContext(ImageClass, overrides = {}) {
         imageRenderMode: 'sharp',
         backgroundMode: 'white',
         filterMode: 'warm',
-        tapPageNavigation: true
+        tapPageNavigation: true,
+        preloadPages: '6',
+        imageMemoryPolicy: 'previous'
     };
     await preferences.save(custom);
     assert.deepEqual(plain(preferences.load()), custom);
@@ -1538,7 +1542,9 @@ function loadComicReaderCoreContext(ImageClass, overrides = {}) {
             imageRenderMode: 'raw',
             backgroundMode: 'purple',
             filterMode: 'unknown',
-            tapPageNavigation: 'yes'
+            tapPageNavigation: 'yes',
+            preloadPages: '8',
+            imageMemoryPolicy: 'unknown'
         })),
         plain(preferences.DEFAULT_READER_PREFERENCES)
     );

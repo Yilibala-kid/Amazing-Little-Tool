@@ -155,6 +155,16 @@
     min-width: 0;
 }
 
+.comic-settings-item-stacked {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.comic-settings-item-stacked .comic-settings-select {
+    width: 100%;
+}
+
 .comic-settings-title {
     font-size: 13px;
     font-weight: 700;
@@ -557,6 +567,16 @@
 #comic-reader-overlay.reader-compact .comic-settings-select {
     min-height: 44px;
     max-width: 132px;
+}
+
+#comic-reader-overlay.reader-compact .comic-settings-item-stacked {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#comic-reader-overlay.reader-compact .comic-settings-item-stacked .comic-settings-select {
+    max-width: none;
 }
 
 #comic-reader-overlay.reader-compact .comic-toast {

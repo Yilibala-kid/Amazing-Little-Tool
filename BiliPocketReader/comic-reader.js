@@ -4,7 +4,6 @@
 
     // ============ 常量定义 ============
     const MOBILE_BREAKPOINT = 768;
-    const ENTRY_PRELOAD_COUNT = 4;
     if (!window.Shared) throw new Error('BilibiliToolbox: shared.js not loaded');
     if (!window.BilibiliToolbox?.bilibiliDom) throw new Error('BilibiliToolbox: bilibili-dom-adapter.js not loaded');
     if (!window.BilibiliToolbox?.storage) throw new Error('BilibiliToolbox: storage-service.js not loaded');
@@ -92,6 +91,8 @@
             this.imageLoader = new Toolbox.ReaderImageLoader(() => ({
                 isOpen: this.isOpen, isPreparing: this.isPreparing, imgList: this.imgList,
                 currentIndex: this.currentIndex, activePageCount: this.activePageCount,
+                displayedIndex: this.displayedIndex, preloadPages: this.preloadPages,
+                imageMemoryPolicy: this.imageMemoryPolicy,
                 visibleSources: Array.from(this.el.imgContainer?.querySelectorAll?.('img') || [], img => img.src)
             }));
             this.eventBag = null;
@@ -121,23 +122,24 @@
             this.prepareImages();
         }
 
-        // Warm the first four images as soon as a readable page is entered.
+        // Warm the selected number of images as soon as a readable page is entered.
         prepareImages() {
             if (this.isOpen || this.isPreparing) return;
             this.isPreparing = true;
             this.currentIndex = 0;
+            this.displayedIndex = 0;
             const refresh = () => {
                 this.entryImageTimer = null;
                 if (!this.isPreparing) return;
                 const images = this.collectReaderImages();
-                const changed = images.slice(0, ENTRY_PRELOAD_COUNT).join('\n') !==
-                    this.imgList.slice(0, ENTRY_PRELOAD_COUNT).join('\n');
+                const count = this.preloadPages === 'all' ? images.length : this.imageLoader.getPreloadCount();
+                const changed = images.slice(0, count).join('\n') !== this.imgList.slice(0, count).join('\n');
                 this.imgList = images;
                 if (changed) {
                     this.pruneImageCache();
                     this.preloadImages(0, 0);
                 }
-                if (images.length >= ENTRY_PRELOAD_COUNT) {
+                if (this.preloadPages !== 'all' && images.length >= count) {
                     this.entryImageObserver?.disconnect();
                     this.entryImageObserver = null;
                 }
@@ -160,6 +162,19 @@
             this.entryImageObserver = null;
             clearTimeout(this.entryImageTimer);
             this.entryImageTimer = null;
+        }
+
+        syncImageLoadingSettings() {
+            this.cancelPreload();
+            this.pruneImageCache();
+            if (this.isOpen) {
+                this.preloadImages(this.currentIndex + this.activePageCount, 0);
+            } else if (this.isPreparing) {
+                this.stopPreparingImages();
+                // The URLs can be unchanged while the selected count increases.
+                this.imgList = [];
+                this.prepareImages();
+            }
         }
 
         // 2. 启动阅读器
@@ -371,7 +386,7 @@
         loadImage(src, preload = false) { return this.imageLoader.loadImage(src, preload); }
         cancelPreload() { this.imageLoader.cancelPreload(); }
         preloadImages(start = 0, delay = 800) { this.imageLoader.preloadImages(start, delay); }
-        pruneImageCache(start, reserve) { this.imageLoader.pruneImageCache(start, reserve); }
+        pruneImageCache() { this.imageLoader.pruneImageCache(); }
 
         isWideImage(img) {
             return readerPageGroups.isWideImage(img, this.rotation);
@@ -400,6 +415,11 @@
                 (screenTranslateX) => this.getTransformStyle(screenTranslateX)
             );
             this.preloadImages(preloadStart);
+            // Paper-turn snapshots finish synchronously after commitImages returns.
+            // Release old images only after those snapshots and the page index swap.
+            Promise.resolve().then(() => {
+                if (this.isOpen) this.pruneImageCache();
+            });
         }
 
         // 辅助：设置图片样式
@@ -505,12 +525,22 @@
         }
 
         async getPreviousPageGroupIndex() {
-            return readerPageGroups.getPreviousIndex({
-                currentIndex: this.currentIndex,
-                viewMode: this.viewMode,
-                loadImage: (index) => this.loadImage(this.imgList[index]),
-                isWideImage: (img) => this.isWideImage(img)
-            });
+            const index = this.currentIndex;
+            const sources = this.imgList;
+            // Auto mode probes the predecessor before changing currentIndex.
+            // Keep it through width classification even if a preload/settings
+            // change prunes the cache while its request or decode is pending.
+            const release = this.imageLoader.protectImages(sources.slice(Math.max(0, index - 2), index));
+            try {
+                return await readerPageGroups.getPreviousIndex({
+                    currentIndex: index,
+                    viewMode: this.viewMode,
+                    loadImage: (imageIndex) => this.loadImage(sources[imageIndex]),
+                    isWideImage: (img) => this.isWideImage(img)
+                });
+            } finally {
+                release();
+            }
         }
 
         canTurnPage(direction) {
@@ -560,7 +590,7 @@
         }
 
         // 清理并关闭
-        close() {
+        close(forceRelease = false) {
             this.isOpen = false;
             this.stopPreparingImages();
             if (this.resizeFrame !== null) window.cancelAnimationFrame(this.resizeFrame);
@@ -591,7 +621,8 @@
                 this.el.reader.remove();
                 this.el = {};
             }
-            this.imageLoader.clear();
+            if (forceRelease) this.imageLoader.clear();
+            else this.imageLoader.pause();
             this.imgList = [];
             this.selectionHandles = {};
             this.selectionStart = this.selectionCurrent = null;
@@ -605,7 +636,7 @@
         }
 
         destroy() {
-            this.close();
+            this.close(true);
             if (this.entryButton) {
                 this.entryButton.onclick = null;
                 this.entryButton.remove();

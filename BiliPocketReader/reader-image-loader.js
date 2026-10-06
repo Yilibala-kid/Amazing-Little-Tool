@@ -1,9 +1,8 @@
-// Bilibili Toolbox - bounded decoded-image cache and preload scheduling
+// Bilibili Toolbox - reader image cache and configurable preload scheduling
 (function() {
     'use strict';
     const Toolbox = window.BilibiliToolbox;
-    const PRELOAD_COUNT = 4;
-    const CACHE_PIXEL_BUDGET = 64e6;
+    const PRELOAD_COUNTS = Object.freeze({ '2': 2, '4': 4, '6': 6 });
 
     class ReaderImageLoader {
         constructor(getState) {
@@ -12,6 +11,7 @@
             this.preloadToken = 0;
             this.preloadTimer = null;
             this.preloadActive = null;
+            this.imageProtections = new Set();
         }
 
         loadImage(src, preload = false) {
@@ -44,7 +44,6 @@
                     entry.settled = true;
                     img.onload = img.onerror = null;
                     resolve(img);
-                    if (this.imageCache.get(src) === entry) this.pruneImageCache();
                 };
                 img.onerror = () => {
                     if (this.imageCache.get(src) === entry) this.imageCache.delete(src);
@@ -62,10 +61,21 @@
             entry?.release();
         }
 
+        protectImages(sources) {
+            const protection = new Set(sources);
+            this.imageProtections.add(protection);
+            return () => this.imageProtections.delete(protection);
+        }
+
         cancelPreload() {
             this.preloadToken += 1;
             clearTimeout(this.preloadTimer);
             this.preloadTimer = null;
+        }
+
+        getPreloadCount() {
+            const state = this.getState();
+            return state.preloadPages === 'all' ? state.imgList.length : PRELOAD_COUNTS[state.preloadPages] || 4;
         }
 
         preloadImages(startIndex = 0, delay = 800) {
@@ -73,7 +83,7 @@
             const state = this.getState();
             if (!(state.isOpen || state.isPreparing) || !Array.isArray(state.imgList) || state.imgList.length === 0) return;
             const start = Math.max(0, Math.min(startIndex, state.imgList.length));
-            const end = Math.min(state.imgList.length, start + PRELOAD_COUNT);
+            const end = Math.min(state.imgList.length, start + this.getPreloadCount());
             const token = this.preloadToken;
             let index = start;
             const next = async () => {
@@ -84,10 +94,7 @@
                 if (token !== this.preloadToken) return;
                 while (index < end && this.imageCache.has(state.imgList[index])) index += 1;
                 if (index >= end) return;
-                const estimate = Math.max(1e6, ...Array.from(this.imageCache.values(), entry => entry.pixels));
-                this.pruneImageCache(start, estimate);
-                const pixels = Array.from(this.imageCache.values()).reduce((sum, entry) => sum + entry.pixels, 0);
-                if (pixels + estimate > CACHE_PIXEL_BUDGET) return;
+                this.pruneImageCache();
                 const pending = this.loadImage(state.imgList[index++], true);
                 this.preloadActive = pending;
                 await pending;
@@ -101,36 +108,38 @@
             this.preloadTimer = setTimeout(next, delay);
         }
 
-        pruneImageCache(preloadStart, reservePixels = 0) {
+        pruneImageCache() {
             const state = this.getState();
-            preloadStart ??= state.currentIndex + state.activePageCount;
+            if (state.imageMemoryPolicy !== 'previous') return;
             if (!this.imageCache.size || !Array.isArray(state.imgList) || !state.imgList.length) return;
-            const keepStart = Math.max(0, state.currentIndex - PRELOAD_COUNT);
-            const keepEnd = Math.min(
-                state.imgList.length,
-                Math.max(state.currentIndex + state.activePageCount, preloadStart + PRELOAD_COUNT)
-            );
-            const keepUrls = new Set(state.imgList.slice(keepStart, keepEnd));
-            const protectedUrls = new Set(state.imgList.slice(state.currentIndex, state.currentIndex + 2));
-            for (const src of state.visibleSources) protectedUrls.add(src);
+            const visibleSources = new Set(state.visibleSources || []);
+            for (const protection of this.imageProtections) {
+                for (const src of protection) visibleSources.add(src);
+            }
+            // Backward navigation can prepare predecessors while a later page
+            // remains visible. Keep the incoming single/double group until commit.
+            for (const src of state.imgList.slice(state.currentIndex, state.currentIndex + 2)) visibleSources.add(src);
+            const index = Math.max(0, state.displayedIndex ?? state.currentIndex);
+            const retainedSources = new Set(state.imgList.slice(index));
             for (const src of this.imageCache.keys()) {
-                const entry = this.imageCache.get(src);
-                if (!protectedUrls.has(src) && (!keepUrls.has(src) || !entry.settled)) this.releaseCachedImage(src);
+                if (!visibleSources.has(src) && !retainedSources.has(src)) this.releaseCachedImage(src);
             }
-            let pixels = Array.from(this.imageCache.values()).reduce((sum, entry) => sum + entry.pixels, 0);
-            const candidates = Array.from(this.imageCache.keys()).filter(src => !protectedUrls.has(src))
-                .sort((a, b) => Math.abs(state.imgList.indexOf(b) - state.currentIndex) - Math.abs(state.imgList.indexOf(a) - state.currentIndex));
-            for (const src of candidates) {
-                if (pixels + reservePixels <= CACHE_PIXEL_BUDGET) break;
-                pixels -= this.imageCache.get(src).pixels;
-                this.releaseCachedImage(src);
+        }
+
+        pause() {
+            this.cancelPreload();
+            for (const [src, entry] of this.imageCache) {
+                if (!entry.settled) this.releaseCachedImage(src);
             }
+            this.preloadActive = null;
+            this.imageProtections.clear();
         }
 
         clear() {
             this.cancelPreload();
             for (const src of this.imageCache.keys()) this.releaseCachedImage(src);
             this.preloadActive = null;
+            this.imageProtections.clear();
         }
     }
     Toolbox.ReaderImageLoader = ReaderImageLoader;

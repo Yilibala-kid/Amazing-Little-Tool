@@ -49,7 +49,13 @@
                 else reader.setPreference(key, !reader[key]);
             });
         });
-        on(el.filterSelect, 'change', stop(() => reader.setPreference('filterMode', el.filterSelect.value)));
+        [
+            [el.filterSelect, 'filterMode'],
+            [el.preloadSelect, 'preloadPages'],
+            [el.imageMemorySelect, 'imageMemoryPolicy']
+        ].forEach(([select, key]) => {
+            on(select, 'change', stop(() => reader.setPreference(key, select.value)));
+        });
 
         el.settingsBtn.onclick = stop(() => reader.toggleSettingsPanel());
 

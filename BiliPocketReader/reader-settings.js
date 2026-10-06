@@ -35,6 +35,8 @@
         viewMode: ['syncViewModeButton'],
         imageRenderMode: ['syncImageRenderButton'],
         filterMode: ['syncFilterControl', 'applyReaderFilter'],
+        preloadPages: ['syncPreloadControl', 'syncImageLoadingSettings'],
+        imageMemoryPolicy: ['syncImageMemoryControl', 'syncImageLoadingSettings'],
         backgroundMode: ['syncBackgroundButton', 'applyReaderBackground'],
         tapPageNavigation: ['syncTapPageButton']
     };
@@ -108,6 +110,20 @@
                 ? '\u70b9\u51fb\u5c4f\u5e55\u5de6\u53f3\u533a\u57df\u7ffb\u9875\uff08\u6ed1\u52a8\u7ffb\u9875\u59cb\u7ec8\u5f00\u542f\uff09'
                 : '\u70b9\u51fb\u5c4f\u5e55\u4e0d\u7ffb\u9875\uff08\u6ed1\u52a8\u7ffb\u9875\u59cb\u7ec8\u5f00\u542f\uff09';
             this.el.tapPageBtn.classList.toggle('active', enabled);
+        },
+
+        syncPreloadControl() {
+            if (!this.el.preloadSelect) return;
+            this.el.preloadSelect.value = this.preloadPages;
+            this.el.preloadSelect.title = '打开页面时提前加载漫画图片，阅读时继续提前加载后续图片。';
+        },
+
+        syncImageMemoryControl() {
+            if (!this.el.imageMemorySelect) return;
+            this.el.imageMemorySelect.value = this.imageMemoryPolicy;
+            this.el.imageMemorySelect.title = this.imageMemoryPolicy === 'previous'
+                ? '翻页后释放当前图片之前的图片，返回时会重新加载。'
+                : '关闭阅读器后仍保留已加载图片，离开漫画页面时清空。';
         },
 
         syncRotateButton() {

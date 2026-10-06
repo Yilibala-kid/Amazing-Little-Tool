@@ -95,7 +95,7 @@
     }
 
     function handlePageHide() {
-        readerInstance?.close();
+        readerInstance?.close(true);
     }
 
     function handlePageShow(event) {

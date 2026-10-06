@@ -82,9 +82,9 @@ test('reader follows article navigation, closes on pagehide, and destroys entry 
         reader: {
             shouldInitComicReader: () => context.location.href.includes('/read/'),
             BiliComicReader: class {
-                constructor() { readers.push(this); this.closed = 0; this.destroyed = 0; }
+                constructor() { readers.push(this); this.closed = 0; this.destroyed = 0; this.closeArguments = []; }
                 init() { this.initialized = true; }
-                close() { this.closed++; }
+                close(forceRelease) { this.closed++; this.closeArguments.push(forceRelease); }
                 prepareImages() { this.prepared = (this.prepared || 0) + 1; }
                 destroy() { this.destroyed++; this.close(); }
             }
@@ -101,6 +101,7 @@ test('reader follows article navigation, closes on pagehide, and destroys entry 
     assert.equal(readers.length, 1, 'query/hash changes retain the same article');
     listeners.get('pagehide')();
     assert.equal(readers[0].closed, 1);
+    assert.deepEqual(readers[0].closeArguments, [true], 'pagehide explicitly releases cached originals rather than merely closing the overlay');
     listeners.get('pageshow')({ persisted: true });
     assert.equal(readers[0].prepared, 1, 'restored readable pages warm their images again');
     navigate('/read/cv2');

@@ -13,6 +13,8 @@
     const IMAGE_RENDER_MODES = Object.freeze(['sharp', 'smooth']);
     const BACKGROUND_MODES = Object.freeze(['black', 'darkGray', 'lightGray', 'white']);
     const FILTER_MODES = Object.freeze(['original', 'soft', 'warm', 'grayscale']);
+    const PRELOAD_PAGES = Object.freeze(['2', '4', '6', 'all']);
+    const IMAGE_MEMORY_POLICIES = Object.freeze(['page', 'previous']);
     const ANIMATION_MODES = Object.freeze([...Toolbox.animations.ANIMATION_MODES]);
     const DEFAULT_READER_PREFERENCES = Object.freeze({
         isRightToLeft: true,
@@ -21,6 +23,8 @@
         imageRenderMode: 'smooth',
         backgroundMode: 'darkGray',
         filterMode: 'original',
+        preloadPages: '4',
+        imageMemoryPolicy: 'page',
         tapPageNavigation: false
     });
     const MODES_BY_KEY = Object.freeze({
@@ -28,7 +32,9 @@
         animationMode: ANIMATION_MODES,
         imageRenderMode: IMAGE_RENDER_MODES,
         backgroundMode: BACKGROUND_MODES,
-        filterMode: FILTER_MODES
+        filterMode: FILTER_MODES,
+        preloadPages: PRELOAD_PAGES,
+        imageMemoryPolicy: IMAGE_MEMORY_POLICIES
     });
 
     function normalizeMode(key, value) {
@@ -73,6 +79,8 @@
         IMAGE_RENDER_MODES,
         BACKGROUND_MODES,
         FILTER_MODES,
+        PRELOAD_PAGES,
+        IMAGE_MEMORY_POLICIES,
         ANIMATION_MODES,
         DEFAULT_READER_PREFERENCES,
         normalizeAnimationMode,

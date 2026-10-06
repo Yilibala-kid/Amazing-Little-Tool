@@ -66,7 +66,13 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
                 return element;
             };
         });
-        for (const file of manifest.content_scripts[0].css) await page.addStyleTag({ path: path.join(root, file) });
+        for (const file of manifest.content_scripts[0].css) {
+            // File-based extension loading consumes the encoding marker. A
+            // literal style tag would treat it as part of the first selector.
+            await page.addStyleTag({ content: fs.readFileSync(path.join(root, file), 'utf8').replace(/^\uFEFF/, '') });
+        }
+        assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim()),
+            '#ffffff', 'reader theme tokens are loaded');
         for (const file of manifest.content_scripts[0].js) {
             if (file === 'content.js') await page.evaluate(() => {
                 const Base = BilibiliToolbox.reader.BiliComicReader;
@@ -93,6 +99,78 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
             Number(src.match(/page(\d+)/)[1]))).then(indices => indices.join(',')), '0,1,2,3,4,5',
         'double-page reading warms the next four images');
         await page.evaluate(() => reader.close());
+        assert.equal(await page.locator('#comic-reader-overlay').count(), 0);
+        assert.equal(await page.evaluate(() => reader.imageCache.size), 6, 'closing the overlay retains decoded images');
+        assert.equal(await page.evaluate(() => trackedImages.every(img => !img.src.startsWith('data:'))), true);
+        await page.evaluate(async () => { reader.start(); await reader.render(false); });
+        assert.equal(await page.evaluate(() => trackedImages.length), 6, 'reopening reuses decoded images');
+        await page.locator('#comic-reader-overlay').getByRole('button', { name: '设置', exact: true }).click();
+        const preloadSelect = page.getByLabel('漫画预加载', { exact: true });
+        const memorySelect = page.getByLabel('图片内存', { exact: true });
+        assert.deepEqual(await preloadSelect.locator('option').allTextContents(), ['2页', '4页', '6页', '全部']);
+        assert.deepEqual(await memorySelect.locator('option').allTextContents(), ['关闭页面时释放', '释放当前图片之前的图片']);
+        await preloadSelect.selectOption('6');
+        await page.waitForFunction(() => reader.imageCache.size === 8 &&
+            [...reader.imageCache.values()].every(entry => entry.settled));
+        await preloadSelect.selectOption('all');
+        await page.waitForFunction(() => reader.imageCache.size === 12 &&
+            [...reader.imageCache.values()].every(entry => entry.settled));
+        assert.ok(await page.evaluate(() => [...reader.imageCache.values()].reduce((sum, entry) => sum + entry.pixels, 0)) > 64e6,
+            'all preloading retains the entire article beyond the former pixel budget');
+        await memorySelect.selectOption('previous');
+        await page.evaluate(async () => {
+            reader.hideSettingsPanel();
+            reader.viewMode = 'single';
+            reader.animationMode = 'paper';
+            reader.currentIndex = 4;
+            window.snapshotImages = [];
+            const draw = CanvasRenderingContext2D.prototype.drawImage;
+            CanvasRenderingContext2D.prototype.drawImage = function(img, ...args) {
+                if (img instanceof HTMLImageElement) snapshotImages.push({ src: img.src, width: img.naturalWidth });
+                return draw.call(this, img, ...args);
+            };
+            try { await reader.render(true, 4); }
+            finally { CanvasRenderingContext2D.prototype.drawImage = draw; }
+        });
+        assert.equal(await page.evaluate(() => reader.displayedIndex), 4);
+        assert.equal(await page.evaluate(() => [...reader.imageCache.keys()].every(src => Number(src.match(/page(\d+)/)[1]) >= 4)), true);
+        assert.equal(await page.evaluate(() => trackedImages.slice(0, 4).every(img => img.src.startsWith('data:image/gif'))), true);
+        assert.equal(await page.evaluate(() => snapshotImages.some(img => /page0\.jpg(?:@|$)/.test(img.src) && img.width === 2400)), true,
+            'the outgoing paper snapshot is drawn before its source is released');
+        assert.equal(await page.evaluate(() => /page4\.jpg(?:@|$)/.test(reader.el.imgContainer.firstChild.src) &&
+            reader.el.imgContainer.firstChild.naturalWidth === 2400), true);
+        await page.locator('.comic-paper-turn').waitFor({ state: 'detached' });
+        await page.evaluate(() => reader.turnPage(null, -1));
+        await page.waitForFunction(() => reader.displayedIndex === 3 &&
+            reader.el.imgContainer?.querySelector('img')?.naturalWidth === 2400);
+        assert.equal(await page.evaluate(() => /page3\.jpg(?:@|$)/.test(reader.el.imgContainer.firstChild.src)), true,
+            'backward navigation reloads the released image');
+        await page.locator('.comic-paper-turn').waitFor({ state: 'detached' });
+        await page.setViewportSize({ width: 390, height: 844 });
+        await page.waitForFunction(() => reader.resizeFrame === null);
+        await page.evaluate(() => reader.toggleSettingsPanel());
+        await preloadSelect.selectOption('2');
+        await page.waitForFunction(() => {
+            const prefs = BilibiliToolbox.readerPreferences.load();
+            return prefs.preloadPages === '2' && prefs.imageMemoryPolicy === 'previous';
+        });
+        await page.waitForFunction(() => getComputedStyle(reader.el.settingsPanel).opacity === '1');
+        assert.equal(await page.evaluate(() => {
+            const panel = reader.el.settingsPanel.getBoundingClientRect();
+            return [...reader.el.settingsPanel.querySelectorAll('select')].every(select => {
+                const rect = select.getBoundingClientRect();
+                return rect.left >= panel.left && rect.right <= panel.right;
+            }) && panel.left >= 0 && panel.right <= innerWidth;
+        }), true, 'long memory-policy labels fit the mobile settings panel');
+        assert.notEqual(await page.evaluate(() => getComputedStyle(reader.el.settingsPanel).backgroundColor), 'rgba(0, 0, 0, 0)',
+            'the settings panel has an opaque background for readable text');
+        await page.screenshot({ path: path.join(artifactDir, 'mobile-settings.png') });
+        await page.evaluate(() => {
+            reader.setPreference('preloadPages', '4');
+            reader.setPreference('imageMemoryPolicy', 'page');
+            reader.close(true);
+        });
+        await page.setViewportSize({ width: 1360, height: 900 });
         await page.evaluate(() => { trackedImages.length = trackedCanvases.length = 0; });
         const open = async mode => {
             await page.evaluate(mode => {
@@ -105,7 +183,7 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
             assert.equal(await page.locator('#comic-reader-overlay').count(), 1);
         };
         const release = async () => {
-            await page.evaluate(() => reader.close());
+            await page.evaluate(() => reader.close(true));
             assert.equal(await page.locator('#comic-reader-overlay').count(), 0);
             assert.equal(await page.evaluate(() => trackedCanvases.every(c => !c.width && !c.height)), true);
             assert.equal(await page.evaluate(() => trackedImages.every(img => img.src.startsWith('data:image/gif'))), true);
@@ -158,7 +236,7 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
         await page.evaluate(async () => { reader.currentIndex = 4; await reader.render(true, 1); });
         await release(); // Close during an active animation.
         delayOriginals = true;
-        await page.evaluate(() => { reader.start(); reader.close(); });
+        await page.evaluate(() => { reader.start(); reader.close(true); });
         await page.waitForTimeout(300);
         await release(); // Close during network/decode.
         delayOriginals = false;
