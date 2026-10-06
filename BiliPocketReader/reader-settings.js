@@ -29,6 +29,12 @@
         warm: '\u6696\u8272\u62a4\u773c',
         grayscale: '\u9ed1\u767d'
     });
+    const READER_ANIMATION_LABELS = Object.freeze({ smooth: '平滑', fade: '淡入', paper: '类纸' });
+    const SETTING_LABELS = Object.freeze({
+        imageRenderMode: '显示质量', filterMode: '图像滤镜', preloadPages: '漫画预加载',
+        imageMemoryPolicy: '图片内存', backgroundMode: '背景颜色', animationMode: '翻页动画',
+        viewMode: '显示张数', tapPageNavigation: '点击翻页', isRightToLeft: '阅读方向'
+    });
     const PREFERENCE_EFFECTS = {
         isRightToLeft: ['updateDirection', 'syncDirectionButton'],
         animationMode: ['syncAnimationButton'],
@@ -40,6 +46,29 @@
         backgroundMode: ['syncBackgroundButton', 'applyReaderBackground'],
         tapPageNavigation: ['syncTapPageButton']
     };
+
+    function preferenceValue(reader, key) {
+        return readerPreferences.normalize({ [key]: reader[key] })[key];
+    }
+
+    function syncSettingButton(reader, button, key, text, title) {
+        if (!button) return;
+        const value = preferenceValue(reader, key);
+        const valueEl = button.querySelector?.('.comic-setting-value');
+        if (valueEl) valueEl.textContent = text;
+        else button.innerText = text;
+        const dataset = button.dataset || (button.dataset = {});
+        dataset.value = String(value);
+        dataset.changed = String(value !== readerPreferences.DEFAULT_READER_PREFERENCES?.[key]);
+        const label = dataset.settingLabel || SETTING_LABELS[key];
+        const setAttribute = (name, value) => {
+            if (button.setAttribute) button.setAttribute(name, value);
+            else button[name] = value;
+        };
+        setAttribute('aria-label', `${label}：${text}`);
+        if (typeof value === 'boolean') setAttribute('aria-pressed', String(value));
+        button.title = `${title}\n点击切换设置。`;
+    }
 
     const methods = {
         savePreferences() {
@@ -61,69 +90,72 @@
         },
 
         syncAnimationButton() {
-            animations.syncAnimationButton(this.el.animationBtn, this.animationMode);
+            const mode = animations.normalizeAnimationMode(this.animationMode);
+            const descriptions = {
+                smooth: '淡入、平移与细微缩放。',
+                fade: '使用淡入淡出翻页。',
+                paper: '弯曲纸面、书脊与光影翻书效果。'
+            };
+            syncSettingButton(this, this.el.animationBtn, 'animationMode', READER_ANIMATION_LABELS[mode], descriptions[mode]);
         },
 
         syncDirectionButton() {
-            const dir = this.isRightToLeft;
-            this.el.directionBtn.innerText = dir ? '\u4ece\u53f3\u5f80\u5de6 \u2190' : '\u4ece\u5de6\u5f80\u53f3 \u2192';
-            this.el.directionBtn.title = dir ? '\u5f53\u524d\uff1a\u4ece\u53f3\u5f80\u5de6' : '\u5f53\u524d\uff1a\u4ece\u5de6\u5f80\u53f3';
+            const dir = preferenceValue(this, 'isRightToLeft');
+            const text = dir ? '从右往左 ←' : '从左往右 →';
+            syncSettingButton(this, this.el.directionBtn, 'isRightToLeft', text, `阅读方向：${text}。`);
         },
 
         syncViewModeButton() {
             const map = {
-                auto: ['\u81ea\u52a8', '\u89c6\u56fe\u6a21\u5f0f\uff1a\u81ea\u52a8'],
-                single: ['\u5355\u56fe', '\u89c6\u56fe\u6a21\u5f0f\uff1a\u5355\u56fe'],
-                double: ['\u53cc\u56fe', '\u89c6\u56fe\u6a21\u5f0f\uff1a\u53cc\u56fe']
+                auto: ['自动', '根据图片宽高自动选择单图或双图，宽图单独显示。'],
+                single: ['单图', '每次显示一张漫画图片。'],
+                double: ['双图', '每次尽量同时显示两张漫画图片。']
             };
-            const [text, title] = map[this.viewMode] || map.auto;
-            Object.assign(this.el.viewModeBtn, { innerText: text, title });
+            const [text, title] = map[preferenceValue(this, 'viewMode')] || map.auto;
+            syncSettingButton(this, this.el.viewModeBtn, 'viewMode', text, title);
         },
 
         syncImageRenderButton() {
-            const sharp = this.imageRenderMode === 'sharp';
-            this.el.imageRenderBtn.innerText = sharp ? '\u539f\u56fe' : '\u6d41\u7545';
-            this.el.imageRenderBtn.title = sharp
+            const sharp = preferenceValue(this, 'imageRenderMode') === 'sharp';
+            const title = sharp
                 ? '\u663e\u793a\u6a21\u5f0f\uff1a\u539f\u56fe\uff08\u4fdd\u7559\u81ea\u7136\u50cf\u7d20\uff0c\u53cc\u51fb 1:1 \u67e5\u770b\uff09'
                 : '\u663e\u793a\u6a21\u5f0f\uff1a\u6d41\u7545\uff08\u6d4f\u89c8\u5668\u9002\u5c4f\u7f29\u653e\uff0c\u7ffb\u9875\u548c\u7f29\u653e\u66f4\u67d4\u548c\uff09';
-            this.el.imageRenderBtn.classList.remove('active');
+            syncSettingButton(this, this.el.imageRenderBtn, 'imageRenderMode', sharp ? '原图' : '流畅', title);
         },
 
         syncBackgroundButton() {
-            const label = this.getReaderBackgroundLabel();
-            this.el.backgroundBtn.innerText = label;
-            this.el.backgroundBtn.title = `\u80cc\u666f\u989c\u8272\uff1a${label}`;
-            this.el.backgroundBtn.classList.remove('active');
+            const label = READER_BACKGROUND_LABELS[preferenceValue(this, 'backgroundMode')] || READER_BACKGROUND_LABELS.black;
+            syncSettingButton(this, this.el.backgroundBtn, 'backgroundMode', label, `背景颜色：${label}。`);
         },
 
         syncFilterControl() {
-            if (!this.el.filterSelect) return;
             const mode = readerPreferences.normalizeFilterMode(this.filterMode);
-            this.el.filterSelect.value = mode;
-            this.el.filterSelect.title = `\u56fe\u50cf\u6ee4\u955c\uff1a${READER_FILTER_LABELS[mode]}`;
+            syncSettingButton(this, this.el.filterBtn, 'filterMode', READER_FILTER_LABELS[mode], '图像滤镜仅影响显示，不影响原图和截图。');
         },
 
         syncTapPageButton() {
-            const enabled = Boolean(this.tapPageNavigation);
-            this.el.tapPageBtn.innerText = enabled ? '\u70b9\u51fb\u7ffb\u9875' : '\u70b9\u51fb\u5173\u95ed';
-            this.el.tapPageBtn.title = enabled
+            const enabled = preferenceValue(this, 'tapPageNavigation');
+            const title = enabled
                 ? '\u70b9\u51fb\u5c4f\u5e55\u5de6\u53f3\u533a\u57df\u7ffb\u9875\uff08\u6ed1\u52a8\u7ffb\u9875\u59cb\u7ec8\u5f00\u542f\uff09'
                 : '\u70b9\u51fb\u5c4f\u5e55\u4e0d\u7ffb\u9875\uff08\u6ed1\u52a8\u7ffb\u9875\u59cb\u7ec8\u5f00\u542f\uff09';
-            this.el.tapPageBtn.classList.toggle('active', enabled);
+            syncSettingButton(this, this.el.tapPageBtn, 'tapPageNavigation', enabled ? '开启' : '关闭', `仅移动端：${title}`);
         },
 
         syncPreloadControl() {
-            if (!this.el.preloadSelect) return;
-            this.el.preloadSelect.value = this.preloadPages;
-            this.el.preloadSelect.title = '打开页面时提前加载漫画图片；“全部”从第一页开始，按顺序逐张加载。';
+            const mode = preferenceValue(this, 'preloadPages');
+            const text = mode === 'all' ? '全部' : `${mode}页`;
+            const title = mode === 'all'
+                ? '进入页面即从第一页开始，依次逐张预加载本篇漫画图片；已加载图片直接复用。'
+                : `打开页面时提前加载前${mode}页，阅读时提前加载后续${mode}页；每张图片计为一页。`;
+            syncSettingButton(this, this.el.preloadBtn, 'preloadPages', text, title);
         },
 
         syncImageMemoryControl() {
-            if (!this.el.imageMemorySelect) return;
-            this.el.imageMemorySelect.value = this.imageMemoryPolicy;
-            this.el.imageMemorySelect.title = this.imageMemoryPolicy === 'previous'
+            const previous = preferenceValue(this, 'imageMemoryPolicy') === 'previous';
+            const title = previous
                 ? '翻页后释放当前图片之前的图片，返回时会重新加载。'
                 : '关闭阅读器后仍保留已加载图片，离开漫画页面时清空。';
+            syncSettingButton(this, this.el.imageMemoryBtn, 'imageMemoryPolicy', previous ? '释放前页' : '关闭页释放', title);
         },
 
         syncRotateButton() {

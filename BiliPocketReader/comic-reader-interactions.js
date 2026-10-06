@@ -28,6 +28,9 @@
             on(control, 'mouseleave', () => reader.scheduleHideControls());
         });
         on(el.reader, 'mouseleave', () => reader.scheduleHideControls());
+        on(el.settingsPanel, 'keydown', event => {
+            if (event.key !== 'Escape') event.stopPropagation();
+        });
 
         el.leftBtn.onclick = (event) => reader.turnPage(event, reader.isRightToLeft ? reader.lastStep : -reader.lastStep);
         el.rightBtn.onclick = (event) => reader.turnPage(event, reader.isRightToLeft ? -reader.lastStep : reader.lastStep);
@@ -40,6 +43,9 @@
             [el.animationBtn, 'animationMode', readerPreferences.ANIMATION_MODES],
             [el.viewModeBtn, 'viewMode', VIEW_MODES],
             [el.imageRenderBtn, 'imageRenderMode', IMAGE_RENDER_MODES],
+            [el.filterBtn, 'filterMode', readerPreferences.FILTER_MODES],
+            [el.preloadBtn, 'preloadPages', readerPreferences.PRELOAD_PAGES],
+            [el.imageMemoryBtn, 'imageMemoryPolicy', readerPreferences.IMAGE_MEMORY_POLICIES],
             [el.backgroundBtn, 'backgroundMode', BACKGROUND_MODES],
             [el.tapPageBtn, 'tapPageNavigation']
         ];
@@ -49,14 +55,6 @@
                 else reader.setPreference(key, !reader[key]);
             });
         });
-        [
-            [el.filterSelect, 'filterMode'],
-            [el.preloadSelect, 'preloadPages'],
-            [el.imageMemorySelect, 'imageMemoryPolicy']
-        ].forEach(([select, key]) => {
-            on(select, 'change', stop(() => reader.setPreference(key, select.value)));
-        });
-
         el.settingsBtn.onclick = stop(() => reader.toggleSettingsPanel());
 
         el.resetViewBtn.onclick = stop(() => reader.resetTransform());

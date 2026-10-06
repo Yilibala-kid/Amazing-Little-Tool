@@ -269,6 +269,14 @@
                 return;
             }
 
+            if (this.touchStartedOnInteractive) {
+                this.clearPendingTap();
+                this.isTouchSwiping = false;
+                this.touchDidMoveImage = false;
+                this.touchEdgePageStep = 0;
+                return;
+            }
+
             const deltaX = this.touchEndX - this.touchStartX;
             const deltaY = this.touchEndY - this.touchStartY;
             const threshold = SWIPE_THRESHOLD;

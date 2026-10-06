@@ -2,10 +2,9 @@
 (function() {
     'use strict';
 
-    if (!window.BilibiliToolbox?.animations) throw new Error('BilibiliToolbox: animations.js not loaded');
+    if (!window.BilibiliToolbox) throw new Error('BilibiliToolbox: shared.js not loaded');
 
     const Toolbox = window.BilibiliToolbox;
-    const animations = Toolbox.animations;
 
     function createButton(text, title, className = 'comic-btn') {
         const btn = document.createElement('button');
@@ -15,56 +14,18 @@
         return btn;
     }
 
-    function createSettingsRow(title, desc, control) {
-        const item = document.createElement('div');
-        item.className = 'comic-settings-item';
-        const copy = document.createElement('div');
-        copy.className = 'comic-settings-copy';
-        const titleEl = document.createElement('div');
-        titleEl.className = 'comic-settings-title';
-        titleEl.textContent = title;
-        const descEl = document.createElement('div');
-        descEl.className = 'comic-settings-desc';
-        descEl.textContent = desc;
-        const action = document.createElement('div');
-        action.className = 'comic-settings-action';
-        copy.append(titleEl, descEl);
-        action.append(control);
-        item.append(copy, action);
-        return item;
-    }
-
-    function createCompactSettingsItem(title, control) {
-        const item = document.createElement('div');
-        item.className = 'comic-settings-inline-item';
-        const titleEl = document.createElement('div');
-        titleEl.className = 'comic-settings-title';
-        titleEl.textContent = title;
-        const action = document.createElement('div');
-        action.className = 'comic-settings-action';
-        action.append(control);
-        item.append(titleEl, action);
-        return item;
-    }
-
-    function createInlineSettingsGroup(items) {
-        const group = document.createElement('div');
-        group.className = 'comic-settings-inline-group' + (items.length === 2 ? ' comic-settings-inline-pair' : '');
-        items.forEach(item => group.appendChild(item));
-        return group;
-    }
-
-    function createSettingsSelect(label, options) {
-        const select = document.createElement('select');
-        select.className = 'comic-settings-select';
-        select.setAttribute('aria-label', label);
-        options.forEach(([value, label]) => {
-            const option = document.createElement('option');
-            option.value = value;
-            option.textContent = label;
-            select.appendChild(option);
-        });
-        return select;
+    function createSettingsButton(title, preferenceKey) {
+        const button = createButton('', '', 'comic-setting-btn');
+        button.type = 'button';
+        button.dataset.settingLabel = title;
+        button.dataset.preferenceKey = preferenceKey;
+        const label = document.createElement('span');
+        label.className = 'comic-setting-label';
+        label.textContent = title;
+        const value = document.createElement('span');
+        value.className = 'comic-setting-value';
+        button.append(label, value);
+        return button;
     }
 
     function createReaderUi(reader) {
@@ -83,19 +44,8 @@
         reader.el.settingsPanel = document.createElement('div');
         reader.el.settingsPanel.className = 'comic-settings-panel';
         reader.el.settingsPanel.setAttribute('aria-hidden', 'true');
-
-        reader.el.filterSelect = createSettingsSelect('\u56fe\u50cf\u6ee4\u955c', [
-            ['original', '\u539f\u56fe'],
-            ['soft', '\u67d4\u548c'],
-            ['warm', '\u6696\u8272\u62a4\u773c'],
-            ['grayscale', '\u9ed1\u767d']
-        ]);
-        reader.el.preloadSelect = createSettingsSelect('漫画预加载', [
-            ['2', '2页'], ['4', '4页'], ['6', '6页'], ['all', '全部']
-        ]);
-        reader.el.imageMemorySelect = createSettingsSelect('图片内存', [
-            ['page', '关闭页释放'], ['previous', '释放前页']
-        ]);
+        reader.el.settingsPanel.setAttribute('role', 'dialog');
+        reader.el.settingsPanel.setAttribute('aria-label', '阅读设置');
 
         const row = document.createElement('div');
         row.className = 'comic-reader-row';
@@ -107,12 +57,6 @@
             ['leftBtn', '\u2190', '\u5411\u5de6\u7ffb\u9875', 'comic-btn'],
             ['offsetIncBtn', '<', '\u5de6\u79fb\u4e00\u9875', 'comic-btn comic-btn-alt'],
             ['offsetDecBtn', '>', '\u53f3\u79fb\u4e00\u9875', 'comic-btn comic-btn-alt'],
-            ['directionBtn', '', '', 'comic-btn comic-btn-alt'],
-            ['animationBtn', '', '', 'comic-btn comic-btn-alt'],
-            ['viewModeBtn', '', '', 'comic-btn comic-btn-alt'],
-            ['imageRenderBtn', '', '', 'comic-btn comic-btn-alt'],
-            ['backgroundBtn', '', '', 'comic-btn comic-btn-alt'],
-            ['tapPageBtn', '', '', 'comic-btn comic-btn-alt'],
             ['resetViewBtn', '\u91cd\u7f6e', '\u91cd\u7f6e\u89c6\u56fe', 'comic-btn comic-btn-alt'],
             ['screenshotBtn', '\u622a\u56fe', '\u62d6\u52a8\u9009\u62e9\u622a\u56fe\u8303\u56f4', 'comic-btn comic-btn-alt'],
             ['fullScreenBtn', '', '', 'comic-btn comic-btn-alt'],
@@ -122,6 +66,29 @@
         ].forEach(([key, text, title, style]) => {
             reader.el[key] = createButton(text, title, style);
         });
+        const settingsTitle = document.createElement('h2');
+        settingsTitle.className = 'comic-settings-heading';
+        settingsTitle.textContent = '阅读设置';
+        const settingsHint = document.createElement('p');
+        settingsHint.className = 'comic-settings-hint';
+        settingsHint.textContent = '点击切换 · 自动保存';
+        const settingsGrid = document.createElement('div');
+        settingsGrid.className = 'comic-settings-grid';
+        [
+            ['imageRenderBtn', '显示质量', 'imageRenderMode'],
+            ['filterBtn', '图像滤镜', 'filterMode'],
+            ['preloadBtn', '漫画预加载', 'preloadPages'],
+            ['imageMemoryBtn', '图片内存', 'imageMemoryPolicy'],
+            ['backgroundBtn', '背景颜色', 'backgroundMode'],
+            ['animationBtn', '翻页动画', 'animationMode'],
+            ['viewModeBtn', '显示张数', 'viewMode'],
+            ['tapPageBtn', '点击翻页', 'tapPageNavigation'],
+            ['directionBtn', '阅读方向', 'isRightToLeft']
+        ].forEach(([key, title, preferenceKey]) => {
+            reader.el[key] = createSettingsButton(title, preferenceKey);
+            settingsGrid.appendChild(reader.el[key]);
+        });
+        reader.el.settingsPanel.append(settingsTitle, settingsHint, settingsGrid);
 
         reader.el.pageInfo = document.createElement('span');
         reader.el.pageInfo.className = 'comic-page-info';
@@ -196,28 +163,13 @@
         reader.el.controls.append(row, secondRow);
 
         reader.el.settingsControls.append(reader.el.closeBtn, reader.el.screenshotBtn, reader.el.rotateBtn, reader.el.settingsBtn);
-        reader.el.settingsPanel.append(
-            createSettingsRow('\u663e\u793a\u8d28\u91cf', '\u539f\u56fe\u66f4\u6e05\u6670\uff1b\u6d41\u7545\u6a21\u5f0f\u7f29\u653e\u66f4\u987a\u6ed1\u3002', reader.el.imageRenderBtn),
-            createSettingsRow('\u56fe\u50cf\u6ee4\u955c', '\u4ec5\u5f71\u54cd\u663e\u793a\uff0c\u4e0d\u5f71\u54cd\u539f\u56fe\u548c\u622a\u56fe\u3002', reader.el.filterSelect),
-            createInlineSettingsGroup([
-                createCompactSettingsItem('漫画预加载', reader.el.preloadSelect),
-                createCompactSettingsItem('图片内存', reader.el.imageMemorySelect)
-            ]),
-            createInlineSettingsGroup([
-                createCompactSettingsItem('\u80cc\u666f\u989c\u8272', reader.el.backgroundBtn),
-                createCompactSettingsItem('\u7ffb\u9875\u52a8\u753b', reader.el.animationBtn),
-                createCompactSettingsItem('\u663e\u793a\u5f20\u6570', reader.el.viewModeBtn)
-            ]),
-            createSettingsRow('\u70b9\u51fb\u7ffb\u9875\uff08\u4ec5\u79fb\u52a8\u7aef\uff09', '\u5f00\u542f\u540e\uff0c\u70b9\u51fb\u5c4f\u5e55\u4e24\u4fa7\u7ffb\u9875\u3002', reader.el.tapPageBtn),
-            createSettingsRow('\u9605\u8bfb\u65b9\u5411', '\u5207\u6362\u4ece\u53f3\u5230\u5de6\u6216\u4ece\u5de6\u5230\u53f3\u3002', reader.el.directionBtn)
-        );
 
         reader.el.reader.append(reader.el.imgContainer, reader.el.controls, reader.el.settingsControls, reader.el.settingsPanel, reader.el.toast, reader.el.selectionOverlay);
 
         document.body.appendChild(reader.el.reader);
         reader.updateDirection();
         reader.syncDirectionButton();
-        animations.syncAnimationButton(reader.el.animationBtn, reader.animationMode);
+        reader.syncAnimationButton();
         reader.syncViewModeButton();
         reader.syncImageRenderButton();
         reader.syncFilterControl();

@@ -123,37 +123,71 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
         await page.evaluate(async () => { reader.start(); await reader.render(false); });
         assert.equal(await page.evaluate(() => trackedImages.length), 6, 'reopening reuses decoded images');
         await page.locator('#comic-reader-overlay').getByRole('button', { name: '设置', exact: true }).click();
-        const preloadSelect = page.getByLabel('漫画预加载', { exact: true });
-        const memorySelect = page.getByLabel('图片内存', { exact: true });
-        assert.deepEqual(await preloadSelect.locator('option').allTextContents(), ['2页', '4页', '6页', '全部']);
-        assert.deepEqual(await memorySelect.locator('option').allTextContents(), ['关闭页释放', '释放前页']);
-        const checkLoadingLayout = async () => {
-            assert.equal(await page.evaluate(() => {
-                const preload = reader.el.preloadSelect.getBoundingClientRect();
-                const memory = reader.el.imageMemorySelect.getBoundingClientRect();
-                const panel = reader.el.settingsPanel.getBoundingClientRect();
-                const context = new OffscreenCanvas(1, 1).getContext('2d');
-                return Math.abs(preload.top - memory.top) < 1 && preload.right <= memory.left &&
-                    panel.left >= 0 && panel.right <= innerWidth &&
-                    [reader.el.preloadSelect, reader.el.imageMemorySelect].every(select => {
-                        const style = getComputedStyle(select);
-                        context.font = style.font;
-                        const textWidth = Math.max(...[...select.options].map(option => context.measureText(option.text).width));
-                        const padding = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
-                        return textWidth + padding + 2 <= select.getBoundingClientRect().width;
-                    });
-            }), true, 'preloading and memory controls share one row and fit their option labels');
+        const settingButton = key => page.locator('.comic-setting-btn[data-preference-key="' + key + '"]');
+        const preloadButton = settingButton('preloadPages');
+        const memoryButton = settingButton('imageMemoryPolicy');
+        const chooseSetting = async (button, value) => {
+            for (let i = 0; i < 5; i++) {
+                if (await button.getAttribute('data-value') === value) return;
+                await button.click();
+            }
+            assert.equal(await button.getAttribute('data-value'), value, 'setting cycle reaches the requested value');
         };
-        await checkLoadingLayout();
-        await preloadSelect.selectOption('6');
+        const checkSettingsLayout = async () => {
+            await page.waitForFunction(() => getComputedStyle(reader.el.settingsPanel).opacity === '1');
+            const issues = await page.evaluate(() => {
+                const panel = reader.el.settingsPanel;
+                const panelRect = panel.getBoundingClientRect();
+                const buttons = [...panel.querySelectorAll('.comic-setting-btn')];
+                const issues = [];
+                const inside = (rect, bounds) => rect.left >= bounds.left - 1 && rect.right <= bounds.right + 1 &&
+                    rect.top >= bounds.top - 1 && rect.bottom <= bounds.bottom + 1;
+                if (buttons.length !== 9) issues.push('all nine settings must be present');
+                if (!inside(panelRect, { left: 0, top: 0, right: innerWidth, bottom: innerHeight })) issues.push('panel outside viewport');
+                if (panel.scrollHeight > panel.clientHeight + 1) issues.push('settings require scrolling');
+                for (const button of buttons) {
+                    const rect = button.getBoundingClientRect();
+                    const key = button.dataset.preferenceKey;
+                    if (!inside(rect, panelRect) || rect.height < 44) issues.push(key + ': button clipped or too small');
+                    for (const selector of ['.comic-setting-label', '.comic-setting-value']) {
+                        const span = button.querySelector(selector);
+                        if (!span?.textContent.trim()) { issues.push(key + ': empty text'); continue; }
+                        const range = document.createRange();
+                        range.selectNodeContents(span);
+                        if (!inside(range.getBoundingClientRect(), rect)) issues.push(key + ': text clipped');
+                    }
+                }
+                const preload = reader.el.preloadBtn.getBoundingClientRect();
+                const memory = reader.el.imageMemoryBtn.getBoundingClientRect();
+                if (Math.abs(preload.top - memory.top) > 1 || preload.right > memory.left) issues.push('loading settings must share a row');
+                return issues;
+            });
+            assert.deepEqual(issues, [], 'all settings and current values fit the viewport');
+        };
+        await checkSettingsLayout();
+        await settingButton('filterMode').focus();
+        await page.keyboard.press('Enter');
+        assert.equal(await settingButton('filterMode').getAttribute('data-value'), 'soft', 'Enter advances exactly one option');
+        await page.keyboard.press('Space');
+        assert.equal(await settingButton('filterMode').getAttribute('data-value'), 'warm', 'Space advances exactly one option');
+        const settingsIndex = await page.evaluate(() => reader.currentIndex);
+        for (const key of ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown']) await page.keyboard.press(key);
+        assert.equal(await page.evaluate(() => reader.currentIndex), settingsIndex, 'settings arrow keys do not turn pages');
+        await page.keyboard.press('Escape');
+        assert.equal(await page.evaluate(() => reader.isSettingsPanelVisible()), false, 'Escape closes settings');
+        assert.equal(await page.locator('#comic-reader-overlay').count(), 1, 'Escape leaves the reader open');
+        await page.locator('#comic-reader-overlay').getByRole('button', { name: '设置', exact: true }).click();
+        await checkSettingsLayout();
+        await page.screenshot({ path: path.join(artifactDir, 'desktop-settings.png') });
+        await chooseSetting(preloadButton, '6');
         await page.waitForFunction(() => reader.imageCache.size === 8 &&
             [...reader.imageCache.values()].every(entry => entry.settled));
-        await preloadSelect.selectOption('all');
+        await chooseSetting(preloadButton, 'all');
         await page.waitForFunction(() => reader.imageCache.size === 12 &&
             [...reader.imageCache.values()].every(entry => entry.settled));
         assert.ok(await page.evaluate(() => [...reader.imageCache.values()].reduce((sum, entry) => sum + entry.pixels, 0)) > 64e6,
             'all preloading retains the entire article beyond the former pixel budget');
-        await memorySelect.selectOption('previous');
+        await chooseSetting(memoryButton, 'previous');
         await page.evaluate(async () => {
             reader.hideSettingsPanel();
             reader.viewMode = 'single';
@@ -185,27 +219,36 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
         await page.setViewportSize({ width: 390, height: 844 });
         await page.waitForFunction(() => reader.resizeFrame === null);
         await page.evaluate(() => reader.toggleSettingsPanel());
-        await preloadSelect.selectOption('2');
+        await chooseSetting(preloadButton, '2');
         await page.waitForFunction(() => {
             const prefs = BilibiliToolbox.readerPreferences.load();
             return prefs.preloadPages === '2' && prefs.imageMemoryPolicy === 'previous';
         });
-        await page.waitForFunction(() => getComputedStyle(reader.el.settingsPanel).opacity === '1');
-        assert.equal(await page.evaluate(() => {
-            const panel = reader.el.settingsPanel.getBoundingClientRect();
-            return [...reader.el.settingsPanel.querySelectorAll('select')].every(select => {
-                const rect = select.getBoundingClientRect();
-                return rect.left >= panel.left && rect.right <= panel.right;
-            }) && panel.left >= 0 && panel.right <= innerWidth;
-        }), true, 'selects fit the mobile settings panel');
         assert.notEqual(await page.evaluate(() => getComputedStyle(reader.el.settingsPanel).backgroundColor), 'rgba(0, 0, 0, 0)',
             'the settings panel has an opaque background for readable text');
-        await checkLoadingLayout();
+        await checkSettingsLayout();
+        const beforeSwipe = await page.evaluate(() => [reader.currentIndex, reader.preloadPages]);
+        await preloadButton.locator('.comic-setting-value').evaluate(target => {
+            const rect = target.getBoundingClientRect();
+            const touch = x => new Touch({ identifier: 1, target, clientX: x, clientY: rect.top + 5 });
+            const start = touch(rect.left + 100), end = touch(rect.left + 10);
+            target.dispatchEvent(new TouchEvent('touchstart', { bubbles: true, cancelable: true, touches: [start] }));
+            target.dispatchEvent(new TouchEvent('touchmove', { bubbles: true, cancelable: true, touches: [end] }));
+            target.dispatchEvent(new TouchEvent('touchend', { bubbles: true, cancelable: true, touches: [], changedTouches: [end] }));
+        });
+        assert.deepEqual(await page.evaluate(() => [reader.currentIndex, reader.preloadPages]), beforeSwipe,
+            'swiping across a setting card does not navigate or change its setting');
+        assert.equal(await page.evaluate(() => reader.isTouchSwiping), false, 'interactive swipe state is cleared');
         await page.screenshot({ path: path.join(artifactDir, 'mobile-settings.png') });
-        await page.setViewportSize({ width: 320, height: 740 });
+        await chooseSetting(memoryButton, 'page');
+        await page.setViewportSize({ width: 320, height: 568 });
         await page.waitForFunction(() => reader.resizeFrame === null);
-        await checkLoadingLayout();
+        await checkSettingsLayout();
         await page.screenshot({ path: path.join(artifactDir, 'narrow-settings.png') });
+        await page.setViewportSize({ width: 640, height: 360 });
+        await page.waitForFunction(() => reader.resizeFrame === null);
+        await checkSettingsLayout();
+        await page.screenshot({ path: path.join(artifactDir, 'landscape-settings.png') });
         await page.evaluate(() => {
             reader.setPreference('preloadPages', 'all');
             reader.setPreference('imageMemoryPolicy', 'page');
