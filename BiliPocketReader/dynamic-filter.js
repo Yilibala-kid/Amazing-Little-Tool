@@ -34,14 +34,15 @@
         '\u8f6c\u53d1\u4e86\u4e13\u680f',
         '\u8f6c\u53d1\u4e86'
     ];
-    const DYNAMIC_FILTER_BURST_DELAYS = [0, 80, 250, 600, 1200, 2500];
 
     let dataProvider = () => Shared.createDefaultData();
     let onRenderSettings = () => {};
     let onSyncFloatButton = () => {};
     let dynamicFilterObserver = null;
     let debounceFilterTimer = 0;
-    let dynamicFilterBurstTimers = [];
+    let active = false;
+    let fullScanPending = false;
+    const pendingCards = new Set();
     let keywordFilterEnabled = false;
     let keywordFilterText = '';
 
@@ -93,7 +94,8 @@
     }
 
     function getDynamicCardText(card) {
-        return normalizeDynamicText(card.innerText || card.textContent || '');
+        // textContent also works for previously hidden cards without forcing layout.
+        return normalizeDynamicText(card.textContent || '');
     }
 
     function getKeywordFilterState() {
@@ -116,9 +118,7 @@
         if (typeof state.text === 'string') {
             keywordFilterText = state.text;
         }
-        onRenderSettings();
-        onSyncFloatButton();
-        scheduleDynamicFilterApply(0);
+        syncDynamicFilter();
     }
 
     function setDynamicFilterActive(active) {
@@ -136,7 +136,7 @@
         card.querySelectorAll(bilibiliDom.DYNAMIC_CARD_SELECTOR).forEach(child => child.classList.add(FILTER_READY_CLASS));
     }
 
-    function applyDynamicFilter() {
+    function applyDynamicFilter(cards = getDynamicCardElements()) {
         const dynamicPage = isSpaceDynamicPage();
         const shouldHideForward = dynamicPage
             && Boolean(getSettingValue(TOOLBOX_SETTINGS.hideForwardDynamics, false));
@@ -150,7 +150,7 @@
         }
 
         setDynamicFilterActive(true);
-        getDynamicCardElements().forEach(card => {
+        cards.filter(card => card.isConnected !== false).forEach(card => {
             const hideForward = shouldHideForward && isForwardDynamic(card);
             const hideKeyword = shouldFilterKeyword && !getDynamicCardText(card).includes(keywordState.normalizedText);
             card.classList.toggle(HIDDEN_FORWARD_CLASS, hideForward || hideKeyword);
@@ -161,42 +161,82 @@
     function runDynamicFilterNow() {
         if (debounceFilterTimer) clearTimeout(debounceFilterTimer);
         debounceFilterTimer = 0;
-        applyDynamicFilter();
+        if (!active) return;
+        const cards = fullScanPending ? getDynamicCardElements() : [...pendingCards];
+        fullScanPending = false;
+        pendingCards.clear();
+        applyDynamicFilter(cards);
     }
 
-    function scheduleDynamicFilterApply(delay = 80) {
+    function schedulePending(delay = 80) {
+        if (!active) return;
         if (delay <= 0) {
             runDynamicFilterNow();
             return;
         }
 
+        if (!debounceFilterTimer) debounceFilterTimer = window.setTimeout(runDynamicFilterNow, delay);
+    }
+
+    function scheduleDynamicFilterApply(delay = 80) {
+        fullScanPending = true;
+        schedulePending(delay);
+    }
+
+    function queueCard(node) {
+        const element = node?.nodeType === 1 ? node : node?.parentElement;
+        let card = element?.closest?.(bilibiliDom.DYNAMIC_CARD_SELECTOR);
+        if (!card) return;
+        for (let parent = card.parentElement?.closest(bilibiliDom.DYNAMIC_CARD_SELECTOR); parent;
+            parent = card.parentElement?.closest(bilibiliDom.DYNAMIC_CARD_SELECTOR)) card = parent;
+        pendingCards.add(card);
+    }
+
+    function handleMutations(mutations) {
+        for (const mutation of mutations) {
+            if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                const relevantClasses = value => String(value || '').split(/\s+/)
+                    .filter(name => name && name !== FILTER_READY_CLASS && name !== HIDDEN_FORWARD_CLASS).sort().join(' ');
+                if (relevantClasses(mutation.oldValue) === relevantClasses(mutation.target.className)) continue;
+            }
+            queueCard(mutation.target);
+            for (const node of mutation.addedNodes || []) {
+                queueCard(node);
+                node.querySelectorAll?.(bilibiliDom.DYNAMIC_CARD_SELECTOR).forEach(queueCard);
+            }
+        }
+        if (pendingCards.size) schedulePending();
+    }
+
+    function stopObserving() {
+        dynamicFilterObserver?.disconnect();
+        dynamicFilterObserver = null;
         if (debounceFilterTimer) clearTimeout(debounceFilterTimer);
-        debounceFilterTimer = window.setTimeout(() => {
-            debounceFilterTimer = 0;
-            applyDynamicFilter();
-        }, delay);
-    }
-
-    function clearDynamicFilterBurstTimers() {
-        dynamicFilterBurstTimers.forEach(timer => clearTimeout(timer));
-        dynamicFilterBurstTimers = [];
-    }
-
-    function scheduleDynamicFilterBurst() {
-        clearDynamicFilterBurstTimers();
-        DYNAMIC_FILTER_BURST_DELAYS.forEach(delay => {
-            const timer = window.setTimeout(() => {
-                dynamicFilterBurstTimers = dynamicFilterBurstTimers.filter(item => item !== timer);
-                runDynamicFilterNow();
-            }, delay);
-            dynamicFilterBurstTimers.push(timer);
-        });
+        debounceFilterTimer = 0;
+        fullScanPending = false;
+        pendingCards.clear();
     }
 
     function syncDynamicFilter() {
         onRenderSettings();
         onSyncFloatButton();
-        scheduleDynamicFilterBurst();
+        const enabled = isSpaceDynamicPage() &&
+            (Boolean(getSettingValue(TOOLBOX_SETTINGS.hideForwardDynamics, false)) || getKeywordFilterState().isActive);
+        if (!enabled) {
+            stopObserving();
+            if (active) { setDynamicFilterActive(false); clearDynamicFilterCardClasses(); }
+            active = false;
+            return;
+        }
+        active = true;
+        if (!dynamicFilterObserver && document.body) {
+            dynamicFilterObserver = new MutationObserver(handleMutations);
+            dynamicFilterObserver.observe(document.body, {
+                childList: true, subtree: true, characterData: true,
+                attributes: true, attributeOldValue: true, attributeFilter: ['class', 'data-type', 'data-dyn-type']
+            });
+        }
+        scheduleDynamicFilterApply(0);
     }
 
     function initDynamicFilter(options = {}) {
@@ -204,34 +244,18 @@
         onRenderSettings = options.renderSettings || onRenderSettings;
         onSyncFloatButton = options.syncFloatButton || onSyncFloatButton;
 
-        if (!dynamicFilterObserver && document.body) {
-            dynamicFilterObserver = new MutationObserver((mutations) => {
-                if (mutations.some(mutation => mutation.addedNodes.length
-                    || mutation.removedNodes.length)) {
-                    scheduleDynamicFilterApply();
-                }
-            });
-            dynamicFilterObserver.observe(document.body, {
-                childList: true,
-                subtree: true
-            });
-        }
-
-        scheduleDynamicFilterBurst();
+        syncDynamicFilter();
     }
 
     function destroyDynamicFilter() {
-        if (dynamicFilterObserver) dynamicFilterObserver.disconnect();
-        if (debounceFilterTimer) clearTimeout(debounceFilterTimer);
-        clearDynamicFilterBurstTimers();
-        dynamicFilterObserver = null;
-        debounceFilterTimer = 0;
+        stopObserving();
+        if (active) { setDynamicFilterActive(false); clearDynamicFilterCardClasses(); }
+        active = false;
         keywordFilterEnabled = false;
         keywordFilterText = '';
         onRenderSettings = () => {};
         onSyncFloatButton = () => {};
-        setDynamicFilterActive(false);
-        clearDynamicFilterCardClasses();
+        dataProvider = () => Shared.createDefaultData();
     }
 
     Toolbox.dynamicFilter = {

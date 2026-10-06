@@ -10,6 +10,13 @@
     let initialized = false;
     let changeListeners = new Set();
     let storageListener = null;
+    let mutationQueue = Promise.resolve();
+
+    function enqueueMutation(operation) {
+        const result = mutationQueue.then(operation);
+        mutationQueue = result.catch(() => {});
+        return result;
+    }
 
     function dataSignature(data) {
         return JSON.stringify(window.Shared.normalizeToolboxData(data));
@@ -21,11 +28,24 @@
         return dataCache;
     }
 
-    async function write(data) {
-        dataCache = window.Shared.normalizeToolboxData(data);
-        await chrome.storage.local.set({ [window.Shared.SHARED_STORAGE_KEY]: dataCache });
-        notify(dataCache);
+    async function persist(data) {
+        const next = window.Shared.normalizeToolboxData(data);
+        if (dataSignature(next) === dataSignature(dataCache)) return dataCache;
+        await chrome.storage.local.set({ [window.Shared.SHARED_STORAGE_KEY]: next });
+        // onChanged may already have delivered this value while set was pending.
+        publish(next);
         return dataCache;
+    }
+
+    function write(data) {
+        const next = window.Shared.normalizeToolboxData(data);
+        return enqueueMutation(async () => { await read(); return persist(next); });
+    }
+
+    function publish(data) {
+        if (dataSignature(data) === dataSignature(dataCache)) return;
+        dataCache = data;
+        notify(dataCache);
     }
 
     function notify(data) {
@@ -33,10 +53,12 @@
         changeListeners.forEach(listener => listener(normalized));
     }
 
-    async function update(mutator) {
-        const current = await read();
-        const next = typeof mutator === 'function' ? mutator(current) : mutator;
-        return write(next);
+    function update(mutator) {
+        return enqueueMutation(async () => {
+            const current = await read();
+            const next = typeof mutator === 'function' ? await mutator(current) : mutator;
+            return persist(next);
+        });
     }
 
     async function setSetting(key, value) {
@@ -60,9 +82,7 @@
     function handleExtensionStorageChange(changes, areaName) {
         if (areaName !== 'local' || !changes[window.Shared.SHARED_STORAGE_KEY]) return;
         const nextData = window.Shared.normalizeToolboxData(changes[window.Shared.SHARED_STORAGE_KEY].newValue);
-        if (dataSignature(nextData) === dataSignature(dataCache)) return;
-        dataCache = nextData;
-        notify(dataCache);
+        publish(nextData);
     }
 
     async function init() {
@@ -162,7 +182,7 @@
             return { data: current, added: false, reason: 'duplicate' };
         }
 
-        const data = await write({ ...current, favorites: [...current.favorites, normalized] });
+        const data = await persist({ ...current, favorites: [...current.favorites, normalized] });
         return { data, added: true, key };
     }
 
@@ -173,7 +193,7 @@
             return { data: current, removed: false };
         }
 
-        const data = await write({ ...current, favorites });
+        const data = await persist({ ...current, favorites });
         return { data, removed: true };
     }
 
@@ -182,7 +202,7 @@
         const normalized = normalizeImportedFavorites(imported);
         const merged = mergeFavorites(current.favorites, normalized);
         const data = merged.added || merged.updated
-            ? await write({ ...current, favorites: merged.result })
+            ? await persist({ ...current, favorites: merged.result })
             : current;
         return { ...merged, data };
     }
@@ -221,9 +241,9 @@
 
     Toolbox.storage = storageApi;
     Toolbox.favorites = {
-        addFavorite,
-        removeFavorite,
-        importFavorites,
+        addFavorite: item => enqueueMutation(() => addFavorite(item)),
+        removeFavorite: key => enqueueMutation(() => removeFavorite(key)),
+        importFavorites: items => enqueueMutation(() => importFavorites(items)),
         normalizeImportedFavorites,
         createExportText
     };

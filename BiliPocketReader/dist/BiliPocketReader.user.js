@@ -62,7 +62,7 @@
     };
     window.chrome = chromeShim;
 
-    const css = "/* ===== content-base.css ===== */\n/* Bilibili Toolbox — Spotify-inspired dark theme */\r\n\r\n:root {\r\n    --acc: #fb7299;\r\n    --acc-hover: #fc8bab;\r\n    --acc-active: #e86288;\r\n    --bg-deepest: #0a0a0a;\r\n    --bg-surface: #181818;\r\n    --bg-elevated: #1f1f1f;\r\n    --bg-overlay: rgba(20, 20, 20, 0.94);\r\n    --text-primary: #ffffff;\r\n    --text-secondary: #b3b3b3;\r\n    --text-muted: #7c7c7c;\r\n    --border-subtle: rgba(255, 255, 255, 0.12);\r\n    --border-strong: #4d4d4d;\r\n    --error: #f3727f;\r\n    --error-hover: #e86a77;\r\n    --shadow-heavy: 0 8px 24px rgba(0, 0, 0, 0.5);\r\n    --shadow-card: 0 4px 8px rgba(0, 0, 0, 0.3);\r\n    --shadow-float: 0 4px 16px rgba(251, 114, 153, 0.25);\r\n    --radius-sm: 6px;\r\n    --radius-md: 8px;\r\n    --radius-lg: 12px;\r\n    --radius-pill: 9999px;\r\n    --font: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif;\r\n}\r\n\r\n\n/* ===== content-toolbox.css ===== */\n/* ===== Floating star button ===== */\r\n#bilibili-fav-float-btn {\r\n    position: fixed;\r\n    bottom: 80px;\r\n    right: 20px;\r\n    width: 50px;\r\n    height: 50px;\r\n    background: var(--acc);\r\n    border-radius: 50%;\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    font-size: 24px;\r\n    cursor: pointer;\r\n    box-shadow: var(--shadow-float);\r\n    z-index: 999999;\r\n    transition: transform 0.2s, box-shadow 0.2s, opacity 0.3s, visibility 0.3s;\r\n    line-height: 1;\r\n    text-align: center;\r\n}\r\n\r\n#bilibili-fav-float-btn:hover {\r\n    transform: scale(1.1);\r\n    box-shadow: 0 6px 20px rgba(251, 114, 153, 0.4);\r\n}\r\n\r\n#bilibili-fav-float-btn.dynamic-filter-active {\r\n    border-radius: var(--radius-sm);\r\n}\r\n\r\n#bilibili-fav-float-btn.bilibili-fav-video-hidden {\r\n    opacity: 0;\r\n}\r\n\r\n#bilibili-fav-float-btn.bilibili-fav-video-visible {\r\n    opacity: 1;\r\n}\r\n\r\n/* ===== Shared panel base ===== */\r\n#bilibili-fav-panel,\r\n#bilibili-toolbox-settings-panel {\r\n    position: fixed;\r\n    bottom: 140px;\r\n    right: 20px;\r\n    width: 280px;\r\n    background: var(--bg-overlay);\r\n    backdrop-filter: blur(20px);\r\n    -webkit-backdrop-filter: blur(20px);\r\n    border-radius: var(--radius-lg);\r\n    box-shadow: var(--shadow-heavy);\r\n    z-index: 1000000;\r\n    opacity: 0;\r\n    visibility: hidden;\r\n    transition: opacity 0.2s, transform 0.2s, visibility 0.2s;\r\n    font-family: var(--font);\r\n    transform: translateY(10px);\r\n    color: var(--text-primary);\r\n    border: 1px solid var(--border-subtle);\r\n}\r\n\r\n#bilibili-fav-panel {\r\n    --bilibili-fav-columns: 2;\r\n    --bilibili-fav-item-width: 130px;\r\n    --bilibili-fav-list-gap: 4px;\r\n    --bilibili-fav-list-padding-x: 10px;\r\n    width: calc(\r\n        var(--bilibili-fav-columns) * var(--bilibili-fav-item-width)\r\n        + (var(--bilibili-fav-columns) - 1) * var(--bilibili-fav-list-gap)\r\n        + var(--bilibili-fav-list-padding-x) * 2\r\n    );\r\n}\r\n\r\n#bilibili-toolbox-settings-panel {\r\n    width: 320px;\r\n    z-index: 1000001;\r\n}\r\n\r\n#bilibili-fav-panel.show,\r\n#bilibili-toolbox-settings-panel.show {\r\n    opacity: 1;\r\n    visibility: visible;\r\n    transform: translateY(0);\r\n}\r\n\r\n/* ===== Panel header ===== */\r\n.bilibili-fav-header {\r\n    display: flex;\r\n    justify-content: space-between;\r\n    align-items: center;\r\n    padding: 10px 16px;\r\n    border-bottom: 1px solid var(--border-subtle);\r\n    background: var(--bg-elevated);\r\n    color: var(--text-primary);\r\n    border-radius: var(--radius-lg) var(--radius-lg) 0 0;\r\n    font-weight: 600;\r\n    font-size: 14px;\r\n    letter-spacing: 0.3px;\r\n}\r\n\r\n.bilibili-fav-header-actions {\r\n    display: flex;\r\n    align-items: center;\r\n    gap: 6px;\r\n}\r\n\r\n/* ===== Panel content ===== */\r\n.bilibili-fav-content { max-height: 400px; overflow: auto; }\r\n\r\n.bilibili-fav-list {\r\n    padding: 8px var(--bilibili-fav-list-padding-x);\r\n    display: grid;\r\n    grid-template-columns: repeat(var(--bilibili-fav-columns, 2), var(--bilibili-fav-item-width));\r\n    gap: var(--bilibili-fav-list-gap);\r\n}\r\n\r\n.bilibili-fav-content::-webkit-scrollbar { width: 5px; }\r\n.bilibili-fav-content::-webkit-scrollbar-track { background: transparent; }\r\n.bilibili-fav-content::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 3px; }\r\n.bilibili-fav-content::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.25); }\r\n\r\n/* ===== Toolbox settings content ===== */\r\n.bilibili-toolbox-control-content {\r\n    padding: 14px;\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: 14px;\r\n}\r\n\r\n.bilibili-toolbox-control-section {\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: 10px;\r\n}\r\n\r\n.bilibili-toolbox-section-title {\r\n    color: var(--text-secondary);\r\n    font-size: 12px;\r\n    font-weight: 700;\r\n    line-height: 1;\r\n}\r\n\r\n.bilibili-toolbox-control-row {\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: space-between;\r\n    gap: 12px;\r\n    padding: 12px 14px;\r\n    border-radius: var(--radius-md);\r\n    background: var(--bg-surface);\r\n    cursor: pointer;\r\n    border: 1px solid var(--border-subtle);\r\n}\r\n\r\n.bilibili-toolbox-control-row-stack {\r\n    align-items: stretch;\r\n    cursor: default;\r\n    flex-direction: column;\r\n    gap: 10px;\r\n}\r\n\r\n.bilibili-toolbox-control-copy {\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: 4px;\r\n    min-width: 0;\r\n}\r\n\r\n.bilibili-toolbox-control-title {\r\n    font-size: 14px;\r\n    font-weight: 600;\r\n    color: var(--text-primary);\r\n}\r\n\r\n.bilibili-toolbox-control-desc {\r\n    font-size: 12px;\r\n    color: var(--text-secondary);\r\n    line-height: 1.4;\r\n}\r\n\r\n.bilibili-toolbox-segmented {\r\n    display: grid;\r\n    grid-template-columns: repeat(4, minmax(0, 1fr));\r\n    gap: 4px;\r\n    padding: 3px;\r\n    border-radius: var(--radius-pill);\r\n    background: var(--bg-deepest);\r\n    border: 1px solid var(--border-subtle);\r\n}\r\n\r\n.bilibili-toolbox-segmented button {\r\n    min-height: 30px;\r\n    padding: 0;\r\n    color: var(--text-secondary);\r\n    background: transparent;\r\n    border: none;\r\n    border-radius: var(--radius-pill);\r\n    cursor: pointer;\r\n    font: 600 13px/1 var(--font);\r\n}\r\n\r\n.bilibili-toolbox-segmented button:hover {\r\n    color: var(--text-primary);\r\n    background: rgba(255, 255, 255, 0.08);\r\n}\r\n\r\n.bilibili-toolbox-segmented button.active {\r\n    color: #fff;\r\n    background: var(--acc);\r\n}\r\n\r\n.bilibili-toolbox-keyword-input {\r\n    width: 100%;\r\n    min-height: 38px;\r\n    padding: 0 12px;\r\n    box-sizing: border-box;\r\n    color: var(--text-primary);\r\n    background: var(--bg-deepest);\r\n    border: 1px solid var(--border-subtle);\r\n    border-radius: var(--radius-md);\r\n    font-family: var(--font);\r\n    font-size: 13px;\r\n    outline: none;\r\n    transition: border-color 0.2s, box-shadow 0.2s, opacity 0.2s;\r\n}\r\n\r\n.bilibili-toolbox-keyword-input::placeholder {\r\n    color: var(--text-muted);\r\n}\r\n\r\n.bilibili-toolbox-keyword-input:focus {\r\n    border-color: var(--acc);\r\n    box-shadow: 0 0 0 2px rgba(251, 114, 153, 0.18);\r\n}\r\n\r\n/* ===== Toggle switch ===== */\r\n.bilibili-toolbox-switch {\r\n    position: relative;\r\n    width: 46px;\r\n    height: 28px;\r\n    flex-shrink: 0;\r\n}\r\n\r\n.bilibili-toolbox-switch input {\r\n    position: absolute;\r\n    inset: 0;\r\n    opacity: 0;\r\n    cursor: pointer;\r\n    margin: 0;\r\n}\r\n\r\n.bilibili-toolbox-switch-slider {\r\n    position: absolute;\r\n    inset: 0;\r\n    border-radius: var(--radius-pill);\r\n    background: rgba(255, 255, 255, 0.2);\r\n    transition: background 0.2s;\r\n}\r\n\r\n.bilibili-toolbox-switch-slider::before {\r\n    content: \"\";\r\n    position: absolute;\r\n    top: 3px;\r\n    left: 3px;\r\n    width: 22px;\r\n    height: 22px;\r\n    border-radius: 50%;\r\n    background: #fff;\r\n    transition: transform 0.2s;\r\n    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);\r\n}\r\n\r\n.bilibili-toolbox-switch input:checked + .bilibili-toolbox-switch-slider {\r\n    background: var(--acc);\r\n}\r\n\r\n.bilibili-toolbox-switch input:checked + .bilibili-toolbox-switch-slider::before {\r\n    transform: translateX(18px);\r\n}\r\n\r\n/* ===== Empty state ===== */\r\n.bilibili-fav-empty { grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 40px 20px; font-size: 14px; }\r\n\r\n/* ===== Toast message ===== */\r\n.bilibili-fav-msg { padding: 8px; text-align: center; font-size: 12px; display: none; }\r\n\r\n/* ===== Pill buttons (global) ===== */\r\n.bilibili-fav-add-btn,\r\n.bilibili-fav-control-btn,\r\n.bilibili-toolbox-export-btn,\r\n.bilibili-toolbox-import-btn {\r\n    padding: 10px 0;\r\n    font-size: 13px;\r\n    font-weight: 600;\r\n    border: none;\r\n    border-radius: var(--radius-pill);\r\n    cursor: pointer;\r\n    transition: all 0.2s;\r\n    color: var(--text-primary);\r\n    letter-spacing: 0.3px;\r\n    flex: 1;\r\n}\r\n\r\n.bilibili-fav-add-btn {\r\n    padding: 8px 16px;\r\n    flex: none;\r\n}\r\n\r\n.bilibili-fav-control-btn {\r\n    display: none;\r\n    padding: 8px 12px;\r\n    flex: none;\r\n}\r\n\r\n/* Primary pill — accent fill */\r\n.bilibili-fav-add-btn,\r\n.bilibili-fav-control-btn,\r\n.bilibili-toolbox-export-btn {\r\n    background: var(--acc);\r\n    color: #fff;\r\n}\r\n\r\n.bilibili-fav-add-btn:hover,\r\n.bilibili-fav-control-btn:hover,\r\n.bilibili-toolbox-export-btn:hover {\r\n    background: var(--acc-hover);\r\n}\r\n\r\n/* Secondary pill — dark fill */\r\n.bilibili-toolbox-import-btn {\r\n    background: var(--bg-elevated);\r\n    border: 1px solid var(--border-strong);\r\n}\r\n\r\n.bilibili-toolbox-import-btn:hover {\r\n    background: #2a2a2a;\r\n}\r\n\r\n/* ===== Button group layout ===== */\r\n.bilibili-toolbox-control-actions {\r\n    display: flex;\r\n    gap: 8px;\r\n    padding: 0 16px 16px;\r\n}\r\n\r\n/* ===== Export text document ===== */\r\n.bilibili-toolbox-export-dialog {\r\n    position: fixed;\r\n    inset: 0;\r\n    z-index: 1000002;\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    padding: 16px;\r\n    background: rgba(0, 0, 0, 0.72);\r\n}\r\n\r\n.bilibili-toolbox-export-document {\r\n    display: flex;\r\n    width: min(640px, 100%);\r\n    max-height: min(720px, 86vh);\r\n    flex-direction: column;\r\n    overflow: hidden;\r\n    background: var(--bg-elevated);\r\n    border: 1px solid var(--border-subtle);\r\n    border-radius: var(--radius-md);\r\n    box-shadow: var(--shadow-heavy);\r\n}\r\n\r\n.bilibili-toolbox-export-header {\r\n    display: flex;\r\n    min-height: 44px;\r\n    align-items: center;\r\n    justify-content: space-between;\r\n    padding: 0 14px;\r\n    color: var(--text-primary);\r\n    font-size: 14px;\r\n    font-weight: 600;\r\n    border-bottom: 1px solid var(--border-subtle);\r\n}\r\n\r\n.bilibili-toolbox-export-close {\r\n    display: inline-flex;\r\n    width: 30px;\r\n    height: 30px;\r\n    align-items: center;\r\n    justify-content: center;\r\n    padding: 0;\r\n    color: var(--text-secondary);\r\n    background: transparent;\r\n    border: none;\r\n    border-radius: 50%;\r\n    cursor: pointer;\r\n    font-size: 22px;\r\n    line-height: 1;\r\n}\r\n\r\n.bilibili-toolbox-export-close:hover {\r\n    color: var(--text-primary);\r\n    background: rgba(255, 255, 255, 0.1);\r\n}\r\n\r\n.bilibili-toolbox-export-text {\r\n    width: 100%;\r\n    min-height: min(560px, 72vh);\r\n    padding: 14px;\r\n    resize: vertical;\r\n    box-sizing: border-box;\r\n    color: var(--text-primary);\r\n    background: var(--bg-deepest);\r\n    border: none;\r\n    outline: none;\r\n    font-family: Consolas, \"Courier New\", monospace;\r\n    font-size: 13px;\r\n    line-height: 1.5;\r\n}\r\n\r\n.bilibili-toolbox-export-footer {\r\n    display: flex;\r\n    min-height: 52px;\r\n    align-items: center;\r\n    justify-content: space-between;\r\n    gap: 12px;\r\n    padding: 8px 12px;\r\n    border-top: 1px solid var(--border-subtle);\r\n}\r\n\r\n.bilibili-toolbox-export-status {\r\n    color: var(--text-secondary);\r\n    font-size: 12px;\r\n    line-height: 1.4;\r\n}\r\n\r\n.bilibili-toolbox-export-status.is-error {\r\n    color: var(--error);\r\n}\r\n\r\n.bilibili-toolbox-export-actions {\r\n    display: flex;\r\n    flex-shrink: 0;\r\n    align-items: center;\r\n    gap: 8px;\r\n}\r\n\r\n.bilibili-toolbox-export-clipboard,\r\n.bilibili-toolbox-export-confirm {\r\n    flex-shrink: 0;\r\n    padding: 8px 18px;\r\n    color: #fff;\r\n    background: var(--acc);\r\n    border: none;\r\n    border-radius: var(--radius-pill);\r\n    cursor: pointer;\r\n    font-size: 13px;\r\n    font-weight: 600;\r\n}\r\n\r\n.bilibili-toolbox-export-clipboard:hover,\r\n.bilibili-toolbox-export-confirm:hover {\r\n    background: var(--acc-hover);\r\n}\r\n\r\n/* ===== Favorite list items ===== */\r\n.bilibili-fav-item-link {\r\n    display: block;\r\n    text-decoration: none;\r\n    color: inherit;\r\n    width: var(--bilibili-fav-item-width);\r\n    min-width: 0;\r\n    position: relative;\r\n}\r\n\r\n.bilibili-fav-item {\r\n    display: flex;\r\n    flex-direction: column;\r\n    align-items: center;\r\n    padding: 8px 6px 10px;\r\n    border-radius: var(--radius-md);\r\n    transition: background 0.2s;\r\n    text-align: center;\r\n    position: relative;\r\n    overflow: hidden;\r\n    height: 88px;\r\n    box-sizing: border-box;\r\n    background: transparent;\r\n}\r\n\r\n.bilibili-fav-item[data-readlist=\"true\"] { padding: 0; }\r\n\r\n.bilibili-fav-item-link:hover .bilibili-fav-item {\r\n    background: var(--bg-surface);\r\n}\r\n\r\n.bilibili-fav-item-info {\r\n    display: flex;\r\n    flex-direction: column;\r\n    align-items: center;\r\n    width: 100%;\r\n    height: 100%;\r\n    position: relative;\r\n    z-index: 1;\r\n}\r\n\r\n.bilibili-fav-item[data-readlist=\"true\"] .bilibili-fav-item-info {\r\n    padding: 0;\r\n    overflow: hidden;\r\n    border-radius: inherit;\r\n}\r\n\r\n/* ===== Avatar — round, no border ===== */\r\n.bilibili-fav-avatar {\r\n    width: 44px;\r\n    height: 44px;\r\n    border-radius: 50%;\r\n    object-fit: cover;\r\n    position: relative;\r\n    z-index: 1;\r\n    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);\r\n}\r\n\r\n.bilibili-fav-avatar.square {\r\n    border-radius: var(--radius-md);\r\n}\r\n\r\n.bilibili-fav-avatar.cover {\r\n    display: block;\r\n    width: 100%;\r\n    height: 100%;\r\n    border-radius: var(--radius-md);\r\n    box-shadow: none;\r\n    position: absolute;\r\n    inset: 0;\r\n}\r\n\r\n/* ===== Name label ===== */\r\n.bilibili-fav-name {\r\n    font-size: 12px;\r\n    color: var(--text-primary);\r\n    font-weight: 500;\r\n    max-width: 100%;\r\n    overflow: hidden;\r\n    text-overflow: ellipsis;\r\n    white-space: nowrap;\r\n    position: relative;\r\n    z-index: 1;\r\n    margin-top: 6px;\r\n}\r\n\r\n.bilibili-fav-item[data-readlist=\"true\"] .bilibili-fav-name {\r\n    position: absolute;\r\n    bottom: 0;\r\n    left: 0;\r\n    right: 0;\r\n    color: #fff;\r\n    background: linear-gradient(transparent, rgba(0, 0, 0, 0.75));\r\n    padding: 20px 8px 8px;\r\n    border-radius: 0 0 var(--radius-md) var(--radius-md);\r\n    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);\r\n    font-weight: 600;\r\n}\r\n\r\n/* ===== Delete button — ghost pill ===== */\r\n.bilibili-fav-delete {\r\n    position: absolute;\r\n    top: 4px;\r\n    right: 4px;\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    width: 20px;\r\n    height: 20px;\r\n    padding: 0;\r\n    font-size: 14px;\r\n    line-height: 1;\r\n    color: var(--text-primary);\r\n    background: rgba(0, 0, 0, 0.5);\r\n    border: none;\r\n    border-radius: 50%;\r\n    appearance: none;\r\n    cursor: pointer;\r\n    transition: all 0.2s;\r\n    z-index: 2;\r\n    opacity: 0;\r\n}\r\n\r\n.bilibili-fav-item:hover .bilibili-fav-delete { opacity: 1; }\r\n.bilibili-fav-delete:hover { background: var(--error); }\r\n\r\n/* ===== Dynamic filter visibility ===== */\r\n.bilibili-toolbox-dynamic-filter-active .bili-dyn-list__item:not(.bilibili-toolbox-dynamic-filter-ready),\n.bilibili-toolbox-dynamic-filter-active .bili-dyn-item:not(.bilibili-toolbox-dynamic-filter-ready),\n.bilibili-toolbox-dynamic-filter-active .bili-opus-view:not(.bilibili-toolbox-dynamic-filter-ready),\n.bilibili-toolbox-hide-forward-dynamic { display: none !important; }\n\n/* ══════════════════════════════════════ */\n\n/* ===== content-reader.css ===== */\n/*  Comic Reader — Spotify dark theme   */\r\n/* ══════════════════════════════════════ */\r\n\r\n.comic-entry-btn {\r\n    position: fixed;\r\n    bottom: 24px;\r\n    right: 24px;\r\n    z-index: 9999;\r\n    display: inline-flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    padding: 10px 18px;\r\n    cursor: pointer;\r\n    background: var(--acc);\r\n    color: #fff;\r\n    border: none;\r\n    border-radius: 24px;\r\n    font-size: 20px;\r\n    line-height: 1;\r\n    box-shadow: 0 4px 16px rgba(251,114,153,0.3);\r\n}\r\n\r\n.comic-entry-btn-touch {\r\n    bottom: 16px;\r\n    right: 16px;\r\n    padding: 12px 16px;\r\n    font-size: 18px;\r\n}\r\n\r\n#comic-reader-overlay {\r\n    position: fixed;\r\n    inset: 0;\r\n    background: var(--bg-deepest);\r\n    z-index: 10000;\r\n    display: flex;\r\n    flex-direction: column;\r\n    align-items: center;\r\n    justify-content: center;\r\n    overflow: hidden;\r\n    touch-action: none;\r\n    overscroll-behavior: none;\r\n    isolation: isolate;\r\n}\r\n\r\n.comic-img-container {\r\n    display: flex;\r\n    width: 100%;\r\n    height: 100%;\r\n    align-items: center;\r\n    justify-content: center;\r\n    gap: 4px;\r\n    padding: 0;\r\n    margin: 0;\r\n    cursor: grab;\r\n    touch-action: none;\r\n    transform-origin: center center;\r\n    will-change: transform;\r\n}\r\n\r\n.comic-img-container.is-grabbing,\n.comic-img-container.is-grabbing img { cursor: grabbing; }\n\n.comic-img-container img {\n    filter: var(--comic-image-filter, none);\n}\n\r\n/* ===== Reader control panels ===== */\r\n.comic-controls,\r\n.comic-settings-controls {\r\n    position: fixed;\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: 6px;\r\n    background: var(--bg-overlay);\r\n    padding: 8px 10px;\r\n    border-radius: var(--radius-lg);\r\n    backdrop-filter: blur(20px);\r\n    -webkit-backdrop-filter: blur(20px);\r\n    border: 1px solid var(--border-subtle);\r\n    color: var(--text-primary);\r\n    z-index: 10001;\r\n    transition: opacity 0.5s;\r\n    opacity: 1;\r\n    box-shadow: var(--shadow-heavy);\r\n}\r\n\r\n.comic-controls.is-hidden,\r\n.comic-settings-controls.is-hidden { opacity: 0; }\r\n\r\n.comic-controls { bottom: 24px; right: 24px; }\r\n.comic-settings-controls { top: 24px; right: 24px; }\r\n\r\n.comic-settings-panel {\n    position: fixed;\n    left: 50%;\n    top: 50%;\n    z-index: 10002;\n    display: flex;\n    flex-direction: column;\n    gap: 8px;\n    width: min(460px, calc(100vw - 32px));\n    max-height: min(76vh, 560px);\r\n    overflow-y: auto;\r\n    padding: 14px;\r\n    color: var(--text-primary);\r\n    background: var(--bg-overlay);\r\n    border: 1px solid var(--border-subtle);\r\n    border-radius: var(--radius-md);\r\n    box-shadow: var(--shadow-heavy);\r\n    backdrop-filter: blur(20px);\r\n    -webkit-backdrop-filter: blur(20px);\r\n    opacity: 0;\r\n    visibility: hidden;\r\n    pointer-events: none;\r\n    transform: translate(-50%, -50%) scale(0.96);\r\n    transition: opacity 0.18s ease-out, transform 0.18s ease-out, visibility 0.18s;\r\n}\r\n\r\n.comic-settings-panel.show {\r\n    opacity: 1;\r\n    visibility: visible;\r\n    pointer-events: auto;\r\n    transform: translate(-50%, -50%) scale(1);\r\n}\r\n\r\n.comic-settings-panel .comic-btn {\r\n    min-width: 96px;\r\n    padding: 8px 12px;\r\n    border-radius: var(--radius-md);\r\n    white-space: nowrap;\r\n}\r\n\r\n.comic-settings-item {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    gap: 14px;\n    padding: 12px;\r\n    border: 1px solid var(--border-subtle);\r\n    border-radius: var(--radius-md);\r\n    background: rgba(255, 255, 255, 0.035);\r\n}\r\n\r\n.comic-settings-copy {\r\n    min-width: 0;\r\n}\r\n\r\n.comic-settings-title {\r\n    font-size: 13px;\r\n    font-weight: 700;\r\n    color: var(--text-primary);\r\n}\r\n\r\n.comic-settings-desc {\r\n    margin-top: 4px;\r\n    font-size: 12px;\r\n    line-height: 1.45;\r\n    color: var(--text-secondary);\r\n}\r\n\r\n.comic-settings-action {\n    display: flex;\n    flex-shrink: 0;\r\n    align-items: center;\r\n    justify-content: flex-end;\n}\n\n.comic-settings-inline-group {\n    display: grid;\n    grid-template-columns: repeat(3, minmax(0, 1fr));\n    padding: 10px 4px;\n    border: 1px solid var(--border-subtle);\n    border-radius: var(--radius-md);\n    background: rgba(255, 255, 255, 0.035);\n}\n\n.comic-settings-inline-item {\n    display: flex;\n    min-width: 0;\n    align-items: stretch;\n    justify-content: space-between;\n    flex-direction: column;\n    gap: 8px;\n    padding: 0 8px;\n}\n\n.comic-settings-inline-item + .comic-settings-inline-item {\n    border-left: 1px solid var(--border-subtle);\n}\n\n.comic-settings-inline-item .comic-settings-title {\n    text-align: center;\n    white-space: nowrap;\n}\n\n.comic-settings-inline-item .comic-settings-action {\n    width: 100%;\n    justify-content: center;\n}\n\n.comic-settings-inline-item .comic-btn {\n    width: auto;\n}\n\n.comic-settings-panel .comic-settings-inline-item .comic-btn {\n    min-width: 0;\n    padding-inline: 6px;\n}\n\n.comic-settings-select {\n    min-width: 118px;\n    min-height: 36px;\n    padding: 7px 30px 7px 10px;\n    color: var(--text-primary);\n    background: var(--bg-deepest);\n    border: 1px solid var(--border-subtle);\n    border-radius: var(--radius-md);\n    font: inherit;\n    cursor: pointer;\n    outline: none;\n}\n\n.comic-settings-select:focus {\n    border-color: var(--acc);\n    box-shadow: 0 0 0 2px rgba(251, 114, 153, 0.18);\n}\n\r\n.comic-reader-row {\r\n    display: flex;\r\n    gap: 6px;\r\n    align-items: center;\r\n    justify-content: center;\r\n}\r\n\r\n.comic-reader-row-wrap { flex-wrap: wrap; }\r\n\r\n.comic-page-info {\r\n    display: inline-flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    gap: 4px;\r\n    font-size: 14px;\r\n    min-width: 68px;\r\n    min-height: 32px;\r\n    padding: 0 2px;\r\n    color: var(--text-primary);\r\n    cursor: pointer;\r\n    white-space: nowrap;\r\n}\r\n\r\n.comic-page-display {\r\n    display: inline;\r\n}\r\n\r\n.comic-page-input {\r\n    display: none;\r\n    width: 44px;\r\n    height: 32px;\r\n    padding: 0 8px;\r\n    color: var(--text-primary);\r\n    background: var(--bg-deepest);\r\n    border: 1px solid var(--border-subtle);\r\n    border-radius: var(--radius-pill);\r\n    font: inherit;\r\n    text-align: center;\r\n    outline: none;\r\n}\r\n\r\n.comic-page-input:focus {\r\n    border-color: var(--acc);\r\n    box-shadow: 0 0 0 2px rgba(251, 114, 153, 0.18);\r\n}\r\n\r\n.comic-page-range {\r\n    display: none;\r\n    color: var(--text-secondary);\r\n}\r\n\r\n.comic-page-info.is-editing {\r\n    cursor: text;\r\n    justify-content: flex-start;\r\n}\r\n\r\n.comic-page-info.is-editing .comic-page-display {\r\n    display: none;\r\n}\r\n\r\n.comic-page-info.is-editing .comic-page-input,\r\n.comic-page-info.is-editing .comic-page-range {\r\n    display: inline-flex;\r\n}\r\n\r\n/* ===== Reader pill buttons ===== */\r\n.comic-btn {\r\n    padding: 8px 16px;\r\n    cursor: pointer;\r\n    background: var(--bg-elevated);\r\n    color: var(--text-primary);\r\n    border: 1px solid var(--border-strong);\r\n    border-radius: var(--radius-pill);\r\n    font-size: 13px;\r\n    font-weight: 500;\r\n    letter-spacing: 0.3px;\r\n    transition: background 0.15s, border-color 0.15s;\r\n}\r\n\r\n.comic-btn-alt {\r\n    background: transparent;\r\n    border-color: var(--border-subtle);\r\n}\r\n\r\n.comic-btn:hover { background: #2a2a2a; }\r\n\r\n.comic-btn-alt:hover { background: var(--bg-elevated); }\r\n\r\n.comic-btn.active {\r\n    background: var(--acc);\r\n    border-color: var(--acc);\r\n    color: #fff;\r\n}\r\n.comic-btn.active:hover { background: var(--acc-hover); }\r\n\r\n/* ===== Reader toast ===== */\r\n.comic-toast {\r\n    position: fixed;\r\n    left: 50%;\r\n    transform: translateX(-50%);\r\n    padding: 8px 16px;\r\n    border-radius: var(--radius-pill);\r\n    font-size: 13px;\r\n    font-weight: 500;\r\n    color: var(--text-primary);\r\n    z-index: 10004;\r\n    opacity: 0;\r\n    transition: opacity 0.2s;\r\n    pointer-events: none;\r\n    background: var(--bg-overlay);\r\n    backdrop-filter: blur(12px);\r\n    -webkit-backdrop-filter: blur(12px);\r\n    border: 1px solid var(--border-subtle);\r\n    box-shadow: var(--shadow-card);\r\n    top: 18px;\r\n}\r\n\r\n.comic-toast.is-visible { opacity: 1; }\r\n\r\n.comic-toast.is-error { background: rgba(180, 40, 40, 0.94); }\r\n\r\n/* ===== Reader images ===== */\r\n#comic-reader-overlay img {\r\n    cursor: grab;\r\n    display: block;\r\n    max-width: none;\r\n    max-height: none;\r\n    object-fit: contain;\r\n    box-shadow: 0 0 30px rgba(0, 0, 0, 0.4);\r\n    touch-action: none;\r\n    user-select: none;\r\n    -webkit-user-drag: none;\r\n    flex-shrink: 0;\r\n}\r\n\r\n#comic-reader-overlay .comic-img-full,\r\n#comic-reader-overlay .comic-img-half {\r\n    max-width: none;\r\n    max-height: none;\r\n}\r\n\r\n/* ===== Screenshot selection ===== */\r\n.comic-selection-overlay {\r\n    position: fixed;\r\n    inset: 0;\r\n    z-index: 10003;\r\n    display: none;\r\n    cursor: crosshair;\r\n    touch-action: none;\r\n    background: rgba(10,10,10,0.01);\r\n}\r\n\r\n.comic-selection-hint {\r\n    position: fixed;\r\n    top: 66px;\r\n    right: 18px;\r\n    width: 236px;\r\n    max-width: calc(100vw - 36px);\r\n    padding: 10px 12px;\r\n    border-radius: var(--radius-md);\r\n    background: rgba(15,15,15,0.92);\r\n    color: #fff;\r\n    font-size: 13px;\r\n    line-height: 1.45;\r\n    text-align: left;\r\n    pointer-events: none;\r\n    border: 1px solid var(--border-subtle);\r\n    box-shadow: var(--shadow-card);\r\n}\r\n\r\n.comic-selection-toolbar {\n    position: fixed;\n    top: 18px;\n    right: 18px;\n    z-index: 4;\n    display: flex;\n    gap: 10px;\n    align-items: center;\n}\n\r\n.comic-selection-action {\r\n    padding: 10px 14px;\r\n    border: none;\r\n    border-radius: var(--radius-pill);\r\n    color: #fff;\r\n    font-size: 13px;\r\n    cursor: pointer;\r\n    box-shadow: 0 4px 12px rgba(0,0,0,0.25);\r\n}\r\n\r\n.comic-selection-save { background: var(--acc); }\r\n.comic-selection-full { background: #3467a8; }\r\n.comic-selection-cancel { background: #d33; }\r\n\r\n.comic-selection-action.is-disabled {\r\n    opacity: 0.45;\r\n    cursor: not-allowed;\r\n}\r\n\r\n.comic-selection-box {\r\n    position: absolute;\r\n    display: none;\r\n    border: 2px dashed var(--acc);\r\n    background: rgba(251,114,153,0.18);\r\n    box-shadow: 0 0 0 1px rgba(255,255,255,0.25) inset;\r\n    cursor: move;\r\n    pointer-events: auto;\r\n}\r\n\r\n.comic-sel-handle {\r\n    position: absolute;\r\n    width: 28px;\r\n    height: 28px;\r\n    pointer-events: auto;\r\n    display: none;\r\n    z-index: 2;\r\n    transform: translate(-50%,-50%);\r\n    touch-action: none;\r\n}\r\n\r\n.comic-sel-handle::after {\r\n    content: \"\";\r\n    position: absolute;\r\n    left: 50%;\r\n    top: 50%;\r\n    width: 12px;\r\n    height: 12px;\r\n    background: var(--acc);\r\n    border: 2px solid #fff;\r\n    border-radius: 50%;\r\n    box-shadow: 0 1px 4px rgba(0,0,0,0.4);\r\n    transform: translate(-50%,-50%);\r\n}\r\n\r\n.comic-sel-handle[data-dir=\"n\"],\r\n.comic-sel-handle[data-dir=\"s\"] {\r\n    width: max(28px, calc(100% - 40px));\r\n}\r\n\r\n.comic-sel-handle[data-dir=\"e\"],\r\n.comic-sel-handle[data-dir=\"w\"] {\r\n    height: max(28px, calc(100% - 40px));\r\n}\r\n\r\n.comic-sel-handle[data-dir=\"nw\"],\r\n.comic-sel-handle[data-dir=\"ne\"],\r\n.comic-sel-handle[data-dir=\"se\"],\r\n.comic-sel-handle[data-dir=\"sw\"] {\r\n    width: 34px;\r\n    height: 34px;\r\n    z-index: 3;\r\n}\r\n\r\n/* ===== Compact layout (mobile) ===== */\r\n#comic-reader-overlay.reader-compact .comic-btn {\r\n    min-width: 54px;\r\n    min-height: 44px;\r\n    padding: 10px 12px;\r\n    font-size: 14px;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-controls {\r\n    left: auto;\r\n    right: max(12px, env(safe-area-inset-right));\r\n    bottom: max(12px, env(safe-area-inset-bottom));\r\n    width: fit-content;\r\n    max-width: calc(100vw - 24px);\r\n    padding: 8px 12px;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-settings-controls {\r\n    top: max(12px, env(safe-area-inset-top));\r\n    left: auto;\r\n    right: max(12px, env(safe-area-inset-right));\r\n    width: fit-content;\r\n    max-width: 96px;\r\n    flex-direction: column;\r\n    flex-wrap: nowrap;\r\n    justify-content: center;\r\n    max-height: 40vh;\r\n    overflow-y: auto;\r\n    padding: 8px 12px;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-settings-panel {\n    width: min(360px, calc(100vw - 24px));\n    padding: 12px;\n    gap: 8px;\n}\n\n#comic-reader-overlay.reader-compact .comic-settings-item {\n    align-items: center;\n    flex-direction: row;\n    gap: 14px;\n}\n\n#comic-reader-overlay.reader-compact .comic-settings-inline-item {\n    align-items: stretch;\n    flex-direction: column;\n    gap: 8px;\n}\n\n#comic-reader-overlay.reader-compact .comic-settings-action {\n    justify-content: flex-end;\n}\n\n#comic-reader-overlay.reader-compact .comic-settings-action .comic-btn {\n    width: auto;\n}\n\n#comic-reader-overlay.reader-compact .comic-settings-inline-item .comic-settings-action {\n    width: 100%;\n    justify-content: center;\n}\n\n#comic-reader-overlay.reader-compact .comic-settings-inline-item .comic-btn {\n    width: auto;\n}\n\n#comic-reader-overlay.reader-compact .comic-settings-select {\n    min-height: 44px;\n    max-width: 132px;\n}\n\n#comic-reader-overlay.reader-compact .comic-toast {\n    top: 12px;\r\n    max-width: calc(100vw - 24px);\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-selection-hint {\r\n    top: 62px;\r\n    right: 12px;\r\n    width: min(236px, calc(100vw - 24px));\r\n    max-width: calc(100vw - 24px);\r\n    font-size: 12px;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-selection-toolbar {\r\n    top: 12px;\r\n    right: 12px;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-selection-action {\r\n    padding: 10px 12px;\r\n    font-size: 12px;\n}\n\n@media (hover: none), (pointer: coarse) {\n\n/* ===== content-responsive.css ===== */\n    #bilibili-fav-float-btn.bilibili-fav-touch {\r\n        bottom: max(76px, env(safe-area-inset-bottom));\r\n        right: max(16px, env(safe-area-inset-right));\r\n        width: 54px;\r\n        height: 54px;\r\n        font-size: 24px;\r\n        opacity: 1 !important;\r\n        visibility: visible !important;\r\n    }\r\n\r\n    #bilibili-fav-panel,\r\n    #bilibili-toolbox-settings-panel {\r\n        right: max(12px, env(safe-area-inset-right));\r\n        bottom: max(140px, calc(env(safe-area-inset-bottom) + 84px));\r\n        max-height: min(70vh, 560px);\r\n        overflow: hidden;\r\n    }\r\n\r\n    #bilibili-fav-panel {\r\n        width: min(\r\n            calc(\r\n                var(--bilibili-fav-columns) * var(--bilibili-fav-item-width)\r\n                + (var(--bilibili-fav-columns) - 1) * var(--bilibili-fav-list-gap)\r\n                + var(--bilibili-fav-list-padding-x) * 2\r\n            ),\r\n            calc(100vw - 24px)\r\n        );\r\n    }\r\n\r\n    #bilibili-toolbox-settings-panel {\r\n        width: min(320px, calc(100vw - 24px));\r\n    }\r\n\r\n    .bilibili-fav-header {\r\n        gap: 8px;\r\n        padding: 10px 12px;\r\n    }\r\n\r\n    .bilibili-fav-header-actions {\r\n        flex-shrink: 0;\r\n    }\r\n\r\n    .bilibili-fav-control-btn {\r\n        display: inline-flex;\r\n        align-items: center;\r\n        justify-content: center;\r\n    }\r\n\r\n    .bilibili-fav-add-btn,\r\n    .bilibili-fav-control-btn,\r\n    .bilibili-toolbox-export-btn,\r\n    .bilibili-toolbox-import-btn {\r\n        min-height: 42px;\r\n    }\r\n\r\n    .bilibili-fav-content {\r\n        max-height: min(52vh, 420px);\r\n    }\r\n\r\n    .bilibili-fav-delete {\n        width: 26px;\n        height: 26px;\n        font-size: 16px;\n    }\n\r\n    .bilibili-fav-item-link {\r\n        touch-action: manipulation;\r\n    }\r\n\r\n    .comic-sel-handle {\r\n        width: 36px;\r\n        height: 36px;\r\n    }\r\n\r\n    .comic-sel-handle[data-dir=\"n\"],\r\n    .comic-sel-handle[data-dir=\"s\"] {\r\n        width: max(36px, calc(100% - 48px));\r\n    }\r\n\r\n    .comic-sel-handle[data-dir=\"e\"],\r\n    .comic-sel-handle[data-dir=\"w\"] {\r\n        height: max(36px, calc(100% - 48px));\r\n    }\r\n\r\n    .comic-sel-handle[data-dir=\"nw\"],\r\n    .comic-sel-handle[data-dir=\"ne\"],\r\n    .comic-sel-handle[data-dir=\"se\"],\r\n    .comic-sel-handle[data-dir=\"sw\"] {\r\n        width: 44px;\r\n        height: 44px;\r\n    }\r\n\r\n    #comic-reader-overlay.reader-compact .comic-reader-row {\r\n        gap: 6px;\r\n        flex-wrap: wrap;\r\n    }\r\n\r\n    #comic-reader-overlay.reader-compact .comic-settings-controls { gap: 8px; }\r\n\r\n    #comic-reader-overlay.reader-compact .comic-selection-hint { text-align: left; }\r\n}\r\n\n";
+    const css = "/* ===== content-base.css ===== */\n/* Bilibili Toolbox — Spotify-inspired dark theme */\r\n\r\n:root {\r\n    --acc: #fb7299;\r\n    --acc-hover: #fc8bab;\r\n    --acc-active: #e86288;\r\n    --bg-deepest: #0a0a0a;\r\n    --bg-surface: #181818;\r\n    --bg-elevated: #1f1f1f;\r\n    --bg-overlay: rgba(20, 20, 20, 0.94);\r\n    --text-primary: #ffffff;\r\n    --text-secondary: #b3b3b3;\r\n    --text-muted: #7c7c7c;\r\n    --border-subtle: rgba(255, 255, 255, 0.12);\r\n    --border-strong: #4d4d4d;\r\n    --error: #f3727f;\r\n    --error-hover: #e86a77;\r\n    --shadow-heavy: 0 8px 24px rgba(0, 0, 0, 0.5);\r\n    --shadow-card: 0 4px 8px rgba(0, 0, 0, 0.3);\r\n    --shadow-float: 0 4px 16px rgba(251, 114, 153, 0.25);\r\n    --radius-sm: 6px;\r\n    --radius-md: 8px;\r\n    --radius-lg: 12px;\r\n    --radius-pill: 9999px;\r\n    --font: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif;\r\n}\r\n\r\n\n/* ===== content-toolbox.css ===== */\n/* ===== Floating star button ===== */\r\n#bilibili-fav-float-btn {\r\n    position: fixed;\r\n    bottom: 80px;\r\n    right: 20px;\r\n    width: 50px;\r\n    height: 50px;\r\n    background: var(--acc);\r\n    border-radius: 50%;\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    font-size: 24px;\r\n    cursor: pointer;\r\n    box-shadow: var(--shadow-float);\r\n    z-index: 999999;\r\n    transition: transform 0.2s, box-shadow 0.2s, opacity 0.3s, visibility 0.3s;\r\n    line-height: 1;\r\n    text-align: center;\r\n}\r\n\r\n#bilibili-fav-float-btn:hover {\r\n    transform: scale(1.1);\r\n    box-shadow: 0 6px 20px rgba(251, 114, 153, 0.4);\r\n}\r\n\r\n#bilibili-fav-float-btn.dynamic-filter-active {\r\n    border-radius: var(--radius-sm);\r\n}\r\n\r\n#bilibili-fav-float-btn.bilibili-fav-video-hidden {\r\n    opacity: 0;\r\n}\r\n\r\n#bilibili-fav-float-btn.bilibili-fav-video-visible {\r\n    opacity: 1;\r\n}\r\n\r\n/* ===== Shared panel base ===== */\r\n#bilibili-fav-panel,\r\n#bilibili-toolbox-settings-panel {\r\n    position: fixed;\r\n    bottom: 140px;\r\n    right: 20px;\r\n    width: 280px;\r\n    background: var(--bg-overlay);\r\n    backdrop-filter: blur(20px);\r\n    -webkit-backdrop-filter: blur(20px);\r\n    border-radius: var(--radius-lg);\r\n    box-shadow: var(--shadow-heavy);\r\n    z-index: 1000000;\r\n    opacity: 0;\r\n    visibility: hidden;\r\n    transition: opacity 0.2s, transform 0.2s, visibility 0.2s;\r\n    font-family: var(--font);\r\n    transform: translateY(10px);\r\n    color: var(--text-primary);\r\n    border: 1px solid var(--border-subtle);\r\n}\r\n\r\n#bilibili-fav-panel {\r\n    --bilibili-fav-columns: 2;\r\n    --bilibili-fav-item-width: 130px;\r\n    --bilibili-fav-list-gap: 4px;\r\n    --bilibili-fav-list-padding-x: 10px;\r\n    width: calc(\r\n        var(--bilibili-fav-columns) * var(--bilibili-fav-item-width)\r\n        + (var(--bilibili-fav-columns) - 1) * var(--bilibili-fav-list-gap)\r\n        + var(--bilibili-fav-list-padding-x) * 2\r\n    );\r\n}\r\n\r\n#bilibili-toolbox-settings-panel {\r\n    width: 320px;\r\n    z-index: 1000001;\r\n}\r\n\r\n#bilibili-fav-panel.show,\r\n#bilibili-toolbox-settings-panel.show {\r\n    opacity: 1;\r\n    visibility: visible;\r\n    transform: translateY(0);\r\n}\r\n\r\n/* ===== Panel header ===== */\r\n.bilibili-fav-header {\r\n    display: flex;\r\n    justify-content: space-between;\r\n    align-items: center;\r\n    padding: 10px 16px;\r\n    border-bottom: 1px solid var(--border-subtle);\r\n    background: var(--bg-elevated);\r\n    color: var(--text-primary);\r\n    border-radius: var(--radius-lg) var(--radius-lg) 0 0;\r\n    font-weight: 600;\r\n    font-size: 14px;\r\n    letter-spacing: 0.3px;\r\n}\r\n\r\n.bilibili-fav-header-actions {\r\n    display: flex;\r\n    align-items: center;\r\n    gap: 6px;\r\n}\r\n\r\n/* ===== Panel content ===== */\r\n.bilibili-fav-content { max-height: 400px; overflow: auto; }\r\n\r\n.bilibili-fav-list {\r\n    padding: 8px var(--bilibili-fav-list-padding-x);\r\n    display: grid;\r\n    grid-template-columns: repeat(var(--bilibili-fav-columns, 2), var(--bilibili-fav-item-width));\r\n    gap: var(--bilibili-fav-list-gap);\r\n}\r\n\r\n.bilibili-fav-content::-webkit-scrollbar { width: 5px; }\r\n.bilibili-fav-content::-webkit-scrollbar-track { background: transparent; }\r\n.bilibili-fav-content::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 3px; }\r\n.bilibili-fav-content::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.25); }\r\n\r\n/* ===== Toolbox settings content ===== */\r\n.bilibili-toolbox-control-content {\r\n    padding: 14px;\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: 14px;\r\n}\r\n\r\n.bilibili-toolbox-control-section {\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: 10px;\r\n}\r\n\r\n.bilibili-toolbox-section-title {\r\n    color: var(--text-secondary);\r\n    font-size: 12px;\r\n    font-weight: 700;\r\n    line-height: 1;\r\n}\r\n\r\n.bilibili-toolbox-control-row {\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: space-between;\r\n    gap: 12px;\r\n    padding: 12px 14px;\r\n    border-radius: var(--radius-md);\r\n    background: var(--bg-surface);\r\n    cursor: pointer;\r\n    border: 1px solid var(--border-subtle);\r\n}\r\n\r\n.bilibili-toolbox-control-row-stack {\r\n    align-items: stretch;\r\n    cursor: default;\r\n    flex-direction: column;\r\n    gap: 10px;\r\n}\r\n\r\n.bilibili-toolbox-control-copy {\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: 4px;\r\n    min-width: 0;\r\n}\r\n\r\n.bilibili-toolbox-control-title {\r\n    font-size: 14px;\r\n    font-weight: 600;\r\n    color: var(--text-primary);\r\n}\r\n\r\n.bilibili-toolbox-control-desc {\r\n    font-size: 12px;\r\n    color: var(--text-secondary);\r\n    line-height: 1.4;\r\n}\r\n\r\n.bilibili-toolbox-segmented {\r\n    display: grid;\r\n    grid-template-columns: repeat(4, minmax(0, 1fr));\r\n    gap: 4px;\r\n    padding: 3px;\r\n    border-radius: var(--radius-pill);\r\n    background: var(--bg-deepest);\r\n    border: 1px solid var(--border-subtle);\r\n}\r\n\r\n.bilibili-toolbox-segmented button {\r\n    min-height: 30px;\r\n    padding: 0;\r\n    color: var(--text-secondary);\r\n    background: transparent;\r\n    border: none;\r\n    border-radius: var(--radius-pill);\r\n    cursor: pointer;\r\n    font: 600 13px/1 var(--font);\r\n}\r\n\r\n.bilibili-toolbox-segmented button:hover {\r\n    color: var(--text-primary);\r\n    background: rgba(255, 255, 255, 0.08);\r\n}\r\n\r\n.bilibili-toolbox-segmented button.active {\r\n    color: #fff;\r\n    background: var(--acc);\r\n}\r\n\r\n.bilibili-toolbox-keyword-input {\r\n    width: 100%;\r\n    min-height: 38px;\r\n    padding: 0 12px;\r\n    box-sizing: border-box;\r\n    color: var(--text-primary);\r\n    background: var(--bg-deepest);\r\n    border: 1px solid var(--border-subtle);\r\n    border-radius: var(--radius-md);\r\n    font-family: var(--font);\r\n    font-size: 13px;\r\n    outline: none;\r\n    transition: border-color 0.2s, box-shadow 0.2s, opacity 0.2s;\r\n}\r\n\r\n.bilibili-toolbox-keyword-input::placeholder {\r\n    color: var(--text-muted);\r\n}\r\n\r\n.bilibili-toolbox-keyword-input:focus {\r\n    border-color: var(--acc);\r\n    box-shadow: 0 0 0 2px rgba(251, 114, 153, 0.18);\r\n}\r\n\r\n/* ===== Toggle switch ===== */\r\n.bilibili-toolbox-switch {\r\n    position: relative;\r\n    width: 46px;\r\n    height: 28px;\r\n    flex-shrink: 0;\r\n}\r\n\r\n.bilibili-toolbox-switch input {\r\n    position: absolute;\r\n    inset: 0;\r\n    opacity: 0;\r\n    cursor: pointer;\r\n    margin: 0;\r\n}\r\n\r\n.bilibili-toolbox-switch-slider {\r\n    position: absolute;\r\n    inset: 0;\r\n    border-radius: var(--radius-pill);\r\n    background: rgba(255, 255, 255, 0.2);\r\n    transition: background 0.2s;\r\n}\r\n\r\n.bilibili-toolbox-switch-slider::before {\r\n    content: \"\";\r\n    position: absolute;\r\n    top: 3px;\r\n    left: 3px;\r\n    width: 22px;\r\n    height: 22px;\r\n    border-radius: 50%;\r\n    background: #fff;\r\n    transition: transform 0.2s;\r\n    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);\r\n}\r\n\r\n.bilibili-toolbox-switch input:checked + .bilibili-toolbox-switch-slider {\r\n    background: var(--acc);\r\n}\r\n\r\n.bilibili-toolbox-switch input:checked + .bilibili-toolbox-switch-slider::before {\r\n    transform: translateX(18px);\r\n}\r\n\r\n/* ===== Empty state ===== */\r\n.bilibili-fav-empty { grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 40px 20px; font-size: 14px; }\r\n\r\n/* ===== Toast message ===== */\r\n.bilibili-fav-msg { padding: 8px; text-align: center; font-size: 12px; display: none; }\r\n\r\n/* ===== Pill buttons (global) ===== */\r\n.bilibili-fav-add-btn,\r\n.bilibili-fav-control-btn,\r\n.bilibili-toolbox-export-btn,\r\n.bilibili-toolbox-import-btn {\r\n    padding: 10px 0;\r\n    font-size: 13px;\r\n    font-weight: 600;\r\n    border: none;\r\n    border-radius: var(--radius-pill);\r\n    cursor: pointer;\r\n    transition: all 0.2s;\r\n    color: var(--text-primary);\r\n    letter-spacing: 0.3px;\r\n    flex: 1;\r\n}\r\n\r\n.bilibili-fav-add-btn {\r\n    padding: 8px 16px;\r\n    flex: none;\r\n}\r\n\r\n.bilibili-fav-control-btn {\r\n    display: none;\r\n    padding: 8px 12px;\r\n    flex: none;\r\n}\r\n\r\n/* Primary pill — accent fill */\r\n.bilibili-fav-add-btn,\r\n.bilibili-fav-control-btn,\r\n.bilibili-toolbox-export-btn {\r\n    background: var(--acc);\r\n    color: #fff;\r\n}\r\n\r\n.bilibili-fav-add-btn:hover,\r\n.bilibili-fav-control-btn:hover,\r\n.bilibili-toolbox-export-btn:hover {\r\n    background: var(--acc-hover);\r\n}\r\n\r\n/* Secondary pill — dark fill */\r\n.bilibili-toolbox-import-btn {\r\n    background: var(--bg-elevated);\r\n    border: 1px solid var(--border-strong);\r\n}\r\n\r\n.bilibili-toolbox-import-btn:hover {\r\n    background: #2a2a2a;\r\n}\r\n\r\n/* ===== Button group layout ===== */\r\n.bilibili-toolbox-control-actions {\r\n    display: flex;\r\n    gap: 8px;\r\n    padding: 0 16px 16px;\r\n}\r\n\r\n/* ===== Export text document ===== */\r\n.bilibili-toolbox-export-dialog {\r\n    position: fixed;\r\n    inset: 0;\r\n    z-index: 1000002;\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    padding: 16px;\r\n    background: rgba(0, 0, 0, 0.72);\r\n}\r\n\r\n.bilibili-toolbox-export-document {\r\n    display: flex;\r\n    width: min(640px, 100%);\r\n    max-height: min(720px, 86vh);\r\n    flex-direction: column;\r\n    overflow: hidden;\r\n    background: var(--bg-elevated);\r\n    border: 1px solid var(--border-subtle);\r\n    border-radius: var(--radius-md);\r\n    box-shadow: var(--shadow-heavy);\r\n}\r\n\r\n.bilibili-toolbox-export-header {\r\n    display: flex;\r\n    min-height: 44px;\r\n    align-items: center;\r\n    justify-content: space-between;\r\n    padding: 0 14px;\r\n    color: var(--text-primary);\r\n    font-size: 14px;\r\n    font-weight: 600;\r\n    border-bottom: 1px solid var(--border-subtle);\r\n}\r\n\r\n.bilibili-toolbox-export-close {\r\n    display: inline-flex;\r\n    width: 30px;\r\n    height: 30px;\r\n    align-items: center;\r\n    justify-content: center;\r\n    padding: 0;\r\n    color: var(--text-secondary);\r\n    background: transparent;\r\n    border: none;\r\n    border-radius: 50%;\r\n    cursor: pointer;\r\n    font-size: 22px;\r\n    line-height: 1;\r\n}\r\n\r\n.bilibili-toolbox-export-close:hover {\r\n    color: var(--text-primary);\r\n    background: rgba(255, 255, 255, 0.1);\r\n}\r\n\r\n.bilibili-toolbox-export-text {\r\n    width: 100%;\r\n    min-height: min(560px, 72vh);\r\n    padding: 14px;\r\n    resize: vertical;\r\n    box-sizing: border-box;\r\n    color: var(--text-primary);\r\n    background: var(--bg-deepest);\r\n    border: none;\r\n    outline: none;\r\n    font-family: Consolas, \"Courier New\", monospace;\r\n    font-size: 13px;\r\n    line-height: 1.5;\r\n}\r\n\r\n.bilibili-toolbox-export-footer {\r\n    display: flex;\r\n    min-height: 52px;\r\n    align-items: center;\r\n    justify-content: space-between;\r\n    gap: 12px;\r\n    padding: 8px 12px;\r\n    border-top: 1px solid var(--border-subtle);\r\n}\r\n\r\n.bilibili-toolbox-export-status {\r\n    color: var(--text-secondary);\r\n    font-size: 12px;\r\n    line-height: 1.4;\r\n}\r\n\r\n.bilibili-toolbox-export-status.is-error {\r\n    color: var(--error);\r\n}\r\n\r\n.bilibili-toolbox-export-actions {\r\n    display: flex;\r\n    flex-shrink: 0;\r\n    align-items: center;\r\n    gap: 8px;\r\n}\r\n\r\n.bilibili-toolbox-export-clipboard,\r\n.bilibili-toolbox-export-confirm {\r\n    flex-shrink: 0;\r\n    padding: 8px 18px;\r\n    color: #fff;\r\n    background: var(--acc);\r\n    border: none;\r\n    border-radius: var(--radius-pill);\r\n    cursor: pointer;\r\n    font-size: 13px;\r\n    font-weight: 600;\r\n}\r\n\r\n.bilibili-toolbox-export-clipboard:hover,\r\n.bilibili-toolbox-export-confirm:hover {\r\n    background: var(--acc-hover);\r\n}\r\n\r\n/* ===== Favorite list items ===== */\r\n.bilibili-fav-item-link {\r\n    display: block;\r\n    text-decoration: none;\r\n    color: inherit;\r\n    width: var(--bilibili-fav-item-width);\r\n    min-width: 0;\r\n    position: relative;\r\n}\r\n\r\n.bilibili-fav-item {\r\n    display: flex;\r\n    flex-direction: column;\r\n    align-items: center;\r\n    padding: 8px 6px 10px;\r\n    border-radius: var(--radius-md);\r\n    transition: background 0.2s;\r\n    text-align: center;\r\n    position: relative;\r\n    overflow: hidden;\r\n    height: 88px;\r\n    box-sizing: border-box;\r\n    background: transparent;\r\n}\r\n\r\n.bilibili-fav-item[data-readlist=\"true\"] { padding: 0; }\r\n\r\n.bilibili-fav-item-link:hover .bilibili-fav-item {\r\n    background: var(--bg-surface);\r\n}\r\n\r\n.bilibili-fav-item-info {\r\n    display: flex;\r\n    flex-direction: column;\r\n    align-items: center;\r\n    width: 100%;\r\n    height: 100%;\r\n    position: relative;\r\n    z-index: 1;\r\n}\r\n\r\n.bilibili-fav-item[data-readlist=\"true\"] .bilibili-fav-item-info {\r\n    padding: 0;\r\n    overflow: hidden;\r\n    border-radius: inherit;\r\n}\r\n\r\n/* ===== Avatar — round, no border ===== */\r\n.bilibili-fav-avatar {\r\n    width: 44px;\r\n    height: 44px;\r\n    border-radius: 50%;\r\n    object-fit: cover;\r\n    position: relative;\r\n    z-index: 1;\r\n    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);\r\n}\r\n\r\n.bilibili-fav-avatar.square {\r\n    border-radius: var(--radius-md);\r\n}\r\n\r\n.bilibili-fav-avatar.cover {\r\n    display: block;\r\n    width: 100%;\r\n    height: 100%;\r\n    border-radius: var(--radius-md);\r\n    box-shadow: none;\r\n    position: absolute;\r\n    inset: 0;\r\n}\r\n\r\n/* ===== Name label ===== */\r\n.bilibili-fav-name {\r\n    font-size: 12px;\r\n    color: var(--text-primary);\r\n    font-weight: 500;\r\n    max-width: 100%;\r\n    overflow: hidden;\r\n    text-overflow: ellipsis;\r\n    white-space: nowrap;\r\n    position: relative;\r\n    z-index: 1;\r\n    margin-top: 6px;\r\n}\r\n\r\n.bilibili-fav-item[data-readlist=\"true\"] .bilibili-fav-name {\r\n    position: absolute;\r\n    bottom: 0;\r\n    left: 0;\r\n    right: 0;\r\n    color: #fff;\r\n    background: linear-gradient(transparent, rgba(0, 0, 0, 0.75));\r\n    padding: 20px 8px 8px;\r\n    border-radius: 0 0 var(--radius-md) var(--radius-md);\r\n    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);\r\n    font-weight: 600;\r\n}\r\n\r\n/* ===== Delete button — ghost pill ===== */\r\n.bilibili-fav-delete {\r\n    position: absolute;\r\n    top: 4px;\r\n    right: 4px;\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    width: 20px;\r\n    height: 20px;\r\n    padding: 0;\r\n    font-size: 14px;\r\n    line-height: 1;\r\n    color: var(--text-primary);\r\n    background: rgba(0, 0, 0, 0.5);\r\n    border: none;\r\n    border-radius: 50%;\r\n    appearance: none;\r\n    cursor: pointer;\r\n    transition: all 0.2s;\r\n    z-index: 2;\r\n    opacity: 0;\r\n}\r\n\r\n.bilibili-fav-item:hover .bilibili-fav-delete { opacity: 1; }\r\n.bilibili-fav-delete:hover { background: var(--error); }\r\n\r\n/* ===== Dynamic filter visibility ===== */\r\n.bilibili-toolbox-dynamic-filter-active .bili-dyn-list__item:not(.bilibili-toolbox-dynamic-filter-ready),\n.bilibili-toolbox-dynamic-filter-active .bili-dyn-item:not(.bilibili-toolbox-dynamic-filter-ready),\n.bilibili-toolbox-dynamic-filter-active .bili-opus-view:not(.bilibili-toolbox-dynamic-filter-ready),\n.bilibili-toolbox-hide-forward-dynamic { display: none !important; }\n\n/* ══════════════════════════════════════ */\n\n/* ===== content-reader.css ===== */\n/*  Comic Reader — Spotify dark theme   */\r\n/* ══════════════════════════════════════ */\r\n\r\n.comic-entry-btn {\r\n    position: fixed;\r\n    bottom: 24px;\r\n    right: 24px;\r\n    z-index: 9999;\r\n    display: inline-flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    padding: 10px 18px;\r\n    cursor: pointer;\r\n    background: var(--acc);\r\n    color: #fff;\r\n    border: none;\r\n    border-radius: 24px;\r\n    font-size: 20px;\r\n    line-height: 1;\r\n    box-shadow: 0 4px 16px rgba(251,114,153,0.3);\r\n}\r\n\r\n.comic-entry-btn-touch {\r\n    bottom: 16px;\r\n    right: 16px;\r\n    padding: 12px 16px;\r\n    font-size: 18px;\r\n}\r\n\r\n#comic-reader-overlay {\r\n    position: fixed;\r\n    inset: 0;\r\n    background: var(--bg-deepest);\r\n    z-index: 10000;\r\n    display: flex;\r\n    flex-direction: column;\r\n    align-items: center;\r\n    justify-content: center;\r\n    overflow: hidden;\r\n    touch-action: none;\r\n    overscroll-behavior: none;\r\n    isolation: isolate;\r\n}\r\n\r\n.comic-img-container {\r\n    display: flex;\r\n    width: 100%;\r\n    height: 100%;\r\n    align-items: center;\r\n    justify-content: center;\r\n    gap: 4px;\r\n    padding: 0;\r\n    margin: 0;\r\n    cursor: grab;\r\n    touch-action: none;\r\n    transform-origin: center center;\r\n    will-change: transform;\r\n}\r\n\r\n.comic-img-container.is-grabbing,\n.comic-img-container.is-grabbing img { cursor: grabbing; }\n\n.comic-img-container img {\n    filter: var(--comic-image-filter, none);\n}\n\n.comic-paper-turn {\n    position: absolute;\n    inset: 0;\n    width: 100%;\n    height: 100%;\n    z-index: 1;\n    pointer-events: none;\n    contain: strict;\n}\n\r\n/* ===== Reader control panels ===== */\r\n.comic-controls,\r\n.comic-settings-controls {\r\n    position: fixed;\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: 6px;\r\n    background: var(--bg-overlay);\r\n    padding: 8px 10px;\r\n    border-radius: var(--radius-lg);\r\n    backdrop-filter: blur(20px);\r\n    -webkit-backdrop-filter: blur(20px);\r\n    border: 1px solid var(--border-subtle);\r\n    color: var(--text-primary);\r\n    z-index: 10001;\r\n    transition: opacity 0.5s;\r\n    opacity: 1;\r\n    box-shadow: var(--shadow-heavy);\r\n}\r\n\r\n.comic-controls.is-hidden,\r\n.comic-settings-controls.is-hidden { opacity: 0; }\r\n\r\n.comic-controls { bottom: 24px; right: 24px; }\r\n.comic-settings-controls { top: 24px; right: 24px; }\r\n\r\n.comic-settings-panel {\n    position: fixed;\n    left: 50%;\n    top: 50%;\n    z-index: 10002;\n    display: flex;\n    flex-direction: column;\n    gap: 8px;\n    width: min(460px, calc(100vw - 32px));\n    max-height: min(76vh, 560px);\r\n    overflow-y: auto;\r\n    padding: 14px;\r\n    color: var(--text-primary);\r\n    background: var(--bg-overlay);\r\n    border: 1px solid var(--border-subtle);\r\n    border-radius: var(--radius-md);\r\n    box-shadow: var(--shadow-heavy);\r\n    backdrop-filter: blur(20px);\r\n    -webkit-backdrop-filter: blur(20px);\r\n    opacity: 0;\r\n    visibility: hidden;\r\n    pointer-events: none;\r\n    transform: translate(-50%, -50%) scale(0.96);\r\n    transition: opacity 0.18s ease-out, transform 0.18s ease-out, visibility 0.18s;\r\n}\r\n\r\n.comic-settings-panel.show {\r\n    opacity: 1;\r\n    visibility: visible;\r\n    pointer-events: auto;\r\n    transform: translate(-50%, -50%) scale(1);\r\n}\r\n\r\n.comic-settings-panel .comic-btn {\r\n    min-width: 96px;\r\n    padding: 8px 12px;\r\n    border-radius: var(--radius-md);\r\n    white-space: nowrap;\r\n}\r\n\r\n.comic-settings-item {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    gap: 14px;\n    padding: 12px;\r\n    border: 1px solid var(--border-subtle);\r\n    border-radius: var(--radius-md);\r\n    background: rgba(255, 255, 255, 0.035);\r\n}\r\n\r\n.comic-settings-copy {\r\n    min-width: 0;\r\n}\r\n\r\n.comic-settings-title {\r\n    font-size: 13px;\r\n    font-weight: 700;\r\n    color: var(--text-primary);\r\n}\r\n\r\n.comic-settings-desc {\r\n    margin-top: 4px;\r\n    font-size: 12px;\r\n    line-height: 1.45;\r\n    color: var(--text-secondary);\r\n}\r\n\r\n.comic-settings-action {\n    display: flex;\n    flex-shrink: 0;\r\n    align-items: center;\r\n    justify-content: flex-end;\n}\n\n.comic-settings-inline-group {\n    display: grid;\n    grid-template-columns: repeat(3, minmax(0, 1fr));\n    padding: 10px 4px;\n    border: 1px solid var(--border-subtle);\n    border-radius: var(--radius-md);\n    background: rgba(255, 255, 255, 0.035);\n}\n\n.comic-settings-inline-item {\n    display: flex;\n    min-width: 0;\n    align-items: stretch;\n    justify-content: space-between;\n    flex-direction: column;\n    gap: 8px;\n    padding: 0 8px;\n}\n\n.comic-settings-inline-item + .comic-settings-inline-item {\n    border-left: 1px solid var(--border-subtle);\n}\n\n.comic-settings-inline-item .comic-settings-title {\n    text-align: center;\n    white-space: nowrap;\n}\n\n.comic-settings-inline-item .comic-settings-action {\n    width: 100%;\n    justify-content: center;\n}\n\n.comic-settings-inline-item .comic-btn {\n    width: auto;\n}\n\n.comic-settings-panel .comic-settings-inline-item .comic-btn {\n    min-width: 0;\n    padding-inline: 6px;\n}\n\n.comic-settings-select {\n    min-width: 118px;\n    min-height: 36px;\n    padding: 7px 30px 7px 10px;\n    color: var(--text-primary);\n    background: var(--bg-deepest);\n    border: 1px solid var(--border-subtle);\n    border-radius: var(--radius-md);\n    font: inherit;\n    cursor: pointer;\n    outline: none;\n}\n\n.comic-settings-select:focus {\n    border-color: var(--acc);\n    box-shadow: 0 0 0 2px rgba(251, 114, 153, 0.18);\n}\n\r\n.comic-reader-row {\r\n    display: flex;\r\n    gap: 6px;\r\n    align-items: center;\r\n    justify-content: center;\r\n}\r\n\r\n.comic-reader-row-wrap { flex-wrap: wrap; }\r\n\r\n.comic-page-info {\r\n    display: inline-flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    gap: 4px;\r\n    font-size: 14px;\r\n    min-width: 68px;\r\n    min-height: 32px;\r\n    padding: 0 2px;\r\n    color: var(--text-primary);\r\n    cursor: pointer;\r\n    white-space: nowrap;\r\n}\r\n\r\n.comic-page-display {\r\n    display: inline;\r\n}\r\n\r\n.comic-page-input {\r\n    display: none;\r\n    width: 44px;\r\n    height: 32px;\r\n    padding: 0 8px;\r\n    color: var(--text-primary);\r\n    background: var(--bg-deepest);\r\n    border: 1px solid var(--border-subtle);\r\n    border-radius: var(--radius-pill);\r\n    font: inherit;\r\n    text-align: center;\r\n    outline: none;\r\n}\r\n\r\n.comic-page-input:focus {\r\n    border-color: var(--acc);\r\n    box-shadow: 0 0 0 2px rgba(251, 114, 153, 0.18);\r\n}\r\n\r\n.comic-page-range {\r\n    display: none;\r\n    color: var(--text-secondary);\r\n}\r\n\r\n.comic-page-info.is-editing {\r\n    cursor: text;\r\n    justify-content: flex-start;\r\n}\r\n\r\n.comic-page-info.is-editing .comic-page-display {\r\n    display: none;\r\n}\r\n\r\n.comic-page-info.is-editing .comic-page-input,\r\n.comic-page-info.is-editing .comic-page-range {\r\n    display: inline-flex;\r\n}\r\n\r\n/* ===== Reader pill buttons ===== */\r\n.comic-btn {\r\n    padding: 8px 16px;\r\n    cursor: pointer;\r\n    background: var(--bg-elevated);\r\n    color: var(--text-primary);\r\n    border: 1px solid var(--border-strong);\r\n    border-radius: var(--radius-pill);\r\n    font-size: 13px;\r\n    font-weight: 500;\r\n    letter-spacing: 0.3px;\r\n    transition: background 0.15s, border-color 0.15s;\r\n}\r\n\r\n.comic-btn-alt {\r\n    background: transparent;\r\n    border-color: var(--border-subtle);\r\n}\r\n\r\n.comic-btn:hover { background: #2a2a2a; }\r\n\r\n.comic-btn-alt:hover { background: var(--bg-elevated); }\r\n\r\n.comic-btn.active {\r\n    background: var(--acc);\r\n    border-color: var(--acc);\r\n    color: #fff;\r\n}\r\n.comic-btn.active:hover { background: var(--acc-hover); }\r\n\r\n/* ===== Reader toast ===== */\r\n.comic-toast {\r\n    position: fixed;\r\n    left: 50%;\r\n    transform: translateX(-50%);\r\n    padding: 8px 16px;\r\n    border-radius: var(--radius-pill);\r\n    font-size: 13px;\r\n    font-weight: 500;\r\n    color: var(--text-primary);\r\n    z-index: 10004;\r\n    opacity: 0;\r\n    transition: opacity 0.2s;\r\n    pointer-events: none;\r\n    background: var(--bg-overlay);\r\n    backdrop-filter: blur(12px);\r\n    -webkit-backdrop-filter: blur(12px);\r\n    border: 1px solid var(--border-subtle);\r\n    box-shadow: var(--shadow-card);\r\n    top: 18px;\r\n}\r\n\r\n.comic-toast.is-visible { opacity: 1; }\r\n\r\n.comic-toast.is-error { background: rgba(180, 40, 40, 0.94); }\r\n\r\n/* ===== Reader images ===== */\r\n#comic-reader-overlay img {\r\n    cursor: grab;\r\n    display: block;\r\n    max-width: none;\r\n    max-height: none;\r\n    object-fit: contain;\r\n    box-shadow: 0 0 30px rgba(0, 0, 0, 0.4);\r\n    touch-action: none;\r\n    user-select: none;\r\n    -webkit-user-drag: none;\r\n    flex-shrink: 0;\r\n}\r\n\r\n#comic-reader-overlay .comic-img-full,\r\n#comic-reader-overlay .comic-img-half {\r\n    max-width: none;\r\n    max-height: none;\r\n}\r\n\r\n/* ===== Screenshot selection ===== */\r\n.comic-selection-overlay {\r\n    position: fixed;\r\n    inset: 0;\r\n    z-index: 10003;\r\n    display: none;\r\n    cursor: crosshair;\r\n    touch-action: none;\r\n    background: rgba(10,10,10,0.01);\r\n}\r\n\r\n.comic-selection-hint {\r\n    position: fixed;\r\n    top: 66px;\r\n    right: 18px;\r\n    width: 236px;\r\n    max-width: calc(100vw - 36px);\r\n    padding: 10px 12px;\r\n    border-radius: var(--radius-md);\r\n    background: rgba(15,15,15,0.92);\r\n    color: #fff;\r\n    font-size: 13px;\r\n    line-height: 1.45;\r\n    text-align: left;\r\n    pointer-events: none;\r\n    border: 1px solid var(--border-subtle);\r\n    box-shadow: var(--shadow-card);\r\n}\r\n\r\n.comic-selection-toolbar {\n    position: fixed;\n    top: 18px;\n    right: 18px;\n    z-index: 4;\n    display: flex;\n    gap: 10px;\n    align-items: center;\n}\n\r\n.comic-selection-action {\r\n    padding: 10px 14px;\r\n    border: none;\r\n    border-radius: var(--radius-pill);\r\n    color: #fff;\r\n    font-size: 13px;\r\n    cursor: pointer;\r\n    box-shadow: 0 4px 12px rgba(0,0,0,0.25);\r\n}\r\n\r\n.comic-selection-save { background: var(--acc); }\r\n.comic-selection-full { background: #3467a8; }\r\n.comic-selection-cancel { background: #d33; }\r\n\r\n.comic-selection-action.is-disabled {\r\n    opacity: 0.45;\r\n    cursor: not-allowed;\r\n}\r\n\r\n.comic-selection-box {\r\n    position: absolute;\r\n    display: none;\r\n    border: 2px dashed var(--acc);\r\n    background: rgba(251,114,153,0.18);\r\n    box-shadow: 0 0 0 1px rgba(255,255,255,0.25) inset;\r\n    cursor: move;\r\n    pointer-events: auto;\r\n}\r\n\r\n.comic-sel-handle {\r\n    position: absolute;\r\n    width: 28px;\r\n    height: 28px;\r\n    pointer-events: auto;\r\n    display: none;\r\n    z-index: 2;\r\n    transform: translate(-50%,-50%);\r\n    touch-action: none;\r\n}\r\n\r\n.comic-sel-handle::after {\r\n    content: \"\";\r\n    position: absolute;\r\n    left: 50%;\r\n    top: 50%;\r\n    width: 12px;\r\n    height: 12px;\r\n    background: var(--acc);\r\n    border: 2px solid #fff;\r\n    border-radius: 50%;\r\n    box-shadow: 0 1px 4px rgba(0,0,0,0.4);\r\n    transform: translate(-50%,-50%);\r\n}\r\n\r\n.comic-sel-handle[data-dir=\"n\"],\r\n.comic-sel-handle[data-dir=\"s\"] {\r\n    width: max(28px, calc(100% - 40px));\r\n}\r\n\r\n.comic-sel-handle[data-dir=\"e\"],\r\n.comic-sel-handle[data-dir=\"w\"] {\r\n    height: max(28px, calc(100% - 40px));\r\n}\r\n\r\n.comic-sel-handle[data-dir=\"nw\"],\r\n.comic-sel-handle[data-dir=\"ne\"],\r\n.comic-sel-handle[data-dir=\"se\"],\r\n.comic-sel-handle[data-dir=\"sw\"] {\r\n    width: 34px;\r\n    height: 34px;\r\n    z-index: 3;\r\n}\r\n\r\n/* ===== Compact layout (mobile) ===== */\r\n#comic-reader-overlay.reader-compact .comic-btn {\r\n    min-width: 54px;\r\n    min-height: 44px;\r\n    padding: 10px 12px;\r\n    font-size: 14px;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-controls {\r\n    left: auto;\r\n    right: max(12px, env(safe-area-inset-right));\r\n    bottom: max(12px, env(safe-area-inset-bottom));\r\n    width: fit-content;\r\n    max-width: calc(100vw - 24px);\r\n    padding: 8px 12px;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-settings-controls {\r\n    top: max(12px, env(safe-area-inset-top));\r\n    left: auto;\r\n    right: max(12px, env(safe-area-inset-right));\r\n    width: fit-content;\r\n    max-width: 96px;\r\n    flex-direction: column;\r\n    flex-wrap: nowrap;\r\n    justify-content: center;\r\n    max-height: 40vh;\r\n    overflow-y: auto;\r\n    padding: 8px 12px;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-settings-panel {\n    width: min(360px, calc(100vw - 24px));\n    padding: 12px;\n    gap: 8px;\n}\n\n#comic-reader-overlay.reader-compact .comic-settings-item {\n    align-items: center;\n    flex-direction: row;\n    gap: 14px;\n}\n\n#comic-reader-overlay.reader-compact .comic-settings-inline-item {\n    align-items: stretch;\n    flex-direction: column;\n    gap: 8px;\n}\n\n#comic-reader-overlay.reader-compact .comic-settings-action {\n    justify-content: flex-end;\n}\n\n#comic-reader-overlay.reader-compact .comic-settings-action .comic-btn {\n    width: auto;\n}\n\n#comic-reader-overlay.reader-compact .comic-settings-inline-item .comic-settings-action {\n    width: 100%;\n    justify-content: center;\n}\n\n#comic-reader-overlay.reader-compact .comic-settings-inline-item .comic-btn {\n    width: auto;\n}\n\n#comic-reader-overlay.reader-compact .comic-settings-select {\n    min-height: 44px;\n    max-width: 132px;\n}\n\n#comic-reader-overlay.reader-compact .comic-toast {\n    top: 12px;\r\n    max-width: calc(100vw - 24px);\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-selection-hint {\r\n    top: 62px;\r\n    right: 12px;\r\n    width: min(236px, calc(100vw - 24px));\r\n    max-width: calc(100vw - 24px);\r\n    font-size: 12px;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-selection-toolbar {\r\n    top: 12px;\r\n    right: 12px;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-selection-action {\r\n    padding: 10px 12px;\r\n    font-size: 12px;\n}\n\n@media (hover: none), (pointer: coarse) {\n\n/* ===== content-responsive.css ===== */\n    #bilibili-fav-float-btn.bilibili-fav-touch {\r\n        bottom: max(76px, env(safe-area-inset-bottom));\r\n        right: max(16px, env(safe-area-inset-right));\r\n        width: 54px;\r\n        height: 54px;\r\n        font-size: 24px;\r\n        opacity: 1 !important;\r\n        visibility: visible !important;\r\n    }\r\n\r\n    #bilibili-fav-panel,\r\n    #bilibili-toolbox-settings-panel {\r\n        right: max(12px, env(safe-area-inset-right));\r\n        bottom: max(140px, calc(env(safe-area-inset-bottom) + 84px));\r\n        max-height: min(70vh, 560px);\r\n        overflow: hidden;\r\n    }\r\n\r\n    #bilibili-fav-panel {\r\n        width: min(\r\n            calc(\r\n                var(--bilibili-fav-columns) * var(--bilibili-fav-item-width)\r\n                + (var(--bilibili-fav-columns) - 1) * var(--bilibili-fav-list-gap)\r\n                + var(--bilibili-fav-list-padding-x) * 2\r\n            ),\r\n            calc(100vw - 24px)\r\n        );\r\n    }\r\n\r\n    #bilibili-toolbox-settings-panel {\r\n        width: min(320px, calc(100vw - 24px));\r\n    }\r\n\r\n    .bilibili-fav-header {\r\n        gap: 8px;\r\n        padding: 10px 12px;\r\n    }\r\n\r\n    .bilibili-fav-header-actions {\r\n        flex-shrink: 0;\r\n    }\r\n\r\n    .bilibili-fav-control-btn {\r\n        display: inline-flex;\r\n        align-items: center;\r\n        justify-content: center;\r\n    }\r\n\r\n    .bilibili-fav-add-btn,\r\n    .bilibili-fav-control-btn,\r\n    .bilibili-toolbox-export-btn,\r\n    .bilibili-toolbox-import-btn {\r\n        min-height: 42px;\r\n    }\r\n\r\n    .bilibili-fav-content {\r\n        max-height: min(52vh, 420px);\r\n    }\r\n\r\n    .bilibili-fav-delete {\n        width: 26px;\n        height: 26px;\n        font-size: 16px;\n    }\n\r\n    .bilibili-fav-item-link {\r\n        touch-action: manipulation;\r\n    }\r\n\r\n    .comic-sel-handle {\r\n        width: 36px;\r\n        height: 36px;\r\n    }\r\n\r\n    .comic-sel-handle[data-dir=\"n\"],\r\n    .comic-sel-handle[data-dir=\"s\"] {\r\n        width: max(36px, calc(100% - 48px));\r\n    }\r\n\r\n    .comic-sel-handle[data-dir=\"e\"],\r\n    .comic-sel-handle[data-dir=\"w\"] {\r\n        height: max(36px, calc(100% - 48px));\r\n    }\r\n\r\n    .comic-sel-handle[data-dir=\"nw\"],\r\n    .comic-sel-handle[data-dir=\"ne\"],\r\n    .comic-sel-handle[data-dir=\"se\"],\r\n    .comic-sel-handle[data-dir=\"sw\"] {\r\n        width: 44px;\r\n        height: 44px;\r\n    }\r\n\r\n    #comic-reader-overlay.reader-compact .comic-reader-row {\r\n        gap: 6px;\r\n        flex-wrap: wrap;\r\n    }\r\n\r\n    #comic-reader-overlay.reader-compact .comic-settings-controls { gap: 8px; }\r\n\r\n    #comic-reader-overlay.reader-compact .comic-selection-hint { text-align: left; }\r\n}\r\n\n";
     function injectStyle() {
         if (document.getElementById('bilibili-toolbox-userscript-style')) return;
         const style = document.createElement('style');
@@ -254,7 +254,14 @@
     const $src = (selector) => document.querySelector(selector)?.src || '';
 
     const Toolbox = {};
-
+    const EMPTY_IMAGE = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+    Toolbox.releaseImage = image => {
+        image.onload = image.onerror = null;
+        image.remove?.();
+        // Drop the original request/decoded frame without leaving a broken
+        // image. Chromium can retain broken-image placeholder layout listeners.
+        image.src = EMPTY_IMAGE;
+    };
     function createEventBag() {
         const cleanupFns = [];
         return {
@@ -283,6 +290,12 @@
     window.BilibiliToolbox = Toolbox;
     Toolbox.settings = TOOLBOX_SETTINGS;
     Toolbox.createEventBag = createEventBag;
+    Toolbox.attachMethods = (target, methods) => {
+        Object.entries(methods).forEach(([name, method]) => {
+            target[name] = method.bind(target);
+        });
+        return target;
+    };
 
     // Expose API for extension scripts.
     window.Shared = {
@@ -330,6 +343,13 @@
     let initialized = false;
     let changeListeners = new Set();
     let storageListener = null;
+    let mutationQueue = Promise.resolve();
+
+    function enqueueMutation(operation) {
+        const result = mutationQueue.then(operation);
+        mutationQueue = result.catch(() => {});
+        return result;
+    }
 
     function dataSignature(data) {
         return JSON.stringify(window.Shared.normalizeToolboxData(data));
@@ -341,11 +361,24 @@
         return dataCache;
     }
 
-    async function write(data) {
-        dataCache = window.Shared.normalizeToolboxData(data);
-        await chrome.storage.local.set({ [window.Shared.SHARED_STORAGE_KEY]: dataCache });
-        notify(dataCache);
+    async function persist(data) {
+        const next = window.Shared.normalizeToolboxData(data);
+        if (dataSignature(next) === dataSignature(dataCache)) return dataCache;
+        await chrome.storage.local.set({ [window.Shared.SHARED_STORAGE_KEY]: next });
+        // onChanged may already have delivered this value while set was pending.
+        publish(next);
         return dataCache;
+    }
+
+    function write(data) {
+        const next = window.Shared.normalizeToolboxData(data);
+        return enqueueMutation(async () => { await read(); return persist(next); });
+    }
+
+    function publish(data) {
+        if (dataSignature(data) === dataSignature(dataCache)) return;
+        dataCache = data;
+        notify(dataCache);
     }
 
     function notify(data) {
@@ -353,10 +386,12 @@
         changeListeners.forEach(listener => listener(normalized));
     }
 
-    async function update(mutator) {
-        const current = await read();
-        const next = typeof mutator === 'function' ? mutator(current) : mutator;
-        return write(next);
+    function update(mutator) {
+        return enqueueMutation(async () => {
+            const current = await read();
+            const next = typeof mutator === 'function' ? await mutator(current) : mutator;
+            return persist(next);
+        });
     }
 
     async function setSetting(key, value) {
@@ -380,9 +415,7 @@
     function handleExtensionStorageChange(changes, areaName) {
         if (areaName !== 'local' || !changes[window.Shared.SHARED_STORAGE_KEY]) return;
         const nextData = window.Shared.normalizeToolboxData(changes[window.Shared.SHARED_STORAGE_KEY].newValue);
-        if (dataSignature(nextData) === dataSignature(dataCache)) return;
-        dataCache = nextData;
-        notify(dataCache);
+        publish(nextData);
     }
 
     async function init() {
@@ -482,7 +515,7 @@
             return { data: current, added: false, reason: 'duplicate' };
         }
 
-        const data = await write({ ...current, favorites: [...current.favorites, normalized] });
+        const data = await persist({ ...current, favorites: [...current.favorites, normalized] });
         return { data, added: true, key };
     }
 
@@ -493,7 +526,7 @@
             return { data: current, removed: false };
         }
 
-        const data = await write({ ...current, favorites });
+        const data = await persist({ ...current, favorites });
         return { data, removed: true };
     }
 
@@ -502,7 +535,7 @@
         const normalized = normalizeImportedFavorites(imported);
         const merged = mergeFavorites(current.favorites, normalized);
         const data = merged.added || merged.updated
-            ? await write({ ...current, favorites: merged.result })
+            ? await persist({ ...current, favorites: merged.result })
             : current;
         return { ...merged, data };
     }
@@ -541,9 +574,9 @@
 
     Toolbox.storage = storageApi;
     Toolbox.favorites = {
-        addFavorite,
-        removeFavorite,
-        importFavorites,
+        addFavorite: item => enqueueMutation(() => addFavorite(item)),
+        removeFavorite: key => enqueueMutation(() => removeFavorite(key)),
+        importFavorites: items => enqueueMutation(() => importFavorites(items)),
         normalizeImportedFavorites,
         createExportText
     };
@@ -696,6 +729,343 @@
     };
 })();
 
+// ===== paper-turn.js =====
+// Curved paper mesh, rendered from the already decoded reader images.
+(function() {
+    'use strict';
+
+    const DURATION = 720;
+    const SEGMENTS = 44;
+    const CANVAS_PIXEL_BUDGET = 40e6;
+    const lerp = (a, b, t) => a + (b - a) * t;
+
+    // Integrate a changing tangent along the sheet: the paper bends, rather
+    // than rotating as a rigid rectangle. Projection gives each strip depth.
+    function createMesh(progress, from, to, outward, segments = SEGMENTS) {
+        const t = Math.max(0, Math.min(1, progress));
+        const width = lerp(from.width, to.width, t);
+        const height = lerp(from.height, to.height, t);
+        const hinge = lerp(from.hinge, to.hinge, t);
+        const centerY = lerp(from.centerY, to.centerY, t);
+        const camera = Math.max(width * 3.5, 1600);
+        // A deeper bow lets the middle of the leaf lag behind the spine.
+        // Keep its tangent above the page plane during the initial lift.
+        const curl = Math.min(Math.sin(Math.PI * t) * 1.8, Math.PI * t * 0.98);
+        let x = 0;
+        let z = 0;
+        const points = [];
+        for (let i = 0; i <= segments; i += 1) {
+            const u = i / segments;
+            const angle = Math.PI * t - curl * Math.sin(Math.PI * u);
+            if (i) {
+                const midpoint = Math.PI * t - curl * Math.sin(Math.PI * (u - 0.5 / segments));
+                x += Math.cos(midpoint) * width / segments;
+                z += Math.sin(midpoint) * width / segments;
+            }
+            const perspective = camera / (camera - z);
+            points.push({
+                u, angle, z,
+                x: hinge + outward * x * perspective,
+                top: centerY - height * perspective / 2,
+                bottom: centerY + height * perspective / 2
+            });
+        }
+        return points;
+    }
+
+    function makeCanvas(width, height, ratio = 1, resources) {
+        const canvas = document.createElement('canvas');
+        resources?.add(canvas);
+        canvas.width = Math.max(1, Math.floor(width * ratio));
+        canvas.height = Math.max(1, Math.floor(height * ratio));
+        return canvas;
+    }
+
+    // Preserve screen pixels on high-DPI displays while bounding canvas memory.
+    function rasterRatio(width, height, preferred, pixelBudget) {
+        return Math.min(preferred, Math.sqrt(pixelBudget / (width * height)), 8192 / Math.max(width, height));
+    }
+
+    function imageContext(canvas, width, height) {
+        const context = canvas.getContext('2d');
+        if (!context) throw new Error('Canvas unavailable');
+        context.imageSmoothingEnabled = true;
+        context.imageSmoothingQuality = 'high';
+        context.scale(canvas.width / width, canvas.height / height);
+        return context;
+    }
+
+    function drawOriginal(context, { image, box, rotation, filter }) {
+        context.save();
+        context.filter = filter;
+        context.translate(box.x + box.width / 2, box.y + box.height / 2);
+        context.rotate(rotation * Math.PI / 180);
+        const sideways = rotation === 90 || rotation === 270;
+        const width = sideways ? box.height : box.width;
+        const height = sideways ? box.width : box.height;
+        context.drawImage(image, -width / 2, -height / 2, width, height);
+        context.restore();
+    }
+
+    function capture(container, rotation, bounds) {
+        const background = window.getComputedStyle(container.parentElement).backgroundColor;
+        const rects = [];
+        const originals = [];
+        for (const image of container.querySelectorAll('img')) {
+            const rect = image.getBoundingClientRect();
+            if (!rect.width || !rect.height) continue;
+            const box = { x: rect.left - bounds.left, y: rect.top - bounds.top, width: rect.width, height: rect.height };
+            rects.push(box);
+            const original = { image, box, rotation, filter: window.getComputedStyle(image).filter };
+            originals.push(original);
+        }
+        return { originals, background, rects: rects.sort((a, b) => a.x - b.x) };
+    }
+
+    function visibleBounds(rects, bounds) {
+        const x = Math.max(0, Math.min(...rects.map(rect => rect.x)));
+        const y = Math.max(0, Math.min(...rects.map(rect => rect.y)));
+        const right = Math.min(bounds.width, Math.max(...rects.map(rect => rect.x + rect.width)));
+        const bottom = Math.min(bounds.height, Math.max(...rects.map(rect => rect.y + rect.height)));
+        return { x, y, width: Math.max(1, right - x), height: Math.max(1, bottom - y) };
+    }
+
+    function makeFace(snapshot, rect, dimensions, flip, resources) {
+        // Perspective enlarges lifted paper. Build its texture directly from
+        // decoded originals, with headroom, rather than resizing the snapshot.
+        const face = makeCanvas(dimensions.width, dimensions.height, 1, resources);
+        const context = imageContext(face, rect.width, rect.height);
+        context.fillStyle = snapshot.background;
+        context.fillRect(0, 0, rect.width, rect.height);
+        if (flip) {
+            context.translate(rect.width, 0);
+            context.scale(-1, 1);
+        }
+        context.translate(-rect.x, -rect.y);
+        for (const original of snapshot.originals) {
+            const box = original.box;
+            if (box.x < rect.x + rect.width && box.x + box.width > rect.x
+                && box.y < rect.y + rect.height && box.y + box.height > rect.y) {
+                drawOriginal(context, original);
+            }
+        }
+        return face;
+    }
+
+    // An affine texture triangle avoids CSS seams and works with cross-origin
+    // images: the canvas is never read back or exported.
+    function drawTriangle(context, image, source, target) {
+        const [s0, s1, s2] = source;
+        const [p0, p1, p2] = target;
+        const determinant = (s1.x - s0.x) * (s2.y - s0.y) - (s2.x - s0.x) * (s1.y - s0.y);
+        if (!determinant) return;
+        const a = ((p1.x - p0.x) * (s2.y - s0.y) - (p2.x - p0.x) * (s1.y - s0.y)) / determinant;
+        const b = ((p1.y - p0.y) * (s2.y - s0.y) - (p2.y - p0.y) * (s1.y - s0.y)) / determinant;
+        const c = ((p2.x - p0.x) * (s1.x - s0.x) - (p1.x - p0.x) * (s2.x - s0.x)) / determinant;
+        const d = ((p2.y - p0.y) * (s1.x - s0.x) - (p1.y - p0.y) * (s2.x - s0.x)) / determinant;
+        context.save();
+        context.beginPath();
+        // Subpixel overlap hides antialiasing cracks between adjacent triangles.
+        const winding = Math.sign((p1.x - p0.x) * (p2.y - p0.y) - (p2.x - p0.x) * (p1.y - p0.y));
+        target.forEach((point, index) => {
+            const previous = target[(index + 2) % 3], next = target[(index + 1) % 3];
+            const normal = (a, b) => {
+                const length = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+                return { x: (b.y - a.y) / length * winding, y: (a.x - b.x) / length * winding };
+            };
+            const left = normal(previous, point), right = normal(point, next);
+            const offset = 0.65 / Math.max(0.00001, 1 + left.x * right.x + left.y * right.y);
+            context[index ? 'lineTo' : 'moveTo'](point.x + (left.x + right.x) * offset, point.y + (left.y + right.y) * offset);
+        });
+        context.closePath();
+        context.clip();
+        context.transform(a, b, c, d, p0.x - a * s0.x - c * s0.y, p0.y - b * s0.x - d * s0.y);
+        context.drawImage(image, 0, 0);
+        context.restore();
+    }
+
+    function shadeFace(target, source, mesh, isBack) {
+        const context = target.getContext('2d');
+        context.drawImage(source, 0, 0);
+        const light = context.createLinearGradient(0, 0, target.width, 0);
+        mesh.forEach(point => {
+            const shade = Math.pow(Math.abs(Math.sin(point.angle)), 3) * 0.28;
+            light.addColorStop(point.u, isBack ? `rgba(106,86,54,${0.025 + shade})` : `rgba(0,0,0,${shade})`);
+        });
+        context.fillStyle = light;
+        context.fillRect(0, 0, target.width, target.height);
+    }
+
+    function drawSheet(context, mesh, front, back, scratch) {
+        let shadedSide = null;
+        const strips = mesh.slice(0, -1).map((point, index) => ({ a: point, b: mesh[index + 1] }));
+        // Far surfaces first, so the curled edge correctly occludes the sheet.
+        strips.sort((left, right) => left.a.z + left.b.z - right.a.z - right.b.z);
+        for (const { a, b } of strips) {
+            const angle = (a.angle + b.angle) / 2;
+            const isBack = Math.cos(angle) < 0;
+            if (shadedSide !== isBack) {
+                shadeFace(scratch, isBack ? back : front, mesh, isBack);
+                shadedSide = isBack;
+            }
+            const face = scratch;
+            const source = [
+                { x: a.u * face.width, y: 0 }, { x: b.u * face.width, y: 0 },
+                { x: b.u * face.width, y: face.height }, { x: a.u * face.width, y: face.height }
+            ];
+            const target = [
+                { x: a.x, y: a.top }, { x: b.x, y: b.top },
+                { x: b.x, y: b.bottom }, { x: a.x, y: a.bottom }
+            ];
+            drawTriangle(context, face, [source[0], source[1], source[2]], [target[0], target[1], target[2]]);
+            drawTriangle(context, face, [source[0], source[2], source[3]], [target[0], target[2], target[3]]);
+        }
+        context.beginPath();
+        mesh.forEach((point, index) => context[index ? 'lineTo' : 'moveTo'](point.x, point.bottom));
+        context.strokeStyle = 'rgba(255, 248, 225, .65)';
+        context.lineWidth = 0.8;
+        context.stroke();
+    }
+
+    function play({ container, direction, rotation, commit, isCurrent, onFinish }) {
+        const reader = container.parentElement;
+        const bounds = reader.getBoundingClientRect();
+        if (!bounds.width || !bounds.height) { commit(); return null; }
+        const ratio = rasterRatio(bounds.width, bounds.height, window.devicePixelRatio || 1, 12e6);
+        let before, after;
+        let committed = false;
+        let overlay;
+        let frame = 0;
+        const resources = new Set();
+        let disposed = false;
+        const dispose = () => {
+            if (disposed) return;
+            disposed = true;
+            window.cancelAnimationFrame(frame);
+            overlay?.remove();
+            // Explicitly drop backing stores, including canvases allocated
+            // before an error. Removing a DOM node alone does not free pixels.
+            for (const canvas of resources) canvas.width = canvas.height = 0;
+            resources.clear();
+            before = after = null;
+            container.style.visibility = '';
+        };
+        try {
+            before = capture(container, rotation, bounds);
+            commit();
+            committed = true;
+            after = capture(container, rotation, bounds, ratio, resources);
+            if (!before.rects.length || !after.rects.length) { dispose(); return null; }
+            const withinViewport = rect => rect.x >= -1 && rect.x + rect.width <= bounds.width + 1;
+            const spread = before.rects.length === 2 && after.rects.length === 2
+                && before.rects.every(withinViewport) && after.rects.every(withinViewport);
+            const outward = direction > 0 ? -1 : 1;
+            const frontRect = spread ? before.rects[outward > 0 ? 1 : 0] : visibleBounds(before.rects, bounds);
+            const backRect = spread ? after.rects[outward > 0 ? 0 : 1] : frontRect;
+            const from = {
+                width: frontRect.width, height: frontRect.height,
+                hinge: frontRect.x + (outward < 0 ? frontRect.width : 0),
+                centerY: frontRect.y + frontRect.height / 2
+            };
+            const to = spread ? {
+                width: backRect.width, height: backRect.height,
+                hinge: backRect.x + (outward > 0 ? backRect.width : 0),
+                centerY: backRect.y + backRect.height / 2
+            } : from;
+            overlay = makeCanvas(bounds.width, bounds.height, ratio, resources);
+            // Keep the committed DOM visible beneath the transparent overlay.
+            // Only the stationary half of the previous spread needs a backing store.
+            const stationaryRect = {
+                x: outward > 0 ? 0 : Math.min(from.hinge, to.hinge), y: 0,
+                width: outward > 0 ? Math.max(from.hinge, to.hinge) : bounds.width - Math.min(from.hinge, to.hinge),
+                height: bounds.height
+            };
+            const stationary = spread ? makeFace(before, stationaryRect, {
+                width: Math.max(1, Math.floor(stationaryRect.width * ratio)),
+                height: Math.max(1, Math.floor(stationaryRect.height * ratio))
+            }, false, resources) : null;
+            const usedPixels = overlay.width * overlay.height + (stationary ? stationary.width * stationary.height : 0);
+            const width = Math.max(frontRect.width, backRect.width);
+            const height = Math.max(frontRect.height, backRect.height);
+            const faceRatio = rasterRatio(width, height, ratio * 1.5,
+                Math.min(8e6, (CANVAS_PIXEL_BUDGET - usedPixels) / 3));
+            const dimensions = { width: Math.max(1, Math.floor(width * faceRatio)), height: Math.max(1, Math.floor(height * faceRatio)) };
+            const front = makeFace(before, frontRect, dimensions, outward < 0, resources);
+            const back = makeFace(spread ? after : before, backRect, dimensions, outward > 0, resources);
+            const scratch = makeCanvas(dimensions.width, dimensions.height, 1, resources);
+            before.originals = after.originals = [];
+            overlay.className = 'comic-paper-turn';
+            overlay.setAttribute('aria-hidden', 'true');
+            const context = imageContext(overlay, bounds.width, bounds.height);
+            const draw = progress => {
+                const t = progress * progress * (3 - 2 * progress);
+                context.clearRect(0, 0, bounds.width, bounds.height);
+                if (stationary) {
+                    context.save();
+                    const hinge = lerp(from.hinge, to.hinge, t);
+                    context.beginPath();
+                    context.rect(outward > 0 ? 0 : hinge, 0, outward > 0 ? hinge : bounds.width - hinge, bounds.height);
+                    context.clip();
+                    context.globalAlpha = Math.min(1, (1 - t) / 0.04);
+                    context.drawImage(stationary, stationaryRect.x, 0, stationaryRect.width, bounds.height);
+                    context.restore();
+                }
+                context.save();
+                if (!spread) {
+                    const visible = visibleBounds([...before.rects, ...after.rects], bounds);
+                    context.beginPath();
+                    context.rect(visible.x, 0, visible.width, bounds.height);
+                    context.clip();
+                }
+                const mesh = createMesh(t, from, to, outward);
+                const lift = Math.sin(Math.PI * t);
+                context.save();
+                context.beginPath();
+                mesh.forEach((point, i) => context[i ? 'lineTo' : 'moveTo'](point.x, point.top + lift * 8));
+                [...mesh].reverse().forEach(point => context.lineTo(point.x, point.bottom + lift * 8));
+                context.closePath();
+                context.shadowColor = `rgba(0,0,0,${0.32 * lift})`;
+                context.shadowBlur = 30 * lift;
+                context.fillStyle = `rgba(0,0,0,${0.12 * lift})`;
+                context.fill();
+                context.restore();
+                const hinge = mesh[0].x;
+                const shadowWidth = Math.max(1, frontRect.width * 0.32 * lift);
+                const shadow = context.createLinearGradient(hinge, 0, hinge + outward * shadowWidth, 0);
+                shadow.addColorStop(0, `rgba(0,0,0,${0.32 * lift})`);
+                shadow.addColorStop(1, 'rgba(0,0,0,0)');
+                context.fillStyle = shadow;
+                context.fillRect(outward > 0 ? hinge : hinge - shadowWidth, frontRect.y, shadowWidth, frontRect.height);
+                // Light the texture continuously before projecting it; shading
+                // separate quads would leave bright antialiasing seams.
+                drawSheet(context, mesh, front, back, scratch);
+                context.restore();
+            };
+            draw(0);
+            reader.appendChild(overlay);
+
+            const start = performance.now();
+            const tick = now => {
+                if (disposed) return;
+                if (!isCurrent() || !reader.isConnected) { dispose(); onFinish(); return; }
+                const progress = Math.min(1, (now - start) / DURATION);
+                try { draw(progress); } catch (_) { dispose(); onFinish(); return; }
+                if (progress === 1) { dispose(); onFinish(); }
+                else frame = window.requestAnimationFrame(tick);
+            };
+            frame = window.requestAnimationFrame(tick);
+            return dispose;
+        } catch (error) {
+            console.warn('BiliPocketReader: paper animation unavailable', error);
+            dispose();
+            if (!committed) commit();
+            return null;
+        }
+    }
+
+    window.BilibiliToolbox.paperTurn = { play, createMesh, DURATION, CANVAS_PIXEL_BUDGET };
+})();
+
 // ===== animations.js =====
 // Bilibili Toolbox - Animation Module
 (function() {
@@ -706,12 +1076,32 @@
     const FADE_SHIFT_DISTANCE = 60;
     const SMOOTH_SCALE_START = 0.95;
     const DEFAULT_ANIMATION_MODE = 'smooth';
-    const ANIMATION_MODES = ['smooth', 'fade'];
+    const ANIMATION_MODES = ['smooth', 'fade', 'paper'];
+    const activeTransitions = new WeakMap();
     const IMMEDIATE_RENDER_MODE = 'immediate';
     const ANIMATION_BUTTON_MAP = {
         smooth: ['\u5e73\u6ed1', '\u7ffb\u9875\u52a8\u753b\uff1a\u6de1\u5165 + \u5e73\u79fb + \u7ec6\u5fae\u7f29\u653e'],
-        fade: ['\u6de1\u5165', '\u7ffb\u9875\u52a8\u753b\uff1a\u6de1\u5165\u6de1\u51fa']
+        fade: ['\u6de1\u5165', '\u7ffb\u9875\u52a8\u753b\uff1a\u6de1\u5165\u6de1\u51fa'],
+        paper: ['类纸', '翻页动画：弯曲纸面、书脊与光影翻书效果']
     };
+
+    function cancelTransition(container, settle = false) {
+        if (!container) return;
+        activeTransitions.get(container)?.(settle);
+        activeTransitions.delete(container);
+        Object.assign(container.style, { transition: 'none', opacity: '1', visibility: '' });
+    }
+
+    function scheduleCommit(container, commit) {
+        const timer = window.setTimeout(() => {
+            activeTransitions.delete(container);
+            commit();
+        }, FADE_ANIMATION_DURATION);
+        activeTransitions.set(container, settle => {
+            window.clearTimeout(timer);
+            if (settle) commit();
+        });
+    }
 
     function normalizeMode(animationMode) {
         return ANIMATION_MODES.includes(animationMode) ? animationMode : DEFAULT_ANIMATION_MODE;
@@ -759,11 +1149,11 @@
             filter: 'none',
             transform: withSubtleScale(getShiftedTransform(getShiftedTransformFn, getTransform, direction * FADE_SHIFT_DISTANCE))
         });
-        window.setTimeout(() => {
+        scheduleCommit(imgContainer, () => {
             if (renderIndex !== getCurrentIndex()) return;
             if (transitionToken !== getTransitionToken()) return;
             loadImages(renderIndex, 'smooth', direction);
-        }, FADE_ANIMATION_DURATION);
+        });
     }
 
     function playFadeTransition(imgContainer, renderIndex, getCurrentIndex, transitionToken, getTransitionToken, loadImages, direction) {
@@ -772,11 +1162,11 @@
             opacity: '0',
             filter: 'none'
         });
-        window.setTimeout(() => {
+        scheduleCommit(imgContainer, () => {
             if (renderIndex !== getCurrentIndex()) return;
             if (transitionToken !== getTransitionToken()) return;
             loadImages(renderIndex, 'fade', direction);
-        }, FADE_ANIMATION_DURATION);
+        });
     }
 
     function runTransitionFlow(options) {
@@ -785,8 +1175,21 @@
             renderIndex, getCurrentIndex, transitionToken, getTransitionToken, loadImages,
             getTransform, getShiftedTransform
         } = options;
-        const renderMode = resolveRenderMode(animate, Boolean(imgContainer.firstChild), animationMode);
+        cancelTransition(imgContainer);
+        const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+        const renderMode = resolveRenderMode(animate && !reduceMotion, Boolean(imgContainer.firstChild), animationMode);
         const direction = resolveTransitionDirection(step, isRightToLeft, lastStep);
+
+        if (renderMode === 'paper' && window.BilibiliToolbox.paperTurn) {
+            const stop = window.BilibiliToolbox.paperTurn.play({
+                container: imgContainer, direction, rotation: options.rotation || 0,
+                commit: () => loadImages(renderIndex, IMMEDIATE_RENDER_MODE, direction),
+                isCurrent: () => transitionToken === getTransitionToken() && renderIndex === getCurrentIndex(),
+                onFinish: () => activeTransitions.delete(imgContainer)
+            });
+            if (stop) activeTransitions.set(imgContainer, stop);
+            return;
+        }
 
         if (renderMode === 'smooth') {
             playSmoothTransition(imgContainer, renderIndex, getCurrentIndex, transitionToken, getTransitionToken, loadImages, direction, getTransform, getShiftedTransform);
@@ -801,7 +1204,6 @@
 
     function resetAnimatedContainer(imgContainer, animationMode, transitionDirection, applyTransform, getTransform, getShiftedTransformFn) {
         const mode = ANIMATION_MODES.includes(animationMode) ? animationMode : IMMEDIATE_RENDER_MODE;
-        imgContainer.innerHTML = '';
         imgContainer.style.transition = 'none';
         applyTransform();
         if (mode === 'smooth') {
@@ -858,7 +1260,8 @@
         syncAnimationButton: syncAnimationButtonState,
         runTransition: runTransitionFlow,
         resetImageContainer: resetAnimatedContainer,
-        finishRender: finishAnimatedRender
+        finishRender: finishAnimatedRender,
+        cancel: cancelTransition
     };
 
     window.BilibiliToolbox.animations = animationsApi;
@@ -1016,6 +1419,7 @@
     const IMAGE_RENDER_MODES = Object.freeze(['sharp', 'smooth']);
     const BACKGROUND_MODES = Object.freeze(['black', 'darkGray', 'lightGray', 'white']);
     const FILTER_MODES = Object.freeze(['original', 'soft', 'warm', 'grayscale']);
+    const ANIMATION_MODES = Object.freeze([...Toolbox.animations.ANIMATION_MODES]);
     const DEFAULT_READER_PREFERENCES = Object.freeze({
         isRightToLeft: true,
         viewMode: 'auto',
@@ -1025,40 +1429,41 @@
         filterMode: 'original',
         tapPageNavigation: false
     });
+    const MODES_BY_KEY = Object.freeze({
+        viewMode: VIEW_MODES,
+        animationMode: ANIMATION_MODES,
+        imageRenderMode: IMAGE_RENDER_MODES,
+        backgroundMode: BACKGROUND_MODES,
+        filterMode: FILTER_MODES
+    });
+
+    function normalizeMode(key, value) {
+        return MODES_BY_KEY[key].includes(value) ? value : DEFAULT_READER_PREFERENCES[key];
+    }
 
     function normalizeAnimationMode(mode) {
-        return Toolbox.animations.normalizeAnimationMode(mode);
+        return normalizeMode('animationMode', mode);
     }
 
     function normalizeImageRenderMode(mode) {
-        return IMAGE_RENDER_MODES.includes(mode) ? mode : DEFAULT_READER_PREFERENCES.imageRenderMode;
+        return normalizeMode('imageRenderMode', mode);
     }
 
     function normalizeBackgroundMode(mode) {
-        return BACKGROUND_MODES.includes(mode) ? mode : DEFAULT_READER_PREFERENCES.backgroundMode;
+        return normalizeMode('backgroundMode', mode);
     }
 
     function normalizeFilterMode(mode) {
-        return FILTER_MODES.includes(mode) ? mode : DEFAULT_READER_PREFERENCES.filterMode;
+        return normalizeMode('filterMode', mode);
     }
 
     function normalizePreferences(value = {}) {
         const input = value && typeof value === 'object' ? value : {};
-        return {
-            isRightToLeft: typeof input.isRightToLeft === 'boolean'
-                ? input.isRightToLeft
-                : DEFAULT_READER_PREFERENCES.isRightToLeft,
-            viewMode: VIEW_MODES.includes(input.viewMode)
-                ? input.viewMode
-                : DEFAULT_READER_PREFERENCES.viewMode,
-            animationMode: normalizeAnimationMode(input.animationMode || DEFAULT_READER_PREFERENCES.animationMode),
-            imageRenderMode: normalizeImageRenderMode(input.imageRenderMode || DEFAULT_READER_PREFERENCES.imageRenderMode),
-            backgroundMode: normalizeBackgroundMode(input.backgroundMode || DEFAULT_READER_PREFERENCES.backgroundMode),
-            filterMode: normalizeFilterMode(input.filterMode || DEFAULT_READER_PREFERENCES.filterMode),
-            tapPageNavigation: typeof input.tapPageNavigation === 'boolean'
-                ? input.tapPageNavigation
-                : DEFAULT_READER_PREFERENCES.tapPageNavigation
-        };
+        return Object.fromEntries(Object.entries(DEFAULT_READER_PREFERENCES).map(([key, fallback]) => [
+            key, MODES_BY_KEY[key]
+                ? normalizeMode(key, input[key])
+                : (typeof input[key] === 'boolean' ? input[key] : fallback)
+        ]));
     }
 
     function loadPreferences() {
@@ -1074,6 +1479,7 @@
         IMAGE_RENDER_MODES,
         BACKGROUND_MODES,
         FILTER_MODES,
+        ANIMATION_MODES,
         DEFAULT_READER_PREFERENCES,
         normalizeAnimationMode,
         normalizeImageRenderMode,
@@ -1094,6 +1500,44 @@
 
     const Toolbox = window.BilibiliToolbox;
     const READER_BACKGROUND = '#0a0a0a';
+    const MAX_OUTPUT_PIXELS = 16e6;
+
+    async function loadExportImage(reader, src, task) {
+        const signal = task.controller.signal;
+        try {
+            const response = await fetch(src, { signal });
+            if (!response.ok) throw new Error('LOAD_FAILED');
+            const blob = await response.blob();
+            if (signal.aborted) return null;
+            const url = URL.createObjectURL(blob);
+            return await new Promise(resolve => {
+                const image = new Image();
+                let released = false;
+                const release = () => {
+                    if (released) return;
+                    released = true;
+                    Toolbox.releaseImage(image);
+                    URL.revokeObjectURL(url);
+                    signal.removeEventListener('abort', cancel);
+                    task.cleanups.delete(release);
+                };
+                const cancel = () => { release(); resolve(null); };
+                task.cleanups.add(release);
+                signal.addEventListener('abort', cancel, { once: true });
+                image.decoding = 'async';
+                image.onload = async () => {
+                    try { await image.decode?.(); } catch (_) {}
+                    if (!released) resolve({ image, release });
+                };
+                image.onerror = cancel;
+                image.src = url;
+            });
+        } catch (_) {
+            if (signal.aborted) return null;
+            const image = await reader.loadImage(src);
+            return image && !signal.aborted ? { image, release() {} } : null;
+        }
+    }
 
     function getBounds(descriptors) {
         if (!descriptors.length) return null;
@@ -1168,19 +1612,24 @@
         const link = document.createElement('a');
         link.href = url;
         link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        try {
+            document.body.appendChild(link);
+            link.click();
+        } finally {
+            link.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
     }
 
-    async function output(reader, blob, filename) {
+    async function output(reader, blob, filename, signal) {
+        if (signal.aborted) return;
         if (shouldCopyToClipboard()) {
             try {
                 await copyBlobToClipboard(blob);
                 reader.showReaderMessage('\u622a\u56fe\u5df2\u590d\u5236\u5230\u526a\u8d34\u677f');
                 return;
             } catch (_) {
+                if (signal.aborted) return;
                 download(blob, filename);
                 reader.showReaderMessage('\u526a\u8d34\u677f\u4e0d\u53ef\u7528\uff0c\u5df2\u6539\u4e3a\u4fdd\u5b58\u6587\u4ef6', true, 2600);
                 return;
@@ -1193,6 +1642,7 @@
                 reader.showReaderMessage('\u622a\u56fe\u5df2\u6253\u5f00\u7cfb\u7edf\u5206\u4eab');
                 return;
             } catch (error) {
+                if (signal.aborted) return;
                 if (isShareCanceled(error)) {
                     reader.showReaderMessage('\u5df2\u53d6\u6d88\u5206\u4eab');
                     return;
@@ -1200,6 +1650,7 @@
             }
         }
 
+        if (signal.aborted) return;
         download(blob, filename);
         reader.showReaderMessage('\u622a\u56fe\u5df2\u4fdd\u5b58');
     }
@@ -1213,6 +1664,7 @@
     }
 
     async function capture(reader, selectionRect, descriptors = reader.getVisibleImageDescriptors()) {
+        if (!reader.isOpen || reader.screenshotTask) return false;
         if (descriptors.length === 0) {
             reader.showReaderMessage('\u5f53\u524d\u6ca1\u6709\u53ef\u622a\u56fe\u7684\u9875\u9762', true);
             return false;
@@ -1220,39 +1672,66 @@
 
         reader.showReaderMessage('\u6b63\u5728\u751f\u6210\u622a\u56fe...', false, 3000);
 
+        const task = {
+            controller: new AbortController(), cleanups: new Set(),
+            cancel() {
+                this.controller.abort();
+                for (const release of this.cleanups) release();
+            }
+        };
+        reader.screenshotTask = task;
+        const signal = task.controller.signal;
+        const rotation = reader.rotation;
+        const filename = getFileName(reader.currentIndex, reader.activePageCount);
         try {
-            const loadedImages = await Promise.all(descriptors.map(async descriptor => {
-                const image = await reader.loadExportImageSafe(descriptor.src);
-                if (!image) throw new Error('LOAD_FAILED');
-                return { descriptor, image };
-            }));
-
-            const dpr = window.devicePixelRatio || 1;
+            if (!selectionRect || !Number.isFinite(selectionRect.width) || !Number.isFinite(selectionRect.height)
+                || selectionRect.width <= 0 || selectionRect.height <= 0) throw new Error('INVALID_BOUNDS');
+            const dpr = Math.min(window.devicePixelRatio || 1,
+                Math.sqrt(MAX_OUTPUT_PIXELS / (selectionRect.width * selectionRect.height)),
+                8192 / Math.max(selectionRect.width, selectionRect.height));
             const outputCanvas = document.createElement('canvas');
-            outputCanvas.width = Math.max(1, Math.round(selectionRect.width * dpr));
-            outputCanvas.height = Math.max(1, Math.round(selectionRect.height * dpr));
+            const releaseCanvas = () => {
+                outputCanvas.width = outputCanvas.height = 0;
+                task.cleanups.delete(releaseCanvas);
+            };
+            task.cleanups.add(releaseCanvas);
+            outputCanvas.width = Math.max(1, Math.floor(selectionRect.width * dpr));
+            outputCanvas.height = Math.max(1, Math.floor(selectionRect.height * dpr));
 
             const ctx = outputCanvas.getContext('2d');
             if (!ctx) throw new Error('CANVAS_CONTEXT_FAILED');
-            ctx.scale(dpr, dpr);
+            ctx.scale(outputCanvas.width / selectionRect.width, outputCanvas.height / selectionRect.height);
             ctx.fillStyle = reader.getReaderBackgroundColor?.() || READER_BACKGROUND;
             ctx.fillRect(0, 0, selectionRect.width, selectionRect.height);
 
-            loadedImages.forEach(({ descriptor, image }) => {
-                drawImage(ctx, image, descriptor, selectionRect, reader.rotation);
-            });
+            // Decode and release export copies one at a time, instead of holding
+            // every full-size original alongside the output canvas.
+            for (const descriptor of descriptors) {
+                const loaded = await loadExportImage(reader, descriptor.src, task);
+                if (signal.aborted) return false;
+                if (!loaded) throw new Error('LOAD_FAILED');
+                try { drawImage(ctx, loaded.image, descriptor, selectionRect, rotation); }
+                finally { loaded.release(); }
+            }
 
             try {
                 const blob = await canvasToBlob(outputCanvas);
-                await output(reader, blob, getFileName(reader.currentIndex, reader.activePageCount));
-                return true;
+                releaseCanvas();
+                if (signal.aborted) return false;
+                await output(reader, blob, filename, signal);
+                return !signal.aborted;
             } catch (_) {
+                if (signal.aborted) return false;
                 reader.showReaderMessage('\u56fe\u7247\u53d7\u8de8\u57df\u9650\u5236\uff0c\u65e0\u6cd5\u5408\u6210\u622a\u56fe', true, 3000);
                 return false;
             }
         } catch (_) {
+            if (signal.aborted) return false;
             reader.showReaderMessage('\u622a\u56fe\u5931\u8d25\uff0c\u8bf7\u91cd\u8bd5', true, 2800);
             return false;
+        } finally {
+            task.cancel();
+            if (reader.screenshotTask === task) reader.screenshotTask = null;
         }
     }
 
@@ -1280,6 +1759,7 @@
     const methods = {
         setTransformTransition(value) {
             if (!this.el.imgContainer) return;
+            Toolbox.animations?.cancel(this.el.imgContainer, true);
             this.el.imgContainer.style.transition = value;
         },
 
@@ -1361,6 +1841,8 @@
 
         updateFitScale(images = Array.from(this.el.imgContainer?.querySelectorAll('img') || [])) {
             const readerRect = this.el.reader?.getBoundingClientRect();
+            this.viewportRect = readerRect;
+            this.panGeometry = null;
             if (!readerRect || !images.length) {
                 this.fitScale = 1;
                 this.contentNaturalWidth = 0;
@@ -1441,14 +1923,33 @@
         },
 
         getPanLimits() {
-            const bounds = this.getImageBounds();
-            if (!bounds || this.scale <= 1) return { maxX: 0, maxY: 0 };
+            if (!this.el.imgContainer || this.scale <= 1) return { maxX: 0, maxY: 0 };
+            if (!this.panGeometry) {
+                // Layout coordinates do not change while zooming or panning.
+                // Read them once per page/resize, including rotated flex items,
+                // rather than forcing style recalculation after every transform.
+                const images = Array.from(this.el.imgContainer.querySelectorAll('img'));
+                if (!images.length) return { maxX: 0, maxY: 0 };
+                const sideways = this.rotation === 90 || this.rotation === 270;
+                const rects = images.map(img => {
+                    const width = sideways ? img.offsetHeight : img.offsetWidth;
+                    const height = sideways ? img.offsetWidth : img.offsetHeight;
+                    const x = img.offsetLeft + img.offsetWidth / 2;
+                    const y = img.offsetTop + img.offsetHeight / 2;
+                    return { left: x - width / 2, right: x + width / 2, top: y - height / 2, bottom: y + height / 2 };
+                });
+                this.panGeometry = {
+                    width: Math.max(...rects.map(rect => rect.right)) - Math.min(...rects.map(rect => rect.left)),
+                    height: Math.max(...rects.map(rect => rect.bottom)) - Math.min(...rects.map(rect => rect.top))
+                };
+            }
+            const viewport = this.viewportRect || this.el.reader.getBoundingClientRect();
 
             const renderScale = this.getRenderScale();
             const allowance = PAN_EDGE_ALLOWANCE / renderScale;
             return {
-                maxX: Math.max(0, (bounds.width - bounds.containerRect.width) / (2 * renderScale)) + allowance,
-                maxY: Math.max(0, (bounds.height - bounds.containerRect.height) / (2 * renderScale)) + allowance
+                maxX: Math.max(0, (this.panGeometry.width - viewport.width / renderScale) / 2) + allowance,
+                maxY: Math.max(0, (this.panGeometry.height - viewport.height / renderScale) / 2) + allowance
             };
         },
 
@@ -1474,7 +1975,7 @@
             const previousScale = this.scale || 1;
             if (Math.abs(clampedScale - previousScale) < 0.001) return;
 
-            const rect = this.el.reader?.getBoundingClientRect()
+            const rect = this.viewportRect || this.el.reader?.getBoundingClientRect()
                 || this.el.imgContainer.getBoundingClientRect();
             const offsetX = clientX - (rect.left + rect.width / 2);
             const offsetY = clientY - (rect.top + rect.height / 2);
@@ -1529,7 +2030,6 @@
         },
 
         applyTransform() {
-            this.writeTransform();
             this.clampTransform();
             if (this.isTouchDevice && this.scale <= 1 + TOUCH_ZOOM_EPSILON) {
                 this.touchPanLocked = false;
@@ -1553,10 +2053,7 @@
     };
 
     function attach(reader) {
-        Object.entries(methods).forEach(([name, method]) => {
-            reader[name] = method.bind(reader);
-        });
-        return reader;
+        return Toolbox.attachMethods(reader, methods);
     }
 
     Toolbox.readerTransform = {
@@ -1648,6 +2145,9 @@
 
         startScreenshotSelection() {
             if (this.isSelectingScreenshot) return;
+            Toolbox.animations?.cancel(this.el.imgContainer, true);
+            this.currentIndex = this.displayedIndex ?? this.currentIndex;
+            this.applyTransform();
             this.isSelectingScreenshot = true;
             this.pageFlipToken += 1;
             this.selectionWasControlsVisible = this.controlsVisible;
@@ -1800,10 +2300,7 @@
     };
 
     function attach(reader) {
-        Object.entries(methods).forEach(([name, method]) => {
-            reader[name] = method.bind(reader);
-        });
-        return reader;
+        return Toolbox.attachMethods(reader, methods);
     }
 
     Toolbox.readerSelection = {
@@ -2046,292 +2543,14 @@
     };
 })();
 
-// ===== comic-reader-page-groups.js =====
-// Bilibili Toolbox - reader page grouping helpers
+// ===== reader-settings.js =====
+// Bilibili Toolbox - readerSettings
 (function() {
     'use strict';
 
-    if (!window.BilibiliToolbox) throw new Error('BilibiliToolbox: shared.js not loaded');
-
     const Toolbox = window.BilibiliToolbox;
-
-    function isWideImage(img, rotation = 0) {
-        const isRotated90or270 = rotation === 90 || rotation === 270;
-        const width = isRotated90or270 ? img.naturalHeight : img.naturalWidth;
-        const height = isRotated90or270 ? img.naturalWidth : img.naturalHeight;
-        return width > height * 1.2;
-    }
-
-    function getNextIndex({ currentIndex, total, step }) {
-        const nextIndex = currentIndex + step;
-        if (nextIndex >= 0 && nextIndex < total) return nextIndex;
-        return currentIndex + Math.sign(step);
-    }
-
-    async function getPreviousIndex({ currentIndex, viewMode, loadImage, isWideImage: isWideImageForReader }) {
-        const prevIndex = currentIndex - 1;
-        if (prevIndex <= 0) return Math.max(0, prevIndex);
-        if (viewMode === 'single') return prevIndex;
-        if (viewMode === 'double') return Math.max(0, currentIndex - 2);
-
-        const prevImg = await loadImage(prevIndex);
-        if (prevImg && isWideImageForReader(prevImg)) return prevIndex;
-        return Math.max(0, currentIndex - 2);
-    }
-
-    async function loadVisibleImages({ currentIndex, imgList, viewMode, loadImage, isWideImage: isWideImageForReader }) {
-        const img1 = await loadImage(imgList[currentIndex]);
-        if (!img1) return null;
-
-        const canUseDoubleMode = viewMode === 'double' || (viewMode === 'auto' && !isWideImageForReader(img1));
-        if (!canUseDoubleMode || currentIndex + 1 >= imgList.length) {
-            return { images: [img1], preloadStart: currentIndex + 1 };
-        }
-
-        const img2 = await loadImage(imgList[currentIndex + 1]);
-        if (!img2) return { images: [img1], preloadStart: currentIndex + 1 };
-
-        const images = viewMode === 'auto' && isWideImageForReader(img2) ? [img1] : [img1, img2];
-        return { images, preloadStart: currentIndex + images.length };
-    }
-
-    Toolbox.readerPageGroups = {
-        isWideImage,
-        getNextIndex,
-        getPreviousIndex,
-        loadVisibleImages
-    };
-})();
-
-// ===== comic-reader-interactions.js =====
-// Bilibili Toolbox - reader interaction bindings
-(function() {
-    'use strict';
-
-    if (!window.BilibiliToolbox?.animations) throw new Error('BilibiliToolbox: animations.js not loaded');
-    if (!window.BilibiliToolbox?.readerPreferences) throw new Error('BilibiliToolbox: reader-preferences.js not loaded');
-
-    const Toolbox = window.BilibiliToolbox;
-    const animations = Toolbox.animations;
     const readerPreferences = Toolbox.readerPreferences;
-    const VIEW_MODES = readerPreferences.VIEW_MODES;
-    const IMAGE_RENDER_MODES = readerPreferences.IMAGE_RENDER_MODES;
-    const BACKGROUND_MODES = readerPreferences.BACKGROUND_MODES;
-    const SCALE_STEP = 0.1;
-
-    function stop(handler) {
-        return (event) => {
-            event.stopPropagation();
-            handler(event);
-        };
-    }
-
-    function bindReaderInteractions(reader) {
-        const on = (...args) => reader.eventBag.on(...args);
-        const el = reader.el;
-
-        on(el.controls, 'mouseenter', () => reader.showControls());
-        on(el.settingsControls, 'mouseenter', () => reader.showControls());
-        on(el.settingsPanel, 'mouseenter', () => reader.showControls());
-        on(el.controls, 'mouseleave', () => reader.scheduleHideControls());
-        on(el.settingsControls, 'mouseleave', () => reader.scheduleHideControls());
-        on(el.settingsPanel, 'mouseleave', () => reader.scheduleHideControls());
-        on(el.reader, 'mouseleave', () => reader.scheduleHideControls());
-
-        el.leftBtn.onclick = (event) => reader.turnPage(event, reader.isRightToLeft ? reader.lastStep : -reader.lastStep);
-        el.rightBtn.onclick = (event) => reader.turnPage(event, reader.isRightToLeft ? -reader.lastStep : reader.lastStep);
-
-        el.offsetIncBtn.onclick = (event) => reader.offsetPage(event, reader.isRightToLeft ? 1 : -1);
-        el.offsetDecBtn.onclick = (event) => reader.offsetPage(event, reader.isRightToLeft ? -1 : 1);
-
-        el.directionBtn.onclick = stop(() => {
-            reader.isRightToLeft = !reader.isRightToLeft;
-            reader.updateDirection();
-            reader.syncDirectionButton();
-            reader.savePreferences();
-        });
-
-        el.animationBtn.onclick = stop(() => {
-            reader.animationMode = animations.getNextAnimationMode(reader.animationMode);
-            animations.syncAnimationButton(el.animationBtn, reader.animationMode);
-            reader.savePreferences();
-        });
-
-        el.viewModeBtn.onclick = stop(() => {
-            const currentIdx = VIEW_MODES.indexOf(reader.viewMode);
-            reader.viewMode = VIEW_MODES[(currentIdx + 1) % VIEW_MODES.length];
-            reader.syncViewModeButton();
-            reader.savePreferences();
-            reader.render(false);
-        });
-
-        el.imageRenderBtn.onclick = stop(() => {
-            const currentIdx = IMAGE_RENDER_MODES.indexOf(reader.imageRenderMode);
-            reader.imageRenderMode = IMAGE_RENDER_MODES[(currentIdx + 1) % IMAGE_RENDER_MODES.length];
-            reader.syncImageRenderButton();
-            reader.savePreferences();
-            reader.refreshImagesForRenderMode();
-        });
-
-        on(el.filterSelect, 'change', stop(() => {
-            reader.filterMode = readerPreferences.normalizeFilterMode(el.filterSelect.value);
-            reader.syncFilterControl();
-            reader.applyReaderFilter();
-            reader.savePreferences();
-        }));
-
-        el.backgroundBtn.onclick = stop(() => {
-            const currentIdx = BACKGROUND_MODES.indexOf(reader.backgroundMode);
-            reader.backgroundMode = BACKGROUND_MODES[(currentIdx + 1) % BACKGROUND_MODES.length];
-            reader.syncBackgroundButton();
-            reader.applyReaderBackground();
-            reader.savePreferences();
-        });
-
-        el.tapPageBtn.onclick = stop(() => {
-            reader.tapPageNavigation = !reader.tapPageNavigation;
-            reader.syncTapPageButton();
-            reader.savePreferences();
-        });
-
-        el.settingsBtn.onclick = stop(() => reader.toggleSettingsPanel());
-
-        el.resetViewBtn.onclick = stop(() => reader.resetTransform());
-        el.screenshotBtn.onclick = stop(() => reader.startScreenshotSelection());
-        el.fullScreenBtn.onclick = stop(() => reader.toggleFullscreen());
-
-        el.rotateBtn.onclick = stop(() => {
-            reader.rotation = (reader.rotation + 90) % 360;
-            reader.syncRotateButton();
-            reader.render(false);
-        });
-
-        el.closeBtn.onclick = () => reader.close();
-
-        on(el.pageInfo, 'click', (event) => {
-            event.stopPropagation();
-            reader.showPageInput();
-        });
-        on(el.pageInput, 'focus', () => el.pageInput.select());
-        on(el.pageInput, 'keydown', (event) => {
-            event.stopPropagation();
-            if (event.key === 'Enter') {
-                event.preventDefault();
-                reader.jumpToPageFromInput();
-                el.pageInput.blur();
-            } else if (event.key === 'Escape') {
-                event.preventDefault();
-                reader.hidePageInput();
-                el.pageInput.blur();
-            }
-        });
-        on(el.pageInput, 'blur', () => reader.jumpToPageFromInput());
-
-        el.selectionCancelBtn.onclick = () => reader.cancelScreenshotSelection(true);
-        el.selectionFullBtn.onclick = () => { void reader.saveFullScreenshot(); };
-        el.selectionSaveBtn.onclick = () => { void reader.saveSelectionScreenshot(); };
-        on(el.selectionOverlay, 'pointerdown', reader.handleSelectionPointerDown);
-        on(el.selectionOverlay, 'pointermove', reader.handleSelectionPointerMove);
-        on(el.selectionOverlay, 'pointerup', reader.handleSelectionPointerUp);
-        on(el.selectionOverlay, 'pointercancel', reader.handleSelectionPointerUp);
-        on(el.reader, 'pointerdown', reader.handleSettingsOutsidePointerDown, true);
-
-        on(el.imgContainer, 'wheel', (event) => {
-            event.preventDefault();
-            reader.animateTransform();
-            reader.zoomAt(event.clientX, event.clientY, reader.scale + (event.deltaY > 0 ? -SCALE_STEP : SCALE_STEP));
-        }, { passive: false });
-
-        on(el.imgContainer, 'dblclick', (event) => {
-            event.preventDefault();
-            reader.animateTransform(220);
-            if (Math.abs(reader.scale - 1) < 0.05) {
-                reader.zoomAt(event.clientX, event.clientY, reader.getDoubleClickScale());
-                return;
-            }
-            reader.resetScaleAndPan();
-        });
-
-        on(el.imgContainer, 'mousedown', (event) => {
-            if (event.button !== 0) return;
-            event.preventDefault();
-            reader.setTransformTransition('none');
-            reader.isDragging = true;
-            reader.initX = reader.translateX;
-            reader.initY = reader.translateY;
-            reader.startX = event.clientX;
-            reader.startY = event.clientY;
-            el.imgContainer.classList.add('is-grabbing');
-        });
-
-        on(el.imgContainer, 'mouseleave', () => {
-            reader.isDragging = false;
-            el.imgContainer.classList.remove('is-grabbing');
-        });
-
-        on(document, 'mousemove', reader.handleMouseMove);
-        on(document, 'mouseup', reader.handleMouseUp);
-        on(document, 'fullscreenchange', reader.handleFullscreenChange);
-        on(window, 'keydown', reader.handleKeyDown);
-        on(window, 'resize', reader.handleResize);
-
-        on(el.reader, 'touchstart', reader.boundHandleTouchStart, { passive: false });
-        on(el.reader, 'touchmove', reader.boundHandleTouchMove, { passive: false });
-        on(el.reader, 'touchend', reader.boundHandleTouchEnd, { passive: false });
-        on(el.reader, 'touchcancel', reader.boundHandleTouchEnd, { passive: false });
-        reader.showControls();
-    }
-
-    Toolbox.readerInteractions = {
-        bind: bindReaderInteractions
-    };
-})();
-
-// ===== comic-reader.js =====
-// Bilibili Toolbox - Comic Reader
-(function() {
-    'use strict';
-
-    // ============ 常量定义 ============
-    const MIN_SCALE = 0.5;
-    const MAX_SCALE = 3;
-    const DOUBLE_CLICK_SCALE = 2;
-    const MAX_RENDER_SCALE = 2;
-    const CONTROLS_HIDE_DELAY = 500;
-    const SWIPE_THRESHOLD = 50;
-    const TAP_DELAY = 220;
-    const DOUBLE_TAP_DELAY = 300;
-    const TAP_ZONE_RATIO = 0.28;
-    const TOUCH_ZOOM_EPSILON = 0.01;
-    const TOUCH_EDGE_EPSILON = 0.5;
-    const PAN_EDGE_ALLOWANCE = 72;
-    const MOBILE_BREAKPOINT = 768;
-    const PRELOAD_COUNT = 4;
-    if (!window.Shared) throw new Error('BilibiliToolbox: shared.js not loaded');
-    if (!window.BilibiliToolbox?.bilibiliDom) throw new Error('BilibiliToolbox: bilibili-dom-adapter.js not loaded');
-    if (!window.BilibiliToolbox?.storage) throw new Error('BilibiliToolbox: storage-service.js not loaded');
-    if (!window.BilibiliToolbox?.comicImages) throw new Error('BilibiliToolbox: comic-reader-images.js not loaded');
-    if (!window.BilibiliToolbox?.animations) throw new Error('BilibiliToolbox: animations.js not loaded');
-    if (!window.BilibiliToolbox?.readerPreferences) throw new Error('BilibiliToolbox: reader-preferences.js not loaded');
-    if (!window.BilibiliToolbox?.readerScreenshot) throw new Error('BilibiliToolbox: reader-screenshot.js not loaded');
-    if (!window.BilibiliToolbox?.readerTransform) throw new Error('BilibiliToolbox: reader-transform.js not loaded');
-    if (!window.BilibiliToolbox?.readerSelection) throw new Error('BilibiliToolbox: reader-selection.js not loaded');
-    if (!window.BilibiliToolbox?.readerDom) throw new Error('BilibiliToolbox: reader-dom.js not loaded');
-    if (!window.BilibiliToolbox?.readerPageGroups) throw new Error('BilibiliToolbox: comic-reader-page-groups.js not loaded');
-    if (!window.BilibiliToolbox?.readerInteractions) throw new Error('BilibiliToolbox: comic-reader-interactions.js not loaded');
-
-    const Toolbox = window.BilibiliToolbox;
-    const Shared = window.Shared;
-    const bilibiliDom = Toolbox.bilibiliDom;
     const animations = Toolbox.animations;
-    const comicImages = Toolbox.comicImages;
-    const readerPreferences = Toolbox.readerPreferences;
-    const readerScreenshot = Toolbox.readerScreenshot;
-    const readerTransform = Toolbox.readerTransform;
-    const readerSelection = Toolbox.readerSelection;
-    const readerDom = Toolbox.readerDom;
-    const readerPageGroups = Toolbox.readerPageGroups;
-    const readerInteractions = Toolbox.readerInteractions;
     const READER_BACKGROUND_COLORS = Object.freeze({
         black: '#0a0a0a',
         darkGray: '#1f1f1f',
@@ -2356,200 +2575,44 @@
         warm: '\u6696\u8272\u62a4\u773c',
         grayscale: '\u9ed1\u767d'
     });
+    const PREFERENCE_EFFECTS = {
+        isRightToLeft: ['updateDirection', 'syncDirectionButton'],
+        animationMode: ['syncAnimationButton'],
+        viewMode: ['syncViewModeButton'],
+        imageRenderMode: ['syncImageRenderButton'],
+        filterMode: ['syncFilterControl', 'applyReaderFilter'],
+        backgroundMode: ['syncBackgroundButton', 'applyReaderBackground'],
+        tapPageNavigation: ['syncTapPageButton']
+    };
 
-    // ============ 漫画模式功能 ============
-
-    class BiliComicReader {
-        normalizePreferences(value = {}) {
-            return readerPreferences.normalize(value);
-        }
-
-        loadPreferences() {
-            return readerPreferences.load();
-        }
-
+    const methods = {
         savePreferences() {
-            const preferences = this.normalizePreferences({
-                isRightToLeft: this.isRightToLeft,
-                viewMode: this.viewMode,
-                animationMode: this.animationMode,
-                imageRenderMode: this.imageRenderMode,
-                backgroundMode: this.backgroundMode,
-                filterMode: this.filterMode,
-                tapPageNavigation: this.tapPageNavigation
-            });
-            void readerPreferences.save(preferences).catch(() => {});
-        }
+            void readerPreferences.save(this).catch(() => {});
+        },
 
-        constructor() {
-            const preferences = this.loadPreferences();
-            // 状态管理
-            this.imgList = [];
-            this.currentIndex = 0;
-            this.lastStep = 2;
-            this.isRightToLeft = preferences.isRightToLeft;
-            this.scale = 1;
-            this.fitScale = 1;
-            this.sharpDisplayFitRatio = 1;
-            this.contentNaturalWidth = 0;
-            this.contentNaturalHeight = 0;
-            this.translateX = 0;
-            this.translateY = 0;
-            this.hideTimer = null;
-            this.messageTimer = null;
-            this.viewMode = preferences.viewMode;
-            this.animationMode = preferences.animationMode;
-            this.imageRenderMode = preferences.imageRenderMode;
-            this.backgroundMode = preferences.backgroundMode;
-            this.filterMode = preferences.filterMode;
-            this.tapPageNavigation = preferences.tapPageNavigation;
-            this.rotation = 0;
-            this.activePageCount = 1;
-            this.controlsVisible = true;
-            this.isTouchDevice = Shared.isTouchLikeDevice();
-            this.isCompactLayout = false;
-            this.isSelectingScreenshot = false;
-            this.isDraggingSelection = false;
-            this.selectionStart = null;
-            this.selectionCurrent = null;
-            this.selectionWasControlsVisible = true;
-            this.selectionPointerId = null;
-            this.resizeDirection = null;
-            this.selectionDragMode = null;
-            this.selectionMoveStart = null;
-            this.selectionMoveRect = null;
-            this.selectionHandles = {};
-            this.pageFlipToken = 0;
-            this.transformTransitionTimer = null;
-            this.imageCache = new Map();
+        setPreference(key, value) {
+            if (!Object.hasOwn(PREFERENCE_EFFECTS, key)) throw new Error('Unknown reader preference: ' + key);
+            this[key] = readerPreferences.normalize({ [key]: value })[key];
+            PREFERENCE_EFFECTS[key].forEach(name => this[name]());
+            this.savePreferences();
+            if (key === 'viewMode') this.render(false);
+            if (key === 'imageRenderMode') this.refreshImagesForRenderMode();
+        },
 
-            // 拖拽状态
-            this.isDragging = false;
-            this.startX = 0;
-            this.startY = 0;
-            this.initX = 0;
-            this.initY = 0;
+        cyclePreference(key, modes) {
+            const next = modes[(modes.indexOf(this[key]) + 1) % modes.length];
+            this.setPreference(key, next);
+        },
 
-            // 触摸滑动状态
-            this.touchStartX = 0;
-            this.touchStartY = 0;
-            this.touchEndX = 0;
-            this.touchEndY = 0;
-            this.isTouchSwiping = false;
-            this.touchStartTime = 0;
-            this.touchStartedOnInteractive = false;
-            this.touchPanLocked = false;
-            this.touchDidMoveImage = false;
-            this.touchEdgePageStep = 0;
-            this.pendingTapTimer = null;
-            this.lastTapTime = 0;
-            this.lastTapX = 0;
-            this.lastTapY = 0;
-
-            // 双指缩放状态
-            this.isTwoFingerGesturing = false;
-            this.initialPinchDistance = 0;
-            this.initialScale = 1;
-            this.initialCenterX = 0;
-            this.initialCenterY = 0;
-            this.twoFingerTapCandidate = false;
-            this.twoFingerTapStartTime = 0;
-            this.twoFingerTapCenterX = 0;
-            this.twoFingerTapCenterY = 0;
-            this.lastTwoFingerTapTime = 0;
-            this.lastTwoFingerTapCenterX = 0;
-            this.lastTwoFingerTapCenterY = 0;
-
-            // DOM 元素引用
-            this.el = {};
-            this.eventBag = null;
-
-            readerTransform.attach(this);
-            readerSelection.attach(this);
-            readerDom.attach(this);
-
-            // 绑定全局事件的 this 指向，便于后续解绑
-            this.handleKeyDown = this.handleKeyDown.bind(this);
-            this.handleFullscreenChange = this.handleFullscreenChange.bind(this);
-            this.handleMouseMove = this.handleMouseMove.bind(this);
-            this.handleMouseUp = this.handleMouseUp.bind(this);
-            this.boundHandleTouchStart = this.handleTouchStart.bind(this);
-            this.boundHandleTouchMove = this.handleTouchMove.bind(this);
-            this.boundHandleTouchEnd = this.handleTouchEnd.bind(this);
-            this.handleSelectionPointerDown = this.handleSelectionPointerDown.bind(this);
-            this.handleSelectionPointerMove = this.handleSelectionPointerMove.bind(this);
-            this.handleSelectionPointerUp = this.handleSelectionPointerUp.bind(this);
-            this.handleSettingsOutsidePointerDown = this.handleSettingsOutsidePointerDown.bind(this);
-            this.handleResize = this.handleResize.bind(this);
-        }
-
-        // 1. 初始化入口按钮
-        init() {
-            const entryBtn = document.createElement('button');
-            entryBtn.innerHTML = '&#128214;';
-            entryBtn.className = `comic-entry-btn${this.isTouchDevice ? ' comic-entry-btn-touch' : ''}`;
-            document.body.appendChild(entryBtn);
-
-            entryBtn.onclick = () => this.start();
-            this.prepareInitialImages();
-        }
-
-        // 2. 启动阅读器
-        start() {
-            const images = this.collectReaderImages();
-            if (images.length > 0) this.imgList = images;
-
-            if (this.imgList.length === 0) return alert('\u672a\u627e\u5230\u6f2b\u753b\u56fe\u7247');
-
-            this.currentIndex = 0;
-            this.lastStep = 2;
-            this.isDragging = false;
-            this.animationMode = readerPreferences.normalizeAnimationMode(this.animationMode);
-
-            // 隐藏收藏夹悬浮按钮
-            const favBtn = document.getElementById('bilibili-fav-float-btn');
-            if (favBtn) favBtn.style.display = 'none';
-
-            this.eventBag = Toolbox.createEventBag();
-            this.createUI();
-            this.bindEvents();
-            this.render();
-        }
-
-        prepareInitialImages() {
-            this.imgList = this.collectReaderImages();
-            if (this.imgList.length > 0) this.preloadImages(0);
-        }
-
-        getImageCollectionOptions() {
-            return { preserveBiliSuffix: this.imageRenderMode === 'smooth' };
-        }
-
-        collectReaderImages() {
-            return comicImages.collectImages(this.getImageCollectionOptions());
-        }
-
-        refreshImagesForRenderMode() {
-            const images = this.collectReaderImages();
-            if (images.length === 0) return;
-            this.imgList = images;
-            this.imageCache.clear();
-            this.currentIndex = Math.min(this.currentIndex, this.imgList.length - 1);
-            this.preloadImages(this.currentIndex);
-            this.render(false);
-        }
-
-        // 3. 创建 UI
-        // 4. 缁戝畾浜嬩欢
-        bindEvents() {
-            readerInteractions.bind(this);
-        }
+        syncAnimationButton() {
+            animations.syncAnimationButton(this.el.animationBtn, this.animationMode);
+        },
 
         syncDirectionButton() {
             const dir = this.isRightToLeft;
             this.el.directionBtn.innerText = dir ? '\u4ece\u53f3\u5f80\u5de6 \u2190' : '\u4ece\u5de6\u5f80\u53f3 \u2192';
             this.el.directionBtn.title = dir ? '\u5f53\u524d\uff1a\u4ece\u53f3\u5f80\u5de6' : '\u5f53\u524d\uff1a\u4ece\u5de6\u5f80\u53f3';
-        }
+        },
 
         syncViewModeButton() {
             const map = {
@@ -2559,7 +2622,7 @@
             };
             const [text, title] = map[this.viewMode] || map.auto;
             Object.assign(this.el.viewModeBtn, { innerText: text, title });
-        }
+        },
 
         syncImageRenderButton() {
             const sharp = this.imageRenderMode === 'sharp';
@@ -2568,21 +2631,21 @@
                 ? '\u663e\u793a\u6a21\u5f0f\uff1a\u539f\u56fe\uff08\u4fdd\u7559\u81ea\u7136\u50cf\u7d20\uff0c\u53cc\u51fb 1:1 \u67e5\u770b\uff09'
                 : '\u663e\u793a\u6a21\u5f0f\uff1a\u6d41\u7545\uff08\u6d4f\u89c8\u5668\u9002\u5c4f\u7f29\u653e\uff0c\u7ffb\u9875\u548c\u7f29\u653e\u66f4\u67d4\u548c\uff09';
             this.el.imageRenderBtn.classList.remove('active');
-        }
+        },
 
         syncBackgroundButton() {
             const label = this.getReaderBackgroundLabel();
             this.el.backgroundBtn.innerText = label;
             this.el.backgroundBtn.title = `\u80cc\u666f\u989c\u8272\uff1a${label}`;
             this.el.backgroundBtn.classList.remove('active');
-        }
+        },
 
         syncFilterControl() {
             if (!this.el.filterSelect) return;
             const mode = readerPreferences.normalizeFilterMode(this.filterMode);
             this.el.filterSelect.value = mode;
             this.el.filterSelect.title = `\u56fe\u50cf\u6ee4\u955c\uff1a${READER_FILTER_LABELS[mode]}`;
-        }
+        },
 
         syncTapPageButton() {
             const enabled = Boolean(this.tapPageNavigation);
@@ -2591,24 +2654,24 @@
                 ? '\u70b9\u51fb\u5c4f\u5e55\u5de6\u53f3\u533a\u57df\u7ffb\u9875\uff08\u6ed1\u52a8\u7ffb\u9875\u59cb\u7ec8\u5f00\u542f\uff09'
                 : '\u70b9\u51fb\u5c4f\u5e55\u4e0d\u7ffb\u9875\uff08\u6ed1\u52a8\u7ffb\u9875\u59cb\u7ec8\u5f00\u542f\uff09';
             this.el.tapPageBtn.classList.toggle('active', enabled);
-        }
+        },
 
         syncRotateButton() {
             const rot = this.rotation;
             this.el.rotateBtn.innerText = rot === 0 ? '\u65cb\u8f6c' : `${rot}\u5ea6`;
             this.el.rotateBtn.title = rot === 0 ? '\u65cb\u8f6c90\u5ea6' : `\u5f53\u524d\u65cb\u8f6c\uff1a${rot}\u5ea6`;
-        }
+        },
 
         syncFullscreenButton() {
             if (this.el.fullScreenBtn) {
                 this.el.fullScreenBtn.innerText = document.fullscreenElement ? '\u9000\u51fa\u5168\u5c4f' : '\u5168\u5c4f';
                 this.el.fullScreenBtn.title = this.el.fullScreenBtn.innerText;
             }
-        }
+        },
 
         isSettingsPanelVisible() {
             return Boolean(this.el.settingsPanel?.classList.contains('show'));
-        }
+        },
 
         toggleSettingsPanel() {
             if (this.isSettingsPanelVisible()) {
@@ -2619,119 +2682,104 @@
             this.el.settingsPanel.classList.add('show');
             this.el.settingsPanel.setAttribute('aria-hidden', 'false');
             this.el.settingsBtn.classList.add('active');
-        }
+        },
 
         hideSettingsPanel() {
             if (!this.el.settingsPanel) return;
             this.el.settingsPanel.classList.remove('show');
             this.el.settingsPanel.setAttribute('aria-hidden', 'true');
             this.el.settingsBtn?.classList.remove('active');
-        }
+        },
 
         handleSettingsOutsidePointerDown(e) {
             if (!this.isSettingsPanelVisible()) return;
             const target = e.target instanceof Element ? e.target : null;
             if (target && (this.el.settingsPanel.contains(target) || this.el.settingsBtn.contains(target))) return;
             this.hideSettingsPanel();
-        }
-
-        toggleFullscreen() {
-            if (!this.el.reader?.requestFullscreen || document.fullscreenEnabled === false) {
-                this.showReaderMessage('\u5f53\u524d\u6d4f\u89c8\u5668\u4e0d\u652f\u6301\u7f51\u9875\u5168\u5c4f', true, 2600);
-                return;
-            }
-            if (!document.fullscreenElement) {
-                this.el.reader.requestFullscreen().catch(() => {
-                    this.showReaderMessage('\u5168\u5c4f\u5f00\u542f\u5931\u8d25\uff0c\u53ef\u80fd\u53d7\u6d4f\u89c8\u5668\u9650\u5236', true, 2600);
-                });
-            } else {
-                document.exitFullscreen().catch(() => {
-                    this.showReaderMessage('\u9000\u51fa\u5168\u5c4f\u5931\u8d25', true, 2200);
-                });
-            }
-        }
-
-        isCompactViewport() {
-            return window.innerWidth < MOBILE_BREAKPOINT || this.isTouchDevice;
-        }
-
-        applyResponsiveLayout() {
-            this.isCompactLayout = this.isCompactViewport();
-            this.el.reader.classList.toggle('reader-compact', this.isCompactLayout);
-            const images = Array.from(this.el.imgContainer?.querySelectorAll('img') || []);
-            if (images.length) this.setupImagesForRenderMode(images);
-            this.updateFitScale();
-            this.applyTransform();
-        }
+        },
 
         getReaderBackgroundColor() {
             return READER_BACKGROUND_COLORS[this.backgroundMode] || READER_BACKGROUND_COLORS.black;
-        }
+        },
 
         getReaderBackgroundLabel() {
             return READER_BACKGROUND_LABELS[this.backgroundMode] || READER_BACKGROUND_LABELS.black;
-        }
+        },
 
         applyReaderBackground() {
             if (this.el.reader) this.el.reader.style.background = this.getReaderBackgroundColor();
-        }
+        },
 
         getReaderFilterCss() {
             const mode = readerPreferences.normalizeFilterMode(this.filterMode);
             return READER_FILTER_CSS[mode] || READER_FILTER_CSS.original;
-        }
+        },
 
         applyReaderFilter() {
             if (this.el.reader) {
                 this.el.reader.style.setProperty('--comic-image-filter', this.getReaderFilterCss());
             }
         }
+    };
 
-        setControlsOpacity(opacity) {
-            const hidden = opacity === '0';
-            this.el.controls.classList.toggle('is-hidden', hidden);
-            this.el.settingsControls.classList.toggle('is-hidden', hidden);
-            if (hidden) this.hideSettingsPanel();
-        }
+    function attach(reader) {
+        return Toolbox.attachMethods(reader, methods);
+    }
 
-        showControls() {
-            if (this.hideTimer) { clearTimeout(this.hideTimer); this.hideTimer = null; }
-            if (!this.controlsVisible) this.setControlsOpacity('1');
-            this.controlsVisible = true;
-        }
+    Toolbox.readerSettings = { attach, methods };
+})();
 
-        hideControls() {
-            this.controlsVisible = false;
-            this.setControlsOpacity('0');
-        }
+// ===== reader-touch.js =====
+// Bilibili Toolbox - readerTouch
+(function() {
+    'use strict';
 
-        scheduleHideControls() {
-            if (this.isSettingsPanelVisible()) return;
-            if (this.hideTimer) clearTimeout(this.hideTimer);
-            this.hideTimer = setTimeout(() => this.hideControls(), this.isTouchDevice ? 1000 : 500);
-        }
+    const Toolbox = window.BilibiliToolbox;
+    const MIN_SCALE = 0.5;
+    const SWIPE_THRESHOLD = 50;
+    const TAP_DELAY = 220;
+    const DOUBLE_TAP_DELAY = 300;
+    const TAP_ZONE_RATIO = 0.28;
+    const TOUCH_ZOOM_EPSILON = 0.01;
+    const TOUCH_EDGE_EPSILON = 0.5;
 
-        showReaderMessage(text, isError = false, duration = 2200) {
-            if (!this.el.toast) return;
-            if (this.messageTimer) clearTimeout(this.messageTimer);
-            this.el.toast.classList.toggle('is-error', isError);
-            this.el.toast.classList.add('is-visible');
-            this.el.toast.textContent = text;
-            this.messageTimer = setTimeout(() => { this.el.toast.classList.remove('is-visible'); }, duration);
-        }
+    const INITIAL_TOUCH_STATE = Object.freeze({
+        touchStartX: 0,
+        touchStartY: 0,
+        touchEndX: 0,
+        touchEndY: 0,
+        isTouchSwiping: false,
+        touchStartTime: 0,
+        touchStartedOnInteractive: false,
+        touchPanLocked: false,
+        touchDidMoveImage: false,
+        touchEdgePageStep: 0,
+        pendingTapTimer: null,
+        lastTapTime: 0,
+        lastTapX: 0,
+        lastTapY: 0,
+        isTwoFingerGesturing: false,
+        initialPinchDistance: 0,
+        initialScale: 1,
+        initialCenterX: 0,
+        initialCenterY: 0,
+        twoFingerTapCandidate: false,
+        twoFingerTapStartTime: 0,
+        twoFingerTapCenterX: 0,
+        twoFingerTapCenterY: 0,
+        lastTwoFingerTapTime: 0,
+        lastTwoFingerTapCenterX: 0,
+        lastTwoFingerTapCenterY: 0
+    });
 
+    const methods = {
         isInteractiveTouchTarget(target) {
             const el = target instanceof Element ? target : null;
             return el?.closest('button, a, input, textarea, select')
                 || this.el.controls.contains(el)
                 || this.el.settingsControls.contains(el)
                 || this.el.settingsPanel.contains(el);
-        }
-
-        handleResize() {
-            this.pageFlipToken += 1;
-            this.applyResponsiveLayout();
-        }
+        },
 
         handleTapNavigation(clientX) {
             if (!this.isTouchDevice || !this.el.reader) {
@@ -2751,13 +2799,13 @@
             }
 
             this.controlsVisible ? this.hideControls() : this.showControls();
-        }
+        },
 
         clearPendingTap() {
             if (!this.pendingTapTimer) return;
             clearTimeout(this.pendingTapTimer);
             this.pendingTapTimer = null;
-        }
+        },
 
         handleSingleFingerTap(clientX, clientY) {
             const now = Date.now();
@@ -2788,45 +2836,12 @@
                 this.pendingTapTimer = null;
                 this.handleTapNavigation(clientX);
             }, TAP_DELAY);
-        }
+        },
 
         isTouchPanMode() {
             return this.touchPanLocked && this.scale > 1 + TOUCH_ZOOM_EPSILON;
-        }
+        },
 
-        async loadExportImageSafe(src) {
-            try {
-                const res = await fetch(src);
-                if (!res.ok) return this.loadImage(src);
-                const blob = await res.blob();
-                const url = URL.createObjectURL(blob);
-                const img = await new Promise((resolve) => {
-                    const el = new Image();
-                    el.onload = () => { URL.revokeObjectURL(url); resolve(el); };
-                    el.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
-                    el.src = url;
-                });
-                return img || this.loadImage(src);
-            } catch (_) {
-                return this.loadImage(src);
-            }
-        }
-
-        getVisibleImageDescriptors() {
-            const readerRect = this.el.reader.getBoundingClientRect();
-            return Array.from(this.el.imgContainer.querySelectorAll('img'))
-                .map(img => {
-                    const rect = img.getBoundingClientRect();
-                    return { src: img.currentSrc || img.src, x: rect.left - readerRect.left, y: rect.top - readerRect.top, width: rect.width, height: rect.height };
-                })
-                .filter(item => item.src && item.width > 0 && item.height > 0);
-        }
-
-        async captureScreenshot(selectionRect, descriptors = this.getVisibleImageDescriptors()) {
-            return readerScreenshot.capture(this, selectionRect, descriptors);
-        }
-
-        // 触摸事件处理
         handleTouchStart(e) {
             if (this.isSelectingScreenshot) return;
             if (e.touches.length === 2) {
@@ -2867,7 +2882,7 @@
                     this.showControls();
                 }
             }
-        }
+        },
 
         handleTouchMove(e) {
             if (this.isSelectingScreenshot) return;
@@ -2944,7 +2959,7 @@
                     }
                 }
             }
-        }
+        },
 
         handleTouchEnd(e) {
             if (this.isSelectingScreenshot) return;
@@ -3029,11 +3044,634 @@
             this.isTouchSwiping = false;
             this.touchEdgePageStep = 0;
         }
+    };
 
-        // 5. 核心渲染逻辑（处理动画切换）
-        render(animate = true, step = 0) {
+    function attach(reader) {
+        Object.assign(reader, INITIAL_TOUCH_STATE);
+        return Toolbox.attachMethods(reader, methods);
+    }
+
+    Toolbox.readerTouch = { attach, methods };
+})();
+
+// ===== comic-reader-page-groups.js =====
+// Bilibili Toolbox - reader page grouping helpers
+(function() {
+    'use strict';
+
+    if (!window.BilibiliToolbox) throw new Error('BilibiliToolbox: shared.js not loaded');
+
+    const Toolbox = window.BilibiliToolbox;
+
+    function isWideImage(img, rotation = 0) {
+        const isRotated90or270 = rotation === 90 || rotation === 270;
+        const width = isRotated90or270 ? img.naturalHeight : img.naturalWidth;
+        const height = isRotated90or270 ? img.naturalWidth : img.naturalHeight;
+        return width > height * 1.2;
+    }
+
+    function getNextIndex({ currentIndex, total, step }) {
+        const nextIndex = currentIndex + step;
+        if (nextIndex >= 0 && nextIndex < total) return nextIndex;
+        return currentIndex + Math.sign(step);
+    }
+
+    async function getPreviousIndex({ currentIndex, viewMode, loadImage, isWideImage: isWideImageForReader }) {
+        const prevIndex = currentIndex - 1;
+        if (prevIndex <= 0) return Math.max(0, prevIndex);
+        if (viewMode === 'single') return prevIndex;
+        if (viewMode === 'double') return Math.max(0, currentIndex - 2);
+
+        const prevImg = await loadImage(prevIndex);
+        if (prevImg && isWideImageForReader(prevImg)) return prevIndex;
+        return Math.max(0, currentIndex - 2);
+    }
+
+    async function loadVisibleImages({ currentIndex, imgList, viewMode, loadImage, isWideImage: isWideImageForReader }) {
+        const first = loadImage(imgList[currentIndex]);
+        // Explicit double-page mode already needs both images; do not make the
+        // second original wait for the first one's network and decode work.
+        const second = viewMode === 'double' && currentIndex + 1 < imgList.length
+            ? loadImage(imgList[currentIndex + 1]) : null;
+        const img1 = await first;
+        if (!img1) return null;
+
+        const canUseDoubleMode = viewMode === 'double' || (viewMode === 'auto' && !isWideImageForReader(img1));
+        if (!canUseDoubleMode || currentIndex + 1 >= imgList.length) {
+            return { images: [img1], preloadStart: currentIndex + 1 };
+        }
+
+        const img2 = await (second || loadImage(imgList[currentIndex + 1]));
+        if (!img2) return { images: [img1], preloadStart: currentIndex + 1 };
+
+        const images = viewMode === 'auto' && isWideImageForReader(img2) ? [img1] : [img1, img2];
+        return { images, preloadStart: currentIndex + images.length };
+    }
+
+    Toolbox.readerPageGroups = {
+        isWideImage,
+        getNextIndex,
+        getPreviousIndex,
+        loadVisibleImages
+    };
+})();
+
+// ===== comic-reader-interactions.js =====
+// Bilibili Toolbox - reader interaction bindings
+(function() {
+    'use strict';
+
+    if (!window.BilibiliToolbox?.animations) throw new Error('BilibiliToolbox: animations.js not loaded');
+    if (!window.BilibiliToolbox?.readerPreferences) throw new Error('BilibiliToolbox: reader-preferences.js not loaded');
+
+    const Toolbox = window.BilibiliToolbox;
+    const readerPreferences = Toolbox.readerPreferences;
+    const VIEW_MODES = readerPreferences.VIEW_MODES;
+    const IMAGE_RENDER_MODES = readerPreferences.IMAGE_RENDER_MODES;
+    const BACKGROUND_MODES = readerPreferences.BACKGROUND_MODES;
+    const SCALE_STEP = 0.1;
+
+    function stop(handler) {
+        return (event) => {
+            event.stopPropagation();
+            handler(event);
+        };
+    }
+
+    function bindReaderInteractions(reader) {
+        const on = (...args) => reader.eventBag.on(...args);
+        const el = reader.el;
+
+        [el.controls, el.settingsControls, el.settingsPanel].forEach(control => {
+            on(control, 'mouseenter', () => reader.showControls());
+            on(control, 'mouseleave', () => reader.scheduleHideControls());
+        });
+        on(el.reader, 'mouseleave', () => reader.scheduleHideControls());
+
+        el.leftBtn.onclick = (event) => reader.turnPage(event, reader.isRightToLeft ? reader.lastStep : -reader.lastStep);
+        el.rightBtn.onclick = (event) => reader.turnPage(event, reader.isRightToLeft ? -reader.lastStep : reader.lastStep);
+
+        el.offsetIncBtn.onclick = (event) => reader.offsetPage(event, reader.isRightToLeft ? 1 : -1);
+        el.offsetDecBtn.onclick = (event) => reader.offsetPage(event, reader.isRightToLeft ? -1 : 1);
+
+        const preferenceButtons = [
+            [el.directionBtn, 'isRightToLeft'],
+            [el.animationBtn, 'animationMode', readerPreferences.ANIMATION_MODES],
+            [el.viewModeBtn, 'viewMode', VIEW_MODES],
+            [el.imageRenderBtn, 'imageRenderMode', IMAGE_RENDER_MODES],
+            [el.backgroundBtn, 'backgroundMode', BACKGROUND_MODES],
+            [el.tapPageBtn, 'tapPageNavigation']
+        ];
+        preferenceButtons.forEach(([button, key, modes]) => {
+            button.onclick = stop(() => {
+                if (modes) reader.cyclePreference(key, modes);
+                else reader.setPreference(key, !reader[key]);
+            });
+        });
+        on(el.filterSelect, 'change', stop(() => reader.setPreference('filterMode', el.filterSelect.value)));
+
+        el.settingsBtn.onclick = stop(() => reader.toggleSettingsPanel());
+
+        el.resetViewBtn.onclick = stop(() => reader.resetTransform());
+        el.screenshotBtn.onclick = stop(() => reader.startScreenshotSelection());
+        el.fullScreenBtn.onclick = stop(() => reader.toggleFullscreen());
+
+        el.rotateBtn.onclick = stop(() => {
+            reader.rotation = (reader.rotation + 90) % 360;
+            reader.syncRotateButton();
+            reader.render(false);
+        });
+
+        el.closeBtn.onclick = () => reader.close();
+
+        on(el.pageInfo, 'click', (event) => {
+            event.stopPropagation();
+            reader.showPageInput();
+        });
+        on(el.pageInput, 'focus', () => el.pageInput.select());
+        on(el.pageInput, 'keydown', (event) => {
+            event.stopPropagation();
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                reader.jumpToPageFromInput();
+                el.pageInput.blur();
+            } else if (event.key === 'Escape') {
+                event.preventDefault();
+                reader.hidePageInput();
+                el.pageInput.blur();
+            }
+        });
+        on(el.pageInput, 'blur', () => reader.jumpToPageFromInput());
+
+        el.selectionCancelBtn.onclick = () => reader.cancelScreenshotSelection(true);
+        el.selectionFullBtn.onclick = () => { void reader.saveFullScreenshot(); };
+        el.selectionSaveBtn.onclick = () => { void reader.saveSelectionScreenshot(); };
+        on(el.selectionOverlay, 'pointerdown', reader.handleSelectionPointerDown);
+        on(el.selectionOverlay, 'pointermove', reader.handleSelectionPointerMove);
+        on(el.selectionOverlay, 'pointerup', reader.handleSelectionPointerUp);
+        on(el.selectionOverlay, 'pointercancel', reader.handleSelectionPointerUp);
+        on(el.reader, 'pointerdown', reader.handleSettingsOutsidePointerDown, true);
+
+        on(el.imgContainer, 'wheel', (event) => {
+            event.preventDefault();
+            reader.animateTransform();
+            reader.zoomAt(event.clientX, event.clientY, reader.scale + (event.deltaY > 0 ? -SCALE_STEP : SCALE_STEP));
+        }, { passive: false });
+
+        on(el.imgContainer, 'dblclick', (event) => {
+            event.preventDefault();
+            reader.animateTransform(220);
+            if (Math.abs(reader.scale - 1) < 0.05) {
+                reader.zoomAt(event.clientX, event.clientY, reader.getDoubleClickScale());
+                return;
+            }
+            reader.resetScaleAndPan();
+        });
+
+        on(el.imgContainer, 'mousedown', (event) => {
+            if (event.button !== 0) return;
+            event.preventDefault();
+            reader.setTransformTransition('none');
+            reader.isDragging = true;
+            reader.initX = reader.translateX;
+            reader.initY = reader.translateY;
+            reader.startX = event.clientX;
+            reader.startY = event.clientY;
+            el.imgContainer.classList.add('is-grabbing');
+        });
+
+        on(el.imgContainer, 'mouseleave', () => {
+            reader.isDragging = false;
+            el.imgContainer.classList.remove('is-grabbing');
+        });
+
+        on(document, 'mousemove', reader.handleMouseMove);
+        on(document, 'mouseup', reader.handleMouseUp);
+        on(document, 'fullscreenchange', reader.handleFullscreenChange);
+        on(window, 'keydown', reader.handleKeyDown);
+        on(window, 'resize', reader.handleResize);
+
+        on(el.reader, 'touchstart', reader.handleTouchStart, { passive: false });
+        on(el.reader, 'touchmove', reader.handleTouchMove, { passive: false });
+        on(el.reader, 'touchend', reader.handleTouchEnd, { passive: false });
+        on(el.reader, 'touchcancel', reader.handleTouchEnd, { passive: false });
+        reader.showControls();
+    }
+
+    Toolbox.readerInteractions = {
+        bind: bindReaderInteractions
+    };
+})();
+
+// ===== reader-image-loader.js =====
+// Bilibili Toolbox - bounded decoded-image cache and preload scheduling
+(function() {
+    'use strict';
+    const Toolbox = window.BilibiliToolbox;
+    const PRELOAD_COUNT = 2;
+    const CACHE_PIXEL_BUDGET = 32e6;
+
+    class ReaderImageLoader {
+        constructor(getState) {
+            this.getState = getState;
+            this.imageCache = new Map();
+            this.preloadToken = 0;
+            this.preloadTimer = null;
+            this.preloadActive = null;
+        }
+
+        loadImage(src, preload = false) {
+            if (!this.getState().isOpen || !src) return Promise.resolve(null);
+            const cached = this.imageCache.get(src);
+            if (cached) {
+                if (!preload) cached.image.fetchPriority = 'high';
+                return cached.promise;
+            }
+
+            const img = new Image();
+            const entry = { image: img, pixels: 0, promise: null, settled: false, released: false };
+            img.decoding = 'async';
+            img.fetchPriority = preload ? 'low' : 'high';
+            entry.promise = new Promise((resolve) => {
+                entry.release = () => {
+                    if (entry.released) return;
+                    entry.released = true;
+                    // Detach first: browser image-loader bookkeeping can retain
+                    // an image after cancellation; it must not retain the UI tree.
+                    Toolbox.releaseImage(img);
+                    resolve(null); // Also unblock a network/decode wait on close.
+                };
+                img.onload = async () => {
+                    entry.pixels = img.naturalWidth * img.naturalHeight;
+                    // onload can precede the first decoded frame of a large original.
+                    try { await img.decode?.(); } catch (_) { /* onload already succeeded. */ }
+                    if (entry.released) return;
+                    entry.settled = true;
+                    img.onload = img.onerror = null;
+                    resolve(img);
+                    if (this.imageCache.get(src) === entry) this.pruneImageCache();
+                };
+                img.onerror = () => {
+                    if (this.imageCache.get(src) === entry) this.imageCache.delete(src);
+                    entry.release();
+                };
+            });
+            this.imageCache.set(src, entry);
+            img.src = src;
+            return entry.promise;
+        }
+
+        releaseCachedImage(src) {
+            const entry = this.imageCache.get(src);
+            this.imageCache.delete(src);
+            entry?.release();
+        }
+
+        cancelPreload() {
+            this.preloadToken += 1;
+            clearTimeout(this.preloadTimer);
+            this.preloadTimer = null;
+        }
+
+        preloadImages(startIndex = 0, delay = 800) {
+            this.cancelPreload();
+            const state = this.getState();
+            if (!state.isOpen || !Array.isArray(state.imgList) || state.imgList.length === 0) return;
+            const start = Math.max(0, Math.min(startIndex, state.imgList.length));
+            const end = Math.min(state.imgList.length, start + PRELOAD_COUNT);
+            const token = this.preloadToken;
+            let index = start;
+            const next = async () => {
+                this.preloadTimer = null;
+                // A previous navigation may still be decoding one background
+                // image. Never start a second speculative decode alongside it.
+                if (this.preloadActive) await this.preloadActive;
+                if (token !== this.preloadToken) return;
+                while (index < end && this.imageCache.has(state.imgList[index])) index += 1;
+                if (index >= end) return;
+                const estimate = Math.max(1e6, ...Array.from(this.imageCache.values(), entry => entry.pixels));
+                this.pruneImageCache(start, estimate);
+                const pixels = Array.from(this.imageCache.values()).reduce((sum, entry) => sum + entry.pixels, 0);
+                if (pixels + estimate > CACHE_PIXEL_BUDGET) return;
+                const pending = this.loadImage(state.imgList[index++], true);
+                this.preloadActive = pending;
+                await pending;
+                if (this.preloadActive === pending) this.preloadActive = null;
+                if (token === this.preloadToken && index < end) {
+                    this.preloadTimer = setTimeout(next, 120);
+                }
+            };
+            // Let the visible page and its transition finish before background
+            // decoding competes for memory bandwidth. Yield between originals.
+            this.preloadTimer = setTimeout(next, delay);
+        }
+
+        pruneImageCache(preloadStart, reservePixels = 0) {
+            const state = this.getState();
+            preloadStart ??= state.currentIndex + state.activePageCount;
+            if (!this.imageCache.size || !Array.isArray(state.imgList) || !state.imgList.length) return;
+            const keepStart = Math.max(0, state.currentIndex - PRELOAD_COUNT);
+            const keepEnd = Math.min(
+                state.imgList.length,
+                Math.max(state.currentIndex + state.activePageCount, preloadStart + PRELOAD_COUNT)
+            );
+            const keepUrls = new Set(state.imgList.slice(keepStart, keepEnd));
+            const protectedUrls = new Set(state.imgList.slice(state.currentIndex, state.currentIndex + 2));
+            for (const src of state.visibleSources) protectedUrls.add(src);
+            for (const src of this.imageCache.keys()) {
+                const entry = this.imageCache.get(src);
+                if (!protectedUrls.has(src) && (!keepUrls.has(src) || !entry.settled)) this.releaseCachedImage(src);
+            }
+            let pixels = Array.from(this.imageCache.values()).reduce((sum, entry) => sum + entry.pixels, 0);
+            const candidates = Array.from(this.imageCache.keys()).filter(src => !protectedUrls.has(src))
+                .sort((a, b) => Math.abs(state.imgList.indexOf(b) - state.currentIndex) - Math.abs(state.imgList.indexOf(a) - state.currentIndex));
+            for (const src of candidates) {
+                if (pixels + reservePixels <= CACHE_PIXEL_BUDGET) break;
+                pixels -= this.imageCache.get(src).pixels;
+                this.releaseCachedImage(src);
+            }
+        }
+
+        clear() {
+            this.cancelPreload();
+            for (const src of this.imageCache.keys()) this.releaseCachedImage(src);
+            this.preloadActive = null;
+        }
+    }
+    Toolbox.ReaderImageLoader = ReaderImageLoader;
+})();
+
+// ===== comic-reader.js =====
+// Bilibili Toolbox - Comic Reader
+(function() {
+    'use strict';
+
+    // ============ 常量定义 ============
+    const MOBILE_BREAKPOINT = 768;
+    if (!window.Shared) throw new Error('BilibiliToolbox: shared.js not loaded');
+    if (!window.BilibiliToolbox?.bilibiliDom) throw new Error('BilibiliToolbox: bilibili-dom-adapter.js not loaded');
+    if (!window.BilibiliToolbox?.storage) throw new Error('BilibiliToolbox: storage-service.js not loaded');
+    if (!window.BilibiliToolbox?.comicImages) throw new Error('BilibiliToolbox: comic-reader-images.js not loaded');
+    if (!window.BilibiliToolbox?.animations) throw new Error('BilibiliToolbox: animations.js not loaded');
+    if (!window.BilibiliToolbox?.readerPreferences) throw new Error('BilibiliToolbox: reader-preferences.js not loaded');
+    if (!window.BilibiliToolbox?.readerScreenshot) throw new Error('BilibiliToolbox: reader-screenshot.js not loaded');
+    if (!window.BilibiliToolbox?.readerTransform) throw new Error('BilibiliToolbox: reader-transform.js not loaded');
+    if (!window.BilibiliToolbox?.readerSelection) throw new Error('BilibiliToolbox: reader-selection.js not loaded');
+    if (!window.BilibiliToolbox?.readerDom) throw new Error('BilibiliToolbox: reader-dom.js not loaded');
+    if (!window.BilibiliToolbox?.readerSettings) throw new Error('BilibiliToolbox: reader-settings.js not loaded');
+    if (!window.BilibiliToolbox?.readerTouch) throw new Error('BilibiliToolbox: reader-touch.js not loaded');
+    if (!window.BilibiliToolbox?.readerPageGroups) throw new Error('BilibiliToolbox: comic-reader-page-groups.js not loaded');
+    if (!window.BilibiliToolbox?.ReaderImageLoader) throw new Error('BilibiliToolbox: reader-image-loader.js not loaded');
+    if (!window.BilibiliToolbox?.readerInteractions) throw new Error('BilibiliToolbox: comic-reader-interactions.js not loaded');
+
+    const Toolbox = window.BilibiliToolbox;
+    const Shared = window.Shared;
+    const bilibiliDom = Toolbox.bilibiliDom;
+    const animations = Toolbox.animations;
+    const comicImages = Toolbox.comicImages;
+    const readerPreferences = Toolbox.readerPreferences;
+    const readerScreenshot = Toolbox.readerScreenshot;
+    const readerTransform = Toolbox.readerTransform;
+    const readerSelection = Toolbox.readerSelection;
+    const readerDom = Toolbox.readerDom;
+    const readerPageGroups = Toolbox.readerPageGroups;
+    const readerInteractions = Toolbox.readerInteractions;
+    // ============ 漫画模式功能 ============
+
+    class BiliComicReader {
+        constructor() {
+            Object.assign(this, readerPreferences.load());
+            // 状态管理
+            this.imgList = [];
+            this.currentIndex = 0;
+            this.displayedIndex = 0;
+            this.lastStep = 2;
+            this.scale = 1;
+            this.fitScale = 1;
+            this.sharpDisplayFitRatio = 1;
+            this.contentNaturalWidth = 0;
+            this.contentNaturalHeight = 0;
+            this.translateX = 0;
+            this.translateY = 0;
+            this.hideTimer = null;
+            this.messageTimer = null;
+            this.rotation = 0;
+            this.activePageCount = 1;
+            this.controlsVisible = true;
+            this.isTouchDevice = Shared.isTouchLikeDevice();
+            this.isCompactLayout = false;
+            this.isSelectingScreenshot = false;
+            this.isDraggingSelection = false;
+            this.selectionStart = null;
+            this.selectionCurrent = null;
+            this.selectionWasControlsVisible = true;
+            this.selectionPointerId = null;
+            this.resizeDirection = null;
+            this.selectionDragMode = null;
+            this.selectionMoveStart = null;
+            this.selectionMoveRect = null;
+            this.selectionHandles = {};
+            this.pageFlipToken = 0;
+            this.transformTransitionTimer = null;
+            this.isOpen = false;
+            this.entryButton = null;
+            this.screenshotTask = null;
+            this.focusTimer = null;
+            this.resizeFrame = null;
+
+            // 拖拽状态
+            this.isDragging = false;
+            this.startX = 0;
+            this.startY = 0;
+            this.initX = 0;
+            this.initY = 0;
+
+
+            // DOM 元素引用
+            this.el = {};
+            this.imageLoader = new Toolbox.ReaderImageLoader(() => ({
+                isOpen: this.isOpen, imgList: this.imgList,
+                currentIndex: this.currentIndex, activePageCount: this.activePageCount,
+                visibleSources: Array.from(this.el.imgContainer?.querySelectorAll?.('img') || [], img => img.src)
+            }));
+            this.eventBag = null;
+
+            readerTransform.attach(this);
+            readerSelection.attach(this);
+            readerDom.attach(this);
+            Toolbox.readerSettings.attach(this);
+            Toolbox.readerTouch.attach(this);
+
+            // Mixins bind their own methods; only core handlers need binding here.
+            ['handleKeyDown', 'handleFullscreenChange', 'handleResize'].forEach(name => {
+                this[name] = this[name].bind(this);
+            });
+        }
+
+        // 1. 初始化入口按钮
+        init() {
+            if (this.entryButton) return;
+            const entryBtn = document.createElement('button');
+            this.entryButton = entryBtn;
+            entryBtn.innerHTML = '&#128214;';
+            entryBtn.className = `comic-entry-btn${this.isTouchDevice ? ' comic-entry-btn-touch' : ''}`;
+            document.body.appendChild(entryBtn);
+
+            entryBtn.onclick = () => this.start();
+        }
+
+        // 2. 启动阅读器
+        start() {
+            if (this.isOpen || !shouldInitComicReader()) return;
+            this.imgList = this.collectReaderImages();
+
+            if (this.imgList.length === 0) return alert('\u672a\u627e\u5230\u6f2b\u753b\u56fe\u7247');
+
+            this.isOpen = true;
+            this.currentIndex = 0;
+            this.displayedIndex = 0;
+            this.lastStep = 2;
+            this.isDragging = false;
+            this.animationMode = readerPreferences.normalizeAnimationMode(this.animationMode);
+
+            // 隐藏收藏夹悬浮按钮
+            const favBtn = document.getElementById('bilibili-fav-float-btn');
+            if (favBtn) favBtn.style.display = 'none';
+
+            this.eventBag = Toolbox.createEventBag();
+            this.createUI();
+            this.bindEvents();
+            this.render();
+        }
+
+        getImageCollectionOptions() {
+            return { preserveBiliSuffix: this.imageRenderMode === 'smooth' };
+        }
+
+        collectReaderImages() {
+            return comicImages.collectImages(this.getImageCollectionOptions());
+        }
+
+        refreshImagesForRenderMode() {
+            if (!this.isOpen) return;
+            const images = this.collectReaderImages();
+            if (images.length === 0) return;
+            this.imgList = images;
+            this.cancelPreload();
+            // Keep the visible originals until their replacements are decoded.
+            this.pruneImageCache();
+            this.currentIndex = Math.min(this.currentIndex, this.imgList.length - 1);
+            this.render(false);
+        }
+
+        // Bind reader controls and input events.
+        bindEvents() {
+            readerInteractions.bind(this);
+        }
+
+        toggleFullscreen() {
+            if (!this.el.reader?.requestFullscreen || document.fullscreenEnabled === false) {
+                this.showReaderMessage('\u5f53\u524d\u6d4f\u89c8\u5668\u4e0d\u652f\u6301\u7f51\u9875\u5168\u5c4f', true, 2600);
+                return;
+            }
+            if (!document.fullscreenElement) {
+                this.el.reader.requestFullscreen().catch(() => {
+                    this.showReaderMessage('\u5168\u5c4f\u5f00\u542f\u5931\u8d25\uff0c\u53ef\u80fd\u53d7\u6d4f\u89c8\u5668\u9650\u5236', true, 2600);
+                });
+            } else {
+                document.exitFullscreen().catch(() => {
+                    this.showReaderMessage('\u9000\u51fa\u5168\u5c4f\u5931\u8d25', true, 2200);
+                });
+            }
+        }
+
+        isCompactViewport() {
+            return window.innerWidth < MOBILE_BREAKPOINT || this.isTouchDevice;
+        }
+
+        applyResponsiveLayout() {
+            this.isCompactLayout = this.isCompactViewport();
+            this.el.reader.classList.toggle('reader-compact', this.isCompactLayout);
+            const images = Array.from(this.el.imgContainer?.querySelectorAll('img') || []);
+            if (images.length) this.setupImagesForRenderMode(images);
+            this.updateFitScale();
+            this.applyTransform();
+        }
+
+        setControlsOpacity(opacity) {
+            const hidden = opacity === '0';
+            this.el.controls.classList.toggle('is-hidden', hidden);
+            this.el.settingsControls.classList.toggle('is-hidden', hidden);
+            if (hidden) this.hideSettingsPanel();
+        }
+
+        showControls() {
+            if (this.hideTimer) { clearTimeout(this.hideTimer); this.hideTimer = null; }
+            if (!this.controlsVisible) this.setControlsOpacity('1');
+            this.controlsVisible = true;
+        }
+
+        hideControls() {
+            this.controlsVisible = false;
+            this.setControlsOpacity('0');
+        }
+
+        scheduleHideControls() {
+            if (this.isSettingsPanelVisible()) return;
+            if (this.hideTimer) clearTimeout(this.hideTimer);
+            this.hideTimer = setTimeout(() => this.hideControls(), this.isTouchDevice ? 1000 : 500);
+        }
+
+        showReaderMessage(text, isError = false, duration = 2200) {
+            if (!this.el.toast) return;
+            if (this.messageTimer) clearTimeout(this.messageTimer);
+            this.el.toast.classList.toggle('is-error', isError);
+            this.el.toast.classList.add('is-visible');
+            this.el.toast.textContent = text;
+            this.messageTimer = setTimeout(() => { this.el.toast.classList.remove('is-visible'); }, duration);
+        }
+
+        handleResize() {
+            if (!this.isOpen || this.resizeFrame !== null) return;
+            this.resizeFrame = window.requestAnimationFrame(() => {
+                this.resizeFrame = null;
+                if (!this.isOpen) return;
+                animations.cancel(this.el.imgContainer, true);
+                this.applyResponsiveLayout();
+            });
+        }
+
+        getVisibleImageDescriptors() {
+            const readerRect = this.el.reader.getBoundingClientRect();
+            return Array.from(this.el.imgContainer.querySelectorAll('img'))
+                .map(img => {
+                    const rect = img.getBoundingClientRect();
+                    return { src: img.currentSrc || img.src, x: rect.left - readerRect.left, y: rect.top - readerRect.top, width: rect.width, height: rect.height };
+                })
+                .filter(item => item.src && item.width > 0 && item.height > 0);
+        }
+
+        async captureScreenshot(selectionRect, descriptors = this.getVisibleImageDescriptors()) {
+            return readerScreenshot.capture(this, selectionRect, descriptors);
+        }
+
+        // Keep the current page visible until the next group is decoded.
+        async render(animate = true, step = 0) {
+            const container = this.el.imgContainer;
+            if (!container) return;
             const renderIndex = this.currentIndex;
             const transitionToken = ++this.pageFlipToken;
+            this.cancelPreload();
+            animations.cancel(container);
+            this.pruneImageCache();
+            this.applyTransform();
+            const result = await this.loadImages(renderIndex, transitionToken);
+            if (transitionToken !== this.pageFlipToken || container !== this.el.imgContainer) return;
+            if (!result) {
+                if (container.firstChild) this.currentIndex = this.displayedIndex;
+                this.showReaderMessage('图片加载失败，请重试', true);
+                return;
+            }
             animations.runTransition({
                 animate,
                 imgContainer: this.el.imgContainer,
@@ -3047,35 +3685,27 @@
                 getTransitionToken: () => this.pageFlipToken,
                 getTransform: () => this.getTransformStyle(),
                 getShiftedTransform: (screenTranslateX) => this.getTransformStyle(screenTranslateX),
-                loadImages: (index, mode, direction) => { void this.loadImages(index, mode, direction); }
+                rotation: this.rotation,
+                loadImages: (_index, mode, direction) => {
+                    if (transitionToken !== this.pageFlipToken || container !== this.el.imgContainer) return;
+                    this.commitImages(result.images, mode, direction, result.preloadStart);
+                    this.displayedIndex = renderIndex;
+                }
             });
         }
 
         // 6. 智能图片加载逻辑（决定单双页）
-        async loadImages(renderIndex, animationMode = animations.IMMEDIATE_RENDER_MODE, transitionDirection = 0) {
+        async loadImages(renderIndex, transitionToken = this.pageFlipToken) {
             if (renderIndex !== this.currentIndex) return;
-
-            this.resetPageInteractionState();
-
-            animations.resetImageContainer(
-                this.el.imgContainer,
-                animationMode,
-                transitionDirection,
-                () => this.applyTransform(),
-                () => this.getTransformStyle(),
-                (screenTranslateX) => this.getTransformStyle(screenTranslateX)
-            );
-
             const result = await readerPageGroups.loadVisibleImages({
-                currentIndex: this.currentIndex,
+                currentIndex: renderIndex,
                 imgList: this.imgList,
                 viewMode: this.viewMode,
-                loadImage: (src) => this.loadImage(src),
+                loadImage: (src) => transitionToken === this.pageFlipToken ? this.loadImage(src) : Promise.resolve(null),
                 isWideImage: (img) => this.isWideImage(img)
             });
-            if (!result || renderIndex !== this.currentIndex) return;
-
-            this.commitImages(result.images, animationMode, transitionDirection, result.preloadStart);
+            if (renderIndex !== this.currentIndex || transitionToken !== this.pageFlipToken) return;
+            return result;
         }
 
         resetPageInteractionState() {
@@ -3093,58 +3723,30 @@
             this.clearPendingTap();
         }
 
-        loadImage(src) {
-            if (!src) return Promise.resolve(null);
-            const cached = this.imageCache.get(src);
-            if (cached) return cached;
-
-            let img = null;
-            const promise = new Promise((resolve) => {
-                img = new Image();
-                img.onload = () => resolve(img);
-                img.onerror = () => {
-                    this.imageCache.delete(src);
-                    resolve(null);
-                };
-            });
-            this.imageCache.set(src, promise);
-            img.src = src;
-            return promise;
-        }
-
-        preloadImages(startIndex = 0) {
-            if (!Array.isArray(this.imgList) || this.imgList.length === 0) return;
-            const start = Math.max(0, Math.min(startIndex, this.imgList.length));
-            const end = Math.min(this.imgList.length, start + PRELOAD_COUNT);
-            for (let index = start; index < end; index += 1) {
-                void this.loadImage(this.imgList[index]);
-            }
-            this.pruneImageCache(start);
-        }
-
-        pruneImageCache(preloadStart = this.currentIndex) {
-            if (!this.imageCache.size || !Array.isArray(this.imgList)) return;
-            const keepStart = Math.max(0, this.currentIndex - PRELOAD_COUNT);
-            const keepEnd = Math.min(
-                this.imgList.length,
-                Math.max(this.currentIndex + this.activePageCount, preloadStart + PRELOAD_COUNT)
-            );
-            const keepUrls = new Set(this.imgList.slice(keepStart, keepEnd));
-            for (const src of this.imageCache.keys()) {
-                if (!keepUrls.has(src)) this.imageCache.delete(src);
-            }
-        }
+        get imageCache() { return this.imageLoader.imageCache; }
+        get preloadActive() { return this.imageLoader.preloadActive; }
+        loadImage(src, preload = false) { return this.imageLoader.loadImage(src, preload); }
+        cancelPreload() { this.imageLoader.cancelPreload(); }
+        preloadImages(start = 0, delay = 800) { this.imageLoader.preloadImages(start, delay); }
+        pruneImageCache(start, reserve) { this.imageLoader.pruneImageCache(start, reserve); }
 
         isWideImage(img) {
             return readerPageGroups.isWideImage(img, this.rotation);
         }
 
         commitImages(images, animationMode, transitionDirection = 0, preloadStart = this.currentIndex + images.length) {
-            images.forEach(img => {
-                this.el.imgContainer.appendChild(img);
-            });
+            if (this.transformTransitionTimer) clearTimeout(this.transformTransitionTimer);
+            this.transformTransitionTimer = null;
+            this.el.imgContainer.style.transition = 'none';
+            this.resetPageInteractionState();
             this.setupImagesForRenderMode(images);
             this.updateFitScale(images);
+            animations.resetImageContainer(
+                this.el.imgContainer, animationMode, transitionDirection,
+                () => this.applyTransform(), () => this.getTransformStyle(),
+                (offset) => this.getTransformStyle(offset)
+            );
+            this.el.imgContainer.replaceChildren(...images);
             this.updatePageInfo(images.length);
             animations.finishRender(
                 this.el.imgContainer,
@@ -3188,10 +3790,11 @@
             const direction = Math.sign(step);
             if (!this.canTurnPage(direction)) return;
             const requestIndex = this.currentIndex;
+            const token = this.pageFlipToken;
             const nextIndex = direction < 0
                 ? await this.getPreviousPageGroupIndex()
                 : this.getNextPageGroupIndex(step);
-            if (requestIndex !== this.currentIndex) return;
+            if (!this.isOpen || token !== this.pageFlipToken || requestIndex !== this.currentIndex) return;
             if (nextIndex < 0 || nextIndex >= this.imgList.length || nextIndex === this.currentIndex) return;
             const actualStep = nextIndex - this.currentIndex;
             this.currentIndex = nextIndex;
@@ -3212,7 +3815,11 @@
             this.el.pageInfo.classList.add('is-editing');
             this.el.pageInput.value = '';
             this.el.pageRange.textContent = ` / ${this.imgList.length}`;
-            window.setTimeout(() => this.el.pageInput.focus(), 0);
+            clearTimeout(this.focusTimer);
+            this.focusTimer = window.setTimeout(() => {
+                this.focusTimer = null;
+                this.el.pageInput?.focus();
+            }, 0);
         }
 
         hidePageInput() {
@@ -3282,6 +3889,7 @@
         }
 
         updateDirection() {
+            this.panGeometry = null;
             if (this.el.imgContainer) this.el.imgContainer.style.flexDirection = this.isRightToLeft ? 'row-reverse' : 'row';
         }
 
@@ -3289,7 +3897,7 @@
 
         handleFullscreenChange() {
             this.syncFullscreenButton();
-            this.applyResponsiveLayout();
+            this.handleResize();
         }
 
         handleKeyDown(e) {
@@ -3310,10 +3918,21 @@
 
         // 清理并关闭
         close() {
+            this.isOpen = false;
+            if (this.resizeFrame !== null) window.cancelAnimationFrame(this.resizeFrame);
+            this.resizeFrame = null;
             if (this.hideTimer) clearTimeout(this.hideTimer);
             if (this.messageTimer) clearTimeout(this.messageTimer);
+            clearTimeout(this.focusTimer);
+            this.hideTimer = this.messageTimer = this.focusTimer = null;
             this.clearPendingTap();
             this.pageFlipToken += 1;
+            this.cancelPreload();
+            animations.cancel(this.el.imgContainer);
+            this.screenshotTask?.cancel();
+            this.screenshotTask = null;
+            if (this.transformTransitionTimer) clearTimeout(this.transformTransitionTimer);
+            this.transformTransitionTimer = null;
             this.cancelScreenshotSelection(false, false);
             this.hideSettingsPanel();
 
@@ -3323,14 +3942,31 @@
             }
 
             if (this.el.reader) {
+                for (const element of Object.values(this.el)) element.onclick = null;
+                this.el.imgContainer?.replaceChildren();
                 this.el.reader.remove();
                 this.el = {};
             }
-            this.imageCache.clear();
+            this.imageLoader.clear();
+            this.imgList = [];
+            this.selectionHandles = {};
+            this.selectionStart = this.selectionCurrent = null;
+            this.selectionMoveStart = this.selectionMoveRect = null;
+            this.panGeometry = this.viewportRect = null;
+            this.isDragging = false;
 
             // 显示收藏夹悬浮按钮
             const favBtn = document.getElementById('bilibili-fav-float-btn');
             if (favBtn) favBtn.style.display = '';
+        }
+
+        destroy() {
+            this.close();
+            if (this.entryButton) {
+                this.entryButton.onclick = null;
+                this.entryButton.remove();
+                this.entryButton = null;
+            }
         }
     }
 
@@ -3477,8 +4113,12 @@
     let initialized = false;
     let originalHistoryMethods = null;
     let patchedHistoryMethods = null;
+    let lastUrl = null;
 
     function notifyUrlChange() {
+        const url = window.location.href;
+        if (!initialized || url === lastUrl) return;
+        lastUrl = url;
         window.dispatchEvent(new Event(URL_CHANGE_EVENT));
     }
 
@@ -3486,6 +4126,7 @@
         if (initialized) return;
         window.__bilibiliToolboxUrlChangePatched = true;
         initialized = true;
+        lastUrl = window.location.href;
         originalHistoryMethods = {};
         patchedHistoryMethods = {};
 
@@ -3504,18 +4145,23 @@
 
         window.addEventListener('popstate', notifyUrlChange);
         window.addEventListener('hashchange', notifyUrlChange);
+        // Native navigation events cross extension isolated worlds; patching
+        // this world's history alone cannot observe the site's own SPA calls.
+        window.navigation?.addEventListener('currententrychange', notifyUrlChange);
     }
 
     function destroyUrlBridge() {
         if (!initialized) return;
         window.removeEventListener('popstate', notifyUrlChange);
         window.removeEventListener('hashchange', notifyUrlChange);
+        window.navigation?.removeEventListener('currententrychange', notifyUrlChange);
         Object.entries(originalHistoryMethods || {}).forEach(([methodName, original]) => {
             if (history[methodName] === patchedHistoryMethods?.[methodName]) {
                 history[methodName] = original;
             }
         });
         initialized = false;
+        lastUrl = null;
         originalHistoryMethods = null;
         patchedHistoryMethods = null;
         window.__bilibiliToolboxUrlChangePatched = false;
@@ -3862,14 +4508,15 @@
         '\u8f6c\u53d1\u4e86\u4e13\u680f',
         '\u8f6c\u53d1\u4e86'
     ];
-    const DYNAMIC_FILTER_BURST_DELAYS = [0, 80, 250, 600, 1200, 2500];
 
     let dataProvider = () => Shared.createDefaultData();
     let onRenderSettings = () => {};
     let onSyncFloatButton = () => {};
     let dynamicFilterObserver = null;
     let debounceFilterTimer = 0;
-    let dynamicFilterBurstTimers = [];
+    let active = false;
+    let fullScanPending = false;
+    const pendingCards = new Set();
     let keywordFilterEnabled = false;
     let keywordFilterText = '';
 
@@ -3921,7 +4568,8 @@
     }
 
     function getDynamicCardText(card) {
-        return normalizeDynamicText(card.innerText || card.textContent || '');
+        // textContent also works for previously hidden cards without forcing layout.
+        return normalizeDynamicText(card.textContent || '');
     }
 
     function getKeywordFilterState() {
@@ -3944,9 +4592,7 @@
         if (typeof state.text === 'string') {
             keywordFilterText = state.text;
         }
-        onRenderSettings();
-        onSyncFloatButton();
-        scheduleDynamicFilterApply(0);
+        syncDynamicFilter();
     }
 
     function setDynamicFilterActive(active) {
@@ -3964,7 +4610,7 @@
         card.querySelectorAll(bilibiliDom.DYNAMIC_CARD_SELECTOR).forEach(child => child.classList.add(FILTER_READY_CLASS));
     }
 
-    function applyDynamicFilter() {
+    function applyDynamicFilter(cards = getDynamicCardElements()) {
         const dynamicPage = isSpaceDynamicPage();
         const shouldHideForward = dynamicPage
             && Boolean(getSettingValue(TOOLBOX_SETTINGS.hideForwardDynamics, false));
@@ -3978,7 +4624,7 @@
         }
 
         setDynamicFilterActive(true);
-        getDynamicCardElements().forEach(card => {
+        cards.filter(card => card.isConnected !== false).forEach(card => {
             const hideForward = shouldHideForward && isForwardDynamic(card);
             const hideKeyword = shouldFilterKeyword && !getDynamicCardText(card).includes(keywordState.normalizedText);
             card.classList.toggle(HIDDEN_FORWARD_CLASS, hideForward || hideKeyword);
@@ -3989,42 +4635,82 @@
     function runDynamicFilterNow() {
         if (debounceFilterTimer) clearTimeout(debounceFilterTimer);
         debounceFilterTimer = 0;
-        applyDynamicFilter();
+        if (!active) return;
+        const cards = fullScanPending ? getDynamicCardElements() : [...pendingCards];
+        fullScanPending = false;
+        pendingCards.clear();
+        applyDynamicFilter(cards);
     }
 
-    function scheduleDynamicFilterApply(delay = 80) {
+    function schedulePending(delay = 80) {
+        if (!active) return;
         if (delay <= 0) {
             runDynamicFilterNow();
             return;
         }
 
+        if (!debounceFilterTimer) debounceFilterTimer = window.setTimeout(runDynamicFilterNow, delay);
+    }
+
+    function scheduleDynamicFilterApply(delay = 80) {
+        fullScanPending = true;
+        schedulePending(delay);
+    }
+
+    function queueCard(node) {
+        const element = node?.nodeType === 1 ? node : node?.parentElement;
+        let card = element?.closest?.(bilibiliDom.DYNAMIC_CARD_SELECTOR);
+        if (!card) return;
+        for (let parent = card.parentElement?.closest(bilibiliDom.DYNAMIC_CARD_SELECTOR); parent;
+            parent = card.parentElement?.closest(bilibiliDom.DYNAMIC_CARD_SELECTOR)) card = parent;
+        pendingCards.add(card);
+    }
+
+    function handleMutations(mutations) {
+        for (const mutation of mutations) {
+            if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                const relevantClasses = value => String(value || '').split(/\s+/)
+                    .filter(name => name && name !== FILTER_READY_CLASS && name !== HIDDEN_FORWARD_CLASS).sort().join(' ');
+                if (relevantClasses(mutation.oldValue) === relevantClasses(mutation.target.className)) continue;
+            }
+            queueCard(mutation.target);
+            for (const node of mutation.addedNodes || []) {
+                queueCard(node);
+                node.querySelectorAll?.(bilibiliDom.DYNAMIC_CARD_SELECTOR).forEach(queueCard);
+            }
+        }
+        if (pendingCards.size) schedulePending();
+    }
+
+    function stopObserving() {
+        dynamicFilterObserver?.disconnect();
+        dynamicFilterObserver = null;
         if (debounceFilterTimer) clearTimeout(debounceFilterTimer);
-        debounceFilterTimer = window.setTimeout(() => {
-            debounceFilterTimer = 0;
-            applyDynamicFilter();
-        }, delay);
-    }
-
-    function clearDynamicFilterBurstTimers() {
-        dynamicFilterBurstTimers.forEach(timer => clearTimeout(timer));
-        dynamicFilterBurstTimers = [];
-    }
-
-    function scheduleDynamicFilterBurst() {
-        clearDynamicFilterBurstTimers();
-        DYNAMIC_FILTER_BURST_DELAYS.forEach(delay => {
-            const timer = window.setTimeout(() => {
-                dynamicFilterBurstTimers = dynamicFilterBurstTimers.filter(item => item !== timer);
-                runDynamicFilterNow();
-            }, delay);
-            dynamicFilterBurstTimers.push(timer);
-        });
+        debounceFilterTimer = 0;
+        fullScanPending = false;
+        pendingCards.clear();
     }
 
     function syncDynamicFilter() {
         onRenderSettings();
         onSyncFloatButton();
-        scheduleDynamicFilterBurst();
+        const enabled = isSpaceDynamicPage() &&
+            (Boolean(getSettingValue(TOOLBOX_SETTINGS.hideForwardDynamics, false)) || getKeywordFilterState().isActive);
+        if (!enabled) {
+            stopObserving();
+            if (active) { setDynamicFilterActive(false); clearDynamicFilterCardClasses(); }
+            active = false;
+            return;
+        }
+        active = true;
+        if (!dynamicFilterObserver && document.body) {
+            dynamicFilterObserver = new MutationObserver(handleMutations);
+            dynamicFilterObserver.observe(document.body, {
+                childList: true, subtree: true, characterData: true,
+                attributes: true, attributeOldValue: true, attributeFilter: ['class', 'data-type', 'data-dyn-type']
+            });
+        }
+        scheduleDynamicFilterApply(0);
     }
 
     function initDynamicFilter(options = {}) {
@@ -4032,34 +4718,18 @@
         onRenderSettings = options.renderSettings || onRenderSettings;
         onSyncFloatButton = options.syncFloatButton || onSyncFloatButton;
 
-        if (!dynamicFilterObserver && document.body) {
-            dynamicFilterObserver = new MutationObserver((mutations) => {
-                if (mutations.some(mutation => mutation.addedNodes.length
-                    || mutation.removedNodes.length)) {
-                    scheduleDynamicFilterApply();
-                }
-            });
-            dynamicFilterObserver.observe(document.body, {
-                childList: true,
-                subtree: true
-            });
-        }
-
-        scheduleDynamicFilterBurst();
+        syncDynamicFilter();
     }
 
     function destroyDynamicFilter() {
-        if (dynamicFilterObserver) dynamicFilterObserver.disconnect();
-        if (debounceFilterTimer) clearTimeout(debounceFilterTimer);
-        clearDynamicFilterBurstTimers();
-        dynamicFilterObserver = null;
-        debounceFilterTimer = 0;
+        stopObserving();
+        if (active) { setDynamicFilterActive(false); clearDynamicFilterCardClasses(); }
+        active = false;
         keywordFilterEnabled = false;
         keywordFilterText = '';
         onRenderSettings = () => {};
         onSyncFloatButton = () => {};
-        setDynamicFilterActive(false);
-        clearDynamicFilterCardClasses();
+        dataProvider = () => Shared.createDefaultData();
     }
 
     Toolbox.dynamicFilter = {
@@ -4714,6 +5384,8 @@
         };
     }
 
+    const listSignatures = new WeakMap();
+
     function renderFavoriteList() {
         const listEl = document.querySelector('.bilibili-fav-list');
         if (!listEl) return;
@@ -4725,6 +5397,9 @@
         document.getElementById('bilibili-fav-panel')?.style.setProperty('--bilibili-fav-columns', String(columns));
 
         const favorites = dataProvider().favorites || [];
+        const signature = JSON.stringify(favorites);
+        if (listSignatures.get(listEl) === signature) return;
+        listSignatures.set(listEl, signature);
         if (favorites.length === 0) {
             listEl.innerHTML = '<div class="bilibili-fav-empty">\u6682\u65e0\u6536\u85cf<br>\u70b9\u51fb\u4e0b\u65b9\u6309\u94ae\u6dfb\u52a0</div>';
             return;
@@ -4831,20 +5506,12 @@
 (function() {
     'use strict';
 
-    if (!window.Shared) throw new Error('BilibiliToolbox: shared.js not loaded');
-    if (!window.BilibiliToolbox?.storage) throw new Error('BilibiliToolbox: storage-service.js not loaded');
-    if (!window.BilibiliToolbox?.favorites) throw new Error('BilibiliToolbox: favorites service not loaded');
-    if (!window.BilibiliToolbox?.comicImages) throw new Error('BilibiliToolbox: comic-reader-images.js not loaded');
-    if (!window.BilibiliToolbox?.animations) throw new Error('BilibiliToolbox: animations.js not loaded');
-    if (!window.BilibiliToolbox?.reader) throw new Error('BilibiliToolbox: comic-reader.js not loaded');
-    if (!window.BilibiliToolbox?.pageInfo) throw new Error('BilibiliToolbox: content-page-info.js not loaded');
-    if (!window.BilibiliToolbox?.url) throw new Error('BilibiliToolbox: content-url.js not loaded');
-    if (!window.BilibiliToolbox?.spaceOpusTabs) throw new Error('BilibiliToolbox: space-opus-tabs.js not loaded');
-    if (!window.BilibiliToolbox?.dynamicFilter) throw new Error('BilibiliToolbox: dynamic-filter.js not loaded');
-    if (!window.BilibiliToolbox?.settingsPopoverUi) throw new Error('BilibiliToolbox: settings-popover-ui.js not loaded');
-    if (!window.BilibiliToolbox?.favoritesUi) throw new Error('BilibiliToolbox: favorites-ui.js not loaded');
-
     const Toolbox = window.BilibiliToolbox;
+    if (!window.Shared) throw new Error('BilibiliToolbox: shared.js not loaded');
+    for (const service of ['storage', 'favorites', 'comicImages', 'animations', 'reader',
+        'pageInfo', 'url', 'spaceOpusTabs', 'dynamicFilter', 'settingsPopoverUi', 'favoritesUi']) {
+        if (!Toolbox?.[service]) throw new Error(`BilibiliToolbox: ${service} service not loaded`);
+    }
     const storage = Toolbox.storage;
     let toolboxData = window.Shared.createDefaultData();
     let unsubscribeStorage = null;
@@ -4852,11 +5519,21 @@
     let initialized = false;
     let messageHandler = null;
     let readerInstance = null;
+    let readerPage = null;
+    let lifecycleToken = 0;
 
     function syncAll(data) {
+        const previous = toolboxData;
         toolboxData = window.Shared.normalizeToolboxData(data);
-        Toolbox.favoritesUi.sync();
-        Toolbox.dynamicFilter.sync();
+        const columnsChanged = previous.settings.favoriteColumns !== toolboxData.settings.favoriteColumns;
+        if (columnsChanged || JSON.stringify(previous.favorites) !== JSON.stringify(toolboxData.favorites)) {
+            Toolbox.favoritesUi.sync();
+        }
+        if (previous.settings.hideForwardDynamics !== toolboxData.settings.hideForwardDynamics) {
+            Toolbox.dynamicFilter.sync();
+        } else if (columnsChanged) {
+            Toolbox.settingsPopoverUi.render();
+        }
     }
 
     function setupMessageBridge() {
@@ -4872,7 +5549,9 @@
     async function init() {
         if (initialized) return;
         initialized = true;
+        const token = ++lifecycleToken;
         toolboxData = await storage.init();
+        if (!initialized || token !== lifecycleToken) return;
         unsubscribeStorage = storage.onChanged(syncAll);
 
         Toolbox.url.init();
@@ -4899,28 +5578,47 @@
             settingsUi: Toolbox.settingsPopoverUi
         });
         window.addEventListener(Toolbox.url.URL_CHANGE_EVENT, handleUrlChange);
+        window.addEventListener('pagehide', handlePageHide);
         setupMessageBridge();
 
-        if (Toolbox.reader.shouldInitComicReader()) {
+        syncReaderPage();
+    }
+
+    function syncReaderPage() {
+        const url = new URL(window.location.href);
+        const page = Toolbox.reader.shouldInitComicReader() ? url.origin + url.pathname : null;
+        if (page === readerPage) return;
+        readerInstance?.destroy();
+        readerInstance = null;
+        readerPage = page;
+        if (page) {
             readerInstance = new Toolbox.reader.BiliComicReader();
             readerInstance.init();
         }
     }
 
+    function handlePageHide() {
+        readerInstance?.close();
+    }
+
     function handleUrlChange() {
+        syncReaderPage();
         Toolbox.spaceOpusTabs.sync();
         Toolbox.dynamicFilter.sync();
         Toolbox.favoritesUi.syncPageMode();
     }
 
     function destroy() {
+        lifecycleToken += 1;
         if (unsubscribeStorage) unsubscribeStorage();
         unsubscribeStorage = null;
         if (messageHandler) chrome.runtime.onMessage.removeListener(messageHandler);
         messageHandler = null;
         window.removeEventListener(Toolbox.url.URL_CHANGE_EVENT, handleUrlChange);
-        readerInstance?.close?.();
+        window.removeEventListener('pagehide', handlePageHide);
+        readerInstance?.destroy();
         readerInstance = null;
+        readerPage = null;
         Toolbox.spaceOpusTabs.destroy();
         Toolbox.settingsPopoverUi.destroy();
         if (settingsEventBag) settingsEventBag.cleanup();

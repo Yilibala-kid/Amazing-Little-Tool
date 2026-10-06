@@ -178,7 +178,14 @@
     const $src = (selector) => document.querySelector(selector)?.src || '';
 
     const Toolbox = {};
-
+    const EMPTY_IMAGE = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+    Toolbox.releaseImage = image => {
+        image.onload = image.onerror = null;
+        image.remove?.();
+        // Drop the original request/decoded frame without leaving a broken
+        // image. Chromium can retain broken-image placeholder layout listeners.
+        image.src = EMPTY_IMAGE;
+    };
     function createEventBag() {
         const cleanupFns = [];
         return {
@@ -207,6 +214,12 @@
     window.BilibiliToolbox = Toolbox;
     Toolbox.settings = TOOLBOX_SETTINGS;
     Toolbox.createEventBag = createEventBag;
+    Toolbox.attachMethods = (target, methods) => {
+        Object.entries(methods).forEach(([name, method]) => {
+            target[name] = method.bind(target);
+        });
+        return target;
+    };
 
     // Expose API for extension scripts.
     window.Shared = {

@@ -80,6 +80,9 @@
 
         startScreenshotSelection() {
             if (this.isSelectingScreenshot) return;
+            Toolbox.animations?.cancel(this.el.imgContainer, true);
+            this.currentIndex = this.displayedIndex ?? this.currentIndex;
+            this.applyTransform();
             this.isSelectingScreenshot = true;
             this.pageFlipToken += 1;
             this.selectionWasControlsVisible = this.controlsVisible;
@@ -232,10 +235,7 @@
     };
 
     function attach(reader) {
-        Object.entries(methods).forEach(([name, method]) => {
-            reader[name] = method.bind(reader);
-        });
-        return reader;
+        return Toolbox.attachMethods(reader, methods);
     }
 
     Toolbox.readerSelection = {

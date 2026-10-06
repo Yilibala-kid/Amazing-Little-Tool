@@ -9,8 +9,12 @@
     let initialized = false;
     let originalHistoryMethods = null;
     let patchedHistoryMethods = null;
+    let lastUrl = null;
 
     function notifyUrlChange() {
+        const url = window.location.href;
+        if (!initialized || url === lastUrl) return;
+        lastUrl = url;
         window.dispatchEvent(new Event(URL_CHANGE_EVENT));
     }
 
@@ -18,6 +22,7 @@
         if (initialized) return;
         window.__bilibiliToolboxUrlChangePatched = true;
         initialized = true;
+        lastUrl = window.location.href;
         originalHistoryMethods = {};
         patchedHistoryMethods = {};
 
@@ -36,18 +41,23 @@
 
         window.addEventListener('popstate', notifyUrlChange);
         window.addEventListener('hashchange', notifyUrlChange);
+        // Native navigation events cross extension isolated worlds; patching
+        // this world's history alone cannot observe the site's own SPA calls.
+        window.navigation?.addEventListener('currententrychange', notifyUrlChange);
     }
 
     function destroyUrlBridge() {
         if (!initialized) return;
         window.removeEventListener('popstate', notifyUrlChange);
         window.removeEventListener('hashchange', notifyUrlChange);
+        window.navigation?.removeEventListener('currententrychange', notifyUrlChange);
         Object.entries(originalHistoryMethods || {}).forEach(([methodName, original]) => {
             if (history[methodName] === patchedHistoryMethods?.[methodName]) {
                 history[methodName] = original;
             }
         });
         initialized = false;
+        lastUrl = null;
         originalHistoryMethods = null;
         patchedHistoryMethods = null;
         window.__bilibiliToolboxUrlChangePatched = false;

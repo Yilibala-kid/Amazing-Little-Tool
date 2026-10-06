@@ -3,26 +3,10 @@
  * Released under GPL-2.0 License
 */
 
-// 全局变量
-var g_uiStrings = null;       // UI 字符串（根据 PS 语言环境选择）
-var g_uiOptions = null;       // 用户选项
+(function() {
+var strings = getStrings();
 
-/**
- * 主入口
- */
-function main() {
-    // 初始化
-    initStrings();
-    createUI();
-}
-
-// 入口
-main();
-
-/**
- * 初始化中英文字符串
- */
-function initStrings() {
+function getStrings() {
     // 中文
     var zh = {
         WINDOW_TITLE: "PSD to PNG 批量导出工具",
@@ -30,15 +14,13 @@ function initStrings() {
         BUTTON_START: "开始导出",
         BUTTON_CANCEL: "取消",
         CHECKBOX_KEEP_VISIBILITY: "保留图层可见性",
-        CHECKBOX_ORIGINAL_QUALITY: "原图质量输出",
         CHECKBOX_OPEN_FOLDER: "导出完成后打开输出文件夹",
         LABEL_FOLDER: "文件夹:",
         LABEL_STATUS: "状态:",
         MSG_NO_PSD_FOUND: "未找到 PSD 文件",
         MSG_EXPORT_COMPLETE: "导出完成！共处理 %d 个文件",
         MSG_EXPORT_FAILED: "部分文件导出失败",
-        MSG_SELECT_FOLDER: "请先选择文件夹",
-        ERROR_OPEN_PSD: "无法打开: %s",
+        MSG_SELECT_FOLDER: "请先选择文件夹"
     };
 
     // 英文
@@ -48,26 +30,23 @@ function initStrings() {
         BUTTON_START: "Start Export",
         BUTTON_CANCEL: "Cancel",
         CHECKBOX_KEEP_VISIBILITY: "Keep Layer Visibility",
-        CHECKBOX_ORIGINAL_QUALITY: "Original Quality Export",
         CHECKBOX_OPEN_FOLDER: "Open Output Folder After Export",
         LABEL_FOLDER: "Folder:",
         LABEL_STATUS: "Status:",
         MSG_NO_PSD_FOUND: "No PSD files found",
         MSG_EXPORT_COMPLETE: "Export complete! Processed %d files",
         MSG_EXPORT_FAILED: "Some files failed to export",
-        MSG_SELECT_FOLDER: "Please select a folder first",
-        ERROR_OPEN_PSD: "Cannot open: %s",
+        MSG_SELECT_FOLDER: "Please select a folder first"
     };
 
     // 根据 PS 语言环境选择
-    g_uiStrings = (app.locale === "zh_CN") ? zh : en;
+    return (app.locale === "zh_CN") ? zh : en;
 }
 
 /**
  * 创建 UI 对话框
  */
 function createUI() {
-    var strings = g_uiStrings;
 
     // 创建窗口
     var win = new Window("dialog", strings.WINDOW_TITLE, [0, 0, 400, 220]);
@@ -89,10 +68,7 @@ function createUI() {
     win.chkKeepVisibility = win.optionsGroup.add("checkbox", [0, 0, 360, 20], strings.CHECKBOX_KEEP_VISIBILITY);
     win.chkKeepVisibility.value = true;
 
-    win.chkOriginalQuality = win.optionsGroup.add("checkbox", [0, 25, 360, 20], strings.CHECKBOX_ORIGINAL_QUALITY);
-    win.chkOriginalQuality.value = true;
-
-    win.chkOpenFolder = win.optionsGroup.add("checkbox", [0, 50, 360, 20], strings.CHECKBOX_OPEN_FOLDER);
+    win.chkOpenFolder = win.optionsGroup.add("checkbox", [0, 25, 360, 20], strings.CHECKBOX_OPEN_FOLDER);
     win.chkOpenFolder.value = false;
 
     // 按钮区域
@@ -116,26 +92,17 @@ function createUI() {
 function selectFolder(win) {
     var folder = Folder.selectDialog();
     if (folder !== null) {
+        win.selectedFolder = folder;
         win.txtFolder.text = folder.fsName;
-        g_uiOptions = {
-            folder: folder,
-            keepVisibility: win.chkKeepVisibility.value,
-            originalQuality: win.chkOriginalQuality.value,
-            openFolder: win.chkOpenFolder.value
-        };
     }
 }
 
-function syncUIOptions(win) {
-    if (!g_uiOptions) {
-        g_uiOptions = {};
-    }
-
-    g_uiOptions.keepVisibility = win.chkKeepVisibility.value;
-    g_uiOptions.originalQuality = win.chkOriginalQuality.value;
-    g_uiOptions.openFolder = win.chkOpenFolder.value;
-
-    return g_uiOptions;
+function readUIOptions(win) {
+    return {
+        folder: win.selectedFolder,
+        keepVisibility: win.chkKeepVisibility.value,
+        openFolder: win.chkOpenFolder.value
+    };
 }
 
 function isPSDFile(file) {
@@ -149,18 +116,14 @@ function isPSDFile(file) {
  */
 function scanPSDFiles(folder) {
     var psdFiles = [];
-    var files = folder.getFiles();
-
-    for (var i = 0; i < files.length; i++) {
-        var file = files[i];
-        if (file instanceof Folder) {
-            // 递归处理子文件夹
-            psdFiles = psdFiles.concat(scanPSDFiles(file));
-        } else if (isPSDFile(file)) {
-            psdFiles.push(file);
+    var pending = [folder];
+    while (pending.length) {
+        var files = pending.pop().getFiles();
+        for (var i = 0; i < files.length; i++) {
+            if (files[i] instanceof Folder) pending.push(files[i]);
+            else if (isPSDFile(files[i])) psdFiles.push(files[i]);
         }
     }
-
     return psdFiles;
 }
 
@@ -169,29 +132,74 @@ function scanPSDFiles(folder) {
  * 导出设置: sRGB, 100%缩放, PNG格式
  * @param {File} targetFile 目标 PNG 文件
  */
-function exportDocumentAsPNG(targetFile) {
-    var doc = app.activeDocument;
-
-    // 记录原始设置
-    var originalDialogMode = app.displayDialogs;
-    app.displayDialogs = DialogModes.NO;
-
+function exportDocumentAsPNG(doc, targetFile) {
     try {
-        // 尝试转换为 sRGB 色彩空间（如果需要）
+        doc.convertProfile("sRGB IEC61966-2.1", Intent.RELATIVECOLORIMETRIC, true);
+    } catch (error) {
+        // Documents already in sRGB can reject redundant profile conversion.
+    }
+    var pngOptions = new PNGSaveOptions();
+    pngOptions.compression = 9;
+    doc.saveAs(targetFile, pngOptions, true, Extension.LOWERCASE);
+}
+
+function showAllLayers(layers) {
+    for (var i = 0; i < layers.length; i++) {
+        layers[i].visible = true;
+        if (layers[i].typename === "LayerSet") showAllLayers(layers[i].layers);
+    }
+}
+
+function findOpenDocument(file) {
+    for (var i = 0; i < app.documents.length; i++) {
         try {
-            doc.convertProfile("sRGB IEC61966-2.1", Intent.RELATIVECOLORIMETRIC, true);
-        } catch (e) {
-            // 如果已经是 sRGB 或没有颜色管理，可能报错，忽略继续
-        }
+            if (app.documents[i].fullName.fsName === file.fsName) return app.documents[i];
+        } catch (error) { /* Unsaved documents have no fullName. */ }
+    }
+    return null;
+}
 
-        // 使用 Save As 方式导出 PNG（更可靠）
-        var pngSaveOptions = new PNGSaveOptions();
-        pngSaveOptions.compression = 9;  // 最大压缩
+function closeWithoutSaving(doc) {
+    if (!doc) return;
+    try { doc.close(SaveOptions.DONOTSAVECHANGES); } catch (error) {}
+}
 
-        doc.saveAs(targetFile, pngSaveOptions, true, Extension.LOWERCASE);
-
+function exportFile(file, options) {
+    var source = findOpenDocument(file);
+    var owned = !source;
+    var working = null;
+    try {
+        if (!source) source = app.open(file);
+        // Never change or close a document that the user already has open.
+        working = source.duplicate();
+        if (!options.keepVisibility) showAllLayers(working.layers);
+        var target = new File(file.parent.fsName + "/" + file.name.replace(/\.psd$/i, ".png"));
+        exportDocumentAsPNG(working, target);
     } finally {
-        app.displayDialogs = originalDialogMode;
+        closeWithoutSaving(working);
+        if (owned) closeWithoutSaving(source);
+    }
+}
+
+function exportBatch(files, options, onProgress) {
+    var originalDialogs = app.displayDialogs;
+    var originalDocument = app.documents.length ? app.activeDocument : null;
+    var result = { successCount: 0, failedFiles: [] };
+    app.displayDialogs = DialogModes.NO;
+    try {
+        for (var i = 0; i < files.length; i++) {
+            try {
+                exportFile(files[i], options);
+                result.successCount++;
+            } catch (error) {
+                result.failedFiles.push(files[i].fsName + " - " + error.message);
+            }
+            if (onProgress) onProgress(i + 1, files.length);
+        }
+        return result;
+    } finally {
+        app.displayDialogs = originalDialogs;
+        if (originalDocument) app.activeDocument = originalDocument;
     }
 }
 
@@ -206,7 +214,7 @@ function createProgressWindow(title, message) {
     progressWin.center();
 
     progressWin.status = progressWin.add("statictext", [20, 20, 380, 30], message);
-    progressWin.bar = progressWin.add("progressbar", [20, 50, 360, 20], 0, 100);
+    progressWin.bar = progressWin.add("progressbar", [20, 50, 380, 70], 0, 100);
 
     return progressWin;
 }
@@ -215,84 +223,39 @@ function createProgressWindow(title, message) {
  * 开始导出
  */
 function startExport(win) {
-    var strings = g_uiStrings;
-    var progressWin = null;
+    var options = readUIOptions(win);
+    if (!options.folder) { alert(strings.MSG_SELECT_FOLDER); return; }
+    var files;
+    try { files = scanPSDFiles(options.folder); }
+    catch (error) { alert(error.message); return; }
+    if (!files.length) { alert(strings.MSG_NO_PSD_FOUND); return; }
 
-    syncUIOptions(win);
-
-    if (!g_uiOptions || !g_uiOptions.folder) {
-        alert(strings.MSG_SELECT_FOLDER);
-        return;
-    }
-
-    var folder = g_uiOptions.folder;
-    var psdFiles = scanPSDFiles(folder);
-
-    if (psdFiles.length === 0) {
-        alert(strings.MSG_NO_PSD_FOUND);
-        return;
-    }
-
-    // 关闭对话框
     win.close();
-
-    // 创建进度窗口（需要短暂延迟确保主窗口完全关闭）
-    $.sleep(100);
-    var progressWin = createProgressWindow(strings.WINDOW_TITLE, "准备导出...");
-
-    progressWin.show();
-
-    var successCount = 0;
-    var failCount = 0;
-    var failedFiles = [];
-
-    for (var i = 0; i < psdFiles.length; i++) {
-        // 更新进度
-        var progress = Math.round(((i + 1) / psdFiles.length) * 100);
-        progressWin.bar.value = progress;
-        progressWin.status.text = strings.LABEL_STATUS + " " + (i + 1) + "/" + psdFiles.length;
-
-        var psdFile = psdFiles[i];
-        var pngFile = new File(psdFile.parent.fsName + "/" + psdFile.name.replace(/\.psd$/i, ".png"));
-        var doc = null;
-
-        try {
-            doc = app.open(psdFile);
-            exportDocumentAsPNG(pngFile);
-            successCount++;
-        } catch (e) {
-            failCount++;
-            failedFiles.push(psdFile.name + " - " + e.message);
-        } finally {
-            if (doc !== null) {
-                try {
-                    doc.close(SaveOptions.DONOTSAVECHANGES);
-                } catch (closeError) {
-                }
-            }
-        }
+    var progressWin = createProgressWindow(strings.WINDOW_TITLE, strings.LABEL_STATUS);
+    var result;
+    try {
+        progressWin.show();
+        result = exportBatch(files, options, function(done, total) {
+            progressWin.bar.value = Math.round(done / total * 100);
+            progressWin.status.text = strings.LABEL_STATUS + " " + done + "/" + total;
+            progressWin.update();
+        });
+    } catch (error) {
+        alert(error.message);
+        return;
+    } finally {
+        progressWin.close();
     }
-
-    // 完成进度
-    progressWin.bar.value = 100;
-    progressWin.status.text = strings.MSG_EXPORT_COMPLETE.replace("%d", successCount);
-
-    // 延迟关闭进度窗口
-    $.sleep(500);
-    progressWin.close();
-
-    // 显示结果
-    var message = strings.MSG_EXPORT_COMPLETE.replace("%d", successCount);
-    if (failCount > 0) {
-        message += "\n" + strings.MSG_EXPORT_FAILED + "\n" + failedFiles.join("\n");
-    }
-
+    var message = strings.MSG_EXPORT_COMPLETE.replace("%d", result.successCount);
+    if (result.failedFiles.length)
+        message += "\n" + strings.MSG_EXPORT_FAILED + "\n" + result.failedFiles.join("\n");
     alert(message);
-
-    if (g_uiOptions.openFolder && psdFiles.length > 0) {
-        var outputFolder = new Folder(psdFiles[0].parent.fsName);
-        outputFolder.execute();
-    }
+    if (options.openFolder) options.folder.execute();
 }
 
-// ==================== 工具函数 ====================
+if (typeof module !== "undefined" && module.exports) {
+    module.exports = { scanPSDFiles: scanPSDFiles, exportBatch: exportBatch };
+} else {
+    createUI();
+}
+})();

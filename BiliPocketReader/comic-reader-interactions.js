@@ -6,7 +6,6 @@
     if (!window.BilibiliToolbox?.readerPreferences) throw new Error('BilibiliToolbox: reader-preferences.js not loaded');
 
     const Toolbox = window.BilibiliToolbox;
-    const animations = Toolbox.animations;
     const readerPreferences = Toolbox.readerPreferences;
     const VIEW_MODES = readerPreferences.VIEW_MODES;
     const IMAGE_RENDER_MODES = readerPreferences.IMAGE_RENDER_MODES;
@@ -24,12 +23,10 @@
         const on = (...args) => reader.eventBag.on(...args);
         const el = reader.el;
 
-        on(el.controls, 'mouseenter', () => reader.showControls());
-        on(el.settingsControls, 'mouseenter', () => reader.showControls());
-        on(el.settingsPanel, 'mouseenter', () => reader.showControls());
-        on(el.controls, 'mouseleave', () => reader.scheduleHideControls());
-        on(el.settingsControls, 'mouseleave', () => reader.scheduleHideControls());
-        on(el.settingsPanel, 'mouseleave', () => reader.scheduleHideControls());
+        [el.controls, el.settingsControls, el.settingsPanel].forEach(control => {
+            on(control, 'mouseenter', () => reader.showControls());
+            on(control, 'mouseleave', () => reader.scheduleHideControls());
+        });
         on(el.reader, 'mouseleave', () => reader.scheduleHideControls());
 
         el.leftBtn.onclick = (event) => reader.turnPage(event, reader.isRightToLeft ? reader.lastStep : -reader.lastStep);
@@ -38,55 +35,21 @@
         el.offsetIncBtn.onclick = (event) => reader.offsetPage(event, reader.isRightToLeft ? 1 : -1);
         el.offsetDecBtn.onclick = (event) => reader.offsetPage(event, reader.isRightToLeft ? -1 : 1);
 
-        el.directionBtn.onclick = stop(() => {
-            reader.isRightToLeft = !reader.isRightToLeft;
-            reader.updateDirection();
-            reader.syncDirectionButton();
-            reader.savePreferences();
+        const preferenceButtons = [
+            [el.directionBtn, 'isRightToLeft'],
+            [el.animationBtn, 'animationMode', readerPreferences.ANIMATION_MODES],
+            [el.viewModeBtn, 'viewMode', VIEW_MODES],
+            [el.imageRenderBtn, 'imageRenderMode', IMAGE_RENDER_MODES],
+            [el.backgroundBtn, 'backgroundMode', BACKGROUND_MODES],
+            [el.tapPageBtn, 'tapPageNavigation']
+        ];
+        preferenceButtons.forEach(([button, key, modes]) => {
+            button.onclick = stop(() => {
+                if (modes) reader.cyclePreference(key, modes);
+                else reader.setPreference(key, !reader[key]);
+            });
         });
-
-        el.animationBtn.onclick = stop(() => {
-            reader.animationMode = animations.getNextAnimationMode(reader.animationMode);
-            animations.syncAnimationButton(el.animationBtn, reader.animationMode);
-            reader.savePreferences();
-        });
-
-        el.viewModeBtn.onclick = stop(() => {
-            const currentIdx = VIEW_MODES.indexOf(reader.viewMode);
-            reader.viewMode = VIEW_MODES[(currentIdx + 1) % VIEW_MODES.length];
-            reader.syncViewModeButton();
-            reader.savePreferences();
-            reader.render(false);
-        });
-
-        el.imageRenderBtn.onclick = stop(() => {
-            const currentIdx = IMAGE_RENDER_MODES.indexOf(reader.imageRenderMode);
-            reader.imageRenderMode = IMAGE_RENDER_MODES[(currentIdx + 1) % IMAGE_RENDER_MODES.length];
-            reader.syncImageRenderButton();
-            reader.savePreferences();
-            reader.refreshImagesForRenderMode();
-        });
-
-        on(el.filterSelect, 'change', stop(() => {
-            reader.filterMode = readerPreferences.normalizeFilterMode(el.filterSelect.value);
-            reader.syncFilterControl();
-            reader.applyReaderFilter();
-            reader.savePreferences();
-        }));
-
-        el.backgroundBtn.onclick = stop(() => {
-            const currentIdx = BACKGROUND_MODES.indexOf(reader.backgroundMode);
-            reader.backgroundMode = BACKGROUND_MODES[(currentIdx + 1) % BACKGROUND_MODES.length];
-            reader.syncBackgroundButton();
-            reader.applyReaderBackground();
-            reader.savePreferences();
-        });
-
-        el.tapPageBtn.onclick = stop(() => {
-            reader.tapPageNavigation = !reader.tapPageNavigation;
-            reader.syncTapPageButton();
-            reader.savePreferences();
-        });
+        on(el.filterSelect, 'change', stop(() => reader.setPreference('filterMode', el.filterSelect.value)));
 
         el.settingsBtn.onclick = stop(() => reader.toggleSettingsPanel());
 
@@ -169,10 +132,10 @@
         on(window, 'keydown', reader.handleKeyDown);
         on(window, 'resize', reader.handleResize);
 
-        on(el.reader, 'touchstart', reader.boundHandleTouchStart, { passive: false });
-        on(el.reader, 'touchmove', reader.boundHandleTouchMove, { passive: false });
-        on(el.reader, 'touchend', reader.boundHandleTouchEnd, { passive: false });
-        on(el.reader, 'touchcancel', reader.boundHandleTouchEnd, { passive: false });
+        on(el.reader, 'touchstart', reader.handleTouchStart, { passive: false });
+        on(el.reader, 'touchmove', reader.handleTouchMove, { passive: false });
+        on(el.reader, 'touchend', reader.handleTouchEnd, { passive: false });
+        on(el.reader, 'touchcancel', reader.handleTouchEnd, { passive: false });
         reader.showControls();
     }
 

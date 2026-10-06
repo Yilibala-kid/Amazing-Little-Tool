@@ -15,6 +15,7 @@
     const methods = {
         setTransformTransition(value) {
             if (!this.el.imgContainer) return;
+            Toolbox.animations?.cancel(this.el.imgContainer, true);
             this.el.imgContainer.style.transition = value;
         },
 
@@ -96,6 +97,8 @@
 
         updateFitScale(images = Array.from(this.el.imgContainer?.querySelectorAll('img') || [])) {
             const readerRect = this.el.reader?.getBoundingClientRect();
+            this.viewportRect = readerRect;
+            this.panGeometry = null;
             if (!readerRect || !images.length) {
                 this.fitScale = 1;
                 this.contentNaturalWidth = 0;
@@ -176,14 +179,33 @@
         },
 
         getPanLimits() {
-            const bounds = this.getImageBounds();
-            if (!bounds || this.scale <= 1) return { maxX: 0, maxY: 0 };
+            if (!this.el.imgContainer || this.scale <= 1) return { maxX: 0, maxY: 0 };
+            if (!this.panGeometry) {
+                // Layout coordinates do not change while zooming or panning.
+                // Read them once per page/resize, including rotated flex items,
+                // rather than forcing style recalculation after every transform.
+                const images = Array.from(this.el.imgContainer.querySelectorAll('img'));
+                if (!images.length) return { maxX: 0, maxY: 0 };
+                const sideways = this.rotation === 90 || this.rotation === 270;
+                const rects = images.map(img => {
+                    const width = sideways ? img.offsetHeight : img.offsetWidth;
+                    const height = sideways ? img.offsetWidth : img.offsetHeight;
+                    const x = img.offsetLeft + img.offsetWidth / 2;
+                    const y = img.offsetTop + img.offsetHeight / 2;
+                    return { left: x - width / 2, right: x + width / 2, top: y - height / 2, bottom: y + height / 2 };
+                });
+                this.panGeometry = {
+                    width: Math.max(...rects.map(rect => rect.right)) - Math.min(...rects.map(rect => rect.left)),
+                    height: Math.max(...rects.map(rect => rect.bottom)) - Math.min(...rects.map(rect => rect.top))
+                };
+            }
+            const viewport = this.viewportRect || this.el.reader.getBoundingClientRect();
 
             const renderScale = this.getRenderScale();
             const allowance = PAN_EDGE_ALLOWANCE / renderScale;
             return {
-                maxX: Math.max(0, (bounds.width - bounds.containerRect.width) / (2 * renderScale)) + allowance,
-                maxY: Math.max(0, (bounds.height - bounds.containerRect.height) / (2 * renderScale)) + allowance
+                maxX: Math.max(0, (this.panGeometry.width - viewport.width / renderScale) / 2) + allowance,
+                maxY: Math.max(0, (this.panGeometry.height - viewport.height / renderScale) / 2) + allowance
             };
         },
 
@@ -209,7 +231,7 @@
             const previousScale = this.scale || 1;
             if (Math.abs(clampedScale - previousScale) < 0.001) return;
 
-            const rect = this.el.reader?.getBoundingClientRect()
+            const rect = this.viewportRect || this.el.reader?.getBoundingClientRect()
                 || this.el.imgContainer.getBoundingClientRect();
             const offsetX = clientX - (rect.left + rect.width / 2);
             const offsetY = clientY - (rect.top + rect.height / 2);
@@ -264,7 +286,6 @@
         },
 
         applyTransform() {
-            this.writeTransform();
             this.clampTransform();
             if (this.isTouchDevice && this.scale <= 1 + TOUCH_ZOOM_EPSILON) {
                 this.touchPanLocked = false;
@@ -288,10 +309,7 @@
     };
 
     function attach(reader) {
-        Object.entries(methods).forEach(([name, method]) => {
-            reader[name] = method.bind(reader);
-        });
-        return reader;
+        return Toolbox.attachMethods(reader, methods);
     }
 
     Toolbox.readerTransform = {
