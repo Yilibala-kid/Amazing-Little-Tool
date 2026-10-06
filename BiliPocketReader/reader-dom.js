@@ -49,7 +49,7 @@
 
     function createInlineSettingsGroup(items) {
         const group = document.createElement('div');
-        group.className = 'comic-settings-inline-group';
+        group.className = 'comic-settings-inline-group' + (items.length === 2 ? ' comic-settings-inline-pair' : '');
         items.forEach(item => group.appendChild(item));
         return group;
     }
@@ -94,7 +94,7 @@
             ['2', '2页'], ['4', '4页'], ['6', '6页'], ['all', '全部']
         ]);
         reader.el.imageMemorySelect = createSettingsSelect('图片内存', [
-            ['page', '关闭页面时释放'], ['previous', '释放当前图片之前的图片']
+            ['page', '关闭页释放'], ['previous', '释放前页']
         ]);
 
         const row = document.createElement('div');
@@ -196,13 +196,13 @@
         reader.el.controls.append(row, secondRow);
 
         reader.el.settingsControls.append(reader.el.closeBtn, reader.el.screenshotBtn, reader.el.rotateBtn, reader.el.settingsBtn);
-        const imageMemoryRow = createSettingsRow('图片内存', '关闭阅读器后仍保留图片，离开漫画页面时清空；也可在翻页后释放已读图片，返回时重新加载。', reader.el.imageMemorySelect);
-        imageMemoryRow.classList.add('comic-settings-item-stacked');
         reader.el.settingsPanel.append(
             createSettingsRow('\u663e\u793a\u8d28\u91cf', '\u539f\u56fe\u66f4\u6e05\u6670\uff1b\u6d41\u7545\u6a21\u5f0f\u7f29\u653e\u66f4\u987a\u6ed1\u3002', reader.el.imageRenderBtn),
             createSettingsRow('\u56fe\u50cf\u6ee4\u955c', '\u4ec5\u5f71\u54cd\u663e\u793a\uff0c\u4e0d\u5f71\u54cd\u539f\u56fe\u548c\u622a\u56fe\u3002', reader.el.filterSelect),
-            createSettingsRow('漫画预加载', '打开页面和翻页后提前加载；“全部”从第一页开始，按顺序逐张加载本篇图片。每张图片计为一页。', reader.el.preloadSelect),
-            imageMemoryRow,
+            createInlineSettingsGroup([
+                createCompactSettingsItem('漫画预加载', reader.el.preloadSelect),
+                createCompactSettingsItem('图片内存', reader.el.imageMemorySelect)
+            ]),
             createInlineSettingsGroup([
                 createCompactSettingsItem('\u80cc\u666f\u989c\u8272', reader.el.backgroundBtn),
                 createCompactSettingsItem('\u7ffb\u9875\u52a8\u753b', reader.el.animationBtn),

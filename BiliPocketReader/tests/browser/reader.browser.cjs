@@ -126,7 +126,25 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
         const preloadSelect = page.getByLabel('漫画预加载', { exact: true });
         const memorySelect = page.getByLabel('图片内存', { exact: true });
         assert.deepEqual(await preloadSelect.locator('option').allTextContents(), ['2页', '4页', '6页', '全部']);
-        assert.deepEqual(await memorySelect.locator('option').allTextContents(), ['关闭页面时释放', '释放当前图片之前的图片']);
+        assert.deepEqual(await memorySelect.locator('option').allTextContents(), ['关闭页释放', '释放前页']);
+        const checkLoadingLayout = async () => {
+            assert.equal(await page.evaluate(() => {
+                const preload = reader.el.preloadSelect.getBoundingClientRect();
+                const memory = reader.el.imageMemorySelect.getBoundingClientRect();
+                const panel = reader.el.settingsPanel.getBoundingClientRect();
+                const context = new OffscreenCanvas(1, 1).getContext('2d');
+                return Math.abs(preload.top - memory.top) < 1 && preload.right <= memory.left &&
+                    panel.left >= 0 && panel.right <= innerWidth &&
+                    [reader.el.preloadSelect, reader.el.imageMemorySelect].every(select => {
+                        const style = getComputedStyle(select);
+                        context.font = style.font;
+                        const textWidth = Math.max(...[...select.options].map(option => context.measureText(option.text).width));
+                        const padding = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
+                        return textWidth + padding + 2 <= select.getBoundingClientRect().width;
+                    });
+            }), true, 'preloading and memory controls share one row and fit their option labels');
+        };
+        await checkLoadingLayout();
         await preloadSelect.selectOption('6');
         await page.waitForFunction(() => reader.imageCache.size === 8 &&
             [...reader.imageCache.values()].every(entry => entry.settled));
@@ -179,10 +197,15 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
                 const rect = select.getBoundingClientRect();
                 return rect.left >= panel.left && rect.right <= panel.right;
             }) && panel.left >= 0 && panel.right <= innerWidth;
-        }), true, 'long memory-policy labels fit the mobile settings panel');
+        }), true, 'selects fit the mobile settings panel');
         assert.notEqual(await page.evaluate(() => getComputedStyle(reader.el.settingsPanel).backgroundColor), 'rgba(0, 0, 0, 0)',
             'the settings panel has an opaque background for readable text');
+        await checkLoadingLayout();
         await page.screenshot({ path: path.join(artifactDir, 'mobile-settings.png') });
+        await page.setViewportSize({ width: 320, height: 740 });
+        await page.waitForFunction(() => reader.resizeFrame === null);
+        await checkLoadingLayout();
+        await page.screenshot({ path: path.join(artifactDir, 'narrow-settings.png') });
         await page.evaluate(() => {
             reader.setPreference('preloadPages', 'all');
             reader.setPreference('imageMemoryPolicy', 'page');

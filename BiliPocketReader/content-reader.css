@@ -101,6 +101,7 @@
 .comic-settings-controls { top: 24px; right: 24px; }
 
 .comic-settings-panel {
+    box-sizing: border-box;
     position: fixed;
     left: 50%;
     top: 50%;
@@ -155,16 +156,6 @@
     min-width: 0;
 }
 
-.comic-settings-item-stacked {
-    align-items: stretch;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.comic-settings-item-stacked .comic-settings-select {
-    width: 100%;
-}
-
 .comic-settings-title {
     font-size: 13px;
     font-weight: 700;
@@ -192,6 +183,16 @@
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-md);
     background: rgba(255, 255, 255, 0.035);
+}
+
+.comic-settings-inline-pair {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.comic-settings-inline-pair .comic-settings-select {
+    width: 100%;
+    min-width: 0;
+    font-size: 14px;
 }
 
 .comic-settings-inline-item {
@@ -569,13 +570,7 @@
     max-width: 132px;
 }
 
-#comic-reader-overlay.reader-compact .comic-settings-item-stacked {
-    align-items: stretch;
-    flex-direction: column;
-    gap: 10px;
-}
-
-#comic-reader-overlay.reader-compact .comic-settings-item-stacked .comic-settings-select {
+#comic-reader-overlay.reader-compact .comic-settings-inline-pair .comic-settings-select {
     max-width: none;
 }
 

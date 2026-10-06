@@ -149,7 +149,7 @@ test('reader UI presents preloading options and restores both saved selections',
     assert.equal(reader.el.preloadSelect.value, '6');
     assert.equal(reader.el.imageMemorySelect['aria-label'], '图片内存');
     assert.deepEqual(options(reader.el.imageMemorySelect), [
-        ['page', '关闭页面时释放'], ['previous', '释放当前图片之前的图片']
+        ['page', '关闭页释放'], ['previous', '释放前页']
     ]);
     assert.equal(reader.el.imageMemorySelect.value, 'previous');
     assert.match(reader.el.imageMemorySelect.title, /返回时会重新加载/);
