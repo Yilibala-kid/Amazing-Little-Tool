@@ -85,6 +85,7 @@ test('reader follows article navigation, closes on pagehide, and destroys entry 
                 constructor() { readers.push(this); this.closed = 0; this.destroyed = 0; }
                 init() { this.initialized = true; }
                 close() { this.closed++; }
+                prepareImages() { this.prepared = (this.prepared || 0) + 1; }
                 destroy() { this.destroyed++; this.close(); }
             }
         }
@@ -100,6 +101,8 @@ test('reader follows article navigation, closes on pagehide, and destroys entry 
     assert.equal(readers.length, 1, 'query/hash changes retain the same article');
     listeners.get('pagehide')();
     assert.equal(readers[0].closed, 1);
+    listeners.get('pageshow')({ persisted: true });
+    assert.equal(readers[0].prepared, 1, 'restored readable pages warm their images again');
     navigate('/read/cv2');
     assert.equal(readers[0].destroyed, 1);
     assert.equal(readers.length, 2);

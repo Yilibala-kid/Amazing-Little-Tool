@@ -1225,6 +1225,7 @@ function loadComicReaderCoreContext(ImageClass, overrides = {}) {
     const context = createBaseContext({
         Image: ImageClass,
         document: createFakeDocument(),
+        MutationObserver: overrides.MutationObserver || class { observe() {} disconnect() {} },
         clearTimeout() {},
         setTimeout: overrides.setTimeout || (() => 1)
     });
@@ -1426,10 +1427,17 @@ function loadComicReaderCoreContext(ImageClass, overrides = {}) {
         reader.init();
         reader.init();
 
-        assert.equal(created.length, 0, 'entry buttons never preload originals');
-        assert.equal(scheduled.length, 0);
-        assert.equal(reader.imgList.length, 0);
+        assert.equal(created.length, 0, 'entry preloading starts on the next task');
+        assert.equal(scheduled.length, 1, 'repeated init does not create another queue');
+        assert.equal(reader.imgList.length, 5);
         assert.ok(reader.entryButton);
+        for (let i = 0; i < 4; i++) await scheduled.shift()();
+        assert.deepEqual(created.map(img => img.src), ['p0', 'p1', 'p2', 'p3']);
+        assert.equal(scheduled.length, 0, 'entry warming stops after four images');
+        assert.equal(await reader.loadImage('p0'), created[0], 'opening can reuse warmed images');
+        assert.equal(created.length, 4);
+        reader.stopPreparingImages();
+        reader.imageLoader.clear();
     }
     {
         const { Image, created } = createFakeImageClass();
@@ -1446,8 +1454,10 @@ function loadComicReaderCoreContext(ImageClass, overrides = {}) {
         assert.equal(created.length, 0);
         await scheduled.shift()();
         await scheduled.shift()();
-        assert.deepEqual(created.map(img => img.src), ['p2', 'p3']);
-        assert.deepEqual(Array.from(reader.imageCache.keys()), ['p2', 'p3']);
+        await scheduled.shift()();
+        await scheduled.shift()();
+        assert.deepEqual(created.map(img => img.src), ['p2', 'p3', 'p4', 'p5']);
+        assert.deepEqual(Array.from(reader.imageCache.keys()), ['p2', 'p3', 'p4', 'p5']);
     }
     {
         let receivedOptions = null;

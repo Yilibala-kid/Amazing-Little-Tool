@@ -4,6 +4,7 @@
 
     // ============ 常量定义 ============
     const MOBILE_BREAKPOINT = 768;
+    const ENTRY_PRELOAD_COUNT = 4;
     if (!window.Shared) throw new Error('BilibiliToolbox: shared.js not loaded');
     if (!window.BilibiliToolbox?.bilibiliDom) throw new Error('BilibiliToolbox: bilibili-dom-adapter.js not loaded');
     if (!window.BilibiliToolbox?.storage) throw new Error('BilibiliToolbox: storage-service.js not loaded');
@@ -70,6 +71,9 @@
             this.pageFlipToken = 0;
             this.transformTransitionTimer = null;
             this.isOpen = false;
+            this.isPreparing = false;
+            this.entryImageObserver = null;
+            this.entryImageTimer = null;
             this.entryButton = null;
             this.screenshotTask = null;
             this.focusTimer = null;
@@ -86,7 +90,7 @@
             // DOM 元素引用
             this.el = {};
             this.imageLoader = new Toolbox.ReaderImageLoader(() => ({
-                isOpen: this.isOpen, imgList: this.imgList,
+                isOpen: this.isOpen, isPreparing: this.isPreparing, imgList: this.imgList,
                 currentIndex: this.currentIndex, activePageCount: this.activePageCount,
                 visibleSources: Array.from(this.el.imgContainer?.querySelectorAll?.('img') || [], img => img.src)
             }));
@@ -114,6 +118,48 @@
             document.body.appendChild(entryBtn);
 
             entryBtn.onclick = () => this.start();
+            this.prepareImages();
+        }
+
+        // Warm the first four images as soon as a readable page is entered.
+        prepareImages() {
+            if (this.isOpen || this.isPreparing) return;
+            this.isPreparing = true;
+            this.currentIndex = 0;
+            const refresh = () => {
+                this.entryImageTimer = null;
+                if (!this.isPreparing) return;
+                const images = this.collectReaderImages();
+                const changed = images.slice(0, ENTRY_PRELOAD_COUNT).join('\n') !==
+                    this.imgList.slice(0, ENTRY_PRELOAD_COUNT).join('\n');
+                this.imgList = images;
+                if (changed) {
+                    this.pruneImageCache();
+                    this.preloadImages(0, 0);
+                }
+                if (images.length >= ENTRY_PRELOAD_COUNT) {
+                    this.entryImageObserver?.disconnect();
+                    this.entryImageObserver = null;
+                }
+            };
+            this.entryImageObserver = new MutationObserver(() => {
+                if (this.entryImageTimer !== null) return;
+                this.entryImageTimer = setTimeout(refresh, 50);
+            });
+            this.entryImageObserver.observe(document.body, {
+                childList: true, subtree: true, attributes: true,
+                attributeFilter: ['src', 'data-origin-src', 'data-original', 'data-original-src',
+                    'data-large-src', 'data-url', 'data-image', 'data-src']
+            });
+            refresh();
+        }
+
+        stopPreparingImages() {
+            this.isPreparing = false;
+            this.entryImageObserver?.disconnect();
+            this.entryImageObserver = null;
+            clearTimeout(this.entryImageTimer);
+            this.entryImageTimer = null;
         }
 
         // 2. 启动阅读器
@@ -124,6 +170,7 @@
             if (this.imgList.length === 0) return alert('\u672a\u627e\u5230\u6f2b\u753b\u56fe\u7247');
 
             this.isOpen = true;
+            this.stopPreparingImages();
             this.currentIndex = 0;
             this.displayedIndex = 0;
             this.lastStep = 2;
@@ -515,6 +562,7 @@
         // 清理并关闭
         close() {
             this.isOpen = false;
+            this.stopPreparingImages();
             if (this.resizeFrame !== null) window.cancelAnimationFrame(this.resizeFrame);
             this.resizeFrame = null;
             if (this.hideTimer) clearTimeout(this.hideTimer);

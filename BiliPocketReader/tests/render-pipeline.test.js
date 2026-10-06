@@ -180,13 +180,87 @@ test('pixel budget evicts distant originals but protects incoming and currently 
     reader.activePageCount = 2;
     container.querySelectorAll = () => [{ src: 'p0' }];
     for (const src of ['p0', 'p1', 'p4', 'p5', 'p6']) {
-        reader.imageCache.set(src, { pixels: 12e6, settled: true, release() {} });
+        reader.imageCache.set(src, { pixels: 24e6, settled: true, release() {} });
     }
     reader.pruneImageCache();
     assert.deepEqual([...reader.imageCache.keys()], ['p0', 'p4', 'p5'], 'visible pages are protected even above the soft budget');
     container.querySelectorAll = () => [{ src: 'p4' }, { src: 'p5' }];
     reader.pruneImageCache();
     assert.deepEqual([...reader.imageCache.keys()], ['p4', 'p5']);
+});
+
+function entryFixture() {
+    const h = fixture();
+    const timers = new Map();
+    const observers = [];
+    let timerId = 0;
+    h.context.setTimeout = fn => { timers.set(++timerId, fn); return timerId; };
+    h.context.clearTimeout = id => timers.delete(id);
+    h.context.MutationObserver = class {
+        constructor(callback) { this.callback = callback; observers.push(this); }
+        observe() { this.connected = true; }
+        disconnect() { this.connected = false; }
+    };
+    h.context.document.body = {};
+    h.reader.isOpen = false;
+    h.reader.preloadImages = Object.getPrototypeOf(h.reader).preloadImages.bind(h.reader);
+    const runNext = () => {
+        const [id, fn] = timers.entries().next().value;
+        timers.delete(id);
+        return fn();
+    };
+    return { ...h, timers, observers, runNext };
+}
+
+test('readable page warms exactly four images while closed and foreground loading reuses them', async () => {
+    const { reader, images, timers, observers, runNext } = entryFixture();
+    reader.collectReaderImages = () => ['p0', 'p1', 'p2', 'p3', 'p4', 'p5'];
+    reader.prepareImages();
+    reader.prepareImages();
+    assert.equal(observers.length, 1);
+    assert.equal(observers[0].connected, false, 'complete first group needs no DOM observer');
+    for (let i = 0; i < 4; i++) {
+        const loading = runNext();
+        assert.equal(images.length, i + 1, 'warmup stays serial');
+        assert.equal(images[i].src, `p${i}`);
+        images[i].onload(); images[i].finishDecode();
+        await loading;
+    }
+    assert.equal(timers.size, 0);
+    assert.equal(reader.isOpen, false, 'warmup does not open the reader');
+    assert.equal(reader.imageCache.size, 4);
+    reader.isOpen = true;
+    reader.stopPreparingImages();
+    assert.equal(await reader.loadImage('p0'), images[0]);
+    assert.equal(images.length, 4, 'opening does not issue another request');
+    reader.close();
+});
+
+test('late article images trigger warmup and leaving the page cancels pending decode and observation', async () => {
+    const { reader, images, timers, observers, runNext } = entryFixture();
+    let urls = [];
+    reader.collectReaderImages = () => [...urls];
+    reader.prepareImages();
+    assert.equal(images.length, 0);
+    assert.equal(timers.size, 0);
+    assert.equal(observers[0].connected, true);
+    urls = ['late0', 'late1'];
+    observers[0].callback();
+    observers[0].callback();
+    assert.equal(timers.size, 1, 'DOM updates coalesce');
+    runNext();
+    const loading = runNext();
+    assert.equal(images[0].src, 'late0');
+    images[0].onload();
+    reader.close();
+    await loading;
+    images[0].finishDecode();
+    await tick();
+    assert.equal(observers[0].connected, false);
+    assert.equal(timers.size, 0);
+    assert.equal(reader.imageCache.size, 0);
+    assert.match(images[0].src, /^data:image\/gif/);
+    assert.equal(await reader.loadImage('after-exit'), null);
 });
 
 test('explicit double-page loading starts both originals before either finishes', async () => {

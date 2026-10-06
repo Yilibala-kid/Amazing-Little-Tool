@@ -3268,8 +3268,8 @@
 (function() {
     'use strict';
     const Toolbox = window.BilibiliToolbox;
-    const PRELOAD_COUNT = 2;
-    const CACHE_PIXEL_BUDGET = 32e6;
+    const PRELOAD_COUNT = 4;
+    const CACHE_PIXEL_BUDGET = 64e6;
 
     class ReaderImageLoader {
         constructor(getState) {
@@ -3281,7 +3281,8 @@
         }
 
         loadImage(src, preload = false) {
-            if (!this.getState().isOpen || !src) return Promise.resolve(null);
+            const state = this.getState();
+            if (!(state.isOpen || state.isPreparing) || !src) return Promise.resolve(null);
             const cached = this.imageCache.get(src);
             if (cached) {
                 if (!preload) cached.image.fetchPriority = 'high';
@@ -3336,7 +3337,7 @@
         preloadImages(startIndex = 0, delay = 800) {
             this.cancelPreload();
             const state = this.getState();
-            if (!state.isOpen || !Array.isArray(state.imgList) || state.imgList.length === 0) return;
+            if (!(state.isOpen || state.isPreparing) || !Array.isArray(state.imgList) || state.imgList.length === 0) return;
             const start = Math.max(0, Math.min(startIndex, state.imgList.length));
             const end = Math.min(state.imgList.length, start + PRELOAD_COUNT);
             const token = this.preloadToken;
@@ -3408,6 +3409,7 @@
 
     // ============ 常量定义 ============
     const MOBILE_BREAKPOINT = 768;
+    const ENTRY_PRELOAD_COUNT = 4;
     if (!window.Shared) throw new Error('BilibiliToolbox: shared.js not loaded');
     if (!window.BilibiliToolbox?.bilibiliDom) throw new Error('BilibiliToolbox: bilibili-dom-adapter.js not loaded');
     if (!window.BilibiliToolbox?.storage) throw new Error('BilibiliToolbox: storage-service.js not loaded');
@@ -3474,6 +3476,9 @@
             this.pageFlipToken = 0;
             this.transformTransitionTimer = null;
             this.isOpen = false;
+            this.isPreparing = false;
+            this.entryImageObserver = null;
+            this.entryImageTimer = null;
             this.entryButton = null;
             this.screenshotTask = null;
             this.focusTimer = null;
@@ -3490,7 +3495,7 @@
             // DOM 元素引用
             this.el = {};
             this.imageLoader = new Toolbox.ReaderImageLoader(() => ({
-                isOpen: this.isOpen, imgList: this.imgList,
+                isOpen: this.isOpen, isPreparing: this.isPreparing, imgList: this.imgList,
                 currentIndex: this.currentIndex, activePageCount: this.activePageCount,
                 visibleSources: Array.from(this.el.imgContainer?.querySelectorAll?.('img') || [], img => img.src)
             }));
@@ -3518,6 +3523,48 @@
             document.body.appendChild(entryBtn);
 
             entryBtn.onclick = () => this.start();
+            this.prepareImages();
+        }
+
+        // Warm the first four images as soon as a readable page is entered.
+        prepareImages() {
+            if (this.isOpen || this.isPreparing) return;
+            this.isPreparing = true;
+            this.currentIndex = 0;
+            const refresh = () => {
+                this.entryImageTimer = null;
+                if (!this.isPreparing) return;
+                const images = this.collectReaderImages();
+                const changed = images.slice(0, ENTRY_PRELOAD_COUNT).join('\n') !==
+                    this.imgList.slice(0, ENTRY_PRELOAD_COUNT).join('\n');
+                this.imgList = images;
+                if (changed) {
+                    this.pruneImageCache();
+                    this.preloadImages(0, 0);
+                }
+                if (images.length >= ENTRY_PRELOAD_COUNT) {
+                    this.entryImageObserver?.disconnect();
+                    this.entryImageObserver = null;
+                }
+            };
+            this.entryImageObserver = new MutationObserver(() => {
+                if (this.entryImageTimer !== null) return;
+                this.entryImageTimer = setTimeout(refresh, 50);
+            });
+            this.entryImageObserver.observe(document.body, {
+                childList: true, subtree: true, attributes: true,
+                attributeFilter: ['src', 'data-origin-src', 'data-original', 'data-original-src',
+                    'data-large-src', 'data-url', 'data-image', 'data-src']
+            });
+            refresh();
+        }
+
+        stopPreparingImages() {
+            this.isPreparing = false;
+            this.entryImageObserver?.disconnect();
+            this.entryImageObserver = null;
+            clearTimeout(this.entryImageTimer);
+            this.entryImageTimer = null;
         }
 
         // 2. 启动阅读器
@@ -3528,6 +3575,7 @@
             if (this.imgList.length === 0) return alert('\u672a\u627e\u5230\u6f2b\u753b\u56fe\u7247');
 
             this.isOpen = true;
+            this.stopPreparingImages();
             this.currentIndex = 0;
             this.displayedIndex = 0;
             this.lastStep = 2;
@@ -3919,6 +3967,7 @@
         // 清理并关闭
         close() {
             this.isOpen = false;
+            this.stopPreparingImages();
             if (this.resizeFrame !== null) window.cancelAnimationFrame(this.resizeFrame);
             this.resizeFrame = null;
             if (this.hideTimer) clearTimeout(this.hideTimer);
@@ -5579,6 +5628,7 @@
         });
         window.addEventListener(Toolbox.url.URL_CHANGE_EVENT, handleUrlChange);
         window.addEventListener('pagehide', handlePageHide);
+        window.addEventListener('pageshow', handlePageShow);
         setupMessageBridge();
 
         syncReaderPage();
@@ -5601,6 +5651,10 @@
         readerInstance?.close();
     }
 
+    function handlePageShow(event) {
+        if (event.persisted) readerInstance?.prepareImages();
+    }
+
     function handleUrlChange() {
         syncReaderPage();
         Toolbox.spaceOpusTabs.sync();
@@ -5616,6 +5670,7 @@
         messageHandler = null;
         window.removeEventListener(Toolbox.url.URL_CHANGE_EVENT, handleUrlChange);
         window.removeEventListener('pagehide', handlePageHide);
+        window.removeEventListener('pageshow', handlePageShow);
         readerInstance?.destroy();
         readerInstance = null;
         readerPage = null;

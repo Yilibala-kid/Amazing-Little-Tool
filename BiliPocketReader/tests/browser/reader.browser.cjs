@@ -77,7 +77,23 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
             await page.addScriptTag({ path: path.join(root, file) });
         }
         await page.locator('.comic-entry-btn').waitFor();
-        assert.equal(originals, 0, 'entry creation must not request originals');
+        await page.waitForFunction(() => reader.imageCache.size === 4 &&
+            [...reader.imageCache.values()].every(entry => entry.settled));
+        assert.equal(await page.evaluate(() => trackedImages.length), 4, 'entry warms only the first four images');
+        assert.equal(await page.locator('#comic-reader-overlay').count(), 0, 'warming does not open the reader');
+        await page.evaluate(async () => {
+            reader.viewMode = 'double';
+            reader.start();
+            await reader.render(false);
+        });
+        assert.equal(await page.evaluate(() => trackedImages.length), 4, 'opening reuses the warmed images');
+        await page.waitForFunction(() => reader.imageCache.size === 6 &&
+            [...reader.imageCache.values()].every(entry => entry.settled));
+        assert.equal(await page.evaluate(() => [...reader.imageCache.keys()].map(src =>
+            Number(src.match(/page(\d+)/)[1]))).then(indices => indices.join(',')), '0,1,2,3,4,5',
+        'double-page reading warms the next four images');
+        await page.evaluate(() => reader.close());
+        await page.evaluate(() => { trackedImages.length = trackedCanvases.length = 0; });
         const open = async mode => {
             await page.evaluate(mode => {
                 reader.imageRenderMode = 'sharp';

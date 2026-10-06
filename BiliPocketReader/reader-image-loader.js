@@ -2,8 +2,8 @@
 (function() {
     'use strict';
     const Toolbox = window.BilibiliToolbox;
-    const PRELOAD_COUNT = 2;
-    const CACHE_PIXEL_BUDGET = 32e6;
+    const PRELOAD_COUNT = 4;
+    const CACHE_PIXEL_BUDGET = 64e6;
 
     class ReaderImageLoader {
         constructor(getState) {
@@ -15,7 +15,8 @@
         }
 
         loadImage(src, preload = false) {
-            if (!this.getState().isOpen || !src) return Promise.resolve(null);
+            const state = this.getState();
+            if (!(state.isOpen || state.isPreparing) || !src) return Promise.resolve(null);
             const cached = this.imageCache.get(src);
             if (cached) {
                 if (!preload) cached.image.fetchPriority = 'high';
@@ -70,7 +71,7 @@
         preloadImages(startIndex = 0, delay = 800) {
             this.cancelPreload();
             const state = this.getState();
-            if (!state.isOpen || !Array.isArray(state.imgList) || state.imgList.length === 0) return;
+            if (!(state.isOpen || state.isPreparing) || !Array.isArray(state.imgList) || state.imgList.length === 0) return;
             const start = Math.max(0, Math.min(startIndex, state.imgList.length));
             const end = Math.min(state.imgList.length, start + PRELOAD_COUNT);
             const token = this.preloadToken;
