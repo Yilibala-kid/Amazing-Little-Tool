@@ -18,14 +18,14 @@
     const ANIMATION_MODES = Object.freeze([...Toolbox.animations.ANIMATION_MODES]);
     const DEFAULT_READER_PREFERENCES = Object.freeze({
         isRightToLeft: true,
-        viewMode: 'auto',
+        viewMode: 'double',
         animationMode: 'smooth',
-        imageRenderMode: 'smooth',
-        backgroundMode: 'darkGray',
+        imageRenderMode: 'sharp',
+        backgroundMode: 'white',
         filterMode: 'original',
         preloadPages: 'all',
         imageMemoryPolicy: 'page',
-        tapPageNavigation: false
+        tapPageNavigation: true
     });
     const MODES_BY_KEY = Object.freeze({
         viewMode: VIEW_MODES,

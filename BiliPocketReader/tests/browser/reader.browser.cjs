@@ -90,10 +90,17 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
         await page.locator('.comic-entry-btn').waitFor();
         await page.waitForFunction(() => reader.imageCache.size === 12 &&
             [...reader.imageCache.values()].every(entry => entry.settled));
-        assert.deepEqual(await page.evaluate(() => [reader.preloadPages, reader.imageMemoryPolicy]), ['all', 'page'],
-            'new installations default to all pages and release on page close');
+        const defaults = {
+            imageRenderMode: 'sharp', filterMode: 'original', preloadPages: 'all', imageMemoryPolicy: 'page',
+            backgroundMode: 'white', animationMode: 'smooth', viewMode: 'double',
+            tapPageNavigation: true, isRightToLeft: true
+        };
+        assert.deepEqual(await page.evaluate(keys => Object.fromEntries(keys.map(key => [key, reader[key]])),
+            Object.keys(defaults)), defaults, 'new installations apply all nine reader defaults');
         assert.deepEqual(await page.evaluate(() => trackedImages.map(img => Number(img.src.match(/page(\d+)/)[1]))),
             Array.from({ length: 12 }, (_, i) => i), 'all entry preloading starts at page one and requests pages in order');
+        assert.equal(await page.evaluate(() => trackedImages.every(img => !img.src.includes('@'))), true,
+            'the default original-image mode warms full-resolution URLs');
         assert.equal(await page.evaluate(() => preloadOverlap), false, 'entry preload decodes one image before starting the next');
         assert.equal(await page.locator('#comic-reader-overlay').count(), 0, 'all entry warmup does not open the reader');
         await page.evaluate(() => {
@@ -107,11 +114,13 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
         assert.equal(await page.evaluate(() => trackedImages.length), 4, 'entry warms only the first four images');
         assert.equal(await page.locator('#comic-reader-overlay').count(), 0, 'warming does not open the reader');
         await page.evaluate(async () => {
-            reader.viewMode = 'double';
             reader.start();
             await reader.render(false);
         });
         assert.equal(await page.evaluate(() => trackedImages.length), 4, 'opening reuses the warmed images');
+        assert.equal(await page.locator('.comic-img-container img').count(), 2, 'the default reader displays two pages');
+        assert.equal(await page.locator('#comic-reader-overlay').evaluate(element => getComputedStyle(element).backgroundColor),
+            'rgb(255, 255, 255)', 'the default reader background is white');
         await page.waitForFunction(() => reader.imageCache.size === 6 &&
             [...reader.imageCache.values()].every(entry => entry.settled));
         assert.equal(await page.evaluate(() => [...reader.imageCache.keys()].map(src =>
@@ -127,6 +136,32 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
         const settingButton = key => page.locator('.comic-setting-btn[data-preference-key="' + key + '"]');
         const preloadButton = settingButton('preloadPages');
         const memoryButton = settingButton('imageMemoryPolicy');
+        const settingColors = button => button.evaluate(element => {
+            const style = getComputedStyle(element);
+            return { background: style.backgroundColor, border: style.borderColor,
+                value: getComputedStyle(element.querySelector('.comic-setting-value')).color };
+        });
+        const waitForSettingColors = (key, expected) => page.waitForFunction(({ key, expected }) => {
+            const button = document.querySelector('.comic-setting-btn[data-preference-key="' + key + '"]');
+            const style = getComputedStyle(button);
+            const colors = { background: style.backgroundColor, border: style.borderColor,
+                value: getComputedStyle(button.querySelector('.comic-setting-value')).color };
+            return Object.keys(expected).every(name => colors[name] === expected[name]);
+        }, { key, expected });
+        const checkHover = async (key, restingColors) => {
+            await settingButton(key).hover();
+            await page.waitForFunction(({ key, restingColors }) => {
+                const button = document.querySelector('.comic-setting-btn[data-preference-key="' + key + '"]');
+                const style = getComputedStyle(button);
+                return button.matches(':hover') && !button.getAnimations().some(animation => animation.playState === 'running') &&
+                    style.backgroundColor !== restingColors.background && style.borderColor !== restingColors.border;
+            }, { key, restingColors });
+            const hovered = await settingColors(settingButton(key));
+            assert.notEqual(hovered.background, restingColors.background, key + ': hover changes the background');
+            assert.notEqual(hovered.border, restingColors.border, key + ': hover changes the border');
+            await page.mouse.move(4, 4);
+            await waitForSettingColors(key, restingColors);
+        };
         const chooseSetting = async (button, value) => {
             for (let i = 0; i < 5; i++) {
                 if (await button.getAttribute('data-value') === value) return;
@@ -150,6 +185,9 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
                     const rect = button.getBoundingClientRect();
                     const key = button.dataset.preferenceKey;
                     if (!inside(rect, panelRect) || rect.height < 44) issues.push(key + ': button clipped or too small');
+                    if (!['none', 'normal'].includes(getComputedStyle(button, '::after').content)) {
+                        issues.push(key + ': unexpected refresh glyph');
+                    }
                     for (const selector of ['.comic-setting-label', '.comic-setting-value']) {
                         const span = button.querySelector(selector);
                         if (!span?.textContent.trim()) { issues.push(key + ': empty text'); continue; }
@@ -166,11 +204,36 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
             assert.deepEqual(issues, [], 'all settings and current values fit the viewport');
         };
         await checkSettingsLayout();
+        await page.mouse.move(4, 4);
+        const neutralColors = await settingColors(settingButton('filterMode'));
+        for (const key of Object.keys(defaults).filter(key => key !== 'tapPageNavigation')) {
+            assert.deepEqual(await settingColors(settingButton(key)), neutralColors,
+                key + ': settings keep neutral colors, including a changed preload count');
+        }
+        const tapButton = settingButton('tapPageNavigation');
+        const enabledTapColors = await settingColors(tapButton);
+        assert.equal(await tapButton.getAttribute('aria-pressed'), 'true', 'tap navigation starts enabled');
+        for (const name of ['background', 'border', 'value']) {
+            assert.notEqual(enabledTapColors[name], neutralColors[name], 'enabled tap navigation has a pink ' + name);
+        }
+        await tapButton.click();
+        await page.mouse.move(4, 4);
+        await waitForSettingColors('tapPageNavigation', neutralColors);
+        assert.equal(await tapButton.getAttribute('aria-pressed'), 'false', 'tap navigation can be disabled');
+        await tapButton.click();
+        await page.mouse.move(4, 4);
+        await waitForSettingColors('tapPageNavigation', enabledTapColors);
+        assert.equal(await tapButton.getAttribute('aria-pressed'), 'true', 'tap navigation can be re-enabled');
+        await checkHover('tapPageNavigation', enabledTapColors);
         await settingButton('filterMode').focus();
         await page.keyboard.press('Enter');
         assert.equal(await settingButton('filterMode').getAttribute('data-value'), 'soft', 'Enter advances exactly one option');
         await page.keyboard.press('Space');
         assert.equal(await settingButton('filterMode').getAttribute('data-value'), 'warm', 'Space advances exactly one option');
+        await waitForSettingColors('filterMode', neutralColors);
+        assert.deepEqual(await settingColors(settingButton('filterMode')), neutralColors,
+            'changing a non-tap setting keeps its resting colors neutral');
+        await checkHover('filterMode', neutralColors);
         const settingsIndex = await page.evaluate(() => reader.currentIndex);
         for (const key of ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown']) await page.keyboard.press(key);
         assert.equal(await page.evaluate(() => reader.currentIndex), settingsIndex, 'settings arrow keys do not turn pages');

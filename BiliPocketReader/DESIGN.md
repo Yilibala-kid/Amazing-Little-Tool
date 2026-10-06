@@ -380,6 +380,7 @@ SPA URL 变化桥。
   - `IMAGE_MEMORY_POLICIES`: `page`, `previous`
 - 归一化阅读器偏好。
 - 从统一 storage 的 `readerPreferences` 读取/保存。
+- 默认选项为 `sharp` 原图、`original` 原图滤镜、`all` 全部预加载、`page` 关闭页释放、`white` 白色背景、`smooth` 平滑动画、`double` 双图、开启点击翻页及从右往左阅读；有效的已保存偏好不被新默认值覆盖。
 
 维护要点：
 
@@ -405,7 +406,7 @@ SPA URL 变化桥。
 维护要点：
 
 - 首次渲染和设置变化引起的重排使用内部即时渲染路径，不作为用户可选动画模式。
-- 设置卡片的当前值和默认值差异由 `reader-settings.js` 统一同步，不由动画模块单独维护状态样式。
+- 设置卡片的当前值由 `reader-settings.js` 统一同步，不由动画模块单独维护状态样式。
 
 ### `paper-turn.js`
 
@@ -513,7 +514,7 @@ SPA URL 变化桥。
 - `setPreference(key, value)` 统一完成校验、控件同步、保存和必要的重绘。
 - `cyclePreference(key, modes)` 处理循环切换，按钮事件不再重复修改状态和保存。
 - 按钮当前值、背景色、滤镜、设置面板显隐和外部点击处理集中在此模块。同步只更新值 span，不替换固定标题和按钮子节点。
-- 按钮 `dataset.value` 记录规范偏好值，`dataset.changed` 记录是否不同于默认值，供样式区分。可访问名称为“标题：当前值”，布尔设置同时同步 `aria-pressed`。
+- 按钮 `dataset.value` 记录规范偏好值。可访问名称为“标题：当前值”，布尔设置同时同步 `aria-pressed`；仅点击翻页开启时按该属性保持粉红色，其余设置只在悬停时变色，不显示刷新图标。
 - 保存时由 `readerPreferences.normalize()` 挑选合法字段，不保存图片缓存、手势状态或 DOM。
 - 图像模式变更重新收集图片，张数变更重绘；滤镜、背景、动画设置不触发图片重载。
 - 漫画预加载和图片内存整卡按钮循环切换时保存偏好，并调用 `syncImageLoadingSettings()` 更新队列和缓存策略，不重绘或重新加载当前图片。
@@ -644,7 +645,7 @@ SPA URL 变化桥。
 - `dist/BiliPocketReader.user.js`：userscript 构建产物，需要随源码变更重新生成。
 - `tests/content-modules.test.js`：内容脚本模块单元测试。
 - `tests/storage-service.test.js`：storage 和收藏服务测试。
-- `tests/reader-settings.test.js`：未保存偏好默认采用全部预加载、已有页数选择保留、九个整卡按钮所有选项循环与回绕、固定标题/保存值/视觉状态恢复、真实点击后的单次保存、选择性显示效果和触摸翻页回归测试。
+- `tests/reader-settings.test.js`：九项默认偏好、已有页数选择保留、九个整卡按钮所有选项循环与回绕、固定标题/保存值/可访问状态恢复、真实点击后的单次保存、选择性显示效果和触摸翻页回归测试。
 - `tests/render-pipeline.test.js`：原图解码等待、过期渲染、关闭/加载失败、2/4/6/全部入口与翻页预加载、动态正文补齐、队列串行与取消、两种图片内存策略、回看宽度探测保护、旧画质清理、双页并行加载、平移尺寸复用、动画取消与纸面曲率/分辨率回归测试。
 - `tests/reader-lifecycle.test.js`：原生导航、跨文章生命周期、离开页面释放、BFCache 恢复预热、复制/下载独立输出、复制失败、全图仅选择、截图并发限制、超大画布限制与取消资源清理回归测试。
 - `安装指南.txt`：面向用户的安装说明。

@@ -51,7 +51,6 @@
         const value = preferenceValue(reader, key);
         button.querySelector('.comic-setting-value').textContent = text;
         button.dataset.value = String(value);
-        button.dataset.changed = String(value !== readerPreferences.DEFAULT_READER_PREFERENCES[key]);
         button.setAttribute('aria-label', `${button.dataset.settingLabel}：${text}`);
         if (typeof value === 'boolean') button.setAttribute('aria-pressed', String(value));
         button.title = `${title}\n点击切换设置。`;

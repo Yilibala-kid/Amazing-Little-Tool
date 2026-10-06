@@ -132,18 +132,21 @@ test('each setting card reaches every option, wraps, and saves exactly once per 
         const value = button.querySelector('.comic-setting-value');
         const originalLabel = label.textContent;
         const originalChildren = [...button.children];
+        const startIndex = values.indexOf(reader[key]);
         for (let index = 0; index < values.length; index++) {
+            const expectedIndex = (startIndex + index + 1) % values.length;
+            const expectedValue = values[expectedIndex];
             button.click();
-            assert.equal(reader[key], values[index], `${key} reaches ${values[index]}`);
-            assert.equal(value.textContent, labels[index]);
+            assert.equal(reader[key], expectedValue, `${key} reaches ${expectedValue}`);
+            assert.equal(value.textContent, labels[expectedIndex]);
             assert.equal(label.textContent, originalLabel, 'cycling updates the value without replacing its fixed title');
             assert.deepEqual(button.children, originalChildren, 'cycling preserves both span nodes');
-            assert.equal(button.dataset.value, String(values[index]));
-            assert.equal(button.dataset.changed, String(values[index] !== toolbox.readerPreferences.DEFAULT_READER_PREFERENCES[key]));
-            assert.equal(button.getAttribute('aria-label'), `${originalLabel}：${labels[index]}`);
-            if (typeof values[index] === 'boolean') assert.equal(button.getAttribute('aria-pressed'), String(values[index]));
+            assert.equal(button.dataset.value, String(expectedValue));
+            assert.equal(button.dataset.changed, undefined, 'changed values do not create persistent highlight metadata');
+            assert.equal(button.getAttribute('aria-label'), `${originalLabel}：${labels[expectedIndex]}`);
+            if (typeof expectedValue === 'boolean') assert.equal(button.getAttribute('aria-pressed'), String(expectedValue));
             assert.equal(writes.length, index + 1, 'one click writes one preference object');
-            assert.equal(writes.at(-1).value[key], values[index]);
+            assert.equal(writes.at(-1).value[key], expectedValue);
         }
         assert.equal(reader[key], toolbox.readerPreferences.DEFAULT_READER_PREFERENCES[key], 'the final click wraps to the initial default');
         assert.deepEqual(Object.keys(writes.at(-1).value).sort(), Object.keys(toolbox.readerPreferences.DEFAULT_READER_PREFERENCES).sort());
@@ -164,23 +167,23 @@ test('setting cards apply only their own effects and do not reload current image
         assert.deepEqual(effects, expectedEffects[ref], `${ref} affects only the required reader behavior`);
     }
     assert.equal(reader.el.reader.style['--comic-image-filter'], 'brightness(.94) contrast(.92) saturate(.92)');
-    assert.equal(reader.el.reader.style.background, '#d8d8d8');
+    assert.equal(reader.el.reader.style.background, '#0a0a0a');
     reader.setPreference('filterMode', 'invalid');
     assert.equal(reader.filterMode, 'original');
     assert.equal(reader.el.filterBtn.dataset.value, 'original');
-    assert.equal(reader.el.filterBtn.dataset.changed, 'false');
+    assert.equal(reader.el.filterBtn.dataset.changed, undefined);
     assert.throws(() => reader.setPreference('currentIndex', 10), /Unknown reader preference/);
 });
 
-test('reader UI restores nine setting cards with saved values, fixed labels, and changed-state metadata', () => {
+test('reader UI restores nine setting cards with saved values, fixed labels, and preference metadata', () => {
     const storedPreferences = {
-        isRightToLeft: false, viewMode: 'double', animationMode: 'paper', imageRenderMode: 'sharp',
-        backgroundMode: 'white', filterMode: 'warm', preloadPages: '6', imageMemoryPolicy: 'previous', tapPageNavigation: true
+        isRightToLeft: false, viewMode: 'single', animationMode: 'paper', imageRenderMode: 'smooth',
+        backgroundMode: 'darkGray', filterMode: 'warm', preloadPages: '6', imageMemoryPolicy: 'previous', tapPageNavigation: false
     };
     const { reader, document, writes } = settingFixture(storedPreferences);
     const labels = {
-        directionBtn: '从左往右 →', animationBtn: '类纸', viewModeBtn: '双图', imageRenderBtn: '原图',
-        filterBtn: '暖色护眼', preloadBtn: '6页', imageMemoryBtn: '释放前页', backgroundBtn: '白色', tapPageBtn: '开启'
+        directionBtn: '从左往右 →', animationBtn: '类纸', viewModeBtn: '单图', imageRenderBtn: '流畅',
+        filterBtn: '暖色护眼', preloadBtn: '6页', imageMemoryBtn: '释放前页', backgroundBtn: '深灰', tapPageBtn: '关闭'
     };
     assert.equal(reader.el.settingsPanel.querySelectorAll('.comic-setting-btn').length, 9);
     assert.equal(reader.el.settingsPanel.querySelectorAll('select').length, 0);
@@ -193,7 +196,7 @@ test('reader UI restores nine setting cards with saved values, fixed labels, and
         assert.equal(button.dataset.preferenceKey, key);
         assert.equal(button.querySelector('.comic-setting-value').textContent, labels[ref]);
         assert.equal(button.dataset.value, String(storedPreferences[key]));
-        assert.equal(button.dataset.changed, 'true');
+        assert.equal(button.dataset.changed, undefined);
         assert.equal(button.getAttribute('aria-label'), `${label}：${labels[ref]}`);
         if (typeof storedPreferences[key] === 'boolean') assert.equal(button.getAttribute('aria-pressed'), String(storedPreferences[key]));
     }
@@ -203,7 +206,16 @@ test('reader UI restores nine setting cards with saved values, fixed labels, and
     assert.equal(document.body.children[0], reader.el.reader);
     assert.equal(writes.length, 0, 'restoring saved values does not rewrite preferences');
     const defaults = settingFixture().reader;
-    for (const [ref] of settingCases) assert.equal(defaults.el[ref].dataset.changed, 'false');
+    const expectedDefaults = {
+        imageRenderMode: 'sharp', filterMode: 'original', preloadPages: 'all', imageMemoryPolicy: 'page',
+        backgroundMode: 'white', animationMode: 'smooth', viewMode: 'double', tapPageNavigation: true, isRightToLeft: true
+    };
+    for (const [ref, key, values, labels] of settingCases) {
+        assert.equal(defaults[key], expectedDefaults[key], `${key} uses the requested default`);
+        assert.equal(defaults.el[ref].dataset.value, String(expectedDefaults[key]));
+        assert.equal(defaults.el[ref].querySelector('.comic-setting-value').textContent, labels[values.indexOf(expectedDefaults[key])]);
+        assert.equal(defaults.el[ref].dataset.changed, undefined);
+    }
 });
 
 test('screenshot toolbar separates cancel, copy, download, and full-image selection actions', () => {
