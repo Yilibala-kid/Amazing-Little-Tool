@@ -187,6 +187,88 @@
     line-height: 1.35;
 }
 
+.comic-setting-content {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.comic-setting-preview {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 22px;
+    flex-shrink: 0;
+    opacity: .85;
+    pointer-events: none;
+}
+
+.comic-setting-page-layout {
+    display: none;
+    align-items: center;
+    gap: 6px;
+}
+
+.comic-setting-btn[data-value="single"] .comic-setting-page-layout-single,
+.comic-setting-btn[data-value="double"] .comic-setting-page-layout-double,
+.comic-setting-btn[data-value="auto"] .comic-setting-page-layout-auto {
+    display: flex;
+}
+
+.comic-setting-page-group {
+    display: flex;
+    gap: 3px;
+}
+
+.comic-setting-page {
+    box-sizing: border-box;
+    width: 14px;
+    height: 22px;
+    border: 1.5px solid currentColor;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, .04);
+}
+
+.comic-setting-page-layout-auto .comic-setting-page {
+    width: 10px;
+    height: 18px;
+}
+
+.comic-setting-arrow {
+    position: relative;
+    width: 50px;
+    height: 22px;
+}
+
+.comic-setting-arrow::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 1px;
+    top: 10px;
+    height: 2px;
+    background: currentColor;
+}
+
+.comic-setting-arrow::after {
+    content: '';
+    position: absolute;
+    top: 5px;
+    right: 1px;
+    width: 10px;
+    height: 10px;
+    border-top: 2px solid currentColor;
+    border-right: 2px solid currentColor;
+    transform: rotate(45deg);
+}
+
+.comic-setting-btn[data-preference-key="isRightToLeft"][data-value="true"] .comic-setting-arrow {
+    transform: rotate(180deg);
+}
+
 .comic-setting-btn:where([data-preference-key="tapPageNavigation"][aria-pressed="true"]) {
     border-color: rgba(251, 114, 153, .45);
     background: rgba(251, 114, 153, .10);
@@ -199,6 +281,11 @@
 .comic-setting-btn:hover {
     border-color: var(--acc);
     background: rgba(251, 114, 153, .15);
+}
+
+.comic-setting-btn[data-preference-key="backgroundMode"] {
+    background: var(--comic-setting-background);
+    transition: border-color .15s;
 }
 
 .comic-setting-btn:focus-visible {

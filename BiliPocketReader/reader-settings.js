@@ -87,7 +87,7 @@
 
         syncDirectionButton() {
             const dir = preferenceValue(this, 'isRightToLeft');
-            const text = dir ? '从右往左 ←' : '从左往右 →';
+            const text = dir ? '从右往左' : '从左往右';
             syncSettingButton(this, this.el.directionBtn, 'isRightToLeft', text, `阅读方向：${text}。`);
         },
 
@@ -110,8 +110,10 @@
         },
 
         syncBackgroundButton() {
-            const label = READER_BACKGROUND_LABELS[preferenceValue(this, 'backgroundMode')] || READER_BACKGROUND_LABELS.black;
+            const mode = preferenceValue(this, 'backgroundMode');
+            const label = READER_BACKGROUND_LABELS[mode];
             syncSettingButton(this, this.el.backgroundBtn, 'backgroundMode', label, `背景颜色：${label}。`);
+            this.el.backgroundBtn?.style.setProperty('--comic-setting-background', READER_BACKGROUND_COLORS[mode]);
         },
 
         syncFilterControl() {

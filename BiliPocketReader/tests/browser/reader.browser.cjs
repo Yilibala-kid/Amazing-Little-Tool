@@ -148,16 +148,18 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
                 value: getComputedStyle(button.querySelector('.comic-setting-value')).color };
             return Object.keys(expected).every(name => colors[name] === expected[name]);
         }, { key, expected });
-        const checkHover = async (key, restingColors) => {
+        const checkHover = async (key, restingColors, preserveBackground = false) => {
             await settingButton(key).hover();
-            await page.waitForFunction(({ key, restingColors }) => {
+            await page.waitForFunction(({ key, restingColors, preserveBackground }) => {
                 const button = document.querySelector('.comic-setting-btn[data-preference-key="' + key + '"]');
                 const style = getComputedStyle(button);
                 return button.matches(':hover') && !button.getAnimations().some(animation => animation.playState === 'running') &&
-                    style.backgroundColor !== restingColors.background && style.borderColor !== restingColors.border;
-            }, { key, restingColors });
+                    (preserveBackground ? style.backgroundColor === restingColors.background : style.backgroundColor !== restingColors.background) &&
+                    style.borderColor !== restingColors.border;
+            }, { key, restingColors, preserveBackground });
             const hovered = await settingColors(settingButton(key));
-            assert.notEqual(hovered.background, restingColors.background, key + ': hover changes the background');
+            if (preserveBackground) assert.equal(hovered.background, restingColors.background, key + ': hover preserves the displayed background color');
+            else assert.notEqual(hovered.background, restingColors.background, key + ': hover changes the background');
             assert.notEqual(hovered.border, restingColors.border, key + ': hover changes the border');
             await page.mouse.move(4, 4);
             await waitForSettingColors(key, restingColors);
@@ -191,9 +193,17 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
                     for (const selector of ['.comic-setting-label', '.comic-setting-value']) {
                         const span = button.querySelector(selector);
                         if (!span?.textContent.trim()) { issues.push(key + ': empty text'); continue; }
+                        if (key === 'backgroundMode') {
+                            if (span.getClientRects().length) issues.push(key + ': unexpected visible text');
+                            continue;
+                        }
                         const range = document.createRange();
                         range.selectNodeContents(span);
                         if (!inside(range.getBoundingClientRect(), rect)) issues.push(key + ': text clipped');
+                    }
+                    const preview = button.querySelector('.comic-setting-preview');
+                    if (preview && (!inside(preview.getBoundingClientRect(), rect) || preview.getAttribute('aria-hidden') !== 'true')) {
+                        issues.push(key + ': preview clipped or exposed to screen readers');
                     }
                 }
                 const preload = reader.el.preloadBtn.getBoundingClientRect();
@@ -206,7 +216,7 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
         await checkSettingsLayout();
         await page.mouse.move(4, 4);
         const neutralColors = await settingColors(settingButton('filterMode'));
-        for (const key of Object.keys(defaults).filter(key => key !== 'tapPageNavigation')) {
+        for (const key of Object.keys(defaults).filter(key => !['tapPageNavigation', 'backgroundMode'].includes(key))) {
             assert.deepEqual(await settingColors(settingButton(key)), neutralColors,
                 key + ': settings keep neutral colors, including a changed preload count');
         }
@@ -234,6 +244,51 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
         assert.deepEqual(await settingColors(settingButton('filterMode')), neutralColors,
             'changing a non-tap setting keeps its resting colors neutral');
         await checkHover('filterMode', neutralColors);
+        const backgroundButton = settingButton('backgroundMode');
+        for (const [mode, label, color] of [
+            ['black', '黑色', 'rgb(10, 10, 10)'], ['darkGray', '深灰', 'rgb(31, 31, 31)'],
+            ['lightGray', '浅灰', 'rgb(216, 216, 216)'], ['white', '白色', 'rgb(255, 255, 255)']
+        ]) {
+            await chooseSetting(backgroundButton, mode);
+            await page.mouse.move(4, 4);
+            await waitForSettingColors('backgroundMode', { background: color, border: neutralColors.border });
+            assert.equal(await backgroundButton.innerText(), '', 'the background button displays no text');
+            assert.equal(await backgroundButton.getAttribute('aria-label'), '背景颜色：' + label);
+            assert.ok((await backgroundButton.getAttribute('title')).includes(label), 'the swatch tooltip names its color');
+            assert.equal(await page.locator('#comic-reader-overlay').evaluate(element => getComputedStyle(element).backgroundColor), color);
+            assert.equal(await page.evaluate(() => BilibiliToolbox.readerPreferences.load().backgroundMode), mode);
+            await checkHover('backgroundMode', await settingColors(backgroundButton), true);
+        }
+        await backgroundButton.focus();
+        await page.keyboard.press('Enter');
+        assert.equal(await backgroundButton.getAttribute('data-value'), 'black', 'Enter switches the text-free color button');
+        await chooseSetting(backgroundButton, 'white');
+        const viewButton = settingButton('viewMode');
+        for (const [mode, groups] of [['single', [1]], ['double', [2]], ['auto', [1, 2]]]) {
+            await chooseSetting(viewButton, mode);
+            const layout = viewButton.locator('.comic-setting-page-layout:visible');
+            assert.equal(await layout.count(), 1, 'only the current page layout is visible');
+            assert.deepEqual(await layout.evaluate(element => [...element.children].map(group => group.children.length)), groups);
+        }
+        const pagePreview = await viewButton.locator('.comic-setting-preview').boundingBox();
+        await page.mouse.click(pagePreview.x + pagePreview.width / 2, pagePreview.y + pagePreview.height / 2);
+        assert.equal(await viewButton.getAttribute('data-value'), 'single', 'clicking the page preview advances one option');
+        await chooseSetting(viewButton, 'double');
+        const directionButton = settingButton('isRightToLeft');
+        const checkDirectionArrow = async rightToLeft => {
+            assert.equal(await directionButton.locator('.comic-setting-value').innerText(), rightToLeft ? '从右往左' : '从左往右');
+            assert.equal(await directionButton.locator('.comic-setting-arrow').evaluate(element =>
+                new DOMMatrix(getComputedStyle(element).transform).a), rightToLeft ? -1 : 1, 'the large arrow follows reading direction');
+        };
+        await checkDirectionArrow(true);
+        const directionPreview = await directionButton.locator('.comic-setting-preview').boundingBox();
+        await page.mouse.click(directionPreview.x + directionPreview.width / 2, directionPreview.y + directionPreview.height / 2);
+        assert.equal(await directionButton.getAttribute('data-value'), 'false', 'clicking the arrow toggles direction once');
+        await checkDirectionArrow(false);
+        await directionButton.focus();
+        await page.keyboard.press('Space');
+        await checkDirectionArrow(true);
+        await page.mouse.move(4, 4);
         const settingsIndex = await page.evaluate(() => reader.currentIndex);
         for (const key of ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown']) await page.keyboard.press(key);
         assert.equal(await page.evaluate(() => reader.currentIndex), settingsIndex, 'settings arrow keys do not turn pages');
@@ -242,6 +297,7 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
         assert.equal(await page.locator('#comic-reader-overlay').count(), 1, 'Escape leaves the reader open');
         await page.locator('#comic-reader-overlay').getByRole('button', { name: '设置', exact: true }).click();
         await checkSettingsLayout();
+        await page.mouse.move(4, 4);
         await page.screenshot({ path: path.join(artifactDir, 'desktop-settings.png') });
         await chooseSetting(preloadButton, '6');
         await page.waitForFunction(() => reader.imageCache.size === 8 &&
@@ -256,6 +312,8 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
             reader.hideSettingsPanel();
             reader.viewMode = 'single';
             reader.animationMode = 'paper';
+            reader.syncViewModeButton();
+            reader.syncAnimationButton();
             reader.currentIndex = 4;
             window.snapshotImages = [];
             const draw = CanvasRenderingContext2D.prototype.drawImage;
@@ -291,6 +349,29 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
         assert.notEqual(await page.evaluate(() => getComputedStyle(reader.el.settingsPanel).backgroundColor), 'rgba(0, 0, 0, 0)',
             'the settings panel has an opaque background for readable text');
         await checkSettingsLayout();
+        const touchSession = await context.newCDPSession(page);
+        await touchSession.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 1 });
+        const touchIndex = await page.evaluate(() => reader.currentIndex);
+        for (const [key, selector, expected] of [
+            ['backgroundMode', null, 'black'], ['viewMode', '.comic-setting-preview', 'double'],
+            ['isRightToLeft', '.comic-setting-preview', 'false']
+        ]) {
+            const button = settingButton(key);
+            const target = selector ? button.locator(selector) : button;
+            const rect = await target.boundingBox();
+            await touchSession.send('Input.dispatchTouchEvent', { type: 'touchStart',
+                touchPoints: [{ x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 }] });
+            await touchSession.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+            await page.waitForFunction(({ key, expected }) =>
+                document.querySelector('.comic-setting-btn[data-preference-key="' + key + '"]').dataset.value === expected,
+            { key, expected });
+            assert.equal(await page.evaluate(() => reader.currentIndex), touchIndex, 'touching a setting never turns the page');
+        }
+        await touchSession.send('Emulation.setTouchEmulationEnabled', { enabled: false });
+        await touchSession.detach();
+        await chooseSetting(backgroundButton, 'white');
+        await chooseSetting(viewButton, 'single');
+        await chooseSetting(directionButton, 'true');
         const beforeSwipe = await page.evaluate(() => [reader.currentIndex, reader.preloadPages]);
         await preloadButton.locator('.comic-setting-value').evaluate(target => {
             const rect = target.getBoundingClientRect();
@@ -303,15 +384,18 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
         assert.deepEqual(await page.evaluate(() => [reader.currentIndex, reader.preloadPages]), beforeSwipe,
             'swiping across a setting card does not navigate or change its setting');
         assert.equal(await page.evaluate(() => reader.isTouchSwiping), false, 'interactive swipe state is cleared');
+        await page.mouse.move(4, 4);
         await page.screenshot({ path: path.join(artifactDir, 'mobile-settings.png') });
         await chooseSetting(memoryButton, 'page');
         await page.setViewportSize({ width: 320, height: 568 });
         await page.waitForFunction(() => reader.resizeFrame === null);
         await checkSettingsLayout();
+        await page.mouse.move(4, 4);
         await page.screenshot({ path: path.join(artifactDir, 'narrow-settings.png') });
         await page.setViewportSize({ width: 640, height: 360 });
         await page.waitForFunction(() => reader.resizeFrame === null);
         await checkSettingsLayout();
+        await page.mouse.move(4, 4);
         await page.screenshot({ path: path.join(artifactDir, 'landscape-settings.png') });
         const downloads = [];
         page.on('download', download => downloads.push(download));
