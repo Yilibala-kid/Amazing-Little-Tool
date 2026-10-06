@@ -34,7 +34,8 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
                     originals++;
                     if (delayOriginals) await new Promise(resolve => setTimeout(resolve, 200));
                 }
-                await route.fulfill({ contentType: 'image/svg+xml', body: svg(Number(url.match(/page(\d+)/)?.[1] || 0)) }).catch(() => {});
+                await route.fulfill({ contentType: 'image/svg+xml', headers: { 'access-control-allow-origin': '*' },
+                    body: svg(Number(url.match(/page(\d+)/)?.[1] || 0)) }).catch(() => {});
             } else await route.fulfill({ contentType: 'text/html', body: html });
         });
         await page.goto('https://www.bilibili.com/read/cv1');
@@ -53,7 +54,11 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
             }, runtime: { onMessage: { addListener() {}, removeListener() {} } } };
             const NativeImage = window.Image;
             window.trackedImages = [];
+            window.preloadOverlap = false;
             window.Image = function(...args) {
+                if (window.reader?.isPreparing && [...reader.imageCache.values()].some(entry => !entry.settled)) {
+                    window.preloadOverlap = true;
+                }
                 const img = new NativeImage(...args);
                 window.trackedImages.push(img);
                 return img;
@@ -66,7 +71,13 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
                 return element;
             };
         });
-        for (const file of manifest.content_scripts[0].css) await page.addStyleTag({ path: path.join(root, file) });
+        for (const file of manifest.content_scripts[0].css) {
+            // File-based extension loading consumes the encoding marker. A
+            // literal style tag would treat it as part of the first selector.
+            await page.addStyleTag({ content: fs.readFileSync(path.join(root, file), 'utf8').replace(/^\uFEFF/, '') });
+        }
+        assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim()),
+            '#ffffff', 'reader theme tokens are loaded');
         for (const file of manifest.content_scripts[0].js) {
             if (file === 'content.js') await page.evaluate(() => {
                 const Base = BilibiliToolbox.reader.BiliComicReader;
@@ -77,7 +88,371 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
             await page.addScriptTag({ path: path.join(root, file) });
         }
         await page.locator('.comic-entry-btn').waitFor();
-        assert.equal(originals, 0, 'entry creation must not request originals');
+        await page.waitForFunction(() => reader.imageCache.size === 12 &&
+            [...reader.imageCache.values()].every(entry => entry.settled));
+        const defaults = {
+            imageRenderMode: 'sharp', filterMode: 'original', preloadPages: 'all', imageMemoryPolicy: 'page',
+            backgroundMode: 'white', animationMode: 'smooth', viewMode: 'double',
+            tapPageNavigation: true, isRightToLeft: true
+        };
+        assert.deepEqual(await page.evaluate(keys => Object.fromEntries(keys.map(key => [key, reader[key]])),
+            Object.keys(defaults)), defaults, 'new installations apply all nine reader defaults');
+        assert.deepEqual(await page.evaluate(() => trackedImages.map(img => Number(img.src.match(/page(\d+)/)[1]))),
+            Array.from({ length: 12 }, (_, i) => i), 'all entry preloading starts at page one and requests pages in order');
+        assert.equal(await page.evaluate(() => trackedImages.every(img => !img.src.includes('@'))), true,
+            'the default original-image mode warms full-resolution URLs');
+        assert.equal(await page.evaluate(() => preloadOverlap), false, 'entry preload decodes one image before starting the next');
+        assert.equal(await page.locator('#comic-reader-overlay').count(), 0, 'all entry warmup does not open the reader');
+        await page.evaluate(() => {
+            reader.close(true);
+            trackedImages.length = 0;
+            reader.preloadPages = '4';
+            reader.prepareImages();
+        });
+        await page.waitForFunction(() => reader.imageCache.size === 4 &&
+            [...reader.imageCache.values()].every(entry => entry.settled));
+        assert.equal(await page.evaluate(() => trackedImages.length), 4, 'entry warms only the first four images');
+        assert.equal(await page.locator('#comic-reader-overlay').count(), 0, 'warming does not open the reader');
+        await page.evaluate(async () => {
+            reader.start();
+            await reader.render(false);
+        });
+        assert.equal(await page.evaluate(() => trackedImages.length), 4, 'opening reuses the warmed images');
+        assert.equal(await page.locator('.comic-img-container img').count(), 2, 'the default reader displays two pages');
+        assert.equal(await page.locator('#comic-reader-overlay').evaluate(element => getComputedStyle(element).backgroundColor),
+            'rgb(255, 255, 255)', 'the default reader background is white');
+        await page.waitForFunction(() => reader.imageCache.size === 6 &&
+            [...reader.imageCache.values()].every(entry => entry.settled));
+        assert.equal(await page.evaluate(() => [...reader.imageCache.keys()].map(src =>
+            Number(src.match(/page(\d+)/)[1]))).then(indices => indices.join(',')), '0,1,2,3,4,5',
+        'double-page reading warms the next four images');
+        await page.evaluate(() => reader.close());
+        assert.equal(await page.locator('#comic-reader-overlay').count(), 0);
+        assert.equal(await page.evaluate(() => reader.imageCache.size), 6, 'closing the overlay retains decoded images');
+        assert.equal(await page.evaluate(() => trackedImages.every(img => !img.src.startsWith('data:'))), true);
+        await page.evaluate(async () => { reader.start(); await reader.render(false); });
+        assert.equal(await page.evaluate(() => trackedImages.length), 6, 'reopening reuses decoded images');
+        await page.locator('#comic-reader-overlay').getByRole('button', { name: '设置', exact: true }).click();
+        const settingButton = key => page.locator('.comic-setting-btn[data-preference-key="' + key + '"]');
+        const preloadButton = settingButton('preloadPages');
+        const memoryButton = settingButton('imageMemoryPolicy');
+        const settingColors = button => button.evaluate(element => {
+            const style = getComputedStyle(element);
+            return { background: style.backgroundColor, border: style.borderColor,
+                value: getComputedStyle(element.querySelector('.comic-setting-value')).color };
+        });
+        const waitForSettingColors = (key, expected) => page.waitForFunction(({ key, expected }) => {
+            const button = document.querySelector('.comic-setting-btn[data-preference-key="' + key + '"]');
+            const style = getComputedStyle(button);
+            const colors = { background: style.backgroundColor, border: style.borderColor,
+                value: getComputedStyle(button.querySelector('.comic-setting-value')).color };
+            return Object.keys(expected).every(name => colors[name] === expected[name]);
+        }, { key, expected });
+        const checkHover = async (key, restingColors) => {
+            await settingButton(key).hover();
+            await page.waitForFunction(({ key, restingColors }) => {
+                const button = document.querySelector('.comic-setting-btn[data-preference-key="' + key + '"]');
+                const style = getComputedStyle(button);
+                return button.matches(':hover') && !button.getAnimations().some(animation => animation.playState === 'running') &&
+                    style.backgroundColor !== restingColors.background && style.borderColor !== restingColors.border;
+            }, { key, restingColors });
+            const hovered = await settingColors(settingButton(key));
+            assert.notEqual(hovered.background, restingColors.background, key + ': hover changes the background');
+            assert.notEqual(hovered.border, restingColors.border, key + ': hover changes the border');
+            await page.mouse.move(4, 4);
+            await waitForSettingColors(key, restingColors);
+        };
+        const chooseSetting = async (button, value) => {
+            for (let i = 0; i < 5; i++) {
+                if (await button.getAttribute('data-value') === value) return;
+                await button.click();
+            }
+            assert.equal(await button.getAttribute('data-value'), value, 'setting cycle reaches the requested value');
+        };
+        const checkSettingsLayout = async () => {
+            await page.waitForFunction(() => getComputedStyle(reader.el.settingsPanel).opacity === '1');
+            const issues = await page.evaluate(() => {
+                const panel = reader.el.settingsPanel;
+                const panelRect = panel.getBoundingClientRect();
+                const buttons = [...panel.querySelectorAll('.comic-setting-btn')];
+                const issues = [];
+                const inside = (rect, bounds) => rect.left >= bounds.left - 1 && rect.right <= bounds.right + 1 &&
+                    rect.top >= bounds.top - 1 && rect.bottom <= bounds.bottom + 1;
+                if (buttons.length !== 9) issues.push('all nine settings must be present');
+                if (!inside(panelRect, { left: 0, top: 0, right: innerWidth, bottom: innerHeight })) issues.push('panel outside viewport');
+                if (panel.scrollHeight > panel.clientHeight + 1) issues.push('settings require scrolling');
+                for (const button of buttons) {
+                    const rect = button.getBoundingClientRect();
+                    const key = button.dataset.preferenceKey;
+                    if (!inside(rect, panelRect) || rect.height < 44) issues.push(key + ': button clipped or too small');
+                    if (!['none', 'normal'].includes(getComputedStyle(button, '::after').content)) {
+                        issues.push(key + ': unexpected refresh glyph');
+                    }
+                    for (const selector of ['.comic-setting-label', '.comic-setting-value']) {
+                        const span = button.querySelector(selector);
+                        if (!span?.textContent.trim()) { issues.push(key + ': empty text'); continue; }
+                        const range = document.createRange();
+                        range.selectNodeContents(span);
+                        if (!inside(range.getBoundingClientRect(), rect)) issues.push(key + ': text clipped');
+                    }
+                    const preview = button.querySelector('.comic-setting-preview');
+                    if (preview && (!inside(preview.getBoundingClientRect(), rect) || preview.getAttribute('aria-hidden') !== 'true')) {
+                        issues.push(key + ': preview clipped or exposed to screen readers');
+                    }
+                }
+                const preload = reader.el.preloadBtn.getBoundingClientRect();
+                const memory = reader.el.imageMemoryBtn.getBoundingClientRect();
+                if (Math.abs(preload.top - memory.top) > 1 || preload.right > memory.left) issues.push('loading settings must share a row');
+                return issues;
+            });
+            assert.deepEqual(issues, [], 'all settings and current values fit the viewport');
+        };
+        await checkSettingsLayout();
+        await page.mouse.move(4, 4);
+        const neutralColors = await settingColors(settingButton('filterMode'));
+        for (const key of Object.keys(defaults).filter(key => key !== 'tapPageNavigation')) {
+            assert.deepEqual(await settingColors(settingButton(key)), neutralColors,
+                key + ': settings keep neutral colors, including a changed preload count');
+        }
+        const tapButton = settingButton('tapPageNavigation');
+        const enabledTapColors = await settingColors(tapButton);
+        assert.equal(await tapButton.getAttribute('aria-pressed'), 'true', 'tap navigation starts enabled');
+        for (const name of ['background', 'border', 'value']) {
+            assert.notEqual(enabledTapColors[name], neutralColors[name], 'enabled tap navigation has a pink ' + name);
+        }
+        await tapButton.click();
+        await page.mouse.move(4, 4);
+        await waitForSettingColors('tapPageNavigation', neutralColors);
+        assert.equal(await tapButton.getAttribute('aria-pressed'), 'false', 'tap navigation can be disabled');
+        await tapButton.click();
+        await page.mouse.move(4, 4);
+        await waitForSettingColors('tapPageNavigation', enabledTapColors);
+        assert.equal(await tapButton.getAttribute('aria-pressed'), 'true', 'tap navigation can be re-enabled');
+        await checkHover('tapPageNavigation', enabledTapColors);
+        await settingButton('filterMode').focus();
+        await page.keyboard.press('Enter');
+        assert.equal(await settingButton('filterMode').getAttribute('data-value'), 'soft', 'Enter advances exactly one option');
+        await page.keyboard.press('Space');
+        assert.equal(await settingButton('filterMode').getAttribute('data-value'), 'warm', 'Space advances exactly one option');
+        await waitForSettingColors('filterMode', neutralColors);
+        assert.deepEqual(await settingColors(settingButton('filterMode')), neutralColors,
+            'changing a non-tap setting keeps its resting colors neutral');
+        await checkHover('filterMode', neutralColors);
+        const backgroundButton = settingButton('backgroundMode');
+        for (const [mode, label, color] of [
+            ['black', '黑色', 'rgb(10, 10, 10)'], ['darkGray', '深灰', 'rgb(31, 31, 31)'],
+            ['lightGray', '浅灰', 'rgb(216, 216, 216)'], ['white', '白色', 'rgb(255, 255, 255)']
+        ]) {
+            await chooseSetting(backgroundButton, mode);
+            await page.mouse.move(4, 4);
+            await waitForSettingColors('backgroundMode', neutralColors);
+            assert.equal(await backgroundButton.locator('.comic-setting-label').innerText(), '背景颜色');
+            assert.equal(await backgroundButton.locator('.comic-setting-value').innerText(), label, 'the background button displays its color name');
+            assert.equal(await backgroundButton.getAttribute('aria-label'), '背景颜色：' + label);
+            assert.ok((await backgroundButton.getAttribute('title')).includes(label), 'the background tooltip names its color');
+            assert.equal(await page.locator('#comic-reader-overlay').evaluate(element => getComputedStyle(element).backgroundColor), color);
+            assert.equal(await page.evaluate(() => BilibiliToolbox.readerPreferences.load().backgroundMode), mode);
+            await checkHover('backgroundMode', neutralColors);
+        }
+        await backgroundButton.focus();
+        await page.keyboard.press('Enter');
+        assert.equal(await backgroundButton.getAttribute('data-value'), 'black', 'Enter switches the background setting');
+        await chooseSetting(backgroundButton, 'white');
+        const viewButton = settingButton('viewMode');
+        assert.equal(await viewButton.locator('.comic-setting-preview').count(), 0, 'page-count setting remains a text-only button');
+        const directionButton = settingButton('isRightToLeft');
+        const checkDirectionArrow = async rightToLeft => {
+            assert.equal(await directionButton.locator('.comic-setting-value').innerText(), rightToLeft ? '从右往左' : '从左往右');
+            assert.equal(await directionButton.locator('.comic-setting-arrow').evaluate(element =>
+                new DOMMatrix(getComputedStyle(element).transform).a), rightToLeft ? -1 : 1, 'the large arrow follows reading direction');
+        };
+        await checkDirectionArrow(true);
+        const directionPreview = await directionButton.locator('.comic-setting-preview').boundingBox();
+        await page.mouse.click(directionPreview.x + directionPreview.width / 2, directionPreview.y + directionPreview.height / 2);
+        assert.equal(await directionButton.getAttribute('data-value'), 'false', 'clicking the arrow toggles direction once');
+        await checkDirectionArrow(false);
+        await directionButton.focus();
+        await page.keyboard.press('Space');
+        await checkDirectionArrow(true);
+        await page.mouse.move(4, 4);
+        const settingsIndex = await page.evaluate(() => reader.currentIndex);
+        for (const key of ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown']) await page.keyboard.press(key);
+        assert.equal(await page.evaluate(() => reader.currentIndex), settingsIndex, 'settings arrow keys do not turn pages');
+        await page.keyboard.press('Escape');
+        assert.equal(await page.evaluate(() => reader.isSettingsPanelVisible()), false, 'Escape closes settings');
+        assert.equal(await page.locator('#comic-reader-overlay').count(), 1, 'Escape leaves the reader open');
+        await page.locator('#comic-reader-overlay').getByRole('button', { name: '设置', exact: true }).click();
+        await checkSettingsLayout();
+        await page.mouse.move(4, 4);
+        await page.screenshot({ path: path.join(artifactDir, 'desktop-settings.png') });
+        await chooseSetting(preloadButton, '6');
+        await page.waitForFunction(() => reader.imageCache.size === 8 &&
+            [...reader.imageCache.values()].every(entry => entry.settled));
+        await chooseSetting(preloadButton, 'all');
+        await page.waitForFunction(() => reader.imageCache.size === 12 &&
+            [...reader.imageCache.values()].every(entry => entry.settled));
+        assert.ok(await page.evaluate(() => [...reader.imageCache.values()].reduce((sum, entry) => sum + entry.pixels, 0)) > 64e6,
+            'all preloading retains the entire article beyond the former pixel budget');
+        await chooseSetting(memoryButton, 'previous');
+        await page.evaluate(async () => {
+            reader.hideSettingsPanel();
+            reader.viewMode = 'single';
+            reader.animationMode = 'paper';
+            reader.syncViewModeButton();
+            reader.syncAnimationButton();
+            reader.currentIndex = 4;
+            window.snapshotImages = [];
+            const draw = CanvasRenderingContext2D.prototype.drawImage;
+            CanvasRenderingContext2D.prototype.drawImage = function(img, ...args) {
+                if (img instanceof HTMLImageElement) snapshotImages.push({ src: img.src, width: img.naturalWidth });
+                return draw.call(this, img, ...args);
+            };
+            try { await reader.render(true, 4); }
+            finally { CanvasRenderingContext2D.prototype.drawImage = draw; }
+        });
+        assert.equal(await page.evaluate(() => reader.displayedIndex), 4);
+        assert.equal(await page.evaluate(() => [...reader.imageCache.keys()].every(src => Number(src.match(/page(\d+)/)[1]) >= 4)), true);
+        assert.equal(await page.evaluate(() => trackedImages.slice(0, 4).every(img => img.src.startsWith('data:image/gif'))), true);
+        assert.equal(await page.evaluate(() => snapshotImages.some(img => /page0\.jpg(?:@|$)/.test(img.src) && img.width === 2400)), true,
+            'the outgoing paper snapshot is drawn before its source is released');
+        assert.equal(await page.evaluate(() => /page4\.jpg(?:@|$)/.test(reader.el.imgContainer.firstChild.src) &&
+            reader.el.imgContainer.firstChild.naturalWidth === 2400), true);
+        await page.locator('.comic-paper-turn').waitFor({ state: 'detached' });
+        await page.evaluate(() => reader.turnPage(null, -1));
+        await page.waitForFunction(() => reader.displayedIndex === 3 &&
+            reader.el.imgContainer?.querySelector('img')?.naturalWidth === 2400);
+        assert.equal(await page.evaluate(() => /page3\.jpg(?:@|$)/.test(reader.el.imgContainer.firstChild.src)), true,
+            'backward navigation reloads the released image');
+        await page.locator('.comic-paper-turn').waitFor({ state: 'detached' });
+        await page.setViewportSize({ width: 390, height: 844 });
+        await page.waitForFunction(() => reader.resizeFrame === null);
+        await page.evaluate(() => reader.toggleSettingsPanel());
+        await chooseSetting(preloadButton, '2');
+        await page.waitForFunction(() => {
+            const prefs = BilibiliToolbox.readerPreferences.load();
+            return prefs.preloadPages === '2' && prefs.imageMemoryPolicy === 'previous';
+        });
+        assert.notEqual(await page.evaluate(() => getComputedStyle(reader.el.settingsPanel).backgroundColor), 'rgba(0, 0, 0, 0)',
+            'the settings panel has an opaque background for readable text');
+        await checkSettingsLayout();
+        const touchSession = await context.newCDPSession(page);
+        await touchSession.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 1 });
+        const touchIndex = await page.evaluate(() => reader.currentIndex);
+        for (const [key, selector, expected] of [
+            ['backgroundMode', null, 'black'], ['viewMode', null, 'double'],
+            ['isRightToLeft', '.comic-setting-preview', 'false']
+        ]) {
+            const button = settingButton(key);
+            const target = selector ? button.locator(selector) : button;
+            const rect = await target.boundingBox();
+            await touchSession.send('Input.dispatchTouchEvent', { type: 'touchStart',
+                touchPoints: [{ x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 }] });
+            await touchSession.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+            await page.waitForFunction(({ key, expected }) =>
+                document.querySelector('.comic-setting-btn[data-preference-key="' + key + '"]').dataset.value === expected,
+            { key, expected });
+            assert.equal(await page.evaluate(() => reader.currentIndex), touchIndex, 'touching a setting never turns the page');
+        }
+        await touchSession.send('Emulation.setTouchEmulationEnabled', { enabled: false });
+        await touchSession.detach();
+        await chooseSetting(backgroundButton, 'white');
+        await chooseSetting(viewButton, 'single');
+        await chooseSetting(directionButton, 'true');
+        const beforeSwipe = await page.evaluate(() => [reader.currentIndex, reader.preloadPages]);
+        await preloadButton.locator('.comic-setting-value').evaluate(target => {
+            const rect = target.getBoundingClientRect();
+            const touch = x => new Touch({ identifier: 1, target, clientX: x, clientY: rect.top + 5 });
+            const start = touch(rect.left + 100), end = touch(rect.left + 10);
+            target.dispatchEvent(new TouchEvent('touchstart', { bubbles: true, cancelable: true, touches: [start] }));
+            target.dispatchEvent(new TouchEvent('touchmove', { bubbles: true, cancelable: true, touches: [end] }));
+            target.dispatchEvent(new TouchEvent('touchend', { bubbles: true, cancelable: true, touches: [], changedTouches: [end] }));
+        });
+        assert.deepEqual(await page.evaluate(() => [reader.currentIndex, reader.preloadPages]), beforeSwipe,
+            'swiping across a setting card does not navigate or change its setting');
+        assert.equal(await page.evaluate(() => reader.isTouchSwiping), false, 'interactive swipe state is cleared');
+        await page.mouse.move(4, 4);
+        await page.screenshot({ path: path.join(artifactDir, 'mobile-settings.png') });
+        await chooseSetting(memoryButton, 'page');
+        await page.setViewportSize({ width: 320, height: 568 });
+        await page.waitForFunction(() => reader.resizeFrame === null);
+        await checkSettingsLayout();
+        await page.mouse.move(4, 4);
+        await page.screenshot({ path: path.join(artifactDir, 'narrow-settings.png') });
+        await page.setViewportSize({ width: 640, height: 360 });
+        await page.waitForFunction(() => reader.resizeFrame === null);
+        await checkSettingsLayout();
+        await page.mouse.move(4, 4);
+        await page.screenshot({ path: path.join(artifactDir, 'landscape-settings.png') });
+        const downloads = [];
+        page.on('download', download => downloads.push(download));
+        await page.evaluate(() => {
+            reader.hideSettingsPanel();
+            window.copiedScreenshots = [];
+            window.screenshotShareCalls = 0;
+            Object.defineProperty(navigator, 'clipboard', { configurable: true, value: {
+                async write(items) {
+                    for (const item of items) copiedScreenshots.push(await item.getType('image/png'));
+                }
+            } });
+            Object.defineProperty(navigator, 'share', { configurable: true, value: () => { screenshotShareCalls++; } });
+        });
+        for (const viewport of [{ width: 1360, height: 900 }, { width: 390, height: 844 }, { width: 640, height: 360 }]) {
+            await page.setViewportSize(viewport);
+            await page.waitForFunction(() => reader.resizeFrame === null);
+            await page.evaluate(() => reader.startScreenshotSelection());
+            const toolbar = page.locator('.comic-selection-toolbar');
+            assert.deepEqual(await toolbar.getByRole('button').allTextContents(), ['取消', '复制', '下载', '全图']);
+            assert.equal(await toolbar.getByRole('button', { name: '复制', exact: true }).isDisabled(), true);
+            assert.equal(await toolbar.getByRole('button', { name: '下载', exact: true }).isDisabled(), true);
+            const outputCounts = [await page.evaluate(() => copiedScreenshots.length), downloads.length];
+            await toolbar.getByRole('button', { name: '全图', exact: true }).click();
+            assert.deepEqual(await page.evaluate(() => reader.normalizeSelectionRect()),
+                await page.evaluate(() => BilibiliToolbox.readerScreenshot.getBounds(reader.getVisibleImageDescriptors())),
+                'full image expands the crop to all displayed image bounds');
+            assert.deepEqual([await page.evaluate(() => copiedScreenshots.length), downloads.length], outputCounts,
+                'full image only changes the crop and performs no output');
+            // Draw a crop covering the upper-right controls, as a real drag.
+            await page.mouse.move(40, viewport.height - 24);
+            await page.mouse.down();
+            await page.mouse.move(viewport.width - 4, 4, { steps: 4 });
+            await page.mouse.up();
+            await page.evaluate(() => { reader.selectionHandles.ne.style.zIndex = '99999'; });
+            assert.equal(await page.evaluate(() => {
+                const buttons = [...reader.el.selectionToolbar.querySelectorAll('button')];
+                let previousBottom = 0;
+                return buttons.every(button => {
+                    const rect = button.getBoundingClientRect();
+                    const inBounds = rect.left >= 0 && rect.right <= innerWidth && rect.top >= previousBottom && rect.bottom <= innerHeight;
+                    previousBottom = rect.bottom;
+                    return inBounds && rect.height >= 44 &&
+                        document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2) === button;
+                });
+            }), true, 'vertical screenshot buttons stay clickable above the crop and all resize handles');
+            await page.screenshot({ path: path.join(artifactDir, 'screenshot-controls-' + viewport.width + '.png') });
+            await toolbar.getByRole('button', { name: '复制', exact: true }).focus();
+            await page.keyboard.press('Enter');
+            await page.waitForFunction(count => copiedScreenshots.length === count && reader.screenshotTask === null, outputCounts[0] + 1);
+            assert.equal(downloads.length, outputCounts[1], 'native Enter on Copy does not also trigger a download');
+            assert.equal(await page.evaluate(() => copiedScreenshots.at(-1).type === 'image/png' && copiedScreenshots.at(-1).size > 0), true);
+            const downloadEvent = page.waitForEvent('download');
+            await toolbar.getByRole('button', { name: '下载', exact: true }).click();
+            const downloaded = await downloadEvent;
+            assert.equal(await downloaded.failure(), null);
+            assert.match(downloaded.suggestedFilename(), /^bilibili-reader-.*\.png$/);
+            assert.deepEqual([...fs.readFileSync(await downloaded.path()).subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10]);
+            await page.waitForFunction(() => reader.screenshotTask === null);
+            assert.equal(await page.evaluate(() => copiedScreenshots.length), outputCounts[0] + 1, 'Download does not copy');
+            assert.equal(await page.evaluate(() => screenshotShareCalls), 0, 'explicit outputs never invoke system sharing');
+            await toolbar.getByRole('button', { name: '取消', exact: true }).click();
+            assert.equal(await page.evaluate(() => reader.isSelectingScreenshot), false);
+        }
+        await page.evaluate(() => {
+            reader.setPreference('preloadPages', 'all');
+            reader.setPreference('imageMemoryPolicy', 'page');
+            reader.close(true);
+        });
+        await page.setViewportSize({ width: 1360, height: 900 });
+        await page.evaluate(() => { trackedImages.length = trackedCanvases.length = 0; });
         const open = async mode => {
             await page.evaluate(mode => {
                 reader.imageRenderMode = 'sharp';
@@ -89,7 +464,7 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
             assert.equal(await page.locator('#comic-reader-overlay').count(), 1);
         };
         const release = async () => {
-            await page.evaluate(() => reader.close());
+            await page.evaluate(() => reader.close(true));
             assert.equal(await page.locator('#comic-reader-overlay').count(), 0);
             assert.equal(await page.evaluate(() => trackedCanvases.every(c => !c.width && !c.height)), true);
             assert.equal(await page.evaluate(() => trackedImages.every(img => img.src.startsWith('data:image/gif'))), true);
@@ -142,7 +517,7 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
         await page.evaluate(async () => { reader.currentIndex = 4; await reader.render(true, 1); });
         await release(); // Close during an active animation.
         delayOriginals = true;
-        await page.evaluate(() => { reader.start(); reader.close(); });
+        await page.evaluate(() => { reader.start(); reader.close(true); });
         await page.waitForTimeout(300);
         await release(); // Close during network/decode.
         delayOriginals = false;

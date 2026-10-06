@@ -70,6 +70,9 @@
             this.pageFlipToken = 0;
             this.transformTransitionTimer = null;
             this.isOpen = false;
+            this.isPreparing = false;
+            this.entryImageObserver = null;
+            this.entryImageTimer = null;
             this.entryButton = null;
             this.screenshotTask = null;
             this.focusTimer = null;
@@ -86,8 +89,10 @@
             // DOM 元素引用
             this.el = {};
             this.imageLoader = new Toolbox.ReaderImageLoader(() => ({
-                isOpen: this.isOpen, imgList: this.imgList,
+                isOpen: this.isOpen, isPreparing: this.isPreparing, imgList: this.imgList,
                 currentIndex: this.currentIndex, activePageCount: this.activePageCount,
+                displayedIndex: this.displayedIndex, preloadPages: this.preloadPages,
+                imageMemoryPolicy: this.imageMemoryPolicy,
                 visibleSources: Array.from(this.el.imgContainer?.querySelectorAll?.('img') || [], img => img.src)
             }));
             this.eventBag = null;
@@ -114,6 +119,64 @@
             document.body.appendChild(entryBtn);
 
             entryBtn.onclick = () => this.start();
+            this.prepareImages();
+        }
+
+        // Warm the selected number of images as soon as a readable page is entered.
+        prepareImages() {
+            if (this.isOpen || this.isPreparing) return;
+            this.isPreparing = true;
+            this.currentIndex = 0;
+            this.displayedIndex = 0;
+            const refresh = () => {
+                this.entryImageTimer = null;
+                if (!this.isPreparing) return;
+                const images = this.collectReaderImages();
+                const loadAll = this.preloadPages === 'all';
+                const count = loadAll ? images.length : this.imageLoader.getPreloadCount();
+                const changed = loadAll ? images.join('\n') !== this.imgList.join('\n') :
+                    images.slice(0, count).join('\n') !== this.imgList.slice(0, count).join('\n');
+                this.imgList = images;
+                if (changed) {
+                    this.pruneImageCache();
+                    this.preloadImages(0, 0);
+                }
+                if (this.preloadPages !== 'all' && images.length >= count) {
+                    this.entryImageObserver?.disconnect();
+                    this.entryImageObserver = null;
+                }
+            };
+            this.entryImageObserver = new MutationObserver(() => {
+                if (this.entryImageTimer !== null) return;
+                this.entryImageTimer = setTimeout(refresh, 50);
+            });
+            this.entryImageObserver.observe(document.body, {
+                childList: true, subtree: true, attributes: true,
+                attributeFilter: ['src', 'data-origin-src', 'data-original', 'data-original-src',
+                    'data-large-src', 'data-url', 'data-image', 'data-src']
+            });
+            refresh();
+        }
+
+        stopPreparingImages() {
+            this.isPreparing = false;
+            this.entryImageObserver?.disconnect();
+            this.entryImageObserver = null;
+            clearTimeout(this.entryImageTimer);
+            this.entryImageTimer = null;
+        }
+
+        syncImageLoadingSettings() {
+            this.cancelPreload();
+            this.pruneImageCache();
+            if (this.isOpen) {
+                this.preloadImages(this.currentIndex + this.activePageCount, 0);
+            } else if (this.isPreparing) {
+                this.stopPreparingImages();
+                // The URLs can be unchanged while the selected count increases.
+                this.imgList = [];
+                this.prepareImages();
+            }
         }
 
         // 2. 启动阅读器
@@ -124,6 +187,7 @@
             if (this.imgList.length === 0) return alert('\u672a\u627e\u5230\u6f2b\u753b\u56fe\u7247');
 
             this.isOpen = true;
+            this.stopPreparingImages();
             this.currentIndex = 0;
             this.displayedIndex = 0;
             this.lastStep = 2;
@@ -247,8 +311,8 @@
                 .filter(item => item.src && item.width > 0 && item.height > 0);
         }
 
-        async captureScreenshot(selectionRect, descriptors = this.getVisibleImageDescriptors()) {
-            return readerScreenshot.capture(this, selectionRect, descriptors);
+        async captureScreenshot(selectionRect, action = 'download') {
+            return readerScreenshot.capture(this, selectionRect, this.getVisibleImageDescriptors(), action);
         }
 
         // Keep the current page visible until the next group is decoded.
@@ -324,7 +388,7 @@
         loadImage(src, preload = false) { return this.imageLoader.loadImage(src, preload); }
         cancelPreload() { this.imageLoader.cancelPreload(); }
         preloadImages(start = 0, delay = 800) { this.imageLoader.preloadImages(start, delay); }
-        pruneImageCache(start, reserve) { this.imageLoader.pruneImageCache(start, reserve); }
+        pruneImageCache() { this.imageLoader.pruneImageCache(); }
 
         isWideImage(img) {
             return readerPageGroups.isWideImage(img, this.rotation);
@@ -353,6 +417,11 @@
                 (screenTranslateX) => this.getTransformStyle(screenTranslateX)
             );
             this.preloadImages(preloadStart);
+            // Paper-turn snapshots finish synchronously after commitImages returns.
+            // Release old images only after those snapshots and the page index swap.
+            Promise.resolve().then(() => {
+                if (this.isOpen) this.pruneImageCache();
+            });
         }
 
         // 辅助：设置图片样式
@@ -444,11 +513,6 @@
             this.render(true, step);
         }
 
-        canGoForward(step) {
-            const newIndex = this.currentIndex + step;
-            return newIndex >= 0 && newIndex < this.imgList.length;
-        }
-
         getNextPageGroupIndex(step) {
             return readerPageGroups.getNextIndex({
                 currentIndex: this.currentIndex,
@@ -458,12 +522,22 @@
         }
 
         async getPreviousPageGroupIndex() {
-            return readerPageGroups.getPreviousIndex({
-                currentIndex: this.currentIndex,
-                viewMode: this.viewMode,
-                loadImage: (index) => this.loadImage(this.imgList[index]),
-                isWideImage: (img) => this.isWideImage(img)
-            });
+            const index = this.currentIndex;
+            const sources = this.imgList;
+            // Auto mode probes the predecessor before changing currentIndex.
+            // Keep it through width classification even if a preload/settings
+            // change prunes the cache while its request or decode is pending.
+            const release = this.imageLoader.protectImages(sources.slice(Math.max(0, index - 2), index));
+            try {
+                return await readerPageGroups.getPreviousIndex({
+                    currentIndex: index,
+                    viewMode: this.viewMode,
+                    loadImage: (imageIndex) => this.loadImage(sources[imageIndex]),
+                    isWideImage: (img) => this.isWideImage(img)
+                });
+            } finally {
+                release();
+            }
         }
 
         canTurnPage(direction) {
@@ -499,7 +573,10 @@
         handleKeyDown(e) {
             if (this.isSelectingScreenshot) {
                 if (e.key === 'Escape') this.cancelScreenshotSelection(true);
-                if (e.key === 'Enter') void this.saveSelectionScreenshot();
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    void this.saveSelectionScreenshot('download');
+                }
                 return;
             }
             if (e.key === 'Escape' && this.isSettingsPanelVisible()) {
@@ -513,8 +590,9 @@
         }
 
         // 清理并关闭
-        close() {
+        close(forceRelease = false) {
             this.isOpen = false;
+            this.stopPreparingImages();
             if (this.resizeFrame !== null) window.cancelAnimationFrame(this.resizeFrame);
             this.resizeFrame = null;
             if (this.hideTimer) clearTimeout(this.hideTimer);
@@ -543,7 +621,8 @@
                 this.el.reader.remove();
                 this.el = {};
             }
-            this.imageLoader.clear();
+            if (forceRelease) this.imageLoader.clear();
+            else this.imageLoader.pause();
             this.imgList = [];
             this.selectionHandles = {};
             this.selectionStart = this.selectionCurrent = null;
@@ -557,7 +636,7 @@
         }
 
         destroy() {
-            this.close();
+            this.close(true);
             if (this.entryButton) {
                 this.entryButton.onclick = null;
                 this.entryButton.remove();

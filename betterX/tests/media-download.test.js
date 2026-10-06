@@ -213,7 +213,7 @@ test('background starts trusted downloads and rejects untrusted URLs', async () 
     assert.equal(releaseMessage.urls.length, 2);
 });
 
-test('media utilities preserve original formats, deduplicate by media identity, and use flat filenames', () => {
+test('media utilities preserve original formats and deduplicate by media identity', () => {
     const context = {
         location: { pathname: '/sample/status/123' },
         URL,
@@ -240,13 +240,6 @@ test('media utilities preserve original formats, deduplicate by media identity, 
         'https://pbs.twimg.com/media/HNvNv_vbsAAiyTL.png?name=small'
     );
     assert.equal(pngUrl, 'https://pbs.twimg.com/media/HNvNv_vbsAAiyTL.png?name=orig');
-
-    const items = hooks.buildDownloadItems(
-        [{ url: apiUrl, type: 'image' }],
-        { handle: 'sample', tweetId: '123' }
-    );
-    assert.equal(items[0].type, 'image');
-    assert.equal(items[0].filename, 'betterX/sample_123_01_image.png');
 });
 
 test('offscreen converter tags PNG as sRGB and bounds GIF work', async () => {

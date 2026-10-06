@@ -35,10 +35,6 @@
             return Number.isFinite(gap) ? gap : 0;
         },
 
-        isSharpRenderMode() {
-            return this.imageRenderMode === 'sharp';
-        },
-
         getEffectiveImageSize(img) {
             const naturalWidth = img.naturalWidth || img.width || 0;
             const naturalHeight = img.naturalHeight || img.height || 0;
@@ -154,28 +150,6 @@
             this.translateY = 0;
             this.updateFitScale(images);
             this.applyTransform();
-        },
-
-        getImageBounds() {
-            if (!this.el.imgContainer) return null;
-            const images = Array.from(this.el.imgContainer.querySelectorAll('img'));
-            if (!images.length) return null;
-            const containerRect = this.el.reader?.getBoundingClientRect()
-                || this.el.imgContainer.getBoundingClientRect();
-            const imageRects = images.map(img => img.getBoundingClientRect());
-            const left = Math.min(...imageRects.map(rect => rect.left));
-            const right = Math.max(...imageRects.map(rect => rect.right));
-            const top = Math.min(...imageRects.map(rect => rect.top));
-            const bottom = Math.max(...imageRects.map(rect => rect.bottom));
-            return {
-                containerRect,
-                left,
-                right,
-                top,
-                bottom,
-                width: right - left,
-                height: bottom - top
-            };
         },
 
         getPanLimits() {

@@ -30,9 +30,12 @@
         },
 
         updateSelectionActions() {
-            const hasSelection = this.hasValidSelection();
-            this.el.selectionSaveBtn.disabled = !hasSelection;
-            this.el.selectionSaveBtn.classList.toggle('is-disabled', !hasSelection);
+            const enabled = this.hasValidSelection() && !this.screenshotTask;
+            for (const button of [this.el.selectionCopyBtn, this.el.selectionDownloadBtn]) {
+                if (!button) continue;
+                button.disabled = !enabled;
+                button.classList.toggle('is-disabled', !enabled);
+            }
         },
 
         updateSelectionBox() {
@@ -89,17 +92,18 @@
             this.clearSelectionBox();
             this.hideSettingsPanel();
             this.el.selectionOverlay.style.display = 'block';
-            this.setSelectionHint('\u62d6\u52a8\u9009\u62e9\u622a\u56fe\u8303\u56f4\uff0c\u5b8c\u6210\u540e\u70b9\u51fb\u4fdd\u5b58');
+            this.setSelectionHint('\u62d6\u52a8\u9009\u62e9\u622a\u56fe\u8303\u56f4\uff0c\u5b8c\u6210\u540e\u70b9\u51fb\u590d\u5236\u6216\u4e0b\u8f7d');
             this.hideControls();
             if (this.hideTimer) clearTimeout(this.hideTimer);
         },
 
         cancelScreenshotSelection(showMessage = false, restoreControls = true) {
+            this.screenshotTask?.cancel();
             if (!this.isSelectingScreenshot) return;
             this.isSelectingScreenshot = false;
             this.clearSelectionBox();
             this.el.selectionOverlay.style.display = 'none';
-            this.setSelectionHint('\u62d6\u52a8\u9009\u62e9\u622a\u56fe\u8303\u56f4\uff0c\u5b8c\u6210\u540e\u70b9\u51fb\u4fdd\u5b58');
+            this.setSelectionHint('\u62d6\u52a8\u9009\u62e9\u622a\u56fe\u8303\u56f4\uff0c\u5b8c\u6210\u540e\u70b9\u51fb\u590d\u5236\u6216\u4e0b\u8f7d');
             if (restoreControls) { this.selectionWasControlsVisible ? this.showControls() : this.hideControls(); }
         },
 
@@ -198,28 +202,36 @@
             this.updateSelectionActions();
 
             if (this.hasValidSelection()) {
-                this.setSelectionHint('\u9009\u533a\u5df2\u5c31\u7eea\uff0c\u62d6\u52a8\u8fb9\u89d2\u5fae\u8c03\uff0c\u6216\u70b9\u51fb\u4fdd\u5b58');
+                this.setSelectionHint('\u9009\u533a\u5df2\u5c31\u7eea\uff0c\u62d6\u52a8\u8fb9\u89d2\u5fae\u8c03\uff0c\u6216\u70b9\u51fb\u590d\u5236\u6216\u4e0b\u8f7d');
             } else {
                 this.clearSelectionBox();
                 this.setSelectionHint('\u9009\u533a\u592a\u5c0f\uff0c\u8bf7\u91cd\u65b0\u62d6\u52a8\u9009\u62e9');
             }
         },
 
-        async saveSelectionScreenshot() {
+        async saveSelectionScreenshot(action = 'download') {
+            if (this.screenshotTask) return;
             if (!this.hasValidSelection()) {
                 this.showReaderMessage('\u8bf7\u5148\u62d6\u52a8\u9009\u51fa\u622a\u56fe\u8303\u56f4', true);
                 return;
             }
 
-            const success = await this.captureScreenshot(this.normalizeSelectionRect());
-            if (success) {
-                this.updateSelectionBox();
+            let success;
+            try {
+                const capture = this.captureScreenshot(this.normalizeSelectionRect(), action);
                 this.updateSelectionActions();
-                this.setSelectionHint('\u622a\u56fe\u5df2\u4fdd\u5b58\uff0c\u53ef\u7ee7\u7eed\u8c03\u6574\u9009\u533a\u6216\u70b9\u51fb\u53d6\u6d88\u622a\u56fe\u9000\u51fa');
+                success = await capture;
+            } finally {
+                this.updateSelectionActions();
+            }
+            if (success && this.isSelectingScreenshot) {
+                this.updateSelectionBox();
+                const result = action === 'copy' ? '\u5df2\u590d\u5236' : '\u5df2\u4e0b\u8f7d';
+                this.setSelectionHint(`\u622a\u56fe${result}\uff0c\u53ef\u7ee7\u7eed\u8c03\u6574\u9009\u533a\u6216\u70b9\u51fb\u53d6\u6d88\u622a\u56fe\u9000\u51fa`);
             }
         },
 
-        async saveFullScreenshot() {
+        selectFullScreenshot() {
             const descriptors = this.getVisibleImageDescriptors();
             const rect = readerScreenshot.getBounds(descriptors);
             if (!rect) {
@@ -227,10 +239,12 @@
                 return;
             }
 
-            const success = await this.captureScreenshot(rect, descriptors);
-            if (success) {
-                this.setSelectionHint('\u6574\u9875\u622a\u56fe\u5df2\u4fdd\u5b58\uff0c\u53ef\u7ee7\u7eed\u622a\u56fe\u6216\u70b9\u51fb\u53d6\u6d88\u622a\u56fe\u9000\u51fa');
-            }
+            this.clearSelectionBox();
+            this.selectionStart = { x: rect.x, y: rect.y };
+            this.selectionCurrent = { x: rect.x + rect.width, y: rect.y + rect.height };
+            this.updateSelectionBox();
+            this.updateSelectionActions();
+            this.setSelectionHint('\u5df2\u9009\u62e9\u6574\u5f20\u56fe\u7247\uff0c\u53ef\u8c03\u6574\u9009\u533a\u6216\u70b9\u51fb\u590d\u5236\u6216\u4e0b\u8f7d');
         }
     };
 

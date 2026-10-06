@@ -10,11 +10,6 @@
     const ANIMATION_MODES = ['smooth', 'fade', 'paper'];
     const activeTransitions = new WeakMap();
     const IMMEDIATE_RENDER_MODE = 'immediate';
-    const ANIMATION_BUTTON_MAP = {
-        smooth: ['\u5e73\u6ed1', '\u7ffb\u9875\u52a8\u753b\uff1a\u6de1\u5165 + \u5e73\u79fb + \u7ec6\u5fae\u7f29\u653e'],
-        fade: ['\u6de1\u5165', '\u7ffb\u9875\u52a8\u753b\uff1a\u6de1\u5165\u6de1\u51fa'],
-        paper: ['类纸', '翻页动画：弯曲纸面、书脊与光影翻书效果']
-    };
 
     function cancelTransition(container, settle = false) {
         if (!container) return;
@@ -36,18 +31,6 @@
 
     function normalizeMode(animationMode) {
         return ANIMATION_MODES.includes(animationMode) ? animationMode : DEFAULT_ANIMATION_MODE;
-    }
-
-    function getNextMode(animationMode) {
-        const currentIndex = ANIMATION_MODES.indexOf(normalizeMode(animationMode));
-        return ANIMATION_MODES[(currentIndex + 1) % ANIMATION_MODES.length];
-    }
-
-    function syncAnimationButtonState(animationBtn, animationMode) {
-        if (!animationBtn) return;
-        const [text, title] = ANIMATION_BUTTON_MAP[normalizeMode(animationMode)];
-        Object.assign(animationBtn, { innerText: text, title });
-        animationBtn.style.background = '';
     }
 
     function resolveRenderMode(animate, hasExistingImage, animationMode) {
@@ -187,8 +170,6 @@
         ANIMATION_MODES,
         IMMEDIATE_RENDER_MODE,
         normalizeAnimationMode: normalizeMode,
-        getNextAnimationMode: getNextMode,
-        syncAnimationButton: syncAnimationButtonState,
         runTransition: runTransitionFlow,
         resetImageContainer: resetAnimatedContainer,
         finishRender: finishAnimatedRender,

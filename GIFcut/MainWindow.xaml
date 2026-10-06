@@ -6,7 +6,6 @@
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         xmlns:behaviors="clr-namespace:GIFcut.Behaviors"
         xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
-        xmlns:local="clr-namespace:GIFcut"
         mc:Ignorable="d"
         Title="GIF裁剪工具" Height="700" Width="950"
         WindowStartupLocation="CenterScreen"

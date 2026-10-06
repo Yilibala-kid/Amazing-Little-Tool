@@ -75,6 +75,7 @@
         });
         window.addEventListener(Toolbox.url.URL_CHANGE_EVENT, handleUrlChange);
         window.addEventListener('pagehide', handlePageHide);
+        window.addEventListener('pageshow', handlePageShow);
         setupMessageBridge();
 
         syncReaderPage();
@@ -94,7 +95,11 @@
     }
 
     function handlePageHide() {
-        readerInstance?.close();
+        readerInstance?.close(true);
+    }
+
+    function handlePageShow(event) {
+        if (event.persisted) readerInstance?.prepareImages();
     }
 
     function handleUrlChange() {
@@ -112,6 +117,7 @@
         messageHandler = null;
         window.removeEventListener(Toolbox.url.URL_CHANGE_EVENT, handleUrlChange);
         window.removeEventListener('pagehide', handlePageHide);
+        window.removeEventListener('pageshow', handlePageShow);
         readerInstance?.destroy();
         readerInstance = null;
         readerPage = null;

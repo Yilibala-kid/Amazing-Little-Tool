@@ -13,22 +13,28 @@
     const IMAGE_RENDER_MODES = Object.freeze(['sharp', 'smooth']);
     const BACKGROUND_MODES = Object.freeze(['black', 'darkGray', 'lightGray', 'white']);
     const FILTER_MODES = Object.freeze(['original', 'soft', 'warm', 'grayscale']);
+    const PRELOAD_PAGES = Object.freeze(['2', '4', '6', 'all']);
+    const IMAGE_MEMORY_POLICIES = Object.freeze(['page', 'previous']);
     const ANIMATION_MODES = Object.freeze([...Toolbox.animations.ANIMATION_MODES]);
     const DEFAULT_READER_PREFERENCES = Object.freeze({
         isRightToLeft: true,
-        viewMode: 'auto',
+        viewMode: 'double',
         animationMode: 'smooth',
-        imageRenderMode: 'smooth',
-        backgroundMode: 'darkGray',
+        imageRenderMode: 'sharp',
+        backgroundMode: 'white',
         filterMode: 'original',
-        tapPageNavigation: false
+        preloadPages: 'all',
+        imageMemoryPolicy: 'page',
+        tapPageNavigation: true
     });
     const MODES_BY_KEY = Object.freeze({
         viewMode: VIEW_MODES,
         animationMode: ANIMATION_MODES,
         imageRenderMode: IMAGE_RENDER_MODES,
         backgroundMode: BACKGROUND_MODES,
-        filterMode: FILTER_MODES
+        filterMode: FILTER_MODES,
+        preloadPages: PRELOAD_PAGES,
+        imageMemoryPolicy: IMAGE_MEMORY_POLICIES
     });
 
     function normalizeMode(key, value) {
@@ -37,14 +43,6 @@
 
     function normalizeAnimationMode(mode) {
         return normalizeMode('animationMode', mode);
-    }
-
-    function normalizeImageRenderMode(mode) {
-        return normalizeMode('imageRenderMode', mode);
-    }
-
-    function normalizeBackgroundMode(mode) {
-        return normalizeMode('backgroundMode', mode);
     }
 
     function normalizeFilterMode(mode) {
@@ -73,11 +71,11 @@
         IMAGE_RENDER_MODES,
         BACKGROUND_MODES,
         FILTER_MODES,
+        PRELOAD_PAGES,
+        IMAGE_MEMORY_POLICIES,
         ANIMATION_MODES,
         DEFAULT_READER_PREFERENCES,
         normalizeAnimationMode,
-        normalizeImageRenderMode,
-        normalizeBackgroundMode,
         normalizeFilterMode,
         normalize: normalizePreferences,
         load: loadPreferences,

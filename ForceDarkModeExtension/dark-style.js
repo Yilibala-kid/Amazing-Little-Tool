@@ -10,11 +10,6 @@ const DARK_CSS = `
     color: #e8ecf3 !important;
   }
 
-  body {
-    background-color: #111318 !important;
-    color: #e8ecf3 !important;
-  }
-
   body *:not(img):not(video):not(canvas):not(svg):not(path):not([style*="background-image"]) {
     background-color: #111318 !important;
   }

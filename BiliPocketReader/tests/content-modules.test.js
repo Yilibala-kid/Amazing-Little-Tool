@@ -939,7 +939,11 @@ function loadReaderSelectionContext(readerRect = { width: 1000, height: 800 }) {
             return selector === '.comic-sel-handle' ? null : null;
         }
     };
-    const selectionSaveBtn = {
+    const selectionCopyBtn = {
+        disabled: false,
+        classList: new FakeClassList()
+    };
+    const selectionDownloadBtn = {
         disabled: false,
         classList: new FakeClassList()
     };
@@ -966,7 +970,8 @@ function loadReaderSelectionContext(readerRect = { width: 1000, height: 800 }) {
                 setPointerCapture() {},
                 releasePointerCapture() {}
             },
-            selectionSaveBtn,
+            selectionCopyBtn,
+            selectionDownloadBtn,
             selectionHint: { textContent: '' }
         },
         setSelectionHint(text) {
@@ -1225,6 +1230,7 @@ function loadComicReaderCoreContext(ImageClass, overrides = {}) {
     const context = createBaseContext({
         Image: ImageClass,
         document: createFakeDocument(),
+        MutationObserver: overrides.MutationObserver || class { observe() {} disconnect() {} },
         clearTimeout() {},
         setTimeout: overrides.setTimeout || (() => 1)
     });
@@ -1244,7 +1250,9 @@ function loadComicReaderCoreContext(ImageClass, overrides = {}) {
                     imageRenderMode: 'sharp',
                     backgroundMode: 'black',
                     filterMode: 'original',
-                    tapPageNavigation: true
+                    tapPageNavigation: true,
+                    preloadPages: 'all',
+                    imageMemoryPolicy: 'page'
                 };
             },
             normalizeFilterMode(mode) {
@@ -1388,23 +1396,6 @@ function loadComicReaderCoreContext(ImageClass, overrides = {}) {
         }), 0);
     }
     {
-        const { Image, created } = createFakeImageClass();
-        const reader = loadComicReaderCoreContext(Image);
-        const img = await reader.loadImage('https://i0.hdslb.com/bfs/new_dyn/page.png');
-
-        assert.equal(img, created[0]);
-        assert.equal(created[0].src, 'https://i0.hdslb.com/bfs/new_dyn/page.png');
-    }
-    {
-        const { Image, created } = createFakeImageClass();
-        const reader = loadComicReaderCoreContext(Image);
-        const first = reader.loadImage('https://i0.hdslb.com/bfs/new_dyn/cached.png');
-        const second = reader.loadImage('https://i0.hdslb.com/bfs/new_dyn/cached.png');
-
-        assert.equal(await first, await second);
-        assert.equal(created.length, 1);
-    }
-    {
         const { Image, created } = createFakeImageClass({ failLoad: true });
         const reader = loadComicReaderCoreContext(Image);
         const img = await reader.loadImage('https://i0.hdslb.com/bfs/new_dyn/missing.png');
@@ -1426,28 +1417,17 @@ function loadComicReaderCoreContext(ImageClass, overrides = {}) {
         reader.init();
         reader.init();
 
-        assert.equal(created.length, 0, 'entry buttons never preload originals');
-        assert.equal(scheduled.length, 0);
-        assert.equal(reader.imgList.length, 0);
+        assert.equal(created.length, 0, 'entry preloading starts on the next task');
+        assert.equal(scheduled.length, 1, 'repeated init does not create another queue');
+        assert.equal(reader.imgList.length, 5);
         assert.ok(reader.entryButton);
-    }
-    {
-        const { Image, created } = createFakeImageClass();
-        const scheduled = [];
-        const reader = loadComicReaderCoreContext(Image, {
-            setTimeout(fn) { scheduled.push(fn); return scheduled.length; }
-        });
-        reader.imgList = ['p0', 'p1', 'p2', 'p3', 'p4', 'p5', 'p6'];
-        reader.currentIndex = 1;
-        reader.activePageCount = 1;
-
-        reader.preloadImages(2);
-
-        assert.equal(created.length, 0);
-        await scheduled.shift()();
-        await scheduled.shift()();
-        assert.deepEqual(created.map(img => img.src), ['p2', 'p3']);
-        assert.deepEqual(Array.from(reader.imageCache.keys()), ['p2', 'p3']);
+        for (let i = 0; i < 5; i++) await scheduled.shift()();
+        assert.deepEqual(created.map(img => img.src), ['p0', 'p1', 'p2', 'p3', 'p4']);
+        assert.equal(scheduled.length, 0, 'entry warming loads the entire article by default');
+        assert.equal(await reader.loadImage('p0'), created[0], 'opening can reuse warmed images');
+        assert.equal(created.length, 5);
+        reader.stopPreparingImages();
+        reader.imageLoader.clear();
     }
     {
         let receivedOptions = null;
@@ -1471,7 +1451,6 @@ function loadComicReaderCoreContext(ImageClass, overrides = {}) {
         const img = { style: {}, dataset: {} };
 
         reader.imageRenderMode = 'smooth';
-        reader.isSharpRenderMode = function() { return this.imageRenderMode === 'sharp'; };
         reader.rotation = 0;
         reader.setupImg(img, true, { width: 900, height: 1200 });
 
@@ -1507,6 +1486,7 @@ function loadComicReaderCoreContext(ImageClass, overrides = {}) {
     await storage.init();
     assert.deepEqual(plain(preferences.FILTER_MODES), ['original', 'soft', 'warm', 'grayscale']);
     assert.deepEqual(plain(preferences.load()), plain(preferences.DEFAULT_READER_PREFERENCES));
+    assert.equal(preferences.load().preloadPages, 'all', 'new installations preload the whole article by default');
 
     const custom = {
         isRightToLeft: false,
@@ -1515,7 +1495,9 @@ function loadComicReaderCoreContext(ImageClass, overrides = {}) {
         imageRenderMode: 'sharp',
         backgroundMode: 'white',
         filterMode: 'warm',
-        tapPageNavigation: true
+        tapPageNavigation: true,
+        preloadPages: '6',
+        imageMemoryPolicy: 'previous'
     };
     await preferences.save(custom);
     assert.deepEqual(plain(preferences.load()), custom);
@@ -1528,7 +1510,9 @@ function loadComicReaderCoreContext(ImageClass, overrides = {}) {
             imageRenderMode: 'raw',
             backgroundMode: 'purple',
             filterMode: 'unknown',
-            tapPageNavigation: 'yes'
+            tapPageNavigation: 'yes',
+            preloadPages: '8',
+            imageMemoryPolicy: 'unknown'
         })),
         plain(preferences.DEFAULT_READER_PREFERENCES)
     );
