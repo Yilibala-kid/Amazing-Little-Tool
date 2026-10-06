@@ -146,9 +146,6 @@ test('each setting card reaches every option, wraps, and saves exactly once per 
             assert.equal(button.getAttribute('aria-label'), `${originalLabel}：${labels[expectedIndex]}`);
             if (typeof expectedValue === 'boolean') assert.equal(button.getAttribute('aria-pressed'), String(expectedValue));
             if (key === 'backgroundMode') {
-                assert.equal(button.style['--comic-setting-background'], reader.getReaderBackgroundColor(), 'the swatch uses the actual reader background');
-                assert.equal(label.hidden, true);
-                assert.equal(value.hidden, true);
                 assert.match(button.title, new RegExp(labels[expectedIndex]));
             }
             assert.equal(writes.length, index + 1, 'one click writes one preference object');
@@ -193,12 +190,7 @@ test('reader UI restores nine setting cards with saved values, fixed labels, and
     };
     assert.equal(reader.el.settingsPanel.querySelectorAll('.comic-setting-btn').length, 9);
     assert.equal(reader.el.settingsPanel.querySelectorAll('select').length, 0);
-    assert.equal(reader.el.backgroundBtn.style['--comic-setting-background'], '#1f1f1f', 'restoring a saved background updates its swatch');
-    for (const ref of ['viewModeBtn', 'directionBtn']) {
-        assert.equal(reader.el[ref].querySelector('.comic-setting-preview').getAttribute('aria-hidden'), 'true');
-    }
-    const pageLayouts = reader.el.viewModeBtn.querySelectorAll('.comic-setting-page-layout');
-    assert.deepEqual(pageLayouts.map(layout => layout.children.map(group => group.children.length)), [[1], [2], [1, 2]]);
+    assert.equal(reader.el.directionBtn.querySelector('.comic-setting-preview').getAttribute('aria-hidden'), 'true');
     assert.ok(reader.el.directionBtn.querySelector('.comic-setting-arrow'));
     for (const [ref, key] of settingCases) {
         const button = reader.el[ref];

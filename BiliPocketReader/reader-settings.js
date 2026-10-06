@@ -113,7 +113,6 @@
             const mode = preferenceValue(this, 'backgroundMode');
             const label = READER_BACKGROUND_LABELS[mode];
             syncSettingButton(this, this.el.backgroundBtn, 'backgroundMode', label, `背景颜色：${label}。`);
-            this.el.backgroundBtn?.style.setProperty('--comic-setting-background', READER_BACKGROUND_COLORS[mode]);
         },
 
         syncFilterControl() {

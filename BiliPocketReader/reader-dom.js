@@ -14,34 +14,6 @@
         return btn;
     }
 
-    function createSettingPreview(preferenceKey) {
-        const preview = document.createElement('span');
-        preview.className = 'comic-setting-preview';
-        preview.setAttribute('aria-hidden', 'true');
-        if (preferenceKey === 'viewMode') {
-            for (const [mode, groups] of [['single', [1]], ['double', [2]], ['auto', [1, 2]]]) {
-                const layout = document.createElement('span');
-                layout.className = `comic-setting-page-layout comic-setting-page-layout-${mode}`;
-                for (const count of groups) {
-                    const group = document.createElement('span');
-                    group.className = 'comic-setting-page-group';
-                    for (let index = 0; index < count; index++) {
-                        const page = document.createElement('span');
-                        page.className = 'comic-setting-page';
-                        group.appendChild(page);
-                    }
-                    layout.appendChild(group);
-                }
-                preview.appendChild(layout);
-            }
-        } else {
-            const arrow = document.createElement('span');
-            arrow.className = 'comic-setting-arrow';
-            preview.appendChild(arrow);
-        }
-        return preview;
-    }
-
     function createSettingsButton(title, preferenceKey) {
         const button = createButton('', '', 'comic-setting-btn');
         button.type = 'button';
@@ -52,15 +24,20 @@
         label.textContent = title;
         const value = document.createElement('span');
         value.className = 'comic-setting-value';
-        if (preferenceKey === 'viewMode' || preferenceKey === 'isRightToLeft') {
+        if (preferenceKey === 'isRightToLeft') {
             const content = document.createElement('span');
             content.className = 'comic-setting-content';
-            content.append(value, createSettingPreview(preferenceKey));
+            const preview = document.createElement('span');
+            preview.className = 'comic-setting-preview';
+            preview.setAttribute('aria-hidden', 'true');
+            const arrow = document.createElement('span');
+            arrow.className = 'comic-setting-arrow';
+            preview.appendChild(arrow);
+            content.append(value, preview);
             button.append(label, content);
         } else {
             button.append(label, value);
         }
-        if (preferenceKey === 'backgroundMode') label.hidden = value.hidden = true;
         return button;
     }
 

@@ -499,8 +499,8 @@ SPA URL 变化桥。
 
 - 创建阅读器覆盖层、图片容器、控制区、设置面板、截图选区 DOM。
 - 初始化设置按钮的保存值和阅读器初始布局。
-- 设置面板使用九个可整卡点击的循环按钮组成网格；每个 `comic-setting-btn` 内含固定标题 `comic-setting-label` 和当前值 `comic-setting-value`，详细行为说明放在按钮 `title` 中。背景按钮的两个文本节点均隐藏，仅展示实际背景色；可访问名称和悬停说明仍包含颜色名称。
-- 显示张数和阅读方向的值放在 `comic-setting-content` 行中，并配有 `aria-hidden` 的 `comic-setting-preview`。页面轮廓按 `dataset.value` 展示单页、双页或两种布局组合；大箭头按阅读方向旋转。图形使用 CSS 绘制，不启动动画且不拦截指针点击。
+- 设置面板使用九个可整卡点击的循环按钮组成网格；每个 `comic-setting-btn` 内含固定标题 `comic-setting-label` 和当前值 `comic-setting-value`，详细行为说明放在按钮 `title` 中。
+- 阅读方向的值放在 `comic-setting-content` 行中，并配有 `aria-hidden` 的 `comic-setting-preview`。大箭头按阅读方向旋转，使用 CSS 绘制，不启动动画且不拦截指针点击。显示张数仍使用纯文字按钮。
 - DOM 用 `dataset.settingLabel` 和 `dataset.preferenceKey` 记录标题及偏好字段；滤镜、预加载和图片内存分别使用 `filterBtn`、`preloadBtn`、`imageMemoryBtn` 引用。
 
 维护要点：
@@ -515,7 +515,7 @@ SPA URL 变化桥。
 - `setPreference(key, value)` 统一完成校验、控件同步、保存和必要的重绘。
 - `cyclePreference(key, modes)` 处理循环切换，按钮事件不再重复修改状态和保存。
 - 按钮当前值、背景色、滤镜、设置面板显隐和外部点击处理集中在此模块。同步只更新值 span，不替换固定标题和按钮子节点。
-- 按钮 `dataset.value` 记录规范偏好值。可访问名称为“标题：当前值”，布尔设置同时同步 `aria-pressed`；仅点击翻页开启时按该属性保持粉红色，其余文字设置只在悬停时变色，不显示刷新图标。背景按钮通过 `--comic-setting-background` 复用实际阅读背景色，悬停只改变边框。
+- 按钮 `dataset.value` 记录规范偏好值。可访问名称为“标题：当前值”，布尔设置同时同步 `aria-pressed`；仅点击翻页开启时按该属性保持粉红色，其余设置只在悬停时变色，不显示刷新图标。
 - 保存时由 `readerPreferences.normalize()` 挑选合法字段，不保存图片缓存、手势状态或 DOM。
 - 图像模式变更重新收集图片，张数变更重绘；滤镜、背景、动画设置不触发图片重载。
 - 漫画预加载和图片内存整卡按钮循环切换时保存偏好，并调用 `syncImageLoadingSettings()` 更新队列和缓存策略，不重绘或重新加载当前图片。
@@ -646,7 +646,7 @@ SPA URL 变化桥。
 - `dist/BiliPocketReader.user.js`：userscript 构建产物，需要随源码变更重新生成。
 - `tests/content-modules.test.js`：内容脚本模块单元测试。
 - `tests/storage-service.test.js`：storage 和收藏服务测试。
-- `tests/reader-settings.test.js`：九项默认偏好、已有页数选择保留、九个整卡按钮所有选项循环与回绕、固定标题/保存值/可访问状态恢复、纯色背景同步和装饰图形、真实点击后的单次保存、选择性显示效果和触摸翻页回归测试。
+- `tests/reader-settings.test.js`：九项默认偏好、已有页数选择保留、九个整卡按钮所有选项循环与回绕、固定标题/保存值/可访问状态恢复、装饰图形、真实点击后的单次保存、选择性显示效果和触摸翻页回归测试。
 - `tests/render-pipeline.test.js`：原图解码等待、过期渲染、关闭/加载失败、2/4/6/全部入口与翻页预加载、动态正文补齐、队列串行与取消、两种图片内存策略、回看宽度探测保护、旧画质清理、双页并行加载、平移尺寸复用、动画取消与纸面曲率/分辨率回归测试。
 - `tests/reader-lifecycle.test.js`：原生导航、跨文章生命周期、离开页面释放、BFCache 恢复预热、复制/下载独立输出、复制失败、全图仅选择、截图并发限制、超大画布限制与取消资源清理回归测试。
 - `安装指南.txt`：面向用户的安装说明。

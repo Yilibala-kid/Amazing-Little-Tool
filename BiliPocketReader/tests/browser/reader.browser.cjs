@@ -148,18 +148,16 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
                 value: getComputedStyle(button.querySelector('.comic-setting-value')).color };
             return Object.keys(expected).every(name => colors[name] === expected[name]);
         }, { key, expected });
-        const checkHover = async (key, restingColors, preserveBackground = false) => {
+        const checkHover = async (key, restingColors) => {
             await settingButton(key).hover();
-            await page.waitForFunction(({ key, restingColors, preserveBackground }) => {
+            await page.waitForFunction(({ key, restingColors }) => {
                 const button = document.querySelector('.comic-setting-btn[data-preference-key="' + key + '"]');
                 const style = getComputedStyle(button);
                 return button.matches(':hover') && !button.getAnimations().some(animation => animation.playState === 'running') &&
-                    (preserveBackground ? style.backgroundColor === restingColors.background : style.backgroundColor !== restingColors.background) &&
-                    style.borderColor !== restingColors.border;
-            }, { key, restingColors, preserveBackground });
+                    style.backgroundColor !== restingColors.background && style.borderColor !== restingColors.border;
+            }, { key, restingColors });
             const hovered = await settingColors(settingButton(key));
-            if (preserveBackground) assert.equal(hovered.background, restingColors.background, key + ': hover preserves the displayed background color');
-            else assert.notEqual(hovered.background, restingColors.background, key + ': hover changes the background');
+            assert.notEqual(hovered.background, restingColors.background, key + ': hover changes the background');
             assert.notEqual(hovered.border, restingColors.border, key + ': hover changes the border');
             await page.mouse.move(4, 4);
             await waitForSettingColors(key, restingColors);
@@ -193,10 +191,6 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
                     for (const selector of ['.comic-setting-label', '.comic-setting-value']) {
                         const span = button.querySelector(selector);
                         if (!span?.textContent.trim()) { issues.push(key + ': empty text'); continue; }
-                        if (key === 'backgroundMode') {
-                            if (span.getClientRects().length) issues.push(key + ': unexpected visible text');
-                            continue;
-                        }
                         const range = document.createRange();
                         range.selectNodeContents(span);
                         if (!inside(range.getBoundingClientRect(), rect)) issues.push(key + ': text clipped');
@@ -216,7 +210,7 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
         await checkSettingsLayout();
         await page.mouse.move(4, 4);
         const neutralColors = await settingColors(settingButton('filterMode'));
-        for (const key of Object.keys(defaults).filter(key => !['tapPageNavigation', 'backgroundMode'].includes(key))) {
+        for (const key of Object.keys(defaults).filter(key => key !== 'tapPageNavigation')) {
             assert.deepEqual(await settingColors(settingButton(key)), neutralColors,
                 key + ': settings keep neutral colors, including a changed preload count');
         }
@@ -251,29 +245,21 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
         ]) {
             await chooseSetting(backgroundButton, mode);
             await page.mouse.move(4, 4);
-            await waitForSettingColors('backgroundMode', { background: color, border: neutralColors.border });
-            assert.equal(await backgroundButton.innerText(), '', 'the background button displays no text');
+            await waitForSettingColors('backgroundMode', neutralColors);
+            assert.equal(await backgroundButton.locator('.comic-setting-label').innerText(), '背景颜色');
+            assert.equal(await backgroundButton.locator('.comic-setting-value').innerText(), label, 'the background button displays its color name');
             assert.equal(await backgroundButton.getAttribute('aria-label'), '背景颜色：' + label);
-            assert.ok((await backgroundButton.getAttribute('title')).includes(label), 'the swatch tooltip names its color');
+            assert.ok((await backgroundButton.getAttribute('title')).includes(label), 'the background tooltip names its color');
             assert.equal(await page.locator('#comic-reader-overlay').evaluate(element => getComputedStyle(element).backgroundColor), color);
             assert.equal(await page.evaluate(() => BilibiliToolbox.readerPreferences.load().backgroundMode), mode);
-            await checkHover('backgroundMode', await settingColors(backgroundButton), true);
+            await checkHover('backgroundMode', neutralColors);
         }
         await backgroundButton.focus();
         await page.keyboard.press('Enter');
-        assert.equal(await backgroundButton.getAttribute('data-value'), 'black', 'Enter switches the text-free color button');
+        assert.equal(await backgroundButton.getAttribute('data-value'), 'black', 'Enter switches the background setting');
         await chooseSetting(backgroundButton, 'white');
         const viewButton = settingButton('viewMode');
-        for (const [mode, groups] of [['single', [1]], ['double', [2]], ['auto', [1, 2]]]) {
-            await chooseSetting(viewButton, mode);
-            const layout = viewButton.locator('.comic-setting-page-layout:visible');
-            assert.equal(await layout.count(), 1, 'only the current page layout is visible');
-            assert.deepEqual(await layout.evaluate(element => [...element.children].map(group => group.children.length)), groups);
-        }
-        const pagePreview = await viewButton.locator('.comic-setting-preview').boundingBox();
-        await page.mouse.click(pagePreview.x + pagePreview.width / 2, pagePreview.y + pagePreview.height / 2);
-        assert.equal(await viewButton.getAttribute('data-value'), 'single', 'clicking the page preview advances one option');
-        await chooseSetting(viewButton, 'double');
+        assert.equal(await viewButton.locator('.comic-setting-preview').count(), 0, 'page-count setting remains a text-only button');
         const directionButton = settingButton('isRightToLeft');
         const checkDirectionArrow = async rightToLeft => {
             assert.equal(await directionButton.locator('.comic-setting-value').innerText(), rightToLeft ? '从右往左' : '从左往右');
@@ -353,7 +339,7 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
         await touchSession.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 1 });
         const touchIndex = await page.evaluate(() => reader.currentIndex);
         for (const [key, selector, expected] of [
-            ['backgroundMode', null, 'black'], ['viewMode', '.comic-setting-preview', 'double'],
+            ['backgroundMode', null, 'black'], ['viewMode', null, 'double'],
             ['isRightToLeft', '.comic-setting-preview', 'false']
         ]) {
             const button = settingButton(key);
