@@ -53,7 +53,11 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
             }, runtime: { onMessage: { addListener() {}, removeListener() {} } } };
             const NativeImage = window.Image;
             window.trackedImages = [];
+            window.preloadOverlap = false;
             window.Image = function(...args) {
+                if (window.reader?.isPreparing && [...reader.imageCache.values()].some(entry => !entry.settled)) {
+                    window.preloadOverlap = true;
+                }
                 const img = new NativeImage(...args);
                 window.trackedImages.push(img);
                 return img;
@@ -83,6 +87,20 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
             await page.addScriptTag({ path: path.join(root, file) });
         }
         await page.locator('.comic-entry-btn').waitFor();
+        await page.waitForFunction(() => reader.imageCache.size === 12 &&
+            [...reader.imageCache.values()].every(entry => entry.settled));
+        assert.deepEqual(await page.evaluate(() => [reader.preloadPages, reader.imageMemoryPolicy]), ['all', 'page'],
+            'new installations default to all pages and release on page close');
+        assert.deepEqual(await page.evaluate(() => trackedImages.map(img => Number(img.src.match(/page(\d+)/)[1]))),
+            Array.from({ length: 12 }, (_, i) => i), 'all entry preloading starts at page one and requests pages in order');
+        assert.equal(await page.evaluate(() => preloadOverlap), false, 'entry preload decodes one image before starting the next');
+        assert.equal(await page.locator('#comic-reader-overlay').count(), 0, 'all entry warmup does not open the reader');
+        await page.evaluate(() => {
+            reader.close(true);
+            trackedImages.length = 0;
+            reader.preloadPages = '4';
+            reader.prepareImages();
+        });
         await page.waitForFunction(() => reader.imageCache.size === 4 &&
             [...reader.imageCache.values()].every(entry => entry.settled));
         assert.equal(await page.evaluate(() => trackedImages.length), 4, 'entry warms only the first four images');
@@ -166,7 +184,7 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
             'the settings panel has an opaque background for readable text');
         await page.screenshot({ path: path.join(artifactDir, 'mobile-settings.png') });
         await page.evaluate(() => {
-            reader.setPreference('preloadPages', '4');
+            reader.setPreference('preloadPages', 'all');
             reader.setPreference('imageMemoryPolicy', 'page');
             reader.close(true);
         });

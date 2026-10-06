@@ -75,14 +75,17 @@
 
         getPreloadCount() {
             const state = this.getState();
-            return state.preloadPages === 'all' ? state.imgList.length : PRELOAD_COUNTS[state.preloadPages] || 4;
+            return PRELOAD_COUNTS[state.preloadPages] || state.imgList.length;
         }
 
         preloadImages(startIndex = 0, delay = 800) {
             this.cancelPreload();
             const state = this.getState();
             if (!(state.isOpen || state.isPreparing) || !Array.isArray(state.imgList) || state.imgList.length === 0) return;
-            const start = Math.max(0, Math.min(startIndex, state.imgList.length));
+            const loadAll = !PRELOAD_COUNTS[state.preloadPages];
+            // Every full-article queue resumes at the earliest missing page,
+            // including when opened or restarted while reading a later page.
+            const start = loadAll ? 0 : Math.max(0, Math.min(startIndex, state.imgList.length));
             const end = Math.min(state.imgList.length, start + this.getPreloadCount());
             const token = this.preloadToken;
             let index = start;
@@ -92,9 +95,20 @@
                 // image. Never start a second speculative decode alongside it.
                 if (this.preloadActive) await this.preloadActive;
                 if (token !== this.preloadToken) return;
-                while (index < end && this.imageCache.has(state.imgList[index])) index += 1;
+                const currentState = this.getState();
+                while (index < end) {
+                    const cached = this.imageCache.get(state.imgList[index]);
+                    // Respect explicit disposal of already-read pages. Full
+                    // preloading must not reload them after every page turn.
+                    const releasedPage = loadAll && currentState.imageMemoryPolicy === 'previous' &&
+                        index < (currentState.displayedIndex ?? currentState.currentIndex);
+                    if (!releasedPage && !(cached && (!loadAll || cached.settled))) break;
+                    index += 1;
+                }
                 if (index >= end) return;
                 this.pruneImageCache();
+                // An unfinished foreground request also belongs to this ordered
+                // queue: wait for its decode before advancing to the next page.
                 const pending = this.loadImage(state.imgList[index++], true);
                 this.preloadActive = pending;
                 await pending;

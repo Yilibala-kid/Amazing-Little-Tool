@@ -1429,7 +1429,7 @@
         imageRenderMode: 'smooth',
         backgroundMode: 'darkGray',
         filterMode: 'original',
-        preloadPages: '4',
+        preloadPages: 'all',
         imageMemoryPolicy: 'page',
         tapPageNavigation: false
     });
@@ -2521,7 +2521,7 @@
         reader.el.settingsPanel.append(
             createSettingsRow('\u663e\u793a\u8d28\u91cf', '\u539f\u56fe\u66f4\u6e05\u6670\uff1b\u6d41\u7545\u6a21\u5f0f\u7f29\u653e\u66f4\u987a\u6ed1\u3002', reader.el.imageRenderBtn),
             createSettingsRow('\u56fe\u50cf\u6ee4\u955c', '\u4ec5\u5f71\u54cd\u663e\u793a\uff0c\u4e0d\u5f71\u54cd\u539f\u56fe\u548c\u622a\u56fe\u3002', reader.el.filterSelect),
-            createSettingsRow('漫画预加载', '打开页面和翻页后按此数量提前加载；“全部”会加载本篇所有图片。每张图片计为一页。', reader.el.preloadSelect),
+            createSettingsRow('漫画预加载', '打开页面和翻页后提前加载；“全部”从第一页开始，按顺序逐张加载本篇图片。每张图片计为一页。', reader.el.preloadSelect),
             imageMemoryRow,
             createInlineSettingsGroup([
                 createCompactSettingsItem('\u80cc\u666f\u989c\u8272', reader.el.backgroundBtn),
@@ -2681,7 +2681,7 @@
         syncPreloadControl() {
             if (!this.el.preloadSelect) return;
             this.el.preloadSelect.value = this.preloadPages;
-            this.el.preloadSelect.title = '打开页面时提前加载漫画图片，阅读时继续提前加载后续图片。';
+            this.el.preloadSelect.title = '打开页面时提前加载漫画图片；“全部”从第一页开始，按顺序逐张加载。';
         },
 
         syncImageMemoryControl() {
@@ -3383,14 +3383,17 @@
 
         getPreloadCount() {
             const state = this.getState();
-            return state.preloadPages === 'all' ? state.imgList.length : PRELOAD_COUNTS[state.preloadPages] || 4;
+            return PRELOAD_COUNTS[state.preloadPages] || state.imgList.length;
         }
 
         preloadImages(startIndex = 0, delay = 800) {
             this.cancelPreload();
             const state = this.getState();
             if (!(state.isOpen || state.isPreparing) || !Array.isArray(state.imgList) || state.imgList.length === 0) return;
-            const start = Math.max(0, Math.min(startIndex, state.imgList.length));
+            const loadAll = !PRELOAD_COUNTS[state.preloadPages];
+            // Every full-article queue resumes at the earliest missing page,
+            // including when opened or restarted while reading a later page.
+            const start = loadAll ? 0 : Math.max(0, Math.min(startIndex, state.imgList.length));
             const end = Math.min(state.imgList.length, start + this.getPreloadCount());
             const token = this.preloadToken;
             let index = start;
@@ -3400,9 +3403,20 @@
                 // image. Never start a second speculative decode alongside it.
                 if (this.preloadActive) await this.preloadActive;
                 if (token !== this.preloadToken) return;
-                while (index < end && this.imageCache.has(state.imgList[index])) index += 1;
+                const currentState = this.getState();
+                while (index < end) {
+                    const cached = this.imageCache.get(state.imgList[index]);
+                    // Respect explicit disposal of already-read pages. Full
+                    // preloading must not reload them after every page turn.
+                    const releasedPage = loadAll && currentState.imageMemoryPolicy === 'previous' &&
+                        index < (currentState.displayedIndex ?? currentState.currentIndex);
+                    if (!releasedPage && !(cached && (!loadAll || cached.settled))) break;
+                    index += 1;
+                }
                 if (index >= end) return;
                 this.pruneImageCache();
+                // An unfinished foreground request also belongs to this ordered
+                // queue: wait for its decode before advancing to the next page.
                 const pending = this.loadImage(state.imgList[index++], true);
                 this.preloadActive = pending;
                 await pending;
@@ -3588,8 +3602,10 @@
                 this.entryImageTimer = null;
                 if (!this.isPreparing) return;
                 const images = this.collectReaderImages();
-                const count = this.preloadPages === 'all' ? images.length : this.imageLoader.getPreloadCount();
-                const changed = images.slice(0, count).join('\n') !== this.imgList.slice(0, count).join('\n');
+                const loadAll = this.preloadPages === 'all';
+                const count = loadAll ? images.length : this.imageLoader.getPreloadCount();
+                const changed = loadAll ? images.join('\n') !== this.imgList.join('\n') :
+                    images.slice(0, count).join('\n') !== this.imgList.slice(0, count).join('\n');
                 this.imgList = images;
                 if (changed) {
                     this.pruneImageCache();

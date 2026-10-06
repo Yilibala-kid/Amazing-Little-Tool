@@ -201,7 +201,7 @@
         reader.el.settingsPanel.append(
             createSettingsRow('\u663e\u793a\u8d28\u91cf', '\u539f\u56fe\u66f4\u6e05\u6670\uff1b\u6d41\u7545\u6a21\u5f0f\u7f29\u653e\u66f4\u987a\u6ed1\u3002', reader.el.imageRenderBtn),
             createSettingsRow('\u56fe\u50cf\u6ee4\u955c', '\u4ec5\u5f71\u54cd\u663e\u793a\uff0c\u4e0d\u5f71\u54cd\u539f\u56fe\u548c\u622a\u56fe\u3002', reader.el.filterSelect),
-            createSettingsRow('漫画预加载', '打开页面和翻页后按此数量提前加载；“全部”会加载本篇所有图片。每张图片计为一页。', reader.el.preloadSelect),
+            createSettingsRow('漫画预加载', '打开页面和翻页后提前加载；“全部”从第一页开始，按顺序逐张加载本篇图片。每张图片计为一页。', reader.el.preloadSelect),
             imageMemoryRow,
             createInlineSettingsGroup([
                 createCompactSettingsItem('\u80cc\u666f\u989c\u8272', reader.el.backgroundBtn),

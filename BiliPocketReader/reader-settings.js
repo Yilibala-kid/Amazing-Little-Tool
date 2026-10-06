@@ -115,7 +115,7 @@
         syncPreloadControl() {
             if (!this.el.preloadSelect) return;
             this.el.preloadSelect.value = this.preloadPages;
-            this.el.preloadSelect.title = '打开页面时提前加载漫画图片，阅读时继续提前加载后续图片。';
+            this.el.preloadSelect.title = '打开页面时提前加载漫画图片；“全部”从第一页开始，按顺序逐张加载。';
         },
 
         syncImageMemoryControl() {

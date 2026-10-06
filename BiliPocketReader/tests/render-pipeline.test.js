@@ -148,6 +148,7 @@ test('background originals decode serially, foreground requests reuse them, and 
         return fn();
     };
     reader.preloadImages = Object.getPrototypeOf(reader).preloadImages.bind(reader);
+    reader.preloadPages = '4';
     reader.imgList = Array.from({ length: 10 }, (_, i) => `p${i}`);
     reader.preloadImages(2);
     assert.equal(images.length, 0, 'preloading yields before starting');
@@ -320,7 +321,11 @@ function entryFixture() {
     const timers = new Map();
     const observers = [];
     let timerId = 0;
-    h.context.setTimeout = fn => { timers.set(++timerId, fn); return timerId; };
+    let timerClock = 0;
+    h.context.setTimeout = (fn, delay = 0) => {
+        timers.set(++timerId, { fn, due: timerClock + delay });
+        return timerId;
+    };
     h.context.clearTimeout = id => timers.delete(id);
     h.context.MutationObserver = class {
         constructor(callback) { this.callback = callback; observers.push(this); }
@@ -331,9 +336,10 @@ function entryFixture() {
     h.reader.isOpen = false;
     h.reader.preloadImages = Object.getPrototypeOf(h.reader).preloadImages.bind(h.reader);
     const runNext = () => {
-        const [id, fn] = timers.entries().next().value;
+        const [id, timer] = [...timers.entries()].sort((a, b) => a[1].due - b[1].due)[0];
         timers.delete(id);
-        return fn();
+        timerClock = timer.due;
+        return timer.fn();
     };
     return { ...h, timers, observers, runNext };
 }
@@ -342,6 +348,7 @@ test('slow auto-mode backward probing survives background and settings cache pru
     const { reader, container, images, timers, runNext, context } = entryFixture();
     reader.isOpen = true;
     reader.viewMode = 'auto';
+    reader.preloadPages = '4';
     reader.imageMemoryPolicy = 'previous';
     reader.imgList = Array.from({ length: 10 }, (_, i) => `p${i}`);
     reader.currentIndex = reader.displayedIndex = 4;
@@ -434,7 +441,8 @@ for (const setting of ['2', '4', '6', 'all']) {
         reader.close(true);
     });
 
-    test(`reading preloads ${setting} pages following the visible group`, async () => {
+    test(setting === 'all' ? 'reading preloads all pages from the article beginning' :
+        `reading preloads ${setting} pages following the visible group`, async () => {
         const { reader, images, timers, runNext } = entryFixture();
         reader.isOpen = true;
         reader.preloadPages = setting;
@@ -442,11 +450,11 @@ for (const setting of ['2', '4', '6', 'all']) {
         reader.currentIndex = reader.displayedIndex = 1;
         reader.activePageCount = 2;
         reader.preloadImages(3);
-        const count = setting === 'all' ? 9 : Number(setting);
+        const count = setting === 'all' ? 12 : Number(setting);
         for (let i = 0; i < count; i++) {
             const loading = runNext();
             assert.equal(images.length, i + 1);
-            assert.equal(images[i].src, `p${i + 3}`);
+            assert.equal(images[i].src, `p${i + (setting === 'all' ? 0 : 3)}`);
             images[i].onload(); images[i].finishDecode();
             await loading;
         }
@@ -455,6 +463,129 @@ for (const setting of ['2', '4', '6', 'all']) {
         reader.close(true);
     });
 }
+
+test('enabling all in the middle of an article fills the first page and cached-page gaps in order', async () => {
+    const { reader, images, timers, runNext } = entryFixture();
+    reader.isOpen = true;
+    reader.preloadPages = '2';
+    reader.imgList = Array.from({ length: 9 }, (_, i) => `p${i}`);
+    reader.currentIndex = reader.displayedIndex = 6;
+    for (const src of ['p1', 'p3', 'p6']) {
+        const cached = reader.loadImage(src);
+        const image = images.at(-1);
+        image.onload(); image.finishDecode();
+        await cached;
+    }
+    reader.preloadPages = 'all';
+    reader.syncImageLoadingSettings();
+    const missing = ['p0', 'p2', 'p4', 'p5', 'p7', 'p8'];
+    for (let i = 0; i < missing.length; i++) {
+        const loading = runNext();
+        assert.equal(images.length, i + 4, 'all preloading creates one request at a time');
+        const image = images.at(-1);
+        assert.equal(image.src, missing[i]);
+        image.onload(); image.finishDecode();
+        await loading;
+    }
+    assert.deepEqual(images.slice(3).map(img => img.src), missing, 'all fills every hole from page one instead of starting after the current page');
+    assert.equal(reader.imageCache.size, 9);
+    assert.equal(timers.size, 0);
+    reader.close(true);
+});
+
+test('restarting all after navigation continues the earliest missing page instead of jumping past the current page', async () => {
+    const { reader, images, timers, runNext } = entryFixture();
+    reader.isOpen = true;
+    reader.preloadPages = 'all';
+    reader.imgList = Array.from({ length: 9 }, (_, i) => `p${i}`);
+    reader.currentIndex = reader.displayedIndex = 5;
+    reader.preloadImages(6);
+    const first = runNext();
+    assert.equal(images[0].src, 'p0');
+    images[0].onload(); images[0].finishDecode();
+    await first;
+    reader.currentIndex = reader.displayedIndex = 7;
+    reader.preloadImages(8);
+    const second = runNext();
+    assert.equal(images[1].src, 'p1');
+    reader.currentIndex = reader.displayedIndex = 8;
+    reader.preloadImages(9);
+    const restarted = runNext();
+    assert.equal(images.length, 2, 'queue restart waits for the existing background decode');
+    images[1].onload(); images[1].finishDecode();
+    await second;
+    await tick();
+    assert.equal(images[2].src, 'p2');
+    images[2].onload(); images[2].finishDecode();
+    await restarted;
+    for (let i = 3; i < 9; i++) {
+        const loading = runNext();
+        assert.equal(images[i].src, `p${i}`);
+        images[i].onload(); images[i].finishDecode();
+        await loading;
+    }
+    assert.deepEqual(images.map(img => img.src), reader.imgList);
+    assert.equal(timers.size, 0);
+    reader.close(true);
+});
+
+test('all waits for a cached earlier page to finish decoding before starting the next background request', async () => {
+    const { reader, images, timers, runNext } = entryFixture();
+    reader.isOpen = true;
+    reader.preloadPages = 'all';
+    reader.imgList = ['p0', 'p1', 'p2'];
+    reader.currentIndex = reader.displayedIndex = 2;
+    const foreground = reader.loadImage('p0');
+    reader.preloadImages(3);
+    const first = runNext();
+    assert.equal(images.length, 1, 'an in-flight cache entry is awaited rather than skipped');
+    images[0].onload();
+    await tick();
+    assert.equal(images.length, 1, 'network completion alone cannot start the following background decode');
+    images[0].finishDecode();
+    assert.equal(await foreground, images[0]);
+    await first;
+    const next = runNext();
+    assert.equal(images.length, 2);
+    assert.equal(images[1].src, 'p1');
+    images[1].onload(); images[1].finishDecode();
+    await next;
+    const last = runNext();
+    assert.equal(images[2].src, 'p2');
+    images[2].onload(); images[2].finishDecode();
+    await last;
+    assert.equal(timers.size, 0);
+    reader.close(true);
+});
+
+test('all with previous-page release does not preload discarded pages before the displayed page again', async () => {
+    const { reader, container, images, timers, runNext } = entryFixture();
+    reader.isOpen = true;
+    reader.preloadPages = 'all';
+    reader.imageMemoryPolicy = 'previous';
+    reader.imgList = Array.from({ length: 8 }, (_, i) => `p${i}`);
+    for (let i = 0; i <= 4; i++) {
+        const cached = reader.loadImage(`p${i}`);
+        images[i].onload(); images[i].finishDecode();
+        await cached;
+    }
+    reader.currentIndex = reader.displayedIndex = 4;
+    container.children = [images[4]];
+    reader.pruneImageCache();
+    assert.deepEqual([...reader.imageCache.keys()], ['p4']);
+    reader.preloadImages(5);
+    for (let i = 5; i < 8; i++) {
+        const loading = runNext();
+        assert.equal(images.length, i + 1);
+        assert.equal(images[i].src, `p${i}`, 'released predecessors are skipped during all preloading');
+        images[i].onload(); images[i].finishDecode();
+        await loading;
+    }
+    assert.deepEqual([...reader.imageCache.keys()], ['p4', 'p5', 'p6', 'p7']);
+    assert.ok(images.slice(0, 4).every(img => /^data:image\/gif/.test(img.src)));
+    assert.equal(timers.size, 0);
+    reader.close(true);
+});
 
 test('all preloading observes later article images without reloading already decoded pages', async () => {
     const { reader, images, timers, observers, runNext } = entryFixture();
@@ -485,6 +616,32 @@ test('all preloading observes later article images without reloading already dec
     assert.equal(timers.size, 0);
     reader.close(true);
     assert.equal(observers[0].connected, false);
+});
+
+test('shrinking an all-preload article cancels removed pages even when the remaining prefix is unchanged', async () => {
+    for (const remaining of [2, 0]) {
+        const { reader, images, timers, observers, runNext } = entryFixture();
+        let urls = ['p0', 'p1', 'p2', 'p3'];
+        reader.preloadPages = 'all';
+        reader.collectReaderImages = () => [...urls];
+        reader.prepareImages();
+        const first = runNext();
+        images[0].onload(); images[0].finishDecode();
+        await first;
+        urls = urls.slice(0, remaining);
+        observers[0].callback();
+        runNext(); // The DOM refresh runs before the queued next page.
+        if (remaining) {
+            const last = runNext();
+            assert.equal(images[1].src, 'p1');
+            images[1].onload(); images[1].finishDecode();
+            await last;
+        }
+        assert.equal(timers.size, 0, 'removed pages leave no background queue behind');
+        assert.deepEqual(images.map(img => img.src), remaining ? ['p0', 'p1'] : ['p0'], 'the old queue cannot continue beyond the new article list');
+        assert.deepEqual(Array.from(reader.imgList), urls);
+        reader.close(true);
+    }
 });
 
 test('increasing entry preload settings loads the additional pages and reuses the earlier ones', async () => {

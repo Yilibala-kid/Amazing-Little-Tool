@@ -23,7 +23,7 @@
         imageRenderMode: 'smooth',
         backgroundMode: 'darkGray',
         filterMode: 'original',
-        preloadPages: '4',
+        preloadPages: 'all',
         imageMemoryPolicy: 'page',
         tapPageNavigation: false
     });

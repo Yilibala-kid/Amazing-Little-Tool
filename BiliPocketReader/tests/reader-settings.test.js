@@ -29,17 +29,19 @@ test('preloading preferences preserve older settings and reject unsupported valu
     assert.equal(oldPreferences.viewMode, 'single');
     assert.equal(oldPreferences.imageRenderMode, 'sharp');
     assert.equal(oldPreferences.tapPageNavigation, true);
-    assert.equal(oldPreferences.preloadPages, '4');
+    assert.equal(oldPreferences.preloadPages, 'all');
     assert.equal(oldPreferences.imageMemoryPolicy, 'page');
     for (const preloadPages of ['2', '4', '6', 'all']) {
         assert.equal(preferences.normalize({ preloadPages }).preloadPages, preloadPages);
+        const saved = loadReaderServices({ storedPreferences: { preloadPages } }).toolbox.readerPreferences.load();
+        assert.equal(saved.preloadPages, preloadPages, 'changing the default preserves existing saved page counts');
     }
     for (const imageMemoryPolicy of ['page', 'previous']) {
         assert.equal(preferences.normalize({ imageMemoryPolicy }).imageMemoryPolicy, imageMemoryPolicy);
     }
     for (const invalid of [null, 4, '0', '8', 'unknown']) {
         const result = preferences.normalize({ preloadPages: invalid, imageMemoryPolicy: invalid });
-        assert.equal(result.preloadPages, '4');
+        assert.equal(result.preloadPages, 'all');
         assert.equal(result.imageMemoryPolicy, 'page');
     }
     await preferences.save({ ...oldPreferences, preloadPages: 'all', imageMemoryPolicy: 'previous' });

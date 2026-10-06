@@ -132,8 +132,10 @@
                 this.entryImageTimer = null;
                 if (!this.isPreparing) return;
                 const images = this.collectReaderImages();
-                const count = this.preloadPages === 'all' ? images.length : this.imageLoader.getPreloadCount();
-                const changed = images.slice(0, count).join('\n') !== this.imgList.slice(0, count).join('\n');
+                const loadAll = this.preloadPages === 'all';
+                const count = loadAll ? images.length : this.imageLoader.getPreloadCount();
+                const changed = loadAll ? images.join('\n') !== this.imgList.join('\n') :
+                    images.slice(0, count).join('\n') !== this.imgList.slice(0, count).join('\n');
                 this.imgList = images;
                 if (changed) {
                     this.pruneImageCache();
