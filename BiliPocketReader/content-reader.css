@@ -1,4 +1,4 @@
-﻿/*  Comic Reader — Spotify dark theme   */
+/*  Comic Reader — Spotify dark theme   */
 /* ══════════════════════════════════════ */
 
 .comic-entry-btn {
@@ -543,5 +543,3 @@
     padding: 10px 12px;
     font-size: 12px;
 }
-
-@media (hover: none), (pointer: coarse) {

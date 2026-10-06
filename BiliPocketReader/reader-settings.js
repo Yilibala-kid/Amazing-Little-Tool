@@ -30,11 +30,6 @@
         grayscale: '\u9ed1\u767d'
     });
     const READER_ANIMATION_LABELS = Object.freeze({ smooth: '平滑', fade: '淡入', paper: '类纸' });
-    const SETTING_LABELS = Object.freeze({
-        imageRenderMode: '显示质量', filterMode: '图像滤镜', preloadPages: '漫画预加载',
-        imageMemoryPolicy: '图片内存', backgroundMode: '背景颜色', animationMode: '翻页动画',
-        viewMode: '显示张数', tapPageNavigation: '点击翻页', isRightToLeft: '阅读方向'
-    });
     const PREFERENCE_EFFECTS = {
         isRightToLeft: ['updateDirection', 'syncDirectionButton'],
         animationMode: ['syncAnimationButton'],
@@ -54,19 +49,11 @@
     function syncSettingButton(reader, button, key, text, title) {
         if (!button) return;
         const value = preferenceValue(reader, key);
-        const valueEl = button.querySelector?.('.comic-setting-value');
-        if (valueEl) valueEl.textContent = text;
-        else button.innerText = text;
-        const dataset = button.dataset || (button.dataset = {});
-        dataset.value = String(value);
-        dataset.changed = String(value !== readerPreferences.DEFAULT_READER_PREFERENCES?.[key]);
-        const label = dataset.settingLabel || SETTING_LABELS[key];
-        const setAttribute = (name, value) => {
-            if (button.setAttribute) button.setAttribute(name, value);
-            else button[name] = value;
-        };
-        setAttribute('aria-label', `${label}：${text}`);
-        if (typeof value === 'boolean') setAttribute('aria-pressed', String(value));
+        button.querySelector('.comic-setting-value').textContent = text;
+        button.dataset.value = String(value);
+        button.dataset.changed = String(value !== readerPreferences.DEFAULT_READER_PREFERENCES[key]);
+        button.setAttribute('aria-label', `${button.dataset.settingLabel}：${text}`);
+        if (typeof value === 'boolean') button.setAttribute('aria-pressed', String(value));
         button.title = `${title}\n点击切换设置。`;
     }
 
@@ -202,10 +189,6 @@
 
         getReaderBackgroundColor() {
             return READER_BACKGROUND_COLORS[this.backgroundMode] || READER_BACKGROUND_COLORS.black;
-        },
-
-        getReaderBackgroundLabel() {
-            return READER_BACKGROUND_LABELS[this.backgroundMode] || READER_BACKGROUND_LABELS.black;
         },
 
         applyReaderBackground() {

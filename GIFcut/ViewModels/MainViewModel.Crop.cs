@@ -15,7 +15,6 @@ public partial class MainViewModel
     // 裁剪框状态
     [ObservableProperty] private bool _isDraggingCrop = false;
     [ObservableProperty] private bool _isResizingCrop = false;
-    [ObservableProperty] private bool _isInitialized = false;
 
     [ObservableProperty] private double _cropX = 0;
     [ObservableProperty] private double _cropY = 0;

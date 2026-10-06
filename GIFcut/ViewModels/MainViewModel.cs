@@ -1,6 +1,5 @@
 using System.Collections.ObjectModel;
 using System.Windows;
-using System.Windows.Input;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -41,8 +40,6 @@ public partial class MainViewModel : ObservableObject
 
     public ObservableCollection<BitmapSource> Thumbnails { get; } = new();
 
-    public int FrameCount => _frames.Count;
-
     [RelayCommand]
     private async Task OpenAsync()
     {
@@ -67,7 +64,6 @@ public partial class MainViewModel : ObservableObject
             var document = await _gifReader.LoadGifAsync(path);
             if (_closed || version != _loadVersion) return;
             _frames = document.Frames;
-            OnPropertyChanged(nameof(FrameCount));
             CurrentFrameIndex = 0;
             StartFrame = 0;
             EndFrame = _frames.Count - 1;
@@ -92,7 +88,6 @@ public partial class MainViewModel : ObservableObject
             }
 
             ShowFrame(0);
-            IsInitialized = true;
             CanPlay = true;
             CanStop = true;
             CanExport = true;

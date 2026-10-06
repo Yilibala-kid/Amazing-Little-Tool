@@ -16,7 +16,6 @@
     const CONTENT_FILTER_SELECTOR = '.opus .opus-header__top .content-filter, .content-filter';
     const CONTENT_TAB_SELECTOR = '.content-filter .content-tab';
     const OPUS_BODY_SELECTOR = '.opus .opus-body';
-    const OPUS_FEED_SELECTOR = '.opus .opus-feed, .opus .opus-collection';
     const DYNAMIC_CARD_SELECTOR = '.bili-dyn-list__item, .bili-dyn-item, .bili-opus-view';
     const PRIMARY_IMAGE_SELECTOR = `
         .opus-module-content img,
@@ -102,10 +101,6 @@
         return query(OPUS_BODY_SELECTOR);
     }
 
-    function getSpaceOpusFeed() {
-        return query(OPUS_FEED_SELECTOR);
-    }
-
     function getDynamicCards() {
         return queryAll(DYNAMIC_CARD_SELECTOR);
     }
@@ -137,7 +132,6 @@
         getContentFilter,
         getContentTabs,
         getSpaceOpusBody,
-        getSpaceOpusFeed,
         getDynamicCards,
         getPrimaryImages,
         getFallbackImages

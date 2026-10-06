@@ -513,11 +513,6 @@
             this.render(true, step);
         }
 
-        canGoForward(step) {
-            const newIndex = this.currentIndex + step;
-            return newIndex >= 0 && newIndex < this.imgList.length;
-        }
-
         getNextPageGroupIndex(step) {
             return readerPageGroups.getNextIndex({
                 currentIndex: this.currentIndex,

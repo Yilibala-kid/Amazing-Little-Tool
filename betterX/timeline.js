@@ -76,12 +76,10 @@
 
         function scanTweets(root = document) {
             const articles = getTweetArticles(root);
-            let found = 0;
             let hidden = 0;
 
             articles.forEach(article => {
                 const isVideoTweet = hasVideoMedia(article) && !isCurrentStatusArticle(article);
-                if (isVideoTweet) found += 1;
                 if (isVideoTweet && isFilterActive()) hidden += 1;
                 setArticleHidden(article, isVideoTweet);
             });
@@ -90,7 +88,7 @@
             hiddenCount = isFilterActive() ? videoTweetCount : 0;
 
             onScan();
-            return { scanned: articles.length, found, hidden };
+            return { scanned: articles.length, hidden };
         }
 
         function getCurrentStatusArticle(tweetId) {

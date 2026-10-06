@@ -1,4 +1,5 @@
-﻿    #bilibili-fav-float-btn.bilibili-fav-touch {
+@media (hover: none), (pointer: coarse) {
+    #bilibili-fav-float-btn.bilibili-fav-touch {
         bottom: max(76px, env(safe-area-inset-bottom));
         right: max(16px, env(safe-area-inset-right));
         width: 54px;

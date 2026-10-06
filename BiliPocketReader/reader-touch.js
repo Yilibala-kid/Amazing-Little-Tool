@@ -106,10 +106,6 @@
             }, TAP_DELAY);
         },
 
-        isTouchPanMode() {
-            return this.touchPanLocked && this.scale > 1 + TOUCH_ZOOM_EPSILON;
-        },
-
         handleTouchStart(e) {
             if (this.isSelectingScreenshot) return;
             if (e.touches.length === 2) {
@@ -299,10 +295,8 @@
             }
 
             if (isTap) {
-                if (!this.touchStartedOnInteractive) {
-                    e.preventDefault();
-                    this.handleSingleFingerTap(this.touchEndX, this.touchEndY);
-                }
+                e.preventDefault();
+                this.handleSingleFingerTap(this.touchEndX, this.touchEndY);
                 this.isTouchSwiping = false;
                 return;
             }

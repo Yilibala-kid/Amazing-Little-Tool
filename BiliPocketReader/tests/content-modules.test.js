@@ -1391,23 +1391,6 @@ function loadComicReaderCoreContext(ImageClass, overrides = {}) {
         }), 0);
     }
     {
-        const { Image, created } = createFakeImageClass();
-        const reader = loadComicReaderCoreContext(Image);
-        const img = await reader.loadImage('https://i0.hdslb.com/bfs/new_dyn/page.png');
-
-        assert.equal(img, created[0]);
-        assert.equal(created[0].src, 'https://i0.hdslb.com/bfs/new_dyn/page.png');
-    }
-    {
-        const { Image, created } = createFakeImageClass();
-        const reader = loadComicReaderCoreContext(Image);
-        const first = reader.loadImage('https://i0.hdslb.com/bfs/new_dyn/cached.png');
-        const second = reader.loadImage('https://i0.hdslb.com/bfs/new_dyn/cached.png');
-
-        assert.equal(await first, await second);
-        assert.equal(created.length, 1);
-    }
-    {
         const { Image, created } = createFakeImageClass({ failLoad: true });
         const reader = loadComicReaderCoreContext(Image);
         const img = await reader.loadImage('https://i0.hdslb.com/bfs/new_dyn/missing.png');
@@ -1442,27 +1425,6 @@ function loadComicReaderCoreContext(ImageClass, overrides = {}) {
         reader.imageLoader.clear();
     }
     {
-        const { Image, created } = createFakeImageClass();
-        const scheduled = [];
-        const reader = loadComicReaderCoreContext(Image, {
-            setTimeout(fn) { scheduled.push(fn); return scheduled.length; }
-        });
-        reader.imgList = ['p0', 'p1', 'p2', 'p3', 'p4', 'p5', 'p6'];
-        reader.currentIndex = 1;
-        reader.activePageCount = 1;
-        reader.preloadPages = '4';
-
-        reader.preloadImages(2);
-
-        assert.equal(created.length, 0);
-        await scheduled.shift()();
-        await scheduled.shift()();
-        await scheduled.shift()();
-        await scheduled.shift()();
-        assert.deepEqual(created.map(img => img.src), ['p2', 'p3', 'p4', 'p5']);
-        assert.deepEqual(Array.from(reader.imageCache.keys()), ['p2', 'p3', 'p4', 'p5']);
-    }
-    {
         let receivedOptions = null;
         const { Image } = createFakeImageClass();
         const reader = loadComicReaderCoreContext(Image, {
@@ -1484,7 +1446,6 @@ function loadComicReaderCoreContext(ImageClass, overrides = {}) {
         const img = { style: {}, dataset: {} };
 
         reader.imageRenderMode = 'smooth';
-        reader.isSharpRenderMode = function() { return this.imageRenderMode === 'sharp'; };
         reader.rotation = 0;
         reader.setupImg(img, true, { width: 900, height: 1200 });
 

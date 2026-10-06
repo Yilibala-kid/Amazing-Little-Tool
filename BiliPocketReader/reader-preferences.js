@@ -45,14 +45,6 @@
         return normalizeMode('animationMode', mode);
     }
 
-    function normalizeImageRenderMode(mode) {
-        return normalizeMode('imageRenderMode', mode);
-    }
-
-    function normalizeBackgroundMode(mode) {
-        return normalizeMode('backgroundMode', mode);
-    }
-
     function normalizeFilterMode(mode) {
         return normalizeMode('filterMode', mode);
     }
@@ -84,8 +76,6 @@
         ANIMATION_MODES,
         DEFAULT_READER_PREFERENCES,
         normalizeAnimationMode,
-        normalizeImageRenderMode,
-        normalizeBackgroundMode,
         normalizeFilterMode,
         normalize: normalizePreferences,
         load: loadPreferences,
