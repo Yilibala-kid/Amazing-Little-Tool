@@ -432,14 +432,15 @@ SPA URL 变化桥。
 
 - 根据当前可见图片和选择框生成 canvas。
 - 支持旋转图片绘制。
-- 输出到剪贴板、系统分享或下载。
+- 按用户选择独立复制到剪贴板或下载 PNG 文件。
 - 生成截图文件名。
 
 维护要点：
 
 - 截图依赖 reader 提供可见图片描述和背景色。
-- 浏览器能力不同，输出路径会自动降级。
-- 同时只允许一个截图任务；导出图片逐张加载、绘制和释放，关闭阅读器时中止 fetch、撤销 Blob URL 并清空画布，过期任务不得继续下载。
+- `capture(reader, rect, descriptors, action = 'download')` 明确接收 `copy` 或 `download`；复制失败返回 `false` 并提示，不改为下载，也不按设备能力自动分享。
+- 复制在首次异步等待前调用 `clipboard.write()`，`ClipboardItem` 接收 PNG Blob Promise，以保留点击时的用户手势。
+- 同时只允许一个截图任务，忙时复制和下载按钮均禁用；导出图片逐张加载、绘制和释放，取消截图或关闭阅读器时中止 fetch、撤销 Blob URL 并清空画布，过期任务不得继续输出。
 - 输出画布限制为 1600 万像素、单边 8192 像素，超大整页截图按比例缩小；导出完成或失败都释放临时图像和画布。
 
 ### `reader-transform.js`
@@ -475,7 +476,9 @@ SPA URL 变化桥。
 
 - 管理截图选区矩形、拖拽、缩放手柄和按钮状态。
 - 处理选区 pointer 事件。
-- 调用 `readerScreenshot` 保存选区或全图截图。
+- `saveSelectionScreenshot(action = 'download')` 将选区和明确输出动作交给截图后端，成功或失败后均保留选区，供继续调整或再次输出。
+- `selectFullScreenshot()` 只将选区设为当前显示图片的联合边界，不直接输出；之后仍由用户选择复制或下载。
+- 取消退出选区并中止正在生成的截图；按钮工具栏顺序为取消、复制、下载、全图，对应 `selectionCancelBtn`、`selectionCopyBtn`、`selectionDownloadBtn`、`selectionFullBtn`。
 
 维护要点：
 
@@ -643,7 +646,7 @@ SPA URL 变化桥。
 - `tests/storage-service.test.js`：storage 和收藏服务测试。
 - `tests/reader-settings.test.js`：未保存偏好默认采用全部预加载、已有页数选择保留、九个整卡按钮所有选项循环与回绕、固定标题/保存值/视觉状态恢复、真实点击后的单次保存、选择性显示效果和触摸翻页回归测试。
 - `tests/render-pipeline.test.js`：原图解码等待、过期渲染、关闭/加载失败、2/4/6/全部入口与翻页预加载、动态正文补齐、队列串行与取消、两种图片内存策略、回看宽度探测保护、旧画质清理、双页并行加载、平移尺寸复用、动画取消与纸面曲率/分辨率回归测试。
-- `tests/reader-lifecycle.test.js`：原生导航、跨文章生命周期、离开页面释放、BFCache 恢复预热、截图并发限制、超大画布限制与中止回归测试。
+- `tests/reader-lifecycle.test.js`：原生导航、跨文章生命周期、离开页面释放、BFCache 恢复预热、复制/下载独立输出、复制失败、全图仅选择、截图并发限制、超大画布限制与取消资源清理回归测试。
 - `安装指南.txt`：面向用户的安装说明。
 
 ## 收藏与设置 UI 交互

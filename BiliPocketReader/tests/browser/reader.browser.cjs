@@ -34,7 +34,8 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
                     originals++;
                     if (delayOriginals) await new Promise(resolve => setTimeout(resolve, 200));
                 }
-                await route.fulfill({ contentType: 'image/svg+xml', body: svg(Number(url.match(/page(\d+)/)?.[1] || 0)) }).catch(() => {});
+                await route.fulfill({ contentType: 'image/svg+xml', headers: { 'access-control-allow-origin': '*' },
+                    body: svg(Number(url.match(/page(\d+)/)?.[1] || 0)) }).catch(() => {});
             } else await route.fulfill({ contentType: 'text/html', body: html });
         });
         await page.goto('https://www.bilibili.com/read/cv1');
@@ -249,6 +250,69 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
         await page.waitForFunction(() => reader.resizeFrame === null);
         await checkSettingsLayout();
         await page.screenshot({ path: path.join(artifactDir, 'landscape-settings.png') });
+        const downloads = [];
+        page.on('download', download => downloads.push(download));
+        await page.evaluate(() => {
+            reader.hideSettingsPanel();
+            window.copiedScreenshots = [];
+            window.screenshotShareCalls = 0;
+            Object.defineProperty(navigator, 'clipboard', { configurable: true, value: {
+                async write(items) {
+                    for (const item of items) copiedScreenshots.push(await item.getType('image/png'));
+                }
+            } });
+            Object.defineProperty(navigator, 'share', { configurable: true, value: () => { screenshotShareCalls++; } });
+        });
+        for (const viewport of [{ width: 1360, height: 900 }, { width: 390, height: 844 }, { width: 640, height: 360 }]) {
+            await page.setViewportSize(viewport);
+            await page.waitForFunction(() => reader.resizeFrame === null);
+            await page.evaluate(() => reader.startScreenshotSelection());
+            const toolbar = page.locator('.comic-selection-toolbar');
+            assert.deepEqual(await toolbar.getByRole('button').allTextContents(), ['取消', '复制', '下载', '全图']);
+            assert.equal(await toolbar.getByRole('button', { name: '复制', exact: true }).isDisabled(), true);
+            assert.equal(await toolbar.getByRole('button', { name: '下载', exact: true }).isDisabled(), true);
+            const outputCounts = [await page.evaluate(() => copiedScreenshots.length), downloads.length];
+            await toolbar.getByRole('button', { name: '全图', exact: true }).click();
+            assert.deepEqual(await page.evaluate(() => reader.normalizeSelectionRect()),
+                await page.evaluate(() => BilibiliToolbox.readerScreenshot.getBounds(reader.getVisibleImageDescriptors())),
+                'full image expands the crop to all displayed image bounds');
+            assert.deepEqual([await page.evaluate(() => copiedScreenshots.length), downloads.length], outputCounts,
+                'full image only changes the crop and performs no output');
+            // Draw a crop covering the upper-right controls, as a real drag.
+            await page.mouse.move(40, viewport.height - 24);
+            await page.mouse.down();
+            await page.mouse.move(viewport.width - 4, 4, { steps: 4 });
+            await page.mouse.up();
+            await page.evaluate(() => { reader.selectionHandles.ne.style.zIndex = '99999'; });
+            assert.equal(await page.evaluate(() => {
+                const buttons = [...reader.el.selectionToolbar.querySelectorAll('button')];
+                let previousBottom = 0;
+                return buttons.every(button => {
+                    const rect = button.getBoundingClientRect();
+                    const inBounds = rect.left >= 0 && rect.right <= innerWidth && rect.top >= previousBottom && rect.bottom <= innerHeight;
+                    previousBottom = rect.bottom;
+                    return inBounds && rect.height >= 44 &&
+                        document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2) === button;
+                });
+            }), true, 'vertical screenshot buttons stay clickable above the crop and all resize handles');
+            await page.screenshot({ path: path.join(artifactDir, 'screenshot-controls-' + viewport.width + '.png') });
+            await toolbar.getByRole('button', { name: '复制', exact: true }).focus();
+            await page.keyboard.press('Enter');
+            await page.waitForFunction(count => copiedScreenshots.length === count && reader.screenshotTask === null, outputCounts[0] + 1);
+            assert.equal(downloads.length, outputCounts[1], 'native Enter on Copy does not also trigger a download');
+            assert.equal(await page.evaluate(() => copiedScreenshots.at(-1).type === 'image/png' && copiedScreenshots.at(-1).size > 0), true);
+            const downloadEvent = page.waitForEvent('download');
+            await toolbar.getByRole('button', { name: '下载', exact: true }).click();
+            const downloaded = await downloadEvent;
+            assert.equal(await downloaded.failure(), null);
+            assert.match(downloaded.suggestedFilename(), /^bilibili-reader-.*\.png$/);
+            assert.deepEqual([...fs.readFileSync(await downloaded.path()).subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10]);
+            await page.waitForFunction(() => reader.screenshotTask === null);
+            assert.equal(await page.evaluate(() => copiedScreenshots.length), outputCounts[0] + 1, 'Download does not copy');
+            assert.equal(await page.evaluate(() => screenshotShareCalls), 0, 'explicit outputs never invoke system sharing');
+            await toolbar.getByRole('button', { name: '取消', exact: true }).click();
+            assert.equal(await page.evaluate(() => reader.isSelectingScreenshot), false);
+        }
         await page.evaluate(() => {
             reader.setPreference('preloadPages', 'all');
             reader.setPreference('imageMemoryPolicy', 'page');

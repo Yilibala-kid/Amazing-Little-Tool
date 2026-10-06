@@ -206,6 +206,19 @@ test('reader UI restores nine setting cards with saved values, fixed labels, and
     for (const [ref] of settingCases) assert.equal(defaults.el[ref].dataset.changed, 'false');
 });
 
+test('screenshot toolbar separates cancel, copy, download, and full-image selection actions', () => {
+    const { reader } = settingFixture();
+    const actions = [];
+    reader.cancelScreenshotSelection = showMessage => actions.push(['cancel', showMessage]);
+    reader.saveSelectionScreenshot = action => actions.push(['output', action]);
+    reader.selectFullScreenshot = () => actions.push(['select full']);
+    const buttons = [reader.el.selectionCancelBtn, reader.el.selectionCopyBtn,
+        reader.el.selectionDownloadBtn, reader.el.selectionFullBtn];
+    assert.deepEqual(reader.el.selectionToolbar.children, buttons, 'toolbar follows the user-facing action order');
+    buttons.forEach(button => button.click());
+    assert.deepEqual(actions, [['cancel', true], ['output', 'copy'], ['output', 'download'], ['select full']]);
+});
+
 test('touch state belongs to each reader and swipes preserve reading direction', () => {
     const { toolbox } = loadReaderServices();
     const first = toolbox.readerTouch.attach({});

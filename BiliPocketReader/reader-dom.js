@@ -118,25 +118,20 @@
 
         reader.el.selectionHint = document.createElement('div');
         reader.el.selectionHint.className = 'comic-selection-hint';
-        reader.el.selectionHint.textContent = '\u62d6\u52a8\u9009\u62e9\u622a\u56fe\u8303\u56f4\uff0c\u5b8c\u6210\u540e\u70b9\u51fb\u4fdd\u5b58';
+        reader.el.selectionHint.textContent = '拖动选择截图范围，再选择复制或下载；“全图”可扩展选区。';
 
         reader.el.selectionToolbar = document.createElement('div');
         reader.el.selectionToolbar.className = 'comic-selection-toolbar';
 
-        reader.el.selectionCancelBtn = document.createElement('button');
-        reader.el.selectionCancelBtn.type = 'button';
-        reader.el.selectionCancelBtn.innerText = '\u53d6\u6d88\u622a\u56fe';
-        reader.el.selectionCancelBtn.className = 'comic-selection-action comic-selection-cancel';
-
-        reader.el.selectionSaveBtn = document.createElement('button');
-        reader.el.selectionSaveBtn.type = 'button';
-        reader.el.selectionSaveBtn.innerText = '\u4fdd\u5b58\u622a\u56fe';
-        reader.el.selectionSaveBtn.className = 'comic-selection-action comic-selection-save';
-
-        reader.el.selectionFullBtn = document.createElement('button');
-        reader.el.selectionFullBtn.type = 'button';
-        reader.el.selectionFullBtn.innerText = '\u4fdd\u5b58\u5168\u56fe';
-        reader.el.selectionFullBtn.className = 'comic-selection-action comic-selection-full';
+        [
+            ['selectionCancelBtn', '取消', '取消截图并返回阅读', 'comic-selection-cancel'],
+            ['selectionCopyBtn', '复制', '将当前选区复制到剪贴板', 'comic-selection-copy'],
+            ['selectionDownloadBtn', '下载', '将当前选区保存为图片文件', 'comic-selection-download'],
+            ['selectionFullBtn', '全图', '将选区扩展为当前漫画全图，然后选择复制或下载', 'comic-selection-full']
+        ].forEach(([key, text, title, style]) => {
+            reader.el[key] = createButton(text, title, `comic-selection-action ${style}`);
+            reader.el[key].type = 'button';
+        });
 
         reader.el.selectionBox = document.createElement('div');
         reader.el.selectionBox.className = 'comic-selection-box';
@@ -155,7 +150,7 @@
             reader.selectionHandles[dir] = h;
         }
 
-        reader.el.selectionToolbar.append(reader.el.selectionFullBtn, reader.el.selectionSaveBtn, reader.el.selectionCancelBtn);
+        reader.el.selectionToolbar.append(reader.el.selectionCancelBtn, reader.el.selectionCopyBtn, reader.el.selectionDownloadBtn, reader.el.selectionFullBtn);
         reader.el.selectionOverlay.append(reader.el.selectionHint, reader.el.selectionToolbar, reader.el.selectionBox);
 
         row.append(reader.el.leftBtn, reader.el.offsetIncBtn, reader.el.pageInfo, reader.el.offsetDecBtn, reader.el.rightBtn);

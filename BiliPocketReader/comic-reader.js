@@ -311,8 +311,8 @@
                 .filter(item => item.src && item.width > 0 && item.height > 0);
         }
 
-        async captureScreenshot(selectionRect, descriptors = this.getVisibleImageDescriptors()) {
-            return readerScreenshot.capture(this, selectionRect, descriptors);
+        async captureScreenshot(selectionRect, action = 'download') {
+            return readerScreenshot.capture(this, selectionRect, this.getVisibleImageDescriptors(), action);
         }
 
         // Keep the current page visible until the next group is decoded.
@@ -573,7 +573,10 @@
         handleKeyDown(e) {
             if (this.isSelectingScreenshot) {
                 if (e.key === 'Escape') this.cancelScreenshotSelection(true);
-                if (e.key === 'Enter') void this.saveSelectionScreenshot();
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    void this.saveSelectionScreenshot('download');
+                }
                 return;
             }
             if (e.key === 'Escape' && this.isSettingsPanelVisible()) {

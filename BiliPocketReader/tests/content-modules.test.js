@@ -939,7 +939,11 @@ function loadReaderSelectionContext(readerRect = { width: 1000, height: 800 }) {
             return selector === '.comic-sel-handle' ? null : null;
         }
     };
-    const selectionSaveBtn = {
+    const selectionCopyBtn = {
+        disabled: false,
+        classList: new FakeClassList()
+    };
+    const selectionDownloadBtn = {
         disabled: false,
         classList: new FakeClassList()
     };
@@ -966,7 +970,8 @@ function loadReaderSelectionContext(readerRect = { width: 1000, height: 800 }) {
                 setPointerCapture() {},
                 releasePointerCapture() {}
             },
-            selectionSaveBtn,
+            selectionCopyBtn,
+            selectionDownloadBtn,
             selectionHint: { textContent: '' }
         },
         setSelectionHint(text) {

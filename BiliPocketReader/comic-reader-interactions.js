@@ -89,8 +89,12 @@
         on(el.pageInput, 'blur', () => reader.jumpToPageFromInput());
 
         el.selectionCancelBtn.onclick = () => reader.cancelScreenshotSelection(true);
-        el.selectionFullBtn.onclick = () => { void reader.saveFullScreenshot(); };
-        el.selectionSaveBtn.onclick = () => { void reader.saveSelectionScreenshot(); };
+        el.selectionFullBtn.onclick = () => reader.selectFullScreenshot();
+        el.selectionCopyBtn.onclick = () => { void reader.saveSelectionScreenshot('copy'); };
+        el.selectionDownloadBtn.onclick = () => { void reader.saveSelectionScreenshot('download'); };
+        on(el.selectionToolbar, 'keydown', event => {
+            if (event.key !== 'Escape') event.stopPropagation();
+        });
         on(el.selectionOverlay, 'pointerdown', reader.handleSelectionPointerDown);
         on(el.selectionOverlay, 'pointermove', reader.handleSelectionPointerMove);
         on(el.selectionOverlay, 'pointerup', reader.handleSelectionPointerUp);
