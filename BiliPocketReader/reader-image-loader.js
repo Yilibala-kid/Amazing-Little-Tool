@@ -20,6 +20,9 @@
             const cached = this.imageCache.get(src);
             if (cached) {
                 if (!preload) cached.image.fetchPriority = 'high';
+                // A browser may discard a cached original's decoded frame under
+                // memory pressure. Prepare it again before touching the viewport.
+                if (!preload && cached.settled) return this.prepareCachedFrame(cached);
                 return cached.promise;
             }
 
@@ -31,6 +34,7 @@
                 entry.release = () => {
                     if (entry.released) return;
                     entry.released = true;
+                    entry.releaseFrame?.();
                     // Detach first: browser image-loader bookkeeping can retain
                     // an image after cancellation; it must not retain the UI tree.
                     Toolbox.releaseImage(img);
@@ -53,6 +57,20 @@
             this.imageCache.set(src, entry);
             img.src = src;
             return entry.promise;
+        }
+
+        prepareCachedFrame(entry) {
+            if (entry.framePromise) return entry.framePromise;
+            entry.framePromise = new Promise(resolve => {
+                entry.releaseFrame = () => resolve(null);
+                Promise.resolve().then(() => entry.released ? null : entry.image.decode?.())
+                    .catch(() => { /* A successfully loaded image remains usable. */ })
+                    .then(() => resolve(entry.released ? null : entry.image));
+            }).finally(() => {
+                entry.framePromise = null;
+                entry.releaseFrame = null;
+            });
+            return entry.framePromise;
         }
 
         releaseCachedImage(src) {

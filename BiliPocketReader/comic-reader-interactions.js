@@ -56,6 +56,7 @@
             });
         });
         el.settingsBtn.onclick = stop(() => reader.toggleSettingsPanel());
+        el.thumbnailsBtn.onclick = stop(() => reader.toggleThumbnails());
 
         el.resetViewBtn.onclick = stop(() => reader.resetTransform());
         el.screenshotBtn.onclick = stop(() => reader.startScreenshotSelection());

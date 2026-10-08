@@ -62,7 +62,7 @@
     };
     window.chrome = chromeShim;
 
-    const css = "/* ===== content-base.css ===== */\n/* Bilibili Toolbox — Spotify-inspired dark theme */\r\n\r\n:root {\r\n    --acc: #fb7299;\r\n    --acc-hover: #fc8bab;\r\n    --acc-active: #e86288;\r\n    --bg-deepest: #0a0a0a;\r\n    --bg-surface: #181818;\r\n    --bg-elevated: #1f1f1f;\r\n    --bg-overlay: rgba(20, 20, 20, 0.94);\r\n    --text-primary: #ffffff;\r\n    --text-secondary: #b3b3b3;\r\n    --text-muted: #7c7c7c;\r\n    --border-subtle: rgba(255, 255, 255, 0.12);\r\n    --border-strong: #4d4d4d;\r\n    --error: #f3727f;\r\n    --error-hover: #e86a77;\r\n    --shadow-heavy: 0 8px 24px rgba(0, 0, 0, 0.5);\r\n    --shadow-card: 0 4px 8px rgba(0, 0, 0, 0.3);\r\n    --shadow-float: 0 4px 16px rgba(251, 114, 153, 0.25);\r\n    --radius-sm: 6px;\r\n    --radius-md: 8px;\r\n    --radius-lg: 12px;\r\n    --radius-pill: 9999px;\r\n    --font: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif;\r\n}\r\n\r\n\n/* ===== content-toolbox.css ===== */\n/* ===== Floating star button ===== */\r\n#bilibili-fav-float-btn {\r\n    position: fixed;\r\n    bottom: 80px;\r\n    right: 20px;\r\n    width: 50px;\r\n    height: 50px;\r\n    background: var(--acc);\r\n    border-radius: 50%;\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    font-size: 24px;\r\n    cursor: pointer;\r\n    box-shadow: var(--shadow-float);\r\n    z-index: 999999;\r\n    transition: transform 0.2s, box-shadow 0.2s, opacity 0.3s, visibility 0.3s;\r\n    line-height: 1;\r\n    text-align: center;\r\n}\r\n\r\n#bilibili-fav-float-btn:hover {\r\n    transform: scale(1.1);\r\n    box-shadow: 0 6px 20px rgba(251, 114, 153, 0.4);\r\n}\r\n\r\n#bilibili-fav-float-btn.dynamic-filter-active {\r\n    border-radius: var(--radius-sm);\r\n}\r\n\r\n#bilibili-fav-float-btn.bilibili-fav-video-hidden {\r\n    opacity: 0;\r\n}\r\n\r\n#bilibili-fav-float-btn.bilibili-fav-video-visible {\r\n    opacity: 1;\r\n}\r\n\r\n/* ===== Shared panel base ===== */\r\n#bilibili-fav-panel,\r\n#bilibili-toolbox-settings-panel {\r\n    position: fixed;\r\n    bottom: 140px;\r\n    right: 20px;\r\n    width: 280px;\r\n    background: var(--bg-overlay);\r\n    backdrop-filter: blur(20px);\r\n    -webkit-backdrop-filter: blur(20px);\r\n    border-radius: var(--radius-lg);\r\n    box-shadow: var(--shadow-heavy);\r\n    z-index: 1000000;\r\n    opacity: 0;\r\n    visibility: hidden;\r\n    transition: opacity 0.2s, transform 0.2s, visibility 0.2s;\r\n    font-family: var(--font);\r\n    transform: translateY(10px);\r\n    color: var(--text-primary);\r\n    border: 1px solid var(--border-subtle);\r\n}\r\n\r\n#bilibili-fav-panel {\r\n    --bilibili-fav-columns: 2;\r\n    --bilibili-fav-item-width: 130px;\r\n    --bilibili-fav-list-gap: 4px;\r\n    --bilibili-fav-list-padding-x: 10px;\r\n    width: calc(\r\n        var(--bilibili-fav-columns) * var(--bilibili-fav-item-width)\r\n        + (var(--bilibili-fav-columns) - 1) * var(--bilibili-fav-list-gap)\r\n        + var(--bilibili-fav-list-padding-x) * 2\r\n    );\r\n}\r\n\r\n#bilibili-toolbox-settings-panel {\r\n    width: 320px;\r\n    z-index: 1000001;\r\n}\r\n\r\n#bilibili-fav-panel.show,\r\n#bilibili-toolbox-settings-panel.show {\r\n    opacity: 1;\r\n    visibility: visible;\r\n    transform: translateY(0);\r\n}\r\n\r\n/* ===== Panel header ===== */\r\n.bilibili-fav-header {\r\n    display: flex;\r\n    justify-content: space-between;\r\n    align-items: center;\r\n    padding: 10px 16px;\r\n    border-bottom: 1px solid var(--border-subtle);\r\n    background: var(--bg-elevated);\r\n    color: var(--text-primary);\r\n    border-radius: var(--radius-lg) var(--radius-lg) 0 0;\r\n    font-weight: 600;\r\n    font-size: 14px;\r\n    letter-spacing: 0.3px;\r\n}\r\n\r\n.bilibili-fav-header-actions {\r\n    display: flex;\r\n    align-items: center;\r\n    gap: 6px;\r\n}\r\n\r\n/* ===== Panel content ===== */\r\n.bilibili-fav-content { max-height: 400px; overflow: auto; }\r\n\r\n.bilibili-fav-list {\r\n    padding: 8px var(--bilibili-fav-list-padding-x);\r\n    display: grid;\r\n    grid-template-columns: repeat(var(--bilibili-fav-columns, 2), var(--bilibili-fav-item-width));\r\n    gap: var(--bilibili-fav-list-gap);\r\n}\r\n\r\n.bilibili-fav-content::-webkit-scrollbar { width: 5px; }\r\n.bilibili-fav-content::-webkit-scrollbar-track { background: transparent; }\r\n.bilibili-fav-content::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 3px; }\r\n.bilibili-fav-content::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.25); }\r\n\r\n/* ===== Toolbox settings content ===== */\r\n.bilibili-toolbox-control-content {\r\n    padding: 14px;\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: 14px;\r\n}\r\n\r\n.bilibili-toolbox-control-section {\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: 10px;\r\n}\r\n\r\n.bilibili-toolbox-section-title {\r\n    color: var(--text-secondary);\r\n    font-size: 12px;\r\n    font-weight: 700;\r\n    line-height: 1;\r\n}\r\n\r\n.bilibili-toolbox-control-row {\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: space-between;\r\n    gap: 12px;\r\n    padding: 12px 14px;\r\n    border-radius: var(--radius-md);\r\n    background: var(--bg-surface);\r\n    cursor: pointer;\r\n    border: 1px solid var(--border-subtle);\r\n}\r\n\r\n.bilibili-toolbox-control-row-stack {\r\n    align-items: stretch;\r\n    cursor: default;\r\n    flex-direction: column;\r\n    gap: 10px;\r\n}\r\n\r\n.bilibili-toolbox-control-copy {\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: 4px;\r\n    min-width: 0;\r\n}\r\n\r\n.bilibili-toolbox-control-title {\r\n    font-size: 14px;\r\n    font-weight: 600;\r\n    color: var(--text-primary);\r\n}\r\n\r\n.bilibili-toolbox-control-desc {\r\n    font-size: 12px;\r\n    color: var(--text-secondary);\r\n    line-height: 1.4;\r\n}\r\n\r\n.bilibili-toolbox-segmented {\r\n    display: grid;\r\n    grid-template-columns: repeat(4, minmax(0, 1fr));\r\n    gap: 4px;\r\n    padding: 3px;\r\n    border-radius: var(--radius-pill);\r\n    background: var(--bg-deepest);\r\n    border: 1px solid var(--border-subtle);\r\n}\r\n\r\n.bilibili-toolbox-segmented button {\r\n    min-height: 30px;\r\n    padding: 0;\r\n    color: var(--text-secondary);\r\n    background: transparent;\r\n    border: none;\r\n    border-radius: var(--radius-pill);\r\n    cursor: pointer;\r\n    font: 600 13px/1 var(--font);\r\n}\r\n\r\n.bilibili-toolbox-segmented button:hover {\r\n    color: var(--text-primary);\r\n    background: rgba(255, 255, 255, 0.08);\r\n}\r\n\r\n.bilibili-toolbox-segmented button.active {\r\n    color: #fff;\r\n    background: var(--acc);\r\n}\r\n\r\n.bilibili-toolbox-keyword-input {\r\n    width: 100%;\r\n    min-height: 38px;\r\n    padding: 0 12px;\r\n    box-sizing: border-box;\r\n    color: var(--text-primary);\r\n    background: var(--bg-deepest);\r\n    border: 1px solid var(--border-subtle);\r\n    border-radius: var(--radius-md);\r\n    font-family: var(--font);\r\n    font-size: 13px;\r\n    outline: none;\r\n    transition: border-color 0.2s, box-shadow 0.2s, opacity 0.2s;\r\n}\r\n\r\n.bilibili-toolbox-keyword-input::placeholder {\r\n    color: var(--text-muted);\r\n}\r\n\r\n.bilibili-toolbox-keyword-input:focus {\r\n    border-color: var(--acc);\r\n    box-shadow: 0 0 0 2px rgba(251, 114, 153, 0.18);\r\n}\r\n\r\n/* ===== Toggle switch ===== */\r\n.bilibili-toolbox-switch {\r\n    position: relative;\r\n    width: 46px;\r\n    height: 28px;\r\n    flex-shrink: 0;\r\n}\r\n\r\n.bilibili-toolbox-switch input {\r\n    position: absolute;\r\n    inset: 0;\r\n    opacity: 0;\r\n    cursor: pointer;\r\n    margin: 0;\r\n}\r\n\r\n.bilibili-toolbox-switch-slider {\r\n    position: absolute;\r\n    inset: 0;\r\n    border-radius: var(--radius-pill);\r\n    background: rgba(255, 255, 255, 0.2);\r\n    transition: background 0.2s;\r\n}\r\n\r\n.bilibili-toolbox-switch-slider::before {\r\n    content: \"\";\r\n    position: absolute;\r\n    top: 3px;\r\n    left: 3px;\r\n    width: 22px;\r\n    height: 22px;\r\n    border-radius: 50%;\r\n    background: #fff;\r\n    transition: transform 0.2s;\r\n    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);\r\n}\r\n\r\n.bilibili-toolbox-switch input:checked + .bilibili-toolbox-switch-slider {\r\n    background: var(--acc);\r\n}\r\n\r\n.bilibili-toolbox-switch input:checked + .bilibili-toolbox-switch-slider::before {\r\n    transform: translateX(18px);\r\n}\r\n\r\n/* ===== Empty state ===== */\r\n.bilibili-fav-empty { grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 40px 20px; font-size: 14px; }\r\n\r\n/* ===== Toast message ===== */\r\n.bilibili-fav-msg { padding: 8px; text-align: center; font-size: 12px; display: none; }\r\n\r\n/* ===== Pill buttons (global) ===== */\r\n.bilibili-fav-add-btn,\r\n.bilibili-fav-control-btn,\r\n.bilibili-toolbox-export-btn,\r\n.bilibili-toolbox-import-btn {\r\n    padding: 10px 0;\r\n    font-size: 13px;\r\n    font-weight: 600;\r\n    border: none;\r\n    border-radius: var(--radius-pill);\r\n    cursor: pointer;\r\n    transition: all 0.2s;\r\n    color: var(--text-primary);\r\n    letter-spacing: 0.3px;\r\n    flex: 1;\r\n}\r\n\r\n.bilibili-fav-add-btn {\r\n    padding: 8px 16px;\r\n    flex: none;\r\n}\r\n\r\n.bilibili-fav-control-btn {\r\n    display: none;\r\n    padding: 8px 12px;\r\n    flex: none;\r\n}\r\n\r\n/* Primary pill — accent fill */\r\n.bilibili-fav-add-btn,\r\n.bilibili-fav-control-btn,\r\n.bilibili-toolbox-export-btn {\r\n    background: var(--acc);\r\n    color: #fff;\r\n}\r\n\r\n.bilibili-fav-add-btn:hover,\r\n.bilibili-fav-control-btn:hover,\r\n.bilibili-toolbox-export-btn:hover {\r\n    background: var(--acc-hover);\r\n}\r\n\r\n/* Secondary pill — dark fill */\r\n.bilibili-toolbox-import-btn {\r\n    background: var(--bg-elevated);\r\n    border: 1px solid var(--border-strong);\r\n}\r\n\r\n.bilibili-toolbox-import-btn:hover {\r\n    background: #2a2a2a;\r\n}\r\n\r\n/* ===== Button group layout ===== */\r\n.bilibili-toolbox-control-actions {\r\n    display: flex;\r\n    gap: 8px;\r\n    padding: 0 16px 16px;\r\n}\r\n\r\n/* ===== Export text document ===== */\r\n.bilibili-toolbox-export-dialog {\r\n    position: fixed;\r\n    inset: 0;\r\n    z-index: 1000002;\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    padding: 16px;\r\n    background: rgba(0, 0, 0, 0.72);\r\n}\r\n\r\n.bilibili-toolbox-export-document {\r\n    display: flex;\r\n    width: min(640px, 100%);\r\n    max-height: min(720px, 86vh);\r\n    flex-direction: column;\r\n    overflow: hidden;\r\n    background: var(--bg-elevated);\r\n    border: 1px solid var(--border-subtle);\r\n    border-radius: var(--radius-md);\r\n    box-shadow: var(--shadow-heavy);\r\n}\r\n\r\n.bilibili-toolbox-export-header {\r\n    display: flex;\r\n    min-height: 44px;\r\n    align-items: center;\r\n    justify-content: space-between;\r\n    padding: 0 14px;\r\n    color: var(--text-primary);\r\n    font-size: 14px;\r\n    font-weight: 600;\r\n    border-bottom: 1px solid var(--border-subtle);\r\n}\r\n\r\n.bilibili-toolbox-export-close {\r\n    display: inline-flex;\r\n    width: 30px;\r\n    height: 30px;\r\n    align-items: center;\r\n    justify-content: center;\r\n    padding: 0;\r\n    color: var(--text-secondary);\r\n    background: transparent;\r\n    border: none;\r\n    border-radius: 50%;\r\n    cursor: pointer;\r\n    font-size: 22px;\r\n    line-height: 1;\r\n}\r\n\r\n.bilibili-toolbox-export-close:hover {\r\n    color: var(--text-primary);\r\n    background: rgba(255, 255, 255, 0.1);\r\n}\r\n\r\n.bilibili-toolbox-export-text {\r\n    width: 100%;\r\n    min-height: min(560px, 72vh);\r\n    padding: 14px;\r\n    resize: vertical;\r\n    box-sizing: border-box;\r\n    color: var(--text-primary);\r\n    background: var(--bg-deepest);\r\n    border: none;\r\n    outline: none;\r\n    font-family: Consolas, \"Courier New\", monospace;\r\n    font-size: 13px;\r\n    line-height: 1.5;\r\n}\r\n\r\n.bilibili-toolbox-export-footer {\r\n    display: flex;\r\n    min-height: 52px;\r\n    align-items: center;\r\n    justify-content: space-between;\r\n    gap: 12px;\r\n    padding: 8px 12px;\r\n    border-top: 1px solid var(--border-subtle);\r\n}\r\n\r\n.bilibili-toolbox-export-status {\r\n    color: var(--text-secondary);\r\n    font-size: 12px;\r\n    line-height: 1.4;\r\n}\r\n\r\n.bilibili-toolbox-export-status.is-error {\r\n    color: var(--error);\r\n}\r\n\r\n.bilibili-toolbox-export-actions {\r\n    display: flex;\r\n    flex-shrink: 0;\r\n    align-items: center;\r\n    gap: 8px;\r\n}\r\n\r\n.bilibili-toolbox-export-clipboard,\r\n.bilibili-toolbox-export-confirm {\r\n    flex-shrink: 0;\r\n    padding: 8px 18px;\r\n    color: #fff;\r\n    background: var(--acc);\r\n    border: none;\r\n    border-radius: var(--radius-pill);\r\n    cursor: pointer;\r\n    font-size: 13px;\r\n    font-weight: 600;\r\n}\r\n\r\n.bilibili-toolbox-export-clipboard:hover,\r\n.bilibili-toolbox-export-confirm:hover {\r\n    background: var(--acc-hover);\r\n}\r\n\r\n/* ===== Favorite list items ===== */\r\n.bilibili-fav-item-link {\r\n    display: block;\r\n    text-decoration: none;\r\n    color: inherit;\r\n    width: var(--bilibili-fav-item-width);\r\n    min-width: 0;\r\n    position: relative;\r\n}\r\n\r\n.bilibili-fav-item {\r\n    display: flex;\r\n    flex-direction: column;\r\n    align-items: center;\r\n    padding: 8px 6px 10px;\r\n    border-radius: var(--radius-md);\r\n    transition: background 0.2s;\r\n    text-align: center;\r\n    position: relative;\r\n    overflow: hidden;\r\n    height: 88px;\r\n    box-sizing: border-box;\r\n    background: transparent;\r\n}\r\n\r\n.bilibili-fav-item[data-readlist=\"true\"] { padding: 0; }\r\n\r\n.bilibili-fav-item-link:hover .bilibili-fav-item {\r\n    background: var(--bg-surface);\r\n}\r\n\r\n.bilibili-fav-item-info {\r\n    display: flex;\r\n    flex-direction: column;\r\n    align-items: center;\r\n    width: 100%;\r\n    height: 100%;\r\n    position: relative;\r\n    z-index: 1;\r\n}\r\n\r\n.bilibili-fav-item[data-readlist=\"true\"] .bilibili-fav-item-info {\r\n    padding: 0;\r\n    overflow: hidden;\r\n    border-radius: inherit;\r\n}\r\n\r\n/* ===== Avatar — round, no border ===== */\r\n.bilibili-fav-avatar {\r\n    width: 44px;\r\n    height: 44px;\r\n    border-radius: 50%;\r\n    object-fit: cover;\r\n    position: relative;\r\n    z-index: 1;\r\n    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);\r\n}\r\n\r\n.bilibili-fav-avatar.square {\r\n    border-radius: var(--radius-md);\r\n}\r\n\r\n.bilibili-fav-avatar.cover {\r\n    display: block;\r\n    width: 100%;\r\n    height: 100%;\r\n    border-radius: var(--radius-md);\r\n    box-shadow: none;\r\n    position: absolute;\r\n    inset: 0;\r\n}\r\n\r\n/* ===== Name label ===== */\r\n.bilibili-fav-name {\r\n    font-size: 12px;\r\n    color: var(--text-primary);\r\n    font-weight: 500;\r\n    max-width: 100%;\r\n    overflow: hidden;\r\n    text-overflow: ellipsis;\r\n    white-space: nowrap;\r\n    position: relative;\r\n    z-index: 1;\r\n    margin-top: 6px;\r\n}\r\n\r\n.bilibili-fav-item[data-readlist=\"true\"] .bilibili-fav-name {\r\n    position: absolute;\r\n    bottom: 0;\r\n    left: 0;\r\n    right: 0;\r\n    color: #fff;\r\n    background: linear-gradient(transparent, rgba(0, 0, 0, 0.75));\r\n    padding: 20px 8px 8px;\r\n    border-radius: 0 0 var(--radius-md) var(--radius-md);\r\n    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);\r\n    font-weight: 600;\r\n}\r\n\r\n/* ===== Delete button — ghost pill ===== */\r\n.bilibili-fav-delete {\r\n    position: absolute;\r\n    top: 4px;\r\n    right: 4px;\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    width: 20px;\r\n    height: 20px;\r\n    padding: 0;\r\n    font-size: 14px;\r\n    line-height: 1;\r\n    color: var(--text-primary);\r\n    background: rgba(0, 0, 0, 0.5);\r\n    border: none;\r\n    border-radius: 50%;\r\n    appearance: none;\r\n    cursor: pointer;\r\n    transition: all 0.2s;\r\n    z-index: 2;\r\n    opacity: 0;\r\n}\r\n\r\n.bilibili-fav-item:hover .bilibili-fav-delete { opacity: 1; }\r\n.bilibili-fav-delete:hover { background: var(--error); }\r\n\r\n/* ===== Dynamic filter visibility ===== */\r\n.bilibili-toolbox-dynamic-filter-active .bili-dyn-list__item:not(.bilibili-toolbox-dynamic-filter-ready),\n.bilibili-toolbox-dynamic-filter-active .bili-dyn-item:not(.bilibili-toolbox-dynamic-filter-ready),\n.bilibili-toolbox-dynamic-filter-active .bili-opus-view:not(.bilibili-toolbox-dynamic-filter-ready),\n.bilibili-toolbox-hide-forward-dynamic { display: none !important; }\n\n/* ══════════════════════════════════════ */\n\n/* ===== content-reader.css ===== */\n/*  Comic Reader — Spotify dark theme   */\r\n/* ══════════════════════════════════════ */\r\n\r\n.comic-entry-btn {\r\n    position: fixed;\r\n    bottom: 24px;\r\n    right: 24px;\r\n    z-index: 9999;\r\n    display: inline-flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    padding: 10px 18px;\r\n    cursor: pointer;\r\n    background: var(--acc);\r\n    color: #fff;\r\n    border: none;\r\n    border-radius: 24px;\r\n    font-size: 20px;\r\n    line-height: 1;\r\n    box-shadow: 0 4px 16px rgba(251,114,153,0.3);\r\n}\r\n\r\n.comic-entry-btn-touch {\r\n    bottom: 16px;\r\n    right: 16px;\r\n    padding: 12px 16px;\r\n    font-size: 18px;\r\n}\r\n\r\n#comic-reader-overlay {\r\n    position: fixed;\r\n    inset: 0;\r\n    background: var(--bg-deepest);\r\n    z-index: 10000;\r\n    display: flex;\r\n    flex-direction: column;\r\n    align-items: center;\r\n    justify-content: center;\r\n    overflow: hidden;\r\n    touch-action: none;\r\n    overscroll-behavior: none;\r\n    isolation: isolate;\r\n}\r\n\r\n.comic-img-container {\r\n    display: flex;\r\n    width: 100%;\r\n    height: 100%;\r\n    align-items: center;\r\n    justify-content: center;\r\n    gap: 4px;\r\n    padding: 0;\r\n    margin: 0;\r\n    cursor: grab;\r\n    touch-action: none;\r\n    transform-origin: center center;\r\n    will-change: transform;\r\n}\r\n\r\n.comic-img-container.is-grabbing,\n.comic-img-container.is-grabbing img { cursor: grabbing; }\n\n.comic-img-container img {\n    filter: var(--comic-image-filter, none);\n}\n\n.comic-paper-turn {\n    position: absolute;\n    inset: 0;\n    width: 100%;\n    height: 100%;\n    z-index: 1;\n    pointer-events: none;\n    contain: strict;\n}\n\r\n/* ===== Reader control panels ===== */\r\n.comic-controls,\r\n.comic-settings-controls {\r\n    position: fixed;\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: 6px;\r\n    background: var(--bg-overlay);\r\n    padding: 8px 10px;\r\n    border-radius: var(--radius-lg);\r\n    backdrop-filter: blur(20px);\r\n    -webkit-backdrop-filter: blur(20px);\r\n    border: 1px solid var(--border-subtle);\r\n    color: var(--text-primary);\r\n    z-index: 10001;\r\n    transition: opacity 0.5s;\r\n    opacity: 1;\r\n    box-shadow: var(--shadow-heavy);\r\n}\r\n\r\n.comic-controls.is-hidden,\r\n.comic-settings-controls.is-hidden { opacity: 0; }\r\n\r\n.comic-controls { bottom: 24px; right: 24px; }\r\n.comic-settings-controls { top: 24px; right: 24px; }\r\n\r\n.comic-settings-panel {\n    box-sizing: border-box;\n    position: fixed;\n    left: 50%;\n    top: 50%;\n    z-index: 10002;\n    display: flex;\n    flex-direction: column;\n    gap: 8px;\n    width: min(420px, calc(100vw - 32px));\n    max-height: calc(100vh - 24px);\n    max-height: calc(100dvh - 24px);\n    overflow-y: auto;\r\n    padding: 14px;\r\n    color: var(--text-primary);\r\n    background: var(--bg-overlay);\r\n    border: 1px solid var(--border-subtle);\r\n    border-radius: var(--radius-md);\r\n    box-shadow: var(--shadow-heavy);\r\n    backdrop-filter: blur(20px);\r\n    -webkit-backdrop-filter: blur(20px);\r\n    opacity: 0;\r\n    visibility: hidden;\r\n    pointer-events: none;\r\n    transform: translate(-50%, -50%) scale(0.96);\r\n    transition: opacity 0.18s ease-out, transform 0.18s ease-out, visibility 0.18s;\r\n}\r\n\r\n.comic-settings-panel.show {\r\n    opacity: 1;\r\n    visibility: visible;\r\n    pointer-events: auto;\r\n    transform: translate(-50%, -50%) scale(1);\r\n}\r\n\r\n.comic-settings-heading {\n    margin: 0;\n    font: 600 17px/1.4 var(--font);\n    color: var(--text-primary);\n}\n\n.comic-settings-hint {\n    margin: 0;\n    font: 12px/1.4 var(--font);\n    color: var(--text-secondary);\n}\n\n.comic-settings-grid {\n    display: grid;\n    grid-template-columns: repeat(2, minmax(0, 1fr));\n    gap: 8px;\n}\n\n.comic-setting-btn {\n    position: relative;\n    display: flex;\n    flex-direction: column;\n    align-items: flex-start;\n    justify-content: center;\n    gap: 5px;\n    box-sizing: border-box;\n    min-width: 0;\n    min-height: 66px;\n    padding: 10px 12px;\n    border: 1px solid var(--border-subtle);\n    border-radius: var(--radius-md);\n    background: rgba(255, 255, 255, 0.035);\n    color: var(--text-primary);\n    font-family: var(--font);\n    text-align: left;\n    cursor: pointer;\n    touch-action: manipulation;\n    transition: background .15s, border-color .15s;\n}\n\n.comic-setting-label {\n    font-size: 12px;\n    line-height: 1.3;\n    color: var(--text-secondary);\n}\n\n.comic-setting-value {\n    font-size: 16px;\n    font-weight: 600;\n    line-height: 1.35;\n}\n\n.comic-setting-content {\n    display: flex;\n    width: 100%;\n    align-items: center;\n    justify-content: space-between;\n    gap: 8px;\n}\n\n.comic-setting-preview {\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    width: 50px;\n    height: 22px;\n    flex-shrink: 0;\n    opacity: .85;\n    pointer-events: none;\n}\n\n.comic-setting-arrow {\n    position: relative;\n    width: 50px;\n    height: 22px;\n}\n\n.comic-setting-arrow::before {\n    content: \u0027\u0027;\n    position: absolute;\n    left: 0;\n    right: 1px;\n    top: 10px;\n    height: 2px;\n    background: currentColor;\n}\n\n.comic-setting-arrow::after {\n    content: \u0027\u0027;\n    position: absolute;\n    top: 5px;\n    right: 1px;\n    width: 10px;\n    height: 10px;\n    border-top: 2px solid currentColor;\n    border-right: 2px solid currentColor;\n    transform: rotate(45deg);\n}\n\n.comic-setting-btn[data-preference-key=\"isRightToLeft\"][data-value=\"true\"] .comic-setting-arrow {\n    transform: rotate(180deg);\n}\n\n.comic-setting-btn:where([data-preference-key=\"tapPageNavigation\"][aria-pressed=\"true\"]) {\n    border-color: rgba(251, 114, 153, .45);\n    background: rgba(251, 114, 153, .10);\n}\n\n.comic-setting-btn:where([data-preference-key=\"tapPageNavigation\"][aria-pressed=\"true\"]) .comic-setting-value {\n    color: var(--acc-hover);\n}\n\n.comic-setting-btn:hover {\n    border-color: var(--acc);\n    background: rgba(251, 114, 153, .15);\n}\n\n.comic-setting-btn:focus-visible {\n    outline: 2px solid var(--acc);\n    outline-offset: 2px;\n}\n\n.comic-setting-btn[data-preference-key=\"isRightToLeft\"] {\n    grid-column: 1 / -1;\n}\n\n@media (max-height: 480px) {\n    .comic-settings-panel { padding: 10px; gap: 6px; }\n    .comic-settings-grid { gap: 6px; }\n    .comic-setting-btn { min-height: 48px; padding: 6px 10px; gap: 2px; }\n    .comic-setting-label { font-size: 11px; }\n    .comic-setting-value { font-size: 14px; }\n}\n\n@media (min-width: 481px) and (max-height: 480px) {\n    .comic-settings-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }\n    .comic-setting-btn[data-preference-key=\"preloadPages\"] { grid-column: 1; }\n}\n\r\n.comic-reader-row {\r\n    display: flex;\r\n    gap: 6px;\r\n    align-items: center;\r\n    justify-content: center;\r\n}\r\n\r\n.comic-reader-row-wrap { flex-wrap: wrap; }\r\n\r\n.comic-page-info {\r\n    display: inline-flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    gap: 4px;\r\n    font-size: 14px;\r\n    min-width: 68px;\r\n    min-height: 32px;\r\n    padding: 0 2px;\r\n    color: var(--text-primary);\r\n    cursor: pointer;\r\n    white-space: nowrap;\r\n}\r\n\r\n.comic-page-display {\r\n    display: inline;\r\n}\r\n\r\n.comic-page-input {\r\n    display: none;\r\n    width: 44px;\r\n    height: 32px;\r\n    padding: 0 8px;\r\n    color: var(--text-primary);\r\n    background: var(--bg-deepest);\r\n    border: 1px solid var(--border-subtle);\r\n    border-radius: var(--radius-pill);\r\n    font: inherit;\r\n    text-align: center;\r\n    outline: none;\r\n}\r\n\r\n.comic-page-input:focus {\r\n    border-color: var(--acc);\r\n    box-shadow: 0 0 0 2px rgba(251, 114, 153, 0.18);\r\n}\r\n\r\n.comic-page-range {\r\n    display: none;\r\n    color: var(--text-secondary);\r\n}\r\n\r\n.comic-page-info.is-editing {\r\n    cursor: text;\r\n    justify-content: flex-start;\r\n}\r\n\r\n.comic-page-info.is-editing .comic-page-display {\r\n    display: none;\r\n}\r\n\r\n.comic-page-info.is-editing .comic-page-input,\r\n.comic-page-info.is-editing .comic-page-range {\r\n    display: inline-flex;\r\n}\r\n\r\n/* ===== Reader pill buttons ===== */\r\n.comic-btn {\r\n    padding: 8px 16px;\r\n    cursor: pointer;\r\n    background: var(--bg-elevated);\r\n    color: var(--text-primary);\r\n    border: 1px solid var(--border-strong);\r\n    border-radius: var(--radius-pill);\r\n    font-size: 13px;\r\n    font-weight: 500;\r\n    letter-spacing: 0.3px;\r\n    transition: background 0.15s, border-color 0.15s;\r\n}\r\n\r\n.comic-btn-alt {\r\n    background: transparent;\r\n    border-color: var(--border-subtle);\r\n}\r\n\r\n.comic-btn:hover { background: #2a2a2a; }\r\n\r\n.comic-btn-alt:hover { background: var(--bg-elevated); }\r\n\r\n.comic-btn.active {\r\n    background: var(--acc);\r\n    border-color: var(--acc);\r\n    color: #fff;\r\n}\r\n.comic-btn.active:hover { background: var(--acc-hover); }\r\n\r\n/* ===== Reader toast ===== */\r\n.comic-toast {\r\n    position: fixed;\r\n    left: 50%;\r\n    transform: translateX(-50%);\r\n    padding: 8px 16px;\r\n    border-radius: var(--radius-pill);\r\n    font-size: 13px;\r\n    font-weight: 500;\r\n    color: var(--text-primary);\r\n    z-index: 10004;\r\n    opacity: 0;\r\n    transition: opacity 0.2s;\r\n    pointer-events: none;\r\n    background: var(--bg-overlay);\r\n    backdrop-filter: blur(12px);\r\n    -webkit-backdrop-filter: blur(12px);\r\n    border: 1px solid var(--border-subtle);\r\n    box-shadow: var(--shadow-card);\r\n    top: 18px;\r\n}\r\n\r\n.comic-toast.is-visible { opacity: 1; }\r\n\r\n.comic-toast.is-error { background: rgba(180, 40, 40, 0.94); }\r\n\r\n/* ===== Reader images ===== */\r\n#comic-reader-overlay img {\r\n    cursor: grab;\r\n    display: block;\r\n    max-width: none;\r\n    max-height: none;\r\n    object-fit: contain;\r\n    box-shadow: 0 0 30px rgba(0, 0, 0, 0.4);\r\n    touch-action: none;\r\n    user-select: none;\r\n    -webkit-user-drag: none;\r\n    flex-shrink: 0;\r\n}\r\n\r\n#comic-reader-overlay .comic-img-full,\r\n#comic-reader-overlay .comic-img-half {\r\n    max-width: none;\r\n    max-height: none;\r\n}\r\n\r\n/* ===== Screenshot selection ===== */\r\n.comic-selection-overlay {\r\n    position: fixed;\r\n    inset: 0;\r\n    z-index: 10003;\r\n    display: none;\r\n    cursor: crosshair;\n    touch-action: none;\n    isolation: isolate;\n    background: rgba(10,10,10,0.01);\n}\r\n\r\n.comic-selection-hint {\r\n    position: fixed;\r\n    top: 18px;\n    right: 92px;\n    z-index: 3;\n    box-sizing: border-box;\n    width: 236px;\n    max-width: calc(100vw - 110px);\n    padding: 10px 12px;\r\n    border-radius: var(--radius-md);\r\n    background: rgba(15,15,15,0.92);\r\n    color: #fff;\r\n    font-size: 13px;\r\n    line-height: 1.45;\r\n    text-align: left;\r\n    pointer-events: none;\r\n    border: 1px solid var(--border-subtle);\r\n    box-shadow: var(--shadow-card);\r\n}\r\n\r\n.comic-selection-toolbar {\n    position: fixed;\n    top: 18px;\n    right: 18px;\n    z-index: 4;\n    display: flex;\n    flex-direction: column;\n    width: 64px;\n    max-height: calc(100vh - 36px);\n    overflow-y: auto;\n    gap: 10px;\n    align-items: stretch;\n}\n\n.comic-selection-action {\n    box-sizing: border-box;\n    min-width: 64px;\n    min-height: 44px;\n    flex-shrink: 0;\n    padding: 10px 12px;\n    border: none;\r\n    border-radius: var(--radius-pill);\r\n    color: #fff;\r\n    font-size: 13px;\n    line-height: 1.3;\n    cursor: pointer;\r\n    box-shadow: 0 4px 12px rgba(0,0,0,0.25);\r\n}\r\n\r\n.comic-selection-copy { background: var(--acc); }\n.comic-selection-download { background: #287f55; }\n.comic-selection-full { background: #3467a8; }\r\n.comic-selection-cancel { background: #d33; }\r\n\r\n.comic-selection-action.is-disabled {\r\n    opacity: 0.45;\r\n    cursor: not-allowed;\r\n}\r\n\r\n.comic-selection-box {\r\n    position: absolute;\n    z-index: 1;\n    display: none;\n    border: 2px dashed var(--acc);\r\n    background: rgba(251,114,153,0.18);\r\n    box-shadow: 0 0 0 1px rgba(255,255,255,0.25) inset;\r\n    cursor: move;\r\n    pointer-events: auto;\r\n}\r\n\r\n.comic-sel-handle {\r\n    position: absolute;\r\n    width: 28px;\r\n    height: 28px;\r\n    pointer-events: auto;\r\n    display: none;\r\n    z-index: 2;\r\n    transform: translate(-50%,-50%);\r\n    touch-action: none;\r\n}\r\n\r\n.comic-sel-handle::after {\r\n    content: \"\";\r\n    position: absolute;\r\n    left: 50%;\r\n    top: 50%;\r\n    width: 12px;\r\n    height: 12px;\r\n    background: var(--acc);\r\n    border: 2px solid #fff;\r\n    border-radius: 50%;\r\n    box-shadow: 0 1px 4px rgba(0,0,0,0.4);\r\n    transform: translate(-50%,-50%);\r\n}\r\n\r\n.comic-sel-handle[data-dir=\"n\"],\r\n.comic-sel-handle[data-dir=\"s\"] {\r\n    width: max(28px, calc(100% - 40px));\r\n}\r\n\r\n.comic-sel-handle[data-dir=\"e\"],\r\n.comic-sel-handle[data-dir=\"w\"] {\r\n    height: max(28px, calc(100% - 40px));\r\n}\r\n\r\n.comic-sel-handle[data-dir=\"nw\"],\r\n.comic-sel-handle[data-dir=\"ne\"],\r\n.comic-sel-handle[data-dir=\"se\"],\r\n.comic-sel-handle[data-dir=\"sw\"] {\r\n    width: 34px;\r\n    height: 34px;\r\n    z-index: 3;\r\n}\r\n\r\n/* ===== Compact layout (mobile) ===== */\r\n#comic-reader-overlay.reader-compact .comic-btn {\r\n    min-width: 54px;\r\n    min-height: 44px;\r\n    padding: 10px 12px;\r\n    font-size: 14px;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-controls {\r\n    left: auto;\r\n    right: max(12px, env(safe-area-inset-right));\r\n    bottom: max(12px, env(safe-area-inset-bottom));\r\n    width: fit-content;\r\n    max-width: calc(100vw - 24px);\r\n    padding: 8px 12px;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-settings-controls {\r\n    top: max(12px, env(safe-area-inset-top));\r\n    left: auto;\r\n    right: max(12px, env(safe-area-inset-right));\r\n    width: fit-content;\r\n    max-width: 96px;\r\n    flex-direction: column;\r\n    flex-wrap: nowrap;\r\n    justify-content: center;\r\n    max-height: 40vh;\r\n    overflow-y: auto;\r\n    padding: 8px 12px;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-settings-panel {\n    padding: 10px;\n}\n\n#comic-reader-overlay.reader-compact .comic-toast {\n    top: 12px;\r\n    max-width: calc(100vw - 24px);\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-selection-hint {\n    top: 12px;\n    right: 86px;\n    max-width: calc(100vw - 98px);\n    font-size: 12px;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-selection-toolbar {\r\n    top: 12px;\n    right: 12px;\n    max-height: calc(100vh - 24px);\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-selection-action {\r\n    padding: 10px 12px;\r\n    font-size: 12px;\n}\r\n\n/* ===== content-responsive.css ===== */\n@media (hover: none), (pointer: coarse) {\r\n    #bilibili-fav-float-btn.bilibili-fav-touch {\r\n        bottom: max(76px, env(safe-area-inset-bottom));\r\n        right: max(16px, env(safe-area-inset-right));\r\n        width: 54px;\r\n        height: 54px;\r\n        font-size: 24px;\r\n        opacity: 1 !important;\r\n        visibility: visible !important;\r\n    }\r\n\r\n    #bilibili-fav-panel,\r\n    #bilibili-toolbox-settings-panel {\r\n        right: max(12px, env(safe-area-inset-right));\r\n        bottom: max(140px, calc(env(safe-area-inset-bottom) + 84px));\r\n        max-height: min(70vh, 560px);\r\n        overflow: hidden;\r\n    }\r\n\r\n    #bilibili-fav-panel {\r\n        width: min(\r\n            calc(\r\n                var(--bilibili-fav-columns) * var(--bilibili-fav-item-width)\r\n                + (var(--bilibili-fav-columns) - 1) * var(--bilibili-fav-list-gap)\r\n                + var(--bilibili-fav-list-padding-x) * 2\r\n            ),\r\n            calc(100vw - 24px)\r\n        );\r\n    }\r\n\r\n    #bilibili-toolbox-settings-panel {\r\n        width: min(320px, calc(100vw - 24px));\r\n    }\r\n\r\n    .bilibili-fav-header {\r\n        gap: 8px;\r\n        padding: 10px 12px;\r\n    }\r\n\r\n    .bilibili-fav-header-actions {\r\n        flex-shrink: 0;\r\n    }\r\n\r\n    .bilibili-fav-control-btn {\r\n        display: inline-flex;\r\n        align-items: center;\r\n        justify-content: center;\r\n    }\r\n\r\n    .bilibili-fav-add-btn,\r\n    .bilibili-fav-control-btn,\r\n    .bilibili-toolbox-export-btn,\r\n    .bilibili-toolbox-import-btn {\r\n        min-height: 42px;\r\n    }\r\n\r\n    .bilibili-fav-content {\r\n        max-height: min(52vh, 420px);\r\n    }\r\n\r\n    .bilibili-fav-delete {\n        width: 26px;\n        height: 26px;\n        font-size: 16px;\n    }\n\r\n    .bilibili-fav-item-link {\r\n        touch-action: manipulation;\r\n    }\r\n\r\n    .comic-sel-handle {\r\n        width: 36px;\r\n        height: 36px;\r\n    }\r\n\r\n    .comic-sel-handle[data-dir=\"n\"],\r\n    .comic-sel-handle[data-dir=\"s\"] {\r\n        width: max(36px, calc(100% - 48px));\r\n    }\r\n\r\n    .comic-sel-handle[data-dir=\"e\"],\r\n    .comic-sel-handle[data-dir=\"w\"] {\r\n        height: max(36px, calc(100% - 48px));\r\n    }\r\n\r\n    .comic-sel-handle[data-dir=\"nw\"],\r\n    .comic-sel-handle[data-dir=\"ne\"],\r\n    .comic-sel-handle[data-dir=\"se\"],\r\n    .comic-sel-handle[data-dir=\"sw\"] {\r\n        width: 44px;\r\n        height: 44px;\r\n    }\r\n\r\n    #comic-reader-overlay.reader-compact .comic-reader-row {\r\n        gap: 6px;\r\n        flex-wrap: wrap;\r\n    }\r\n\r\n    #comic-reader-overlay.reader-compact .comic-settings-controls { gap: 8px; }\r\n\r\n    #comic-reader-overlay.reader-compact .comic-selection-hint { text-align: left; }\r\n}\r\n\n";
+    const css = "/* ===== content-base.css ===== */\n/* Bilibili Toolbox — Spotify-inspired dark theme */\r\n\r\n:root {\r\n    --acc: #fb7299;\r\n    --acc-hover: #fc8bab;\r\n    --acc-active: #e86288;\r\n    --bg-deepest: #0a0a0a;\r\n    --bg-surface: #181818;\r\n    --bg-elevated: #1f1f1f;\r\n    --bg-overlay: rgba(20, 20, 20, 0.94);\r\n    --text-primary: #ffffff;\r\n    --text-secondary: #b3b3b3;\r\n    --text-muted: #7c7c7c;\r\n    --border-subtle: rgba(255, 255, 255, 0.12);\r\n    --border-strong: #4d4d4d;\r\n    --error: #f3727f;\r\n    --error-hover: #e86a77;\r\n    --shadow-heavy: 0 8px 24px rgba(0, 0, 0, 0.5);\r\n    --shadow-card: 0 4px 8px rgba(0, 0, 0, 0.3);\r\n    --shadow-float: 0 4px 16px rgba(251, 114, 153, 0.25);\r\n    --radius-sm: 6px;\r\n    --radius-md: 8px;\r\n    --radius-lg: 12px;\r\n    --radius-pill: 9999px;\r\n    --font: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif;\r\n}\r\n\r\n\n/* ===== content-toolbox.css ===== */\n/* ===== Floating star button ===== */\r\n#bilibili-fav-float-btn {\r\n    position: fixed;\r\n    bottom: 80px;\r\n    right: 20px;\r\n    width: 50px;\r\n    height: 50px;\r\n    background: var(--acc);\r\n    border-radius: 50%;\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    font-size: 24px;\r\n    cursor: pointer;\r\n    box-shadow: var(--shadow-float);\r\n    z-index: 999999;\r\n    transition: transform 0.2s, box-shadow 0.2s, opacity 0.3s, visibility 0.3s;\r\n    line-height: 1;\r\n    text-align: center;\r\n}\r\n\r\n#bilibili-fav-float-btn:hover {\r\n    transform: scale(1.1);\r\n    box-shadow: 0 6px 20px rgba(251, 114, 153, 0.4);\r\n}\r\n\r\n#bilibili-fav-float-btn.dynamic-filter-active {\r\n    border-radius: var(--radius-sm);\r\n}\r\n\r\n#bilibili-fav-float-btn.bilibili-fav-video-hidden {\r\n    opacity: 0;\r\n}\r\n\r\n#bilibili-fav-float-btn.bilibili-fav-video-visible {\r\n    opacity: 1;\r\n}\r\n\r\n/* ===== Shared panel base ===== */\r\n#bilibili-fav-panel,\r\n#bilibili-toolbox-settings-panel {\r\n    position: fixed;\r\n    bottom: 140px;\r\n    right: 20px;\r\n    width: 280px;\r\n    background: var(--bg-overlay);\r\n    backdrop-filter: blur(20px);\r\n    -webkit-backdrop-filter: blur(20px);\r\n    border-radius: var(--radius-lg);\r\n    box-shadow: var(--shadow-heavy);\r\n    z-index: 1000000;\r\n    opacity: 0;\r\n    visibility: hidden;\r\n    transition: opacity 0.2s, transform 0.2s, visibility 0.2s;\r\n    font-family: var(--font);\r\n    transform: translateY(10px);\r\n    color: var(--text-primary);\r\n    border: 1px solid var(--border-subtle);\r\n}\r\n\r\n#bilibili-fav-panel {\r\n    --bilibili-fav-columns: 2;\r\n    --bilibili-fav-item-width: 130px;\r\n    --bilibili-fav-list-gap: 4px;\r\n    --bilibili-fav-list-padding-x: 10px;\r\n    width: calc(\r\n        var(--bilibili-fav-columns) * var(--bilibili-fav-item-width)\r\n        + (var(--bilibili-fav-columns) - 1) * var(--bilibili-fav-list-gap)\r\n        + var(--bilibili-fav-list-padding-x) * 2\r\n    );\r\n}\r\n\r\n#bilibili-toolbox-settings-panel {\r\n    width: 320px;\r\n    z-index: 1000001;\r\n}\r\n\r\n#bilibili-fav-panel.show,\r\n#bilibili-toolbox-settings-panel.show {\r\n    opacity: 1;\r\n    visibility: visible;\r\n    transform: translateY(0);\r\n}\r\n\r\n/* ===== Panel header ===== */\r\n.bilibili-fav-header {\r\n    display: flex;\r\n    justify-content: space-between;\r\n    align-items: center;\r\n    padding: 10px 16px;\r\n    border-bottom: 1px solid var(--border-subtle);\r\n    background: var(--bg-elevated);\r\n    color: var(--text-primary);\r\n    border-radius: var(--radius-lg) var(--radius-lg) 0 0;\r\n    font-weight: 600;\r\n    font-size: 14px;\r\n    letter-spacing: 0.3px;\r\n}\r\n\r\n.bilibili-fav-header-actions {\r\n    display: flex;\r\n    align-items: center;\r\n    gap: 6px;\r\n}\r\n\r\n/* ===== Panel content ===== */\r\n.bilibili-fav-content { max-height: 400px; overflow: auto; }\r\n\r\n.bilibili-fav-list {\r\n    padding: 8px var(--bilibili-fav-list-padding-x);\r\n    display: grid;\r\n    grid-template-columns: repeat(var(--bilibili-fav-columns, 2), var(--bilibili-fav-item-width));\r\n    gap: var(--bilibili-fav-list-gap);\r\n}\r\n\r\n.bilibili-fav-content::-webkit-scrollbar { width: 5px; }\r\n.bilibili-fav-content::-webkit-scrollbar-track { background: transparent; }\r\n.bilibili-fav-content::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 3px; }\r\n.bilibili-fav-content::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.25); }\r\n\r\n/* ===== Toolbox settings content ===== */\r\n.bilibili-toolbox-control-content {\r\n    padding: 14px;\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: 14px;\r\n}\r\n\r\n.bilibili-toolbox-control-section {\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: 10px;\r\n}\r\n\r\n.bilibili-toolbox-section-title {\r\n    color: var(--text-secondary);\r\n    font-size: 12px;\r\n    font-weight: 700;\r\n    line-height: 1;\r\n}\r\n\r\n.bilibili-toolbox-control-row {\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: space-between;\r\n    gap: 12px;\r\n    padding: 12px 14px;\r\n    border-radius: var(--radius-md);\r\n    background: var(--bg-surface);\r\n    cursor: pointer;\r\n    border: 1px solid var(--border-subtle);\r\n}\r\n\r\n.bilibili-toolbox-control-row-stack {\r\n    align-items: stretch;\r\n    cursor: default;\r\n    flex-direction: column;\r\n    gap: 10px;\r\n}\r\n\r\n.bilibili-toolbox-control-copy {\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: 4px;\r\n    min-width: 0;\r\n}\r\n\r\n.bilibili-toolbox-control-title {\r\n    font-size: 14px;\r\n    font-weight: 600;\r\n    color: var(--text-primary);\r\n}\r\n\r\n.bilibili-toolbox-control-desc {\r\n    font-size: 12px;\r\n    color: var(--text-secondary);\r\n    line-height: 1.4;\r\n}\r\n\r\n.bilibili-toolbox-segmented {\r\n    display: grid;\r\n    grid-template-columns: repeat(4, minmax(0, 1fr));\r\n    gap: 4px;\r\n    padding: 3px;\r\n    border-radius: var(--radius-pill);\r\n    background: var(--bg-deepest);\r\n    border: 1px solid var(--border-subtle);\r\n}\r\n\r\n.bilibili-toolbox-segmented button {\r\n    min-height: 30px;\r\n    padding: 0;\r\n    color: var(--text-secondary);\r\n    background: transparent;\r\n    border: none;\r\n    border-radius: var(--radius-pill);\r\n    cursor: pointer;\r\n    font: 600 13px/1 var(--font);\r\n}\r\n\r\n.bilibili-toolbox-segmented button:hover {\r\n    color: var(--text-primary);\r\n    background: rgba(255, 255, 255, 0.08);\r\n}\r\n\r\n.bilibili-toolbox-segmented button.active {\r\n    color: #fff;\r\n    background: var(--acc);\r\n}\r\n\r\n.bilibili-toolbox-keyword-input {\r\n    width: 100%;\r\n    min-height: 38px;\r\n    padding: 0 12px;\r\n    box-sizing: border-box;\r\n    color: var(--text-primary);\r\n    background: var(--bg-deepest);\r\n    border: 1px solid var(--border-subtle);\r\n    border-radius: var(--radius-md);\r\n    font-family: var(--font);\r\n    font-size: 13px;\r\n    outline: none;\r\n    transition: border-color 0.2s, box-shadow 0.2s, opacity 0.2s;\r\n}\r\n\r\n.bilibili-toolbox-keyword-input::placeholder {\r\n    color: var(--text-muted);\r\n}\r\n\r\n.bilibili-toolbox-keyword-input:focus {\r\n    border-color: var(--acc);\r\n    box-shadow: 0 0 0 2px rgba(251, 114, 153, 0.18);\r\n}\r\n\r\n/* ===== Toggle switch ===== */\r\n.bilibili-toolbox-switch {\r\n    position: relative;\r\n    width: 46px;\r\n    height: 28px;\r\n    flex-shrink: 0;\r\n}\r\n\r\n.bilibili-toolbox-switch input {\r\n    position: absolute;\r\n    inset: 0;\r\n    opacity: 0;\r\n    cursor: pointer;\r\n    margin: 0;\r\n}\r\n\r\n.bilibili-toolbox-switch-slider {\r\n    position: absolute;\r\n    inset: 0;\r\n    border-radius: var(--radius-pill);\r\n    background: rgba(255, 255, 255, 0.2);\r\n    transition: background 0.2s;\r\n}\r\n\r\n.bilibili-toolbox-switch-slider::before {\r\n    content: \"\";\r\n    position: absolute;\r\n    top: 3px;\r\n    left: 3px;\r\n    width: 22px;\r\n    height: 22px;\r\n    border-radius: 50%;\r\n    background: #fff;\r\n    transition: transform 0.2s;\r\n    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);\r\n}\r\n\r\n.bilibili-toolbox-switch input:checked + .bilibili-toolbox-switch-slider {\r\n    background: var(--acc);\r\n}\r\n\r\n.bilibili-toolbox-switch input:checked + .bilibili-toolbox-switch-slider::before {\r\n    transform: translateX(18px);\r\n}\r\n\r\n/* ===== Empty state ===== */\r\n.bilibili-fav-empty { grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 40px 20px; font-size: 14px; }\r\n\r\n/* ===== Toast message ===== */\r\n.bilibili-fav-msg { padding: 8px; text-align: center; font-size: 12px; display: none; }\r\n\r\n/* ===== Pill buttons (global) ===== */\r\n.bilibili-fav-add-btn,\r\n.bilibili-fav-control-btn,\r\n.bilibili-toolbox-export-btn,\r\n.bilibili-toolbox-import-btn {\r\n    padding: 10px 0;\r\n    font-size: 13px;\r\n    font-weight: 600;\r\n    border: none;\r\n    border-radius: var(--radius-pill);\r\n    cursor: pointer;\r\n    transition: all 0.2s;\r\n    color: var(--text-primary);\r\n    letter-spacing: 0.3px;\r\n    flex: 1;\r\n}\r\n\r\n.bilibili-fav-add-btn {\r\n    padding: 8px 16px;\r\n    flex: none;\r\n}\r\n\r\n.bilibili-fav-control-btn {\r\n    display: none;\r\n    padding: 8px 12px;\r\n    flex: none;\r\n}\r\n\r\n/* Primary pill — accent fill */\r\n.bilibili-fav-add-btn,\r\n.bilibili-fav-control-btn,\r\n.bilibili-toolbox-export-btn {\r\n    background: var(--acc);\r\n    color: #fff;\r\n}\r\n\r\n.bilibili-fav-add-btn:hover,\r\n.bilibili-fav-control-btn:hover,\r\n.bilibili-toolbox-export-btn:hover {\r\n    background: var(--acc-hover);\r\n}\r\n\r\n/* Secondary pill — dark fill */\r\n.bilibili-toolbox-import-btn {\r\n    background: var(--bg-elevated);\r\n    border: 1px solid var(--border-strong);\r\n}\r\n\r\n.bilibili-toolbox-import-btn:hover {\r\n    background: #2a2a2a;\r\n}\r\n\r\n/* ===== Button group layout ===== */\r\n.bilibili-toolbox-control-actions {\r\n    display: flex;\r\n    gap: 8px;\r\n    padding: 0 16px 16px;\r\n}\r\n\r\n/* ===== Export text document ===== */\r\n.bilibili-toolbox-export-dialog {\r\n    position: fixed;\r\n    inset: 0;\r\n    z-index: 1000002;\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    padding: 16px;\r\n    background: rgba(0, 0, 0, 0.72);\r\n}\r\n\r\n.bilibili-toolbox-export-document {\r\n    display: flex;\r\n    width: min(640px, 100%);\r\n    max-height: min(720px, 86vh);\r\n    flex-direction: column;\r\n    overflow: hidden;\r\n    background: var(--bg-elevated);\r\n    border: 1px solid var(--border-subtle);\r\n    border-radius: var(--radius-md);\r\n    box-shadow: var(--shadow-heavy);\r\n}\r\n\r\n.bilibili-toolbox-export-header {\r\n    display: flex;\r\n    min-height: 44px;\r\n    align-items: center;\r\n    justify-content: space-between;\r\n    padding: 0 14px;\r\n    color: var(--text-primary);\r\n    font-size: 14px;\r\n    font-weight: 600;\r\n    border-bottom: 1px solid var(--border-subtle);\r\n}\r\n\r\n.bilibili-toolbox-export-close {\r\n    display: inline-flex;\r\n    width: 30px;\r\n    height: 30px;\r\n    align-items: center;\r\n    justify-content: center;\r\n    padding: 0;\r\n    color: var(--text-secondary);\r\n    background: transparent;\r\n    border: none;\r\n    border-radius: 50%;\r\n    cursor: pointer;\r\n    font-size: 22px;\r\n    line-height: 1;\r\n}\r\n\r\n.bilibili-toolbox-export-close:hover {\r\n    color: var(--text-primary);\r\n    background: rgba(255, 255, 255, 0.1);\r\n}\r\n\r\n.bilibili-toolbox-export-text {\r\n    width: 100%;\r\n    min-height: min(560px, 72vh);\r\n    padding: 14px;\r\n    resize: vertical;\r\n    box-sizing: border-box;\r\n    color: var(--text-primary);\r\n    background: var(--bg-deepest);\r\n    border: none;\r\n    outline: none;\r\n    font-family: Consolas, \"Courier New\", monospace;\r\n    font-size: 13px;\r\n    line-height: 1.5;\r\n}\r\n\r\n.bilibili-toolbox-export-footer {\r\n    display: flex;\r\n    min-height: 52px;\r\n    align-items: center;\r\n    justify-content: space-between;\r\n    gap: 12px;\r\n    padding: 8px 12px;\r\n    border-top: 1px solid var(--border-subtle);\r\n}\r\n\r\n.bilibili-toolbox-export-status {\r\n    color: var(--text-secondary);\r\n    font-size: 12px;\r\n    line-height: 1.4;\r\n}\r\n\r\n.bilibili-toolbox-export-status.is-error {\r\n    color: var(--error);\r\n}\r\n\r\n.bilibili-toolbox-export-actions {\r\n    display: flex;\r\n    flex-shrink: 0;\r\n    align-items: center;\r\n    gap: 8px;\r\n}\r\n\r\n.bilibili-toolbox-export-clipboard,\r\n.bilibili-toolbox-export-confirm {\r\n    flex-shrink: 0;\r\n    padding: 8px 18px;\r\n    color: #fff;\r\n    background: var(--acc);\r\n    border: none;\r\n    border-radius: var(--radius-pill);\r\n    cursor: pointer;\r\n    font-size: 13px;\r\n    font-weight: 600;\r\n}\r\n\r\n.bilibili-toolbox-export-clipboard:hover,\r\n.bilibili-toolbox-export-confirm:hover {\r\n    background: var(--acc-hover);\r\n}\r\n\r\n/* ===== Favorite list items ===== */\r\n.bilibili-fav-item-link {\r\n    display: block;\r\n    text-decoration: none;\r\n    color: inherit;\r\n    width: var(--bilibili-fav-item-width);\r\n    min-width: 0;\r\n    position: relative;\r\n}\r\n\r\n.bilibili-fav-item {\r\n    display: flex;\r\n    flex-direction: column;\r\n    align-items: center;\r\n    padding: 8px 6px 10px;\r\n    border-radius: var(--radius-md);\r\n    transition: background 0.2s;\r\n    text-align: center;\r\n    position: relative;\r\n    overflow: hidden;\r\n    height: 88px;\r\n    box-sizing: border-box;\r\n    background: transparent;\r\n}\r\n\r\n.bilibili-fav-item[data-readlist=\"true\"] { padding: 0; }\r\n\r\n.bilibili-fav-item-link:hover .bilibili-fav-item {\r\n    background: var(--bg-surface);\r\n}\r\n\r\n.bilibili-fav-item-info {\r\n    display: flex;\r\n    flex-direction: column;\r\n    align-items: center;\r\n    width: 100%;\r\n    height: 100%;\r\n    position: relative;\r\n    z-index: 1;\r\n}\r\n\r\n.bilibili-fav-item[data-readlist=\"true\"] .bilibili-fav-item-info {\r\n    padding: 0;\r\n    overflow: hidden;\r\n    border-radius: inherit;\r\n}\r\n\r\n/* ===== Avatar — round, no border ===== */\r\n.bilibili-fav-avatar {\r\n    width: 44px;\r\n    height: 44px;\r\n    border-radius: 50%;\r\n    object-fit: cover;\r\n    position: relative;\r\n    z-index: 1;\r\n    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);\r\n}\r\n\r\n.bilibili-fav-avatar.square {\r\n    border-radius: var(--radius-md);\r\n}\r\n\r\n.bilibili-fav-avatar.cover {\r\n    display: block;\r\n    width: 100%;\r\n    height: 100%;\r\n    border-radius: var(--radius-md);\r\n    box-shadow: none;\r\n    position: absolute;\r\n    inset: 0;\r\n}\r\n\r\n/* ===== Name label ===== */\r\n.bilibili-fav-name {\r\n    font-size: 12px;\r\n    color: var(--text-primary);\r\n    font-weight: 500;\r\n    max-width: 100%;\r\n    overflow: hidden;\r\n    text-overflow: ellipsis;\r\n    white-space: nowrap;\r\n    position: relative;\r\n    z-index: 1;\r\n    margin-top: 6px;\r\n}\r\n\r\n.bilibili-fav-item[data-readlist=\"true\"] .bilibili-fav-name {\r\n    position: absolute;\r\n    bottom: 0;\r\n    left: 0;\r\n    right: 0;\r\n    color: #fff;\r\n    background: linear-gradient(transparent, rgba(0, 0, 0, 0.75));\r\n    padding: 20px 8px 8px;\r\n    border-radius: 0 0 var(--radius-md) var(--radius-md);\r\n    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);\r\n    font-weight: 600;\r\n}\r\n\r\n/* ===== Delete button — ghost pill ===== */\r\n.bilibili-fav-delete {\r\n    position: absolute;\r\n    top: 4px;\r\n    right: 4px;\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    width: 20px;\r\n    height: 20px;\r\n    padding: 0;\r\n    font-size: 14px;\r\n    line-height: 1;\r\n    color: var(--text-primary);\r\n    background: rgba(0, 0, 0, 0.5);\r\n    border: none;\r\n    border-radius: 50%;\r\n    appearance: none;\r\n    cursor: pointer;\r\n    transition: all 0.2s;\r\n    z-index: 2;\r\n    opacity: 0;\r\n}\r\n\r\n.bilibili-fav-item:hover .bilibili-fav-delete { opacity: 1; }\r\n.bilibili-fav-delete:hover { background: var(--error); }\r\n\r\n/* ===== Dynamic filter visibility ===== */\r\n.bilibili-toolbox-dynamic-filter-active .bili-dyn-list__item:not(.bilibili-toolbox-dynamic-filter-ready),\r\n.bilibili-toolbox-dynamic-filter-active .bili-dyn-item:not(.bilibili-toolbox-dynamic-filter-ready),\r\n.bilibili-toolbox-dynamic-filter-active .bili-opus-view:not(.bilibili-toolbox-dynamic-filter-ready),\r\n.bilibili-toolbox-hide-forward-dynamic { display: none !important; }\r\n\r\n/* ══════════════════════════════════════ */\r\n\n/* ===== content-reader.css ===== */\n/*  Comic Reader — Spotify dark theme   */\r\n/* ══════════════════════════════════════ */\r\n\r\n.comic-entry-btn {\r\n    position: fixed;\r\n    bottom: 24px;\r\n    right: 24px;\r\n    z-index: 9999;\r\n    display: inline-flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    padding: 10px 18px;\r\n    cursor: pointer;\r\n    background: var(--acc);\r\n    color: #fff;\r\n    border: none;\r\n    border-radius: 24px;\r\n    font-size: 20px;\r\n    line-height: 1;\r\n    box-shadow: 0 4px 16px rgba(251,114,153,0.3);\r\n}\r\n\r\n.comic-entry-btn-touch {\r\n    bottom: 16px;\r\n    right: 16px;\r\n    padding: 12px 16px;\r\n    font-size: 18px;\r\n}\r\n\r\n#comic-reader-overlay {\r\n    position: fixed;\r\n    inset: 0;\r\n    background: var(--bg-deepest);\r\n    z-index: 10000;\r\n    display: flex;\r\n    flex-direction: column;\r\n    align-items: center;\r\n    justify-content: center;\r\n    overflow: hidden;\r\n    touch-action: none;\r\n    overscroll-behavior: none;\r\n    isolation: isolate;\r\n}\r\n\r\n.comic-img-container {\n    position: absolute;\n    inset: 0;\n    z-index: 0;\n    display: flex;\r\n    width: 100%;\r\n    height: 100%;\r\n    align-items: center;\r\n    justify-content: center;\r\n    gap: 4px;\r\n    padding: 0;\r\n    margin: 0;\r\n    cursor: grab;\r\n    touch-action: none;\n    transform-origin: center center;\n    min-width: 0;\n    min-height: 0;\n}\n\n.comic-img-container.is-grabbing,\r\n.comic-img-container.is-grabbing img { cursor: grabbing; }\r\n\r\n.comic-img-container img {\n    filter: var(--comic-image-filter, none);\r\n}\r\n\r\n/* ===== Reader control panels ===== */\r\n.comic-controls,\r\n.comic-settings-controls {\n    box-sizing: border-box;\n    position: fixed;\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: 6px;\r\n    background: var(--bg-elevated);\n    padding: 8px 10px;\r\n    border-radius: var(--radius-lg);\r\n    border: 1px solid var(--border-subtle);\r\n    color: var(--text-primary);\r\n    z-index: 10001;\r\n    transition: opacity 0.5s;\r\n    opacity: 1;\r\n    box-shadow: var(--shadow-heavy);\r\n}\r\n\r\n.comic-controls.is-hidden,\r\n.comic-settings-controls.is-hidden { opacity: 0; }\r\n\r\n.comic-controls { bottom: 24px; right: 24px; max-width: calc(100% - 48px); }\n.comic-settings-controls {\n    top: 24px;\n    right: 24px;\n    max-height: calc(100% - 48px);\n    overflow-y: auto;\n}\n.comic-controls .comic-reader-row { flex-wrap: wrap; }\n.comic-settings-controls > .comic-btn { flex-shrink: 0; }\n\r\n.comic-settings-panel {\r\n    box-sizing: border-box;\r\n    position: fixed;\r\n    left: 50%;\r\n    top: 50%;\r\n    z-index: 10002;\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: 8px;\r\n    width: min(420px, calc(100vw - 32px));\r\n    max-height: calc(100vh - 24px);\r\n    max-height: calc(100dvh - 24px);\r\n    overflow-y: auto;\r\n    padding: 14px;\r\n    color: var(--text-primary);\r\n    background: var(--bg-elevated);\n    border: 1px solid var(--border-subtle);\r\n    border-radius: var(--radius-md);\r\n    box-shadow: var(--shadow-heavy);\r\n    opacity: 0;\r\n    visibility: hidden;\r\n    pointer-events: none;\r\n    transform: translate(-50%, -50%) scale(0.96);\r\n    transition: opacity 0.18s ease-out, transform 0.18s ease-out, visibility 0.18s;\r\n}\r\n\r\n.comic-settings-panel.show {\r\n    opacity: 1;\r\n    visibility: visible;\r\n    pointer-events: auto;\r\n    transform: translate(-50%, -50%) scale(1);\r\n}\r\n\r\n.comic-settings-heading {\r\n    margin: 0;\r\n    font: 600 17px/1.4 var(--font);\r\n    color: var(--text-primary);\r\n}\r\n\r\n.comic-settings-hint {\r\n    margin: 0;\r\n    font: 12px/1.4 var(--font);\r\n    color: var(--text-secondary);\r\n}\r\n\r\n.comic-settings-grid {\r\n    display: grid;\r\n    grid-template-columns: repeat(2, minmax(0, 1fr));\r\n    gap: 8px;\r\n}\r\n\r\n.comic-setting-btn {\r\n    position: relative;\r\n    display: flex;\r\n    flex-direction: column;\r\n    align-items: flex-start;\r\n    justify-content: center;\r\n    gap: 5px;\r\n    box-sizing: border-box;\r\n    min-width: 0;\r\n    min-height: 66px;\r\n    padding: 10px 12px;\r\n    border: 1px solid var(--border-subtle);\r\n    border-radius: var(--radius-md);\r\n    background: rgba(255, 255, 255, 0.035);\r\n    color: var(--text-primary);\r\n    font-family: var(--font);\r\n    text-align: left;\r\n    cursor: pointer;\r\n    touch-action: manipulation;\r\n    transition: background .15s, border-color .15s;\r\n}\r\n\r\n.comic-setting-label {\r\n    font-size: 12px;\r\n    line-height: 1.3;\r\n    color: var(--text-secondary);\r\n}\r\n\r\n.comic-setting-value {\r\n    font-size: 16px;\r\n    font-weight: 600;\r\n    line-height: 1.35;\r\n}\r\n\r\n.comic-setting-content {\r\n    display: flex;\r\n    width: 100%;\r\n    align-items: center;\r\n    justify-content: space-between;\r\n    gap: 8px;\r\n}\r\n\r\n.comic-setting-preview {\r\n    display: inline-flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    width: 50px;\r\n    height: 22px;\r\n    flex-shrink: 0;\r\n    opacity: .85;\r\n    pointer-events: none;\r\n}\r\n\r\n.comic-setting-arrow {\r\n    position: relative;\r\n    width: 50px;\r\n    height: 22px;\r\n}\r\n\r\n.comic-setting-arrow::before {\r\n    content: '';\r\n    position: absolute;\r\n    left: 0;\r\n    right: 1px;\r\n    top: 10px;\r\n    height: 2px;\r\n    background: currentColor;\r\n}\r\n\r\n.comic-setting-arrow::after {\r\n    content: '';\r\n    position: absolute;\r\n    top: 5px;\r\n    right: 1px;\r\n    width: 10px;\r\n    height: 10px;\r\n    border-top: 2px solid currentColor;\r\n    border-right: 2px solid currentColor;\r\n    transform: rotate(45deg);\r\n}\r\n\r\n.comic-setting-btn[data-preference-key=\"isRightToLeft\"][data-value=\"true\"] .comic-setting-arrow {\r\n    transform: rotate(180deg);\r\n}\r\n\r\n.comic-setting-btn:where([data-preference-key=\"tapPageNavigation\"][aria-pressed=\"true\"]) {\r\n    border-color: rgba(251, 114, 153, .45);\r\n    background: rgba(251, 114, 153, .10);\r\n}\r\n\r\n.comic-setting-btn:where([data-preference-key=\"tapPageNavigation\"][aria-pressed=\"true\"]) .comic-setting-value {\r\n    color: var(--acc-hover);\r\n}\r\n\r\n.comic-setting-btn:hover {\r\n    border-color: var(--acc);\r\n    background: rgba(251, 114, 153, .15);\r\n}\r\n\r\n.comic-setting-btn:focus-visible {\r\n    outline: 2px solid var(--acc);\r\n    outline-offset: 2px;\r\n}\r\n\r\n.comic-setting-btn[data-preference-key=\"isRightToLeft\"] {\r\n    grid-column: 1 / -1;\r\n}\r\n\r\n@media (max-height: 480px) {\r\n    .comic-settings-panel { padding: 10px; gap: 6px; }\r\n    .comic-settings-grid { gap: 6px; }\r\n    .comic-setting-btn { min-height: 48px; padding: 6px 10px; gap: 2px; }\r\n    .comic-setting-label { font-size: 11px; }\r\n    .comic-setting-value { font-size: 14px; }\r\n}\r\n\r\n@media (min-width: 481px) and (max-height: 480px) {\r\n    .comic-settings-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }\r\n    .comic-setting-btn[data-preference-key=\"preloadPages\"] { grid-column: 1; }\r\n}\r\n\r\n.comic-reader-row {\r\n    display: flex;\r\n    gap: 6px;\r\n    align-items: center;\r\n    justify-content: center;\r\n}\r\n\r\n.comic-reader-row-wrap { flex-wrap: wrap; }\n\n/* Thumbnail navigation stays separate from the full-size image cache. */\n#comic-reader-overlay.thumbnails-open { touch-action: pan-y; }\n.comic-thumbnails-panel[hidden] { display: none; }\n.comic-thumbnails-panel {\n    position: absolute;\n    inset: 0;\n    z-index: 10003;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    padding: 12px;\n    box-sizing: border-box;\n    background: rgba(0, 0, 0, .55);\n    touch-action: pan-y;\n}\n.comic-thumbnails-dialog {\n    box-sizing: border-box;\n    display: flex;\n    flex-direction: column;\n    width: min(720px, 100%);\n    max-height: 80%;\n    padding: 18px;\n    border: 1px solid var(--border-subtle);\n    border-radius: var(--radius-lg);\n    background: var(--bg-deepest);\n    color: var(--text-primary);\n    box-shadow: var(--shadow-heavy);\n}\n.comic-thumbnails-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }\n.comic-thumbnails-header h2 { margin: 0; font-size: 18px; font-weight: 600; color: inherit; }\n.comic-thumbnails-hint { margin: 6px 0 14px; font-size: 12px; color: var(--text-secondary); }\n.comic-thumbnails-grid {\n    position: relative;\n    display: grid;\n    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));\n    gap: 10px;\n    min-height: 0;\n    overflow-y: auto;\n    overscroll-behavior: contain;\n    touch-action: pan-y;\n    padding: 4px;\n    scrollbar-gutter: stable;\n}\n.comic-thumbnail {\n    display: flex;\n    flex-direction: column;\n    gap: 6px;\n    min-width: 0;\n    padding: 6px;\n    border: 2px solid transparent;\n    border-radius: 10px;\n    background: rgba(255, 255, 255, .06);\n    color: var(--text-primary);\n    cursor: pointer;\n    font: inherit;\n    touch-action: pan-y;\n}\n.comic-thumbnail-preview {\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    width: 100%;\n    height: 132px;\n    overflow: hidden;\n    border-radius: 4px;\n    background: rgba(0, 0, 0, .25);\n    color: var(--text-secondary);\n    font-size: 12px;\n}\n.comic-thumbnail-preview img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }\n.comic-thumbnail-number { font-size: 13px; line-height: 20px; }\n.comic-thumbnail:hover { background: rgba(251, 114, 153, .12); }\n.comic-thumbnail.is-current { border-color: var(--acc); background: rgba(251, 114, 153, .16); }\n.comic-thumbnail.is-current .comic-thumbnail-number { color: var(--acc-hover); font-weight: 700; }\n.comic-thumbnail:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 1px; }\n@media (max-width: 480px) {\n    .comic-thumbnails-dialog { padding: 12px; max-height: 90%; }\n    .comic-thumbnails-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }\n    .comic-thumbnail-preview { height: 110px; }\n    #comic-reader-overlay.reader-compact .comic-reader-row { flex-wrap: wrap; }\n}\n\r\n.comic-page-info {\r\n    display: inline-flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    gap: 4px;\r\n    font-size: 14px;\r\n    min-width: 68px;\r\n    min-height: 32px;\r\n    padding: 0 2px;\r\n    color: var(--text-primary);\r\n    cursor: pointer;\r\n    white-space: nowrap;\r\n}\r\n\r\n.comic-page-display {\r\n    display: inline;\r\n}\r\n\r\n.comic-page-input {\r\n    display: none;\r\n    width: 44px;\r\n    height: 32px;\r\n    padding: 0 8px;\r\n    color: var(--text-primary);\r\n    background: var(--bg-deepest);\r\n    border: 1px solid var(--border-subtle);\r\n    border-radius: var(--radius-pill);\r\n    font: inherit;\r\n    text-align: center;\r\n    outline: none;\r\n}\r\n\r\n.comic-page-input:focus {\r\n    border-color: var(--acc);\r\n    box-shadow: 0 0 0 2px rgba(251, 114, 153, 0.18);\r\n}\r\n\r\n.comic-page-range {\r\n    display: none;\r\n    color: var(--text-secondary);\r\n}\r\n\r\n.comic-page-info.is-editing {\r\n    cursor: text;\r\n    justify-content: flex-start;\r\n}\r\n\r\n.comic-page-info.is-editing .comic-page-display {\r\n    display: none;\r\n}\r\n\r\n.comic-page-info.is-editing .comic-page-input,\r\n.comic-page-info.is-editing .comic-page-range {\r\n    display: inline-flex;\r\n}\r\n\r\n/* ===== Reader pill buttons ===== */\r\n.comic-btn {\r\n    padding: 8px 16px;\r\n    cursor: pointer;\r\n    background: var(--bg-elevated);\r\n    color: var(--text-primary);\r\n    border: 1px solid var(--border-strong);\r\n    border-radius: var(--radius-pill);\r\n    font-size: 13px;\r\n    font-weight: 500;\r\n    letter-spacing: 0.3px;\r\n    transition: background 0.15s, border-color 0.15s;\r\n}\r\n\r\n.comic-btn-alt {\r\n    background: transparent;\r\n    border-color: var(--border-subtle);\r\n}\r\n\r\n.comic-btn:hover { background: #2a2a2a; }\r\n\r\n.comic-btn-alt:hover { background: var(--bg-elevated); }\r\n\r\n.comic-btn.active {\r\n    background: var(--acc);\r\n    border-color: var(--acc);\r\n    color: #fff;\r\n}\r\n.comic-btn.active:hover { background: var(--acc-hover); }\r\n\r\n/* ===== Reader toast ===== */\r\n.comic-toast {\r\n    position: fixed;\r\n    left: 50%;\r\n    transform: translateX(-50%);\r\n    padding: 8px 16px;\r\n    border-radius: var(--radius-pill);\r\n    font-size: 13px;\r\n    font-weight: 500;\r\n    color: var(--text-primary);\r\n    z-index: 10004;\r\n    opacity: 0;\r\n    transition: opacity 0.2s;\r\n    pointer-events: none;\r\n    background: var(--bg-overlay);\r\n    backdrop-filter: blur(12px);\r\n    -webkit-backdrop-filter: blur(12px);\r\n    border: 1px solid var(--border-subtle);\r\n    box-shadow: var(--shadow-card);\r\n    top: 18px;\r\n}\r\n\r\n.comic-toast.is-visible { opacity: 1; }\r\n\r\n.comic-toast.is-error { background: rgba(180, 40, 40, 0.94); }\r\n\r\n/* ===== Reader images ===== */\r\n#comic-reader-overlay img {\r\n    cursor: grab;\r\n    display: block;\r\n    max-width: none;\r\n    max-height: none;\r\n    object-fit: contain;\r\n    box-shadow: 0 0 30px rgba(0, 0, 0, 0.4);\r\n    touch-action: none;\r\n    user-select: none;\r\n    -webkit-user-drag: none;\r\n    flex-shrink: 0;\r\n}\r\n\r\n#comic-reader-overlay .comic-img-full,\r\n#comic-reader-overlay .comic-img-half {\r\n    max-width: none;\r\n    max-height: none;\r\n}\r\n\r\n/* ===== Screenshot selection ===== */\r\n.comic-selection-overlay {\r\n    position: fixed;\r\n    inset: 0;\r\n    z-index: 10003;\r\n    display: none;\r\n    cursor: crosshair;\r\n    touch-action: none;\r\n    isolation: isolate;\r\n    background: rgba(10,10,10,0.01);\r\n}\r\n\r\n.comic-selection-hint {\r\n    position: fixed;\r\n    top: 18px;\r\n    right: 92px;\r\n    z-index: 3;\r\n    box-sizing: border-box;\r\n    width: 236px;\r\n    max-width: calc(100vw - 110px);\r\n    padding: 10px 12px;\r\n    border-radius: var(--radius-md);\r\n    background: rgba(15,15,15,0.92);\r\n    color: #fff;\r\n    font-size: 13px;\r\n    line-height: 1.45;\r\n    text-align: left;\r\n    pointer-events: none;\r\n    border: 1px solid var(--border-subtle);\r\n    box-shadow: var(--shadow-card);\r\n}\r\n\r\n.comic-selection-toolbar {\r\n    position: fixed;\r\n    top: 18px;\r\n    right: 18px;\r\n    z-index: 4;\r\n    display: flex;\r\n    flex-direction: column;\r\n    width: 64px;\r\n    max-height: calc(100vh - 36px);\r\n    overflow-y: auto;\r\n    gap: 10px;\r\n    align-items: stretch;\r\n}\r\n\r\n.comic-selection-action {\r\n    box-sizing: border-box;\r\n    min-width: 64px;\r\n    min-height: 44px;\r\n    flex-shrink: 0;\r\n    padding: 10px 12px;\r\n    border: none;\r\n    border-radius: var(--radius-pill);\r\n    color: #fff;\r\n    font-size: 13px;\r\n    line-height: 1.3;\r\n    cursor: pointer;\r\n    box-shadow: 0 4px 12px rgba(0,0,0,0.25);\r\n}\r\n\r\n.comic-selection-copy { background: var(--acc); }\r\n.comic-selection-download { background: #287f55; }\r\n.comic-selection-full { background: #3467a8; }\r\n.comic-selection-cancel { background: #d33; }\r\n\r\n.comic-selection-action.is-disabled {\r\n    opacity: 0.45;\r\n    cursor: not-allowed;\r\n}\r\n\r\n.comic-selection-box {\r\n    position: absolute;\r\n    z-index: 1;\r\n    display: none;\r\n    border: 2px dashed var(--acc);\r\n    background: rgba(251,114,153,0.18);\r\n    box-shadow: 0 0 0 1px rgba(255,255,255,0.25) inset;\r\n    cursor: move;\r\n    pointer-events: auto;\r\n}\r\n\r\n.comic-sel-handle {\r\n    position: absolute;\r\n    width: 28px;\r\n    height: 28px;\r\n    pointer-events: auto;\r\n    display: none;\r\n    z-index: 2;\r\n    transform: translate(-50%,-50%);\r\n    touch-action: none;\r\n}\r\n\r\n.comic-sel-handle::after {\r\n    content: \"\";\r\n    position: absolute;\r\n    left: 50%;\r\n    top: 50%;\r\n    width: 12px;\r\n    height: 12px;\r\n    background: var(--acc);\r\n    border: 2px solid #fff;\r\n    border-radius: 50%;\r\n    box-shadow: 0 1px 4px rgba(0,0,0,0.4);\r\n    transform: translate(-50%,-50%);\r\n}\r\n\r\n.comic-sel-handle[data-dir=\"n\"],\r\n.comic-sel-handle[data-dir=\"s\"] {\r\n    width: max(28px, calc(100% - 40px));\r\n}\r\n\r\n.comic-sel-handle[data-dir=\"e\"],\r\n.comic-sel-handle[data-dir=\"w\"] {\r\n    height: max(28px, calc(100% - 40px));\r\n}\r\n\r\n.comic-sel-handle[data-dir=\"nw\"],\r\n.comic-sel-handle[data-dir=\"ne\"],\r\n.comic-sel-handle[data-dir=\"se\"],\r\n.comic-sel-handle[data-dir=\"sw\"] {\r\n    width: 34px;\r\n    height: 34px;\r\n    z-index: 3;\r\n}\r\n\r\n/* ===== Compact layout (mobile) ===== */\r\n#comic-reader-overlay.reader-compact .comic-btn {\r\n    min-width: 54px;\r\n    min-height: 44px;\r\n    padding: 10px 12px;\r\n    font-size: 14px;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-controls {\r\n    left: auto;\r\n    right: max(12px, env(safe-area-inset-right));\r\n    bottom: max(12px, env(safe-area-inset-bottom));\r\n    width: fit-content;\r\n    max-width: calc(100vw - 24px);\r\n    padding: 8px 12px;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-settings-controls {\r\n    top: max(12px, env(safe-area-inset-top));\r\n    left: auto;\r\n    right: max(12px, env(safe-area-inset-right));\r\n    width: fit-content;\r\n    max-width: 96px;\r\n    flex-direction: column;\n    flex-wrap: nowrap;\n    justify-content: flex-start;\n    max-height: 40vh;\r\n    overflow-y: auto;\r\n    padding: 8px 12px;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-settings-panel {\n    padding: 10px;\n}\n\n@media (max-height: 480px) {\n    #comic-reader-overlay.reader-compact .comic-settings-controls {\n        display: grid;\n        grid-template-columns: repeat(2, minmax(0, 1fr));\n        max-width: calc(100vw - 24px);\n        max-height: calc(100dvh - 24px);\n    }\n}\n\r\n#comic-reader-overlay.reader-compact .comic-toast {\r\n    top: 12px;\r\n    max-width: calc(100vw - 24px);\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-selection-hint {\r\n    top: 12px;\r\n    right: 86px;\r\n    max-width: calc(100vw - 98px);\r\n    font-size: 12px;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-selection-toolbar {\r\n    top: 12px;\r\n    right: 12px;\r\n    max-height: calc(100vh - 24px);\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-selection-action {\r\n    padding: 10px 12px;\r\n    font-size: 12px;\r\n}\r\n\n/* ===== content-responsive.css ===== */\n@media (hover: none), (pointer: coarse) {\r\n    #bilibili-fav-float-btn.bilibili-fav-touch {\r\n        bottom: max(76px, env(safe-area-inset-bottom));\r\n        right: max(16px, env(safe-area-inset-right));\r\n        width: 54px;\r\n        height: 54px;\r\n        font-size: 24px;\r\n        opacity: 1 !important;\r\n        visibility: visible !important;\r\n    }\r\n\r\n    #bilibili-fav-panel,\r\n    #bilibili-toolbox-settings-panel {\r\n        right: max(12px, env(safe-area-inset-right));\r\n        bottom: max(140px, calc(env(safe-area-inset-bottom) + 84px));\r\n        max-height: min(70vh, 560px);\r\n        overflow: hidden;\r\n    }\r\n\r\n    #bilibili-fav-panel {\r\n        width: min(\r\n            calc(\r\n                var(--bilibili-fav-columns) * var(--bilibili-fav-item-width)\r\n                + (var(--bilibili-fav-columns) - 1) * var(--bilibili-fav-list-gap)\r\n                + var(--bilibili-fav-list-padding-x) * 2\r\n            ),\r\n            calc(100vw - 24px)\r\n        );\r\n    }\r\n\r\n    #bilibili-toolbox-settings-panel {\r\n        width: min(320px, calc(100vw - 24px));\r\n    }\r\n\r\n    .bilibili-fav-header {\r\n        gap: 8px;\r\n        padding: 10px 12px;\r\n    }\r\n\r\n    .bilibili-fav-header-actions {\r\n        flex-shrink: 0;\r\n    }\r\n\r\n    .bilibili-fav-control-btn {\r\n        display: inline-flex;\r\n        align-items: center;\r\n        justify-content: center;\r\n    }\r\n\r\n    .bilibili-fav-add-btn,\r\n    .bilibili-fav-control-btn,\r\n    .bilibili-toolbox-export-btn,\r\n    .bilibili-toolbox-import-btn {\r\n        min-height: 42px;\r\n    }\r\n\r\n    .bilibili-fav-content {\r\n        max-height: min(52vh, 420px);\r\n    }\r\n\r\n    .bilibili-fav-delete {\r\n        width: 26px;\r\n        height: 26px;\r\n        font-size: 16px;\r\n    }\r\n\r\n    .bilibili-fav-item-link {\r\n        touch-action: manipulation;\r\n    }\r\n\r\n    .comic-sel-handle {\r\n        width: 36px;\r\n        height: 36px;\r\n    }\r\n\r\n    .comic-sel-handle[data-dir=\"n\"],\r\n    .comic-sel-handle[data-dir=\"s\"] {\r\n        width: max(36px, calc(100% - 48px));\r\n    }\r\n\r\n    .comic-sel-handle[data-dir=\"e\"],\r\n    .comic-sel-handle[data-dir=\"w\"] {\r\n        height: max(36px, calc(100% - 48px));\r\n    }\r\n\r\n    .comic-sel-handle[data-dir=\"nw\"],\r\n    .comic-sel-handle[data-dir=\"ne\"],\r\n    .comic-sel-handle[data-dir=\"se\"],\r\n    .comic-sel-handle[data-dir=\"sw\"] {\r\n        width: 44px;\r\n        height: 44px;\r\n    }\r\n\r\n    #comic-reader-overlay.reader-compact .comic-reader-row {\r\n        gap: 6px;\r\n        flex-wrap: wrap;\r\n    }\r\n\r\n    #comic-reader-overlay.reader-compact .comic-settings-controls { gap: 8px; }\r\n\r\n    #comic-reader-overlay.reader-compact .comic-selection-hint { text-align: left; }\r\n}\r\n\n";
     function injectStyle() {
         if (document.getElementById('bilibili-toolbox-userscript-style')) return;
         const style = document.createElement('style');
@@ -723,343 +723,6 @@
     };
 })();
 
-// ===== paper-turn.js =====
-// Curved paper mesh, rendered from the already decoded reader images.
-(function() {
-    'use strict';
-
-    const DURATION = 720;
-    const SEGMENTS = 44;
-    const CANVAS_PIXEL_BUDGET = 40e6;
-    const lerp = (a, b, t) => a + (b - a) * t;
-
-    // Integrate a changing tangent along the sheet: the paper bends, rather
-    // than rotating as a rigid rectangle. Projection gives each strip depth.
-    function createMesh(progress, from, to, outward, segments = SEGMENTS) {
-        const t = Math.max(0, Math.min(1, progress));
-        const width = lerp(from.width, to.width, t);
-        const height = lerp(from.height, to.height, t);
-        const hinge = lerp(from.hinge, to.hinge, t);
-        const centerY = lerp(from.centerY, to.centerY, t);
-        const camera = Math.max(width * 3.5, 1600);
-        // A deeper bow lets the middle of the leaf lag behind the spine.
-        // Keep its tangent above the page plane during the initial lift.
-        const curl = Math.min(Math.sin(Math.PI * t) * 1.8, Math.PI * t * 0.98);
-        let x = 0;
-        let z = 0;
-        const points = [];
-        for (let i = 0; i <= segments; i += 1) {
-            const u = i / segments;
-            const angle = Math.PI * t - curl * Math.sin(Math.PI * u);
-            if (i) {
-                const midpoint = Math.PI * t - curl * Math.sin(Math.PI * (u - 0.5 / segments));
-                x += Math.cos(midpoint) * width / segments;
-                z += Math.sin(midpoint) * width / segments;
-            }
-            const perspective = camera / (camera - z);
-            points.push({
-                u, angle, z,
-                x: hinge + outward * x * perspective,
-                top: centerY - height * perspective / 2,
-                bottom: centerY + height * perspective / 2
-            });
-        }
-        return points;
-    }
-
-    function makeCanvas(width, height, ratio = 1, resources) {
-        const canvas = document.createElement('canvas');
-        resources?.add(canvas);
-        canvas.width = Math.max(1, Math.floor(width * ratio));
-        canvas.height = Math.max(1, Math.floor(height * ratio));
-        return canvas;
-    }
-
-    // Preserve screen pixels on high-DPI displays while bounding canvas memory.
-    function rasterRatio(width, height, preferred, pixelBudget) {
-        return Math.min(preferred, Math.sqrt(pixelBudget / (width * height)), 8192 / Math.max(width, height));
-    }
-
-    function imageContext(canvas, width, height) {
-        const context = canvas.getContext('2d');
-        if (!context) throw new Error('Canvas unavailable');
-        context.imageSmoothingEnabled = true;
-        context.imageSmoothingQuality = 'high';
-        context.scale(canvas.width / width, canvas.height / height);
-        return context;
-    }
-
-    function drawOriginal(context, { image, box, rotation, filter }) {
-        context.save();
-        context.filter = filter;
-        context.translate(box.x + box.width / 2, box.y + box.height / 2);
-        context.rotate(rotation * Math.PI / 180);
-        const sideways = rotation === 90 || rotation === 270;
-        const width = sideways ? box.height : box.width;
-        const height = sideways ? box.width : box.height;
-        context.drawImage(image, -width / 2, -height / 2, width, height);
-        context.restore();
-    }
-
-    function capture(container, rotation, bounds) {
-        const background = window.getComputedStyle(container.parentElement).backgroundColor;
-        const rects = [];
-        const originals = [];
-        for (const image of container.querySelectorAll('img')) {
-            const rect = image.getBoundingClientRect();
-            if (!rect.width || !rect.height) continue;
-            const box = { x: rect.left - bounds.left, y: rect.top - bounds.top, width: rect.width, height: rect.height };
-            rects.push(box);
-            const original = { image, box, rotation, filter: window.getComputedStyle(image).filter };
-            originals.push(original);
-        }
-        return { originals, background, rects: rects.sort((a, b) => a.x - b.x) };
-    }
-
-    function visibleBounds(rects, bounds) {
-        const x = Math.max(0, Math.min(...rects.map(rect => rect.x)));
-        const y = Math.max(0, Math.min(...rects.map(rect => rect.y)));
-        const right = Math.min(bounds.width, Math.max(...rects.map(rect => rect.x + rect.width)));
-        const bottom = Math.min(bounds.height, Math.max(...rects.map(rect => rect.y + rect.height)));
-        return { x, y, width: Math.max(1, right - x), height: Math.max(1, bottom - y) };
-    }
-
-    function makeFace(snapshot, rect, dimensions, flip, resources) {
-        // Perspective enlarges lifted paper. Build its texture directly from
-        // decoded originals, with headroom, rather than resizing the snapshot.
-        const face = makeCanvas(dimensions.width, dimensions.height, 1, resources);
-        const context = imageContext(face, rect.width, rect.height);
-        context.fillStyle = snapshot.background;
-        context.fillRect(0, 0, rect.width, rect.height);
-        if (flip) {
-            context.translate(rect.width, 0);
-            context.scale(-1, 1);
-        }
-        context.translate(-rect.x, -rect.y);
-        for (const original of snapshot.originals) {
-            const box = original.box;
-            if (box.x < rect.x + rect.width && box.x + box.width > rect.x
-                && box.y < rect.y + rect.height && box.y + box.height > rect.y) {
-                drawOriginal(context, original);
-            }
-        }
-        return face;
-    }
-
-    // An affine texture triangle avoids CSS seams and works with cross-origin
-    // images: the canvas is never read back or exported.
-    function drawTriangle(context, image, source, target) {
-        const [s0, s1, s2] = source;
-        const [p0, p1, p2] = target;
-        const determinant = (s1.x - s0.x) * (s2.y - s0.y) - (s2.x - s0.x) * (s1.y - s0.y);
-        if (!determinant) return;
-        const a = ((p1.x - p0.x) * (s2.y - s0.y) - (p2.x - p0.x) * (s1.y - s0.y)) / determinant;
-        const b = ((p1.y - p0.y) * (s2.y - s0.y) - (p2.y - p0.y) * (s1.y - s0.y)) / determinant;
-        const c = ((p2.x - p0.x) * (s1.x - s0.x) - (p1.x - p0.x) * (s2.x - s0.x)) / determinant;
-        const d = ((p2.y - p0.y) * (s1.x - s0.x) - (p1.y - p0.y) * (s2.x - s0.x)) / determinant;
-        context.save();
-        context.beginPath();
-        // Subpixel overlap hides antialiasing cracks between adjacent triangles.
-        const winding = Math.sign((p1.x - p0.x) * (p2.y - p0.y) - (p2.x - p0.x) * (p1.y - p0.y));
-        target.forEach((point, index) => {
-            const previous = target[(index + 2) % 3], next = target[(index + 1) % 3];
-            const normal = (a, b) => {
-                const length = Math.hypot(b.x - a.x, b.y - a.y) || 1;
-                return { x: (b.y - a.y) / length * winding, y: (a.x - b.x) / length * winding };
-            };
-            const left = normal(previous, point), right = normal(point, next);
-            const offset = 0.65 / Math.max(0.00001, 1 + left.x * right.x + left.y * right.y);
-            context[index ? 'lineTo' : 'moveTo'](point.x + (left.x + right.x) * offset, point.y + (left.y + right.y) * offset);
-        });
-        context.closePath();
-        context.clip();
-        context.transform(a, b, c, d, p0.x - a * s0.x - c * s0.y, p0.y - b * s0.x - d * s0.y);
-        context.drawImage(image, 0, 0);
-        context.restore();
-    }
-
-    function shadeFace(target, source, mesh, isBack) {
-        const context = target.getContext('2d');
-        context.drawImage(source, 0, 0);
-        const light = context.createLinearGradient(0, 0, target.width, 0);
-        mesh.forEach(point => {
-            const shade = Math.pow(Math.abs(Math.sin(point.angle)), 3) * 0.28;
-            light.addColorStop(point.u, isBack ? `rgba(106,86,54,${0.025 + shade})` : `rgba(0,0,0,${shade})`);
-        });
-        context.fillStyle = light;
-        context.fillRect(0, 0, target.width, target.height);
-    }
-
-    function drawSheet(context, mesh, front, back, scratch) {
-        let shadedSide = null;
-        const strips = mesh.slice(0, -1).map((point, index) => ({ a: point, b: mesh[index + 1] }));
-        // Far surfaces first, so the curled edge correctly occludes the sheet.
-        strips.sort((left, right) => left.a.z + left.b.z - right.a.z - right.b.z);
-        for (const { a, b } of strips) {
-            const angle = (a.angle + b.angle) / 2;
-            const isBack = Math.cos(angle) < 0;
-            if (shadedSide !== isBack) {
-                shadeFace(scratch, isBack ? back : front, mesh, isBack);
-                shadedSide = isBack;
-            }
-            const face = scratch;
-            const source = [
-                { x: a.u * face.width, y: 0 }, { x: b.u * face.width, y: 0 },
-                { x: b.u * face.width, y: face.height }, { x: a.u * face.width, y: face.height }
-            ];
-            const target = [
-                { x: a.x, y: a.top }, { x: b.x, y: b.top },
-                { x: b.x, y: b.bottom }, { x: a.x, y: a.bottom }
-            ];
-            drawTriangle(context, face, [source[0], source[1], source[2]], [target[0], target[1], target[2]]);
-            drawTriangle(context, face, [source[0], source[2], source[3]], [target[0], target[2], target[3]]);
-        }
-        context.beginPath();
-        mesh.forEach((point, index) => context[index ? 'lineTo' : 'moveTo'](point.x, point.bottom));
-        context.strokeStyle = 'rgba(255, 248, 225, .65)';
-        context.lineWidth = 0.8;
-        context.stroke();
-    }
-
-    function play({ container, direction, rotation, commit, isCurrent, onFinish }) {
-        const reader = container.parentElement;
-        const bounds = reader.getBoundingClientRect();
-        if (!bounds.width || !bounds.height) { commit(); return null; }
-        const ratio = rasterRatio(bounds.width, bounds.height, window.devicePixelRatio || 1, 12e6);
-        let before, after;
-        let committed = false;
-        let overlay;
-        let frame = 0;
-        const resources = new Set();
-        let disposed = false;
-        const dispose = () => {
-            if (disposed) return;
-            disposed = true;
-            window.cancelAnimationFrame(frame);
-            overlay?.remove();
-            // Explicitly drop backing stores, including canvases allocated
-            // before an error. Removing a DOM node alone does not free pixels.
-            for (const canvas of resources) canvas.width = canvas.height = 0;
-            resources.clear();
-            before = after = null;
-            container.style.visibility = '';
-        };
-        try {
-            before = capture(container, rotation, bounds);
-            commit();
-            committed = true;
-            after = capture(container, rotation, bounds, ratio, resources);
-            if (!before.rects.length || !after.rects.length) { dispose(); return null; }
-            const withinViewport = rect => rect.x >= -1 && rect.x + rect.width <= bounds.width + 1;
-            const spread = before.rects.length === 2 && after.rects.length === 2
-                && before.rects.every(withinViewport) && after.rects.every(withinViewport);
-            const outward = direction > 0 ? -1 : 1;
-            const frontRect = spread ? before.rects[outward > 0 ? 1 : 0] : visibleBounds(before.rects, bounds);
-            const backRect = spread ? after.rects[outward > 0 ? 0 : 1] : frontRect;
-            const from = {
-                width: frontRect.width, height: frontRect.height,
-                hinge: frontRect.x + (outward < 0 ? frontRect.width : 0),
-                centerY: frontRect.y + frontRect.height / 2
-            };
-            const to = spread ? {
-                width: backRect.width, height: backRect.height,
-                hinge: backRect.x + (outward > 0 ? backRect.width : 0),
-                centerY: backRect.y + backRect.height / 2
-            } : from;
-            overlay = makeCanvas(bounds.width, bounds.height, ratio, resources);
-            // Keep the committed DOM visible beneath the transparent overlay.
-            // Only the stationary half of the previous spread needs a backing store.
-            const stationaryRect = {
-                x: outward > 0 ? 0 : Math.min(from.hinge, to.hinge), y: 0,
-                width: outward > 0 ? Math.max(from.hinge, to.hinge) : bounds.width - Math.min(from.hinge, to.hinge),
-                height: bounds.height
-            };
-            const stationary = spread ? makeFace(before, stationaryRect, {
-                width: Math.max(1, Math.floor(stationaryRect.width * ratio)),
-                height: Math.max(1, Math.floor(stationaryRect.height * ratio))
-            }, false, resources) : null;
-            const usedPixels = overlay.width * overlay.height + (stationary ? stationary.width * stationary.height : 0);
-            const width = Math.max(frontRect.width, backRect.width);
-            const height = Math.max(frontRect.height, backRect.height);
-            const faceRatio = rasterRatio(width, height, ratio * 1.5,
-                Math.min(8e6, (CANVAS_PIXEL_BUDGET - usedPixels) / 3));
-            const dimensions = { width: Math.max(1, Math.floor(width * faceRatio)), height: Math.max(1, Math.floor(height * faceRatio)) };
-            const front = makeFace(before, frontRect, dimensions, outward < 0, resources);
-            const back = makeFace(spread ? after : before, backRect, dimensions, outward > 0, resources);
-            const scratch = makeCanvas(dimensions.width, dimensions.height, 1, resources);
-            before.originals = after.originals = [];
-            overlay.className = 'comic-paper-turn';
-            overlay.setAttribute('aria-hidden', 'true');
-            const context = imageContext(overlay, bounds.width, bounds.height);
-            const draw = progress => {
-                const t = progress * progress * (3 - 2 * progress);
-                context.clearRect(0, 0, bounds.width, bounds.height);
-                if (stationary) {
-                    context.save();
-                    const hinge = lerp(from.hinge, to.hinge, t);
-                    context.beginPath();
-                    context.rect(outward > 0 ? 0 : hinge, 0, outward > 0 ? hinge : bounds.width - hinge, bounds.height);
-                    context.clip();
-                    context.globalAlpha = Math.min(1, (1 - t) / 0.04);
-                    context.drawImage(stationary, stationaryRect.x, 0, stationaryRect.width, bounds.height);
-                    context.restore();
-                }
-                context.save();
-                if (!spread) {
-                    const visible = visibleBounds([...before.rects, ...after.rects], bounds);
-                    context.beginPath();
-                    context.rect(visible.x, 0, visible.width, bounds.height);
-                    context.clip();
-                }
-                const mesh = createMesh(t, from, to, outward);
-                const lift = Math.sin(Math.PI * t);
-                context.save();
-                context.beginPath();
-                mesh.forEach((point, i) => context[i ? 'lineTo' : 'moveTo'](point.x, point.top + lift * 8));
-                [...mesh].reverse().forEach(point => context.lineTo(point.x, point.bottom + lift * 8));
-                context.closePath();
-                context.shadowColor = `rgba(0,0,0,${0.32 * lift})`;
-                context.shadowBlur = 30 * lift;
-                context.fillStyle = `rgba(0,0,0,${0.12 * lift})`;
-                context.fill();
-                context.restore();
-                const hinge = mesh[0].x;
-                const shadowWidth = Math.max(1, frontRect.width * 0.32 * lift);
-                const shadow = context.createLinearGradient(hinge, 0, hinge + outward * shadowWidth, 0);
-                shadow.addColorStop(0, `rgba(0,0,0,${0.32 * lift})`);
-                shadow.addColorStop(1, 'rgba(0,0,0,0)');
-                context.fillStyle = shadow;
-                context.fillRect(outward > 0 ? hinge : hinge - shadowWidth, frontRect.y, shadowWidth, frontRect.height);
-                // Light the texture continuously before projecting it; shading
-                // separate quads would leave bright antialiasing seams.
-                drawSheet(context, mesh, front, back, scratch);
-                context.restore();
-            };
-            draw(0);
-            reader.appendChild(overlay);
-
-            const start = performance.now();
-            const tick = now => {
-                if (disposed) return;
-                if (!isCurrent() || !reader.isConnected) { dispose(); onFinish(); return; }
-                const progress = Math.min(1, (now - start) / DURATION);
-                try { draw(progress); } catch (_) { dispose(); onFinish(); return; }
-                if (progress === 1) { dispose(); onFinish(); }
-                else frame = window.requestAnimationFrame(tick);
-            };
-            frame = window.requestAnimationFrame(tick);
-            return dispose;
-        } catch (error) {
-            console.warn('BiliPocketReader: paper animation unavailable', error);
-            dispose();
-            if (!committed) commit();
-            return null;
-        }
-    }
-
-    window.BilibiliToolbox.paperTurn = { play, createMesh, DURATION, CANVAS_PIXEL_BUDGET };
-})();
-
 // ===== animations.js =====
 // Bilibili Toolbox - Animation Module
 (function() {
@@ -1070,7 +733,7 @@
     const FADE_SHIFT_DISTANCE = 60;
     const SMOOTH_SCALE_START = 0.95;
     const DEFAULT_ANIMATION_MODE = 'smooth';
-    const ANIMATION_MODES = ['smooth', 'fade', 'paper'];
+    const ANIMATION_MODES = ['smooth', 'fade'];
     const activeTransitions = new WeakMap();
     const IMMEDIATE_RENDER_MODE = 'immediate';
 
@@ -1078,7 +741,7 @@
         if (!container) return;
         activeTransitions.get(container)?.(settle);
         activeTransitions.delete(container);
-        Object.assign(container.style, { transition: 'none', opacity: '1', visibility: '' });
+        Object.assign(container.style, { transition: 'none', opacity: '1' });
     }
 
     function scheduleCommit(container, commit) {
@@ -1156,17 +819,6 @@
         const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
         const renderMode = resolveRenderMode(animate && !reduceMotion, Boolean(imgContainer.firstChild), animationMode);
         const direction = resolveTransitionDirection(step, isRightToLeft, lastStep);
-
-        if (renderMode === 'paper' && window.BilibiliToolbox.paperTurn) {
-            const stop = window.BilibiliToolbox.paperTurn.play({
-                container: imgContainer, direction, rotation: options.rotation || 0,
-                commit: () => loadImages(renderIndex, IMMEDIATE_RENDER_MODE, direction),
-                isCurrent: () => transitionToken === getTransitionToken() && renderIndex === getCurrentIndex(),
-                onFinish: () => activeTransitions.delete(imgContainer)
-            });
-            if (stop) activeTransitions.set(imgContainer, stop);
-            return;
-        }
 
         if (renderMode === 'smooth') {
             playSmoothTransition(imgContainer, renderIndex, getCurrentIndex, transitionToken, getTransitionToken, loadImages, direction, getTransform, getShiftedTransform);
@@ -1720,7 +1372,12 @@
             const fitRatio = this.getSharpDisplayFitRatio(displaySizes);
             this.sharpDisplayFitRatio = fitRatio;
 
-            return displaySizes;
+            // Keep layout/paint bounds near the viewport even for huge originals.
+            // CSS sizing preserves the source pixels for zoom and screenshot export.
+            return displaySizes.map(size => ({
+                width: size.width * fitRatio,
+                height: size.height * fitRatio
+            }));
         },
 
         alignSharpDisplayHeights(sizes) {
@@ -1742,11 +1399,11 @@
             if (!readerRect || !sizes.length) return 1;
 
             const gap = this.getImageGap() * Math.max(0, sizes.length - 1);
-            const width = sizes.reduce((sum, size) => sum + size.width, 0) + gap;
+            const width = sizes.reduce((sum, size) => sum + size.width, 0);
             const height = Math.max(...sizes.map(size => size.height || 0));
             if (!width || !height || !readerRect.width || !readerRect.height) return 1;
 
-            const ratio = Math.min(readerRect.width / width, readerRect.height / height);
+            const ratio = Math.min(Math.max(1, readerRect.width - gap) / width, readerRect.height / height);
             return Number.isFinite(ratio) && ratio > 0 ? ratio : 1;
         },
 
@@ -1783,8 +1440,11 @@
                 return;
             }
 
-            this.sharpDisplayFitRatio = this.getSharpDisplayFitRatio(sizes);
-            this.fitScale = this.sharpDisplayFitRatio;
+            const naturalSizes = images.map(img => this.getEffectiveImageSize(img));
+            this.sharpDisplayFitRatio = this.getSharpDisplayFitRatio(
+                images.length === 1 ? naturalSizes : this.alignSharpDisplayHeights(naturalSizes)
+            );
+            this.fitScale = this.getSharpDisplayFitRatio(sizes);
         },
 
         getRenderScale(scale = this.scale) {
@@ -1792,7 +1452,7 @@
         },
 
         getBaseFitRatio() {
-            return this.fitScale || 1;
+            return this.sharpDisplayFitRatio || this.fitScale || 1;
         },
 
         getMaxScale() {
@@ -2300,6 +1960,7 @@
             ['fullScreenBtn', '', '', 'comic-btn comic-btn-alt'],
             ['rotateBtn', '', '', 'comic-btn comic-btn-alt'],
             ['settingsBtn', '\u8bbe\u7f6e', '\u6253\u5f00\u9605\u8bfb\u5668\u8bbe\u7f6e', 'comic-btn comic-btn-alt'],
+            ['thumbnailsBtn', '缩略图', '预览所有页面并跳转', 'comic-btn comic-btn-alt'],
             ['closeBtn', '\u9000\u51fa', '\u9000\u51fa', 'comic-btn']
         ].forEach(([key, text, title, style]) => {
             reader.el[key] = createButton(text, title, style);
@@ -2347,6 +2008,10 @@
         reader.el.pageRange = document.createElement('span');
         reader.el.pageRange.className = 'comic-page-range';
         reader.el.pageInfo.append(reader.el.pageDisplay, reader.el.pageInput, reader.el.pageRange);
+        reader.el.thumbnailsBtn.type = 'button';
+        reader.el.thumbnailsBtn.setAttribute('aria-expanded', 'false');
+        reader.el.thumbnailsBtn.setAttribute('aria-controls', 'comic-thumbnails-panel');
+        reader.el.thumbnailsBtn.setAttribute('aria-haspopup', 'dialog');
 
         reader.el.toast = document.createElement('div');
         reader.el.toast.className = 'comic-toast';
@@ -2392,7 +2057,7 @@
         reader.el.selectionOverlay.append(reader.el.selectionHint, reader.el.selectionToolbar, reader.el.selectionBox);
 
         row.append(reader.el.leftBtn, reader.el.offsetIncBtn, reader.el.pageInfo, reader.el.offsetDecBtn, reader.el.rightBtn);
-        secondRow.append(reader.el.resetViewBtn, reader.el.fullScreenBtn);
+        secondRow.append(reader.el.thumbnailsBtn, reader.el.resetViewBtn, reader.el.fullScreenBtn);
         reader.el.controls.append(row, secondRow);
 
         reader.el.settingsControls.append(reader.el.closeBtn, reader.el.screenshotBtn, reader.el.rotateBtn, reader.el.settingsBtn);
@@ -2428,6 +2093,207 @@
     };
 })();
 
+// ===== reader-thumbnails.js =====
+// Bilibili Toolbox - on-demand thumbnail navigation
+(function() {
+    'use strict';
+    const Toolbox = window.BilibiliToolbox;
+
+    function thumbnailSource(src) {
+        try {
+            const url = new URL(src);
+            if (/(^|\.)hdslb\.com$/i.test(url.hostname)) {
+                url.pathname = url.pathname.replace(/@.*$/, '') + '@240w.webp';
+            }
+            return url.href;
+        } catch (_) { return src; }
+    }
+
+    function releaseThumbnail(card) {
+        const image = card.querySelector('img');
+        if (image) Toolbox.releaseImage(image);
+    }
+
+    function loadThumbnail(card, src) {
+        if (card.querySelector('img')) return;
+        const preview = card.querySelector('.comic-thumbnail-preview');
+        preview.textContent = '';
+        const image = document.createElement('img');
+        image.alt = '';
+        image.decoding = 'async';
+        image.loading = 'lazy';
+        image.draggable = false;
+        image.onerror = () => {
+            Toolbox.releaseImage(image);
+            preview.textContent = '预览不可用';
+        };
+        preview.appendChild(image);
+        image.src = thumbnailSource(src);
+    }
+
+    const methods = {
+        isThumbnailsVisible() {
+            return Boolean(this.el.thumbnailPanel && !this.el.thumbnailPanel.hidden);
+        },
+
+        createThumbnailPanel() {
+            const panel = document.createElement('div');
+            panel.className = 'comic-thumbnails-panel';
+            panel.id = 'comic-thumbnails-panel';
+            panel.hidden = true;
+            panel.setAttribute('role', 'dialog');
+            panel.setAttribute('aria-modal', 'true');
+            panel.setAttribute('aria-label', '缩略图导航');
+            const dialog = document.createElement('div');
+            dialog.className = 'comic-thumbnails-dialog';
+            const header = document.createElement('div');
+            header.className = 'comic-thumbnails-header';
+            const title = document.createElement('h2');
+            title.textContent = '缩略图导航';
+            const close = document.createElement('button');
+            close.type = 'button';
+            close.className = 'comic-btn';
+            close.textContent = '关闭';
+            close.setAttribute('aria-label', '关闭缩略图导航');
+            const hint = document.createElement('p');
+            hint.className = 'comic-thumbnails-hint';
+            hint.textContent = `共 ${this.imgList.length} 页 · 点击跳转，粉色标记当前页`;
+            const grid = document.createElement('div');
+            grid.className = 'comic-thumbnails-grid';
+            header.append(title, close);
+            dialog.append(header, hint, grid);
+            panel.appendChild(dialog);
+            this.el.reader.appendChild(panel);
+            Object.assign(this.el, { thumbnailPanel: panel, thumbnailGrid: grid, thumbnailCloseBtn: close, thumbnailHint: hint });
+            const on = (...args) => this.eventBag.on(...args);
+            on(close, 'click', () => this.hideThumbnails(true));
+            on(panel, 'click', event => {
+                event.stopPropagation();
+                if (event.target === panel) this.hideThumbnails(true);
+            });
+            // Keep scrolling and gestures inside the navigator out of reader controls.
+            for (const type of ['touchstart', 'touchmove', 'touchend', 'touchcancel', 'wheel', 'pointerdown']) {
+                on(panel, type, event => event.stopPropagation(), { passive: true });
+            }
+            on(grid, 'click', event => {
+                const card = event.target.closest('.comic-thumbnail');
+                if (!card || !grid.contains(card)) return;
+                const index = Number(card.dataset.index);
+                this.hideThumbnails(true);
+                this.jumpToImage(index);
+            });
+            on(panel, 'keydown', event => {
+                event.stopPropagation();
+                if (event.key === 'Escape') {
+                    event.preventDefault();
+                    this.hideThumbnails(true);
+                    return;
+                }
+                const cards = Array.from(grid.children);
+                const index = cards.indexOf(document.activeElement);
+                let next = null;
+                if (index >= 0) {
+                    if (event.key === 'ArrowLeft') next = Math.max(0, index - 1);
+                    if (event.key === 'ArrowRight') next = Math.min(cards.length - 1, index + 1);
+                    if (event.key === 'Home') next = 0;
+                    if (event.key === 'End') next = cards.length - 1;
+                }
+                if (next !== null) {
+                    event.preventDefault();
+                    cards[next].focus();
+                }
+                if (event.key === 'Tab') {
+                    const last = cards.at(-1) || close;
+                    if (event.shiftKey && document.activeElement === close) {
+                        event.preventDefault(); last.focus();
+                    } else if (!event.shiftKey && document.activeElement === last) {
+                        event.preventDefault(); close.focus();
+                    }
+                }
+            });
+        },
+
+        toggleThumbnails() {
+            if (this.isThumbnailsVisible()) { this.hideThumbnails(true); return; }
+            if (!this.isOpen || this.isSelectingScreenshot || !this.imgList.length) return;
+            this.hideSettingsPanel();
+            this.clearPendingTap();
+            this.showControls();
+            if (!this.el.thumbnailPanel) this.createThumbnailPanel();
+            const { thumbnailPanel: panel, thumbnailGrid: grid } = this.el;
+            this.el.thumbnailHint.textContent = `共 ${this.imgList.length} 页 · 点击跳转，粉色标记当前页`;
+            const fragment = document.createDocumentFragment();
+            this.imgList.forEach((_src, index) => {
+                const card = document.createElement('button');
+                card.type = 'button';
+                card.className = 'comic-thumbnail';
+                card.dataset.index = String(index);
+                card.setAttribute('aria-label', `第 ${index + 1} 页`);
+                const preview = document.createElement('span');
+                preview.className = 'comic-thumbnail-preview';
+                const label = document.createElement('span');
+                label.className = 'comic-thumbnail-number';
+                label.textContent = String(index + 1);
+                card.append(preview, label);
+                fragment.appendChild(card);
+            });
+            grid.replaceChildren(fragment);
+            panel.hidden = false;
+            this.el.reader.classList.add('thumbnails-open');
+            this.el.thumbnailsBtn.setAttribute('aria-expanded', 'true');
+            this.syncThumbnailSelection();
+            const current = grid.children[this.displayedIndex] || grid.firstElementChild;
+            if (current) {
+                current.focus({ preventScroll: true });
+                grid.scrollTop = current.offsetTop - (grid.clientHeight - current.offsetHeight) / 2;
+            }
+            if (typeof IntersectionObserver === 'function') {
+                this.thumbnailObserver = new IntersectionObserver(entries => {
+                    if (!this.isThumbnailsVisible()) return;
+                    for (const entry of entries) {
+                        if (!grid.contains(entry.target)) continue;
+                        if (entry.isIntersecting) loadThumbnail(entry.target, this.imgList[Number(entry.target.dataset.index)]);
+                        else releaseThumbnail(entry.target);
+                    }
+                }, { root: grid, rootMargin: '160px 0px' });
+                for (const card of grid.children) this.thumbnailObserver.observe(card);
+            } else {
+                // Native lazy loading is the fallback for browsers without observers.
+                for (const card of grid.children) loadThumbnail(card, this.imgList[Number(card.dataset.index)]);
+            }
+        },
+
+        syncThumbnailSelection() {
+            if (!this.isThumbnailsVisible()) return;
+            const start = this.displayedIndex;
+            for (const card of this.el.thumbnailGrid.children) {
+                const index = Number(card.dataset.index);
+                const selected = index >= start && index < start + this.activePageCount;
+                card.classList.toggle('is-current', selected);
+                card.setAttribute('aria-current', selected ? 'page' : 'false');
+                card.setAttribute('aria-label', `第 ${index + 1} 页${selected ? '，当前显示' : ''}`);
+            }
+        },
+
+        hideThumbnails(restoreFocus = false) {
+            this.thumbnailObserver?.disconnect();
+            this.thumbnailObserver = null;
+            if (!this.el.thumbnailPanel) return;
+            this.el.thumbnailPanel.hidden = true;
+            this.el.reader.classList.remove('thumbnails-open');
+            this.el.thumbnailsBtn.setAttribute('aria-expanded', 'false');
+            for (const card of this.el.thumbnailGrid.children) releaseThumbnail(card);
+            this.el.thumbnailGrid.replaceChildren();
+            if (restoreFocus) {
+                this.showControls();
+                this.el.thumbnailsBtn.focus({ preventScroll: true });
+            }
+        }
+    };
+
+    Toolbox.readerThumbnails = { attach: reader => Toolbox.attachMethods(reader, methods) };
+})();
+
 // ===== reader-settings.js =====
 // Bilibili Toolbox - readerSettings
 (function() {
@@ -2460,7 +2326,7 @@
         warm: '\u6696\u8272\u62a4\u773c',
         grayscale: '\u9ed1\u767d'
     });
-    const READER_ANIMATION_LABELS = Object.freeze({ smooth: '平滑', fade: '淡入', paper: '类纸' });
+    const READER_ANIMATION_LABELS = Object.freeze({ smooth: '平滑', fade: '淡入' });
     const PREFERENCE_EFFECTS = {
         isRightToLeft: ['updateDirection', 'syncDirectionButton'],
         animationMode: ['syncAnimationButton'],
@@ -2510,8 +2376,7 @@
             const mode = animations.normalizeAnimationMode(this.animationMode);
             const descriptions = {
                 smooth: '淡入、平移与细微缩放。',
-                fade: '使用淡入淡出翻页。',
-                paper: '弯曲纸面、书脊与光影翻书效果。'
+                fade: '使用淡入淡出翻页。'
             };
             syncSettingButton(this, this.el.animationBtn, 'animationMode', READER_ANIMATION_LABELS[mode], descriptions[mode]);
         },
@@ -3093,6 +2958,7 @@
             });
         });
         el.settingsBtn.onclick = stop(() => reader.toggleSettingsPanel());
+        el.thumbnailsBtn.onclick = stop(() => reader.toggleThumbnails());
 
         el.resetViewBtn.onclick = stop(() => reader.resetTransform());
         el.screenshotBtn.onclick = stop(() => reader.startScreenshotSelection());
@@ -3212,6 +3078,9 @@
             const cached = this.imageCache.get(src);
             if (cached) {
                 if (!preload) cached.image.fetchPriority = 'high';
+                // A browser may discard a cached original's decoded frame under
+                // memory pressure. Prepare it again before touching the viewport.
+                if (!preload && cached.settled) return this.prepareCachedFrame(cached);
                 return cached.promise;
             }
 
@@ -3223,6 +3092,7 @@
                 entry.release = () => {
                     if (entry.released) return;
                     entry.released = true;
+                    entry.releaseFrame?.();
                     // Detach first: browser image-loader bookkeeping can retain
                     // an image after cancellation; it must not retain the UI tree.
                     Toolbox.releaseImage(img);
@@ -3245,6 +3115,20 @@
             this.imageCache.set(src, entry);
             img.src = src;
             return entry.promise;
+        }
+
+        prepareCachedFrame(entry) {
+            if (entry.framePromise) return entry.framePromise;
+            entry.framePromise = new Promise(resolve => {
+                entry.releaseFrame = () => resolve(null);
+                Promise.resolve().then(() => entry.released ? null : entry.image.decode?.())
+                    .catch(() => { /* A successfully loaded image remains usable. */ })
+                    .then(() => resolve(entry.released ? null : entry.image));
+            }).finally(() => {
+                entry.framePromise = null;
+                entry.releaseFrame = null;
+            });
+            return entry.framePromise;
         }
 
         releaseCachedImage(src) {
@@ -3368,6 +3252,7 @@
     if (!window.BilibiliToolbox?.readerTransform) throw new Error('BilibiliToolbox: reader-transform.js not loaded');
     if (!window.BilibiliToolbox?.readerSelection) throw new Error('BilibiliToolbox: reader-selection.js not loaded');
     if (!window.BilibiliToolbox?.readerDom) throw new Error('BilibiliToolbox: reader-dom.js not loaded');
+    if (!window.BilibiliToolbox?.readerThumbnails) throw new Error('BilibiliToolbox: reader-thumbnails.js not loaded');
     if (!window.BilibiliToolbox?.readerSettings) throw new Error('BilibiliToolbox: reader-settings.js not loaded');
     if (!window.BilibiliToolbox?.readerTouch) throw new Error('BilibiliToolbox: reader-touch.js not loaded');
     if (!window.BilibiliToolbox?.readerPageGroups) throw new Error('BilibiliToolbox: comic-reader-page-groups.js not loaded');
@@ -3454,6 +3339,7 @@
             readerTransform.attach(this);
             readerSelection.attach(this);
             readerDom.attach(this);
+            Toolbox.readerThumbnails.attach(this);
             Toolbox.readerSettings.attach(this);
             Toolbox.readerTouch.attach(this);
 
@@ -3616,7 +3502,10 @@
             const hidden = opacity === '0';
             this.el.controls.classList.toggle('is-hidden', hidden);
             this.el.settingsControls.classList.toggle('is-hidden', hidden);
-            if (hidden) this.hideSettingsPanel();
+            if (hidden) {
+                this.hideSettingsPanel();
+                this.hideThumbnails();
+            }
         }
 
         showControls() {
@@ -3631,7 +3520,7 @@
         }
 
         scheduleHideControls() {
-            if (this.isSettingsPanelVisible()) return;
+            if (this.isSettingsPanelVisible() || this.isThumbnailsVisible()) return;
             if (this.hideTimer) clearTimeout(this.hideTimer);
             this.hideTimer = setTimeout(() => this.hideControls(), this.isTouchDevice ? 1000 : 500);
         }
@@ -3699,11 +3588,11 @@
                 getTransitionToken: () => this.pageFlipToken,
                 getTransform: () => this.getTransformStyle(),
                 getShiftedTransform: (screenTranslateX) => this.getTransformStyle(screenTranslateX),
-                rotation: this.rotation,
                 loadImages: (_index, mode, direction) => {
                     if (transitionToken !== this.pageFlipToken || container !== this.el.imgContainer) return;
                     this.commitImages(result.images, mode, direction, result.preloadStart);
                     this.displayedIndex = renderIndex;
+                    this.syncThumbnailSelection();
                 }
             });
         }
@@ -3771,8 +3660,7 @@
                 (screenTranslateX) => this.getTransformStyle(screenTranslateX)
             );
             this.preloadImages(preloadStart);
-            // Paper-turn snapshots finish synchronously after commitImages returns.
-            // Release old images only after those snapshots and the page index swap.
+            // Apply the memory policy after the displayed page index is committed.
             Promise.resolve().then(() => {
                 if (this.isOpen) this.pruneImageCache();
             });
@@ -3788,14 +3676,19 @@
             img.style.imageRendering = 'auto';
 
             const effectiveSize = displaySize || this.getEffectiveImageSize(img);
-            const effectiveWidth = Math.max(1, Math.round(effectiveSize.width || 1));
-            const effectiveHeight = Math.max(1, Math.round(effectiveSize.height || 1));
+            const effectiveWidth = Math.max(1, effectiveSize.width || 1);
+            const effectiveHeight = Math.max(1, effectiveSize.height || 1);
             img.dataset.displayWidth = String(effectiveWidth);
             img.dataset.displayHeight = String(effectiveHeight);
             img.style.width = `${rotated ? effectiveHeight : effectiveWidth}px`;
             img.style.height = `${rotated ? effectiveWidth : effectiveHeight}px`;
             img.style.maxWidth = 'none';
             img.style.maxHeight = 'none';
+
+            // A rotated flex item still occupies its unrotated layout box.
+            // Compensate so two sideways pages neither overlap nor escape the fit.
+            const rotationMargin = rotated ? (effectiveWidth - effectiveHeight) / 2 : 0;
+            img.style.margin = `${-rotationMargin}px ${rotationMargin}px`;
 
             img.style.transform = this.rotation ? `rotate(${this.rotation}deg)` : '';
         }
@@ -3861,10 +3754,16 @@
                 this.hidePageInput();
                 return;
             }
-            const step = page - 1 - this.currentIndex;
             this.el.pageInfo.classList.remove('is-editing');
-            this.currentIndex = page - 1;
-            this.render(true, step);
+            this.jumpToImage(page - 1);
+        }
+
+        jumpToImage(index) {
+            if (!this.isOpen || !Number.isInteger(index) || index < 0 || index >= this.imgList.length) return;
+            if (index === this.currentIndex && this.el.imgContainer?.firstChild) return;
+            const step = index - this.currentIndex;
+            this.currentIndex = index;
+            return this.render(true, step);
         }
 
         getNextPageGroupIndex(step) {
@@ -3925,6 +3824,13 @@
         }
 
         handleKeyDown(e) {
+            if (this.isThumbnailsVisible()) {
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    this.hideThumbnails(true);
+                }
+                return;
+            }
             if (this.isSelectingScreenshot) {
                 if (e.key === 'Escape') this.cancelScreenshotSelection(true);
                 if (e.key === 'Enter') {
@@ -3963,6 +3869,7 @@
             this.transformTransitionTimer = null;
             this.cancelScreenshotSelection(false, false);
             this.hideSettingsPanel();
+            this.hideThumbnails();
 
             if (this.eventBag) {
                 this.eventBag.cleanup();

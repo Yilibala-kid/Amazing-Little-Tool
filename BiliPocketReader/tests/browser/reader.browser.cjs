@@ -12,7 +12,7 @@ const svg = number => '<svg xmlns="http://www.w3.org/2000/svg" width="2400" heig
     '<rect x="90" y="90" width="2220" height="3420" fill="none" stroke="#243346" stroke-width="8"/>' +
     Array.from({ length: 75 }, (_, i) => '<text x="150" y="' + (180 + i * 44) +
         '" font-family="sans-serif" font-size="28" fill="#18222f">PAGE ' + number +
-        ' — Fine text ABCDEFG abcdefg 0123456789 — straight lines and curved paper</text>').join('') + '</svg>';
+        ' — Fine text ABCDEFG abcdefg 0123456789 — straight lines and curves</text>').join('') + '</svg>';
 const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</title><div class="article-content">' +
     Array.from({ length: 12 }, (_, i) => '<img width="200" height="300" src="https://i0.hdslb.com/bfs/article/page' +
         i + '.jpg@200w.webp">').join('') + '</div>';
@@ -62,13 +62,6 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
                 const img = new NativeImage(...args);
                 window.trackedImages.push(img);
                 return img;
-            };
-            window.trackedCanvases = [];
-            const create = document.createElement.bind(document);
-            document.createElement = function(name, ...args) {
-                const element = create(name, ...args);
-                if (name === 'canvas') window.trackedCanvases.push(element);
-                return element;
             };
         });
         for (const file of manifest.content_scripts[0].css) {
@@ -297,33 +290,23 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
         await page.evaluate(async () => {
             reader.hideSettingsPanel();
             reader.viewMode = 'single';
-            reader.animationMode = 'paper';
+            reader.animationMode = 'smooth';
             reader.syncViewModeButton();
             reader.syncAnimationButton();
             reader.currentIndex = 4;
-            window.snapshotImages = [];
-            const draw = CanvasRenderingContext2D.prototype.drawImage;
-            CanvasRenderingContext2D.prototype.drawImage = function(img, ...args) {
-                if (img instanceof HTMLImageElement) snapshotImages.push({ src: img.src, width: img.naturalWidth });
-                return draw.call(this, img, ...args);
-            };
-            try { await reader.render(true, 4); }
-            finally { CanvasRenderingContext2D.prototype.drawImage = draw; }
+            await reader.render(true, 4);
         });
+        await page.waitForFunction(() => reader.displayedIndex === 4);
         assert.equal(await page.evaluate(() => reader.displayedIndex), 4);
         assert.equal(await page.evaluate(() => [...reader.imageCache.keys()].every(src => Number(src.match(/page(\d+)/)[1]) >= 4)), true);
         assert.equal(await page.evaluate(() => trackedImages.slice(0, 4).every(img => img.src.startsWith('data:image/gif'))), true);
-        assert.equal(await page.evaluate(() => snapshotImages.some(img => /page0\.jpg(?:@|$)/.test(img.src) && img.width === 2400)), true,
-            'the outgoing paper snapshot is drawn before its source is released');
         assert.equal(await page.evaluate(() => /page4\.jpg(?:@|$)/.test(reader.el.imgContainer.firstChild.src) &&
             reader.el.imgContainer.firstChild.naturalWidth === 2400), true);
-        await page.locator('.comic-paper-turn').waitFor({ state: 'detached' });
         await page.evaluate(() => reader.turnPage(null, -1));
         await page.waitForFunction(() => reader.displayedIndex === 3 &&
             reader.el.imgContainer?.querySelector('img')?.naturalWidth === 2400);
         assert.equal(await page.evaluate(() => /page3\.jpg(?:@|$)/.test(reader.el.imgContainer.firstChild.src)), true,
             'backward navigation reloads the released image');
-        await page.locator('.comic-paper-turn').waitFor({ state: 'detached' });
         await page.setViewportSize({ width: 390, height: 844 });
         await page.waitForFunction(() => reader.resizeFrame === null);
         await page.evaluate(() => reader.toggleSettingsPanel());
@@ -452,12 +435,12 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
             reader.close(true);
         });
         await page.setViewportSize({ width: 1360, height: 900 });
-        await page.evaluate(() => { trackedImages.length = trackedCanvases.length = 0; });
+        await page.evaluate(() => { trackedImages.length = 0; });
         const open = async mode => {
             await page.evaluate(mode => {
                 reader.imageRenderMode = 'sharp';
                 reader.viewMode = mode;
-                reader.animationMode = 'paper';
+                reader.animationMode = 'smooth';
                 reader.start(); reader.start();
             }, mode);
             await page.waitForFunction(() => reader.el.imgContainer?.querySelector('img')?.naturalWidth > 0);
@@ -466,10 +449,9 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
         const release = async () => {
             await page.evaluate(() => reader.close(true));
             assert.equal(await page.locator('#comic-reader-overlay').count(), 0);
-            assert.equal(await page.evaluate(() => trackedCanvases.every(c => !c.width && !c.height)), true);
             assert.equal(await page.evaluate(() => trackedImages.every(img => img.src.startsWith('data:image/gif'))), true);
             assert.equal(await page.evaluate(() => reader.imageCache.size), 0);
-            await page.evaluate(() => { trackedImages.length = trackedCanvases.length = 0; });
+            await page.evaluate(() => { trackedImages.length = 0; });
         };
         await open('double');
         assert.ok(originals >= 2);
@@ -479,41 +461,30 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
         });
         assert.equal(await page.evaluate(() => reader.displayedIndex), 8);
         // Exercise single/double pages, both directions, rotation and high DPI.
-        const budgets = [];
         for (const mode of ['single', 'double']) {
-            await page.evaluate(async mode => {
-                reader.viewMode = mode; reader.currentIndex = 0; reader.rotation = 0;
-                await reader.render(false);
-            }, mode);
-            for (const direction of [true, false]) {
-                await page.evaluate(direction => { reader.isRightToLeft = direction; reader.updateDirection(); }, direction);
-                await page.evaluate(async () => {
-                    reader.currentIndex = 2;
-                    const originalRaf = window.requestAnimationFrame;
-                    window.paperFrames = new Map();
-                    window.requestAnimationFrame = fn => { paperFrames.set(paperFrames.size + 1, fn); return paperFrames.size; };
-                    window.restoreRaf = () => { window.requestAnimationFrame = originalRaf; };
-                    await reader.render(true, 1);
-                });
-                assert.equal(await page.locator('.comic-paper-turn').count(), 1);
-                const pixels = await page.evaluate(() => trackedCanvases.reduce((sum, c) => sum + c.width * c.height, 0));
-                assert.ok(pixels <= 40e6, 'aggregate animation budget');
-                budgets.push(pixels);
-                await page.screenshot({ path: path.join(artifactDir, mode + '-' + direction + '-start.png') });
-                await page.evaluate(() => { const fn = paperFrames.values().next().value; fn(performance.now() + 280); });
-                await page.screenshot({ path: path.join(artifactDir, mode + '-' + direction + '-curl.png') });
-                await page.evaluate(() => {
-                    BilibiliToolbox.animations.cancel(reader.el.imgContainer);
-                    restoreRaf(); delete window.restoreRaf; delete window.paperFrames;
-                });
-                await page.evaluate(async () => { reader.currentIndex = 0; await reader.render(false); });
+            for (const animation of ['smooth', 'fade']) {
+                for (const direction of [true, false]) {
+                    await page.evaluate(async ({ mode, animation, direction }) => {
+                        reader.viewMode = mode; reader.currentIndex = 0; reader.rotation = 0;
+                        reader.animationMode = animation; reader.isRightToLeft = direction;
+                        reader.updateDirection();
+                        await reader.render(false);
+                        reader.currentIndex = 2;
+                        await reader.render(true, 2);
+                    }, { mode, animation, direction });
+                    await page.waitForFunction(() => reader.displayedIndex === 2 &&
+                        !reader.el.imgContainer.getAnimations().some(animation => animation.playState === 'running'));
+                    assert.equal(await page.locator('.comic-img-container img').count(), mode === 'single' ? 1 : 2);
+                    assert.equal(await page.locator('.comic-img-container').evaluate(el => getComputedStyle(el).opacity), '1');
+                    await page.screenshot({ path: path.join(artifactDir, mode + '-' + animation + '-' + direction + '.png') });
+                }
             }
         }
         await page.evaluate(async () => { reader.rotation = 90; await reader.render(false); });
         await page.setViewportSize({ width: 900, height: 700 });
         await page.waitForFunction(() => reader.resizeFrame === null);
         await page.evaluate(async () => { reader.currentIndex = 2; await reader.render(true, 1); });
-        await page.locator('.comic-paper-turn').waitFor({ state: 'detached' });
+        await page.waitForFunction(() => reader.displayedIndex === 2);
         await page.evaluate(async () => { reader.currentIndex = 4; await reader.render(true, 1); });
         await release(); // Close during an active animation.
         delayOriginals = true;
@@ -549,7 +520,7 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
         assert.ok(after.nodes <= before.nodes + 12, JSON.stringify({ before, after }));
         assert.ok(after.jsEventListeners <= before.jsEventListeners + 2, JSON.stringify({ before, after }));
         assert.deepEqual(errors, []);
-        console.log(JSON.stringify({ animationPixels: budgets, memory: { before, after }, screenshots: artifactDir }, null, 2));
+        console.log(JSON.stringify({ memory: { before, after }, screenshots: artifactDir }, null, 2));
 
         // Real DOM regression: disabled filters do not scan; mutations inspect only their outer card.
         await page.goto('https://space.bilibili.com/123/dynamic');

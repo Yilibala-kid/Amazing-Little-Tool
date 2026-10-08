@@ -7,7 +7,7 @@
     const FADE_SHIFT_DISTANCE = 60;
     const SMOOTH_SCALE_START = 0.95;
     const DEFAULT_ANIMATION_MODE = 'smooth';
-    const ANIMATION_MODES = ['smooth', 'fade', 'paper'];
+    const ANIMATION_MODES = ['smooth', 'fade'];
     const activeTransitions = new WeakMap();
     const IMMEDIATE_RENDER_MODE = 'immediate';
 
@@ -15,7 +15,7 @@
         if (!container) return;
         activeTransitions.get(container)?.(settle);
         activeTransitions.delete(container);
-        Object.assign(container.style, { transition: 'none', opacity: '1', visibility: '' });
+        Object.assign(container.style, { transition: 'none', opacity: '1' });
     }
 
     function scheduleCommit(container, commit) {
@@ -93,17 +93,6 @@
         const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
         const renderMode = resolveRenderMode(animate && !reduceMotion, Boolean(imgContainer.firstChild), animationMode);
         const direction = resolveTransitionDirection(step, isRightToLeft, lastStep);
-
-        if (renderMode === 'paper' && window.BilibiliToolbox.paperTurn) {
-            const stop = window.BilibiliToolbox.paperTurn.play({
-                container: imgContainer, direction, rotation: options.rotation || 0,
-                commit: () => loadImages(renderIndex, IMMEDIATE_RENDER_MODE, direction),
-                isCurrent: () => transitionToken === getTransitionToken() && renderIndex === getCurrentIndex(),
-                onFinish: () => activeTransitions.delete(imgContainer)
-            });
-            if (stop) activeTransitions.set(imgContainer, stop);
-            return;
-        }
 
         if (renderMode === 'smooth') {
             playSmoothTransition(imgContainer, renderIndex, getCurrentIndex, transitionToken, getTransitionToken, loadImages, direction, getTransform, getShiftedTransform);

@@ -14,6 +14,7 @@
     if (!window.BilibiliToolbox?.readerTransform) throw new Error('BilibiliToolbox: reader-transform.js not loaded');
     if (!window.BilibiliToolbox?.readerSelection) throw new Error('BilibiliToolbox: reader-selection.js not loaded');
     if (!window.BilibiliToolbox?.readerDom) throw new Error('BilibiliToolbox: reader-dom.js not loaded');
+    if (!window.BilibiliToolbox?.readerThumbnails) throw new Error('BilibiliToolbox: reader-thumbnails.js not loaded');
     if (!window.BilibiliToolbox?.readerSettings) throw new Error('BilibiliToolbox: reader-settings.js not loaded');
     if (!window.BilibiliToolbox?.readerTouch) throw new Error('BilibiliToolbox: reader-touch.js not loaded');
     if (!window.BilibiliToolbox?.readerPageGroups) throw new Error('BilibiliToolbox: comic-reader-page-groups.js not loaded');
@@ -100,6 +101,7 @@
             readerTransform.attach(this);
             readerSelection.attach(this);
             readerDom.attach(this);
+            Toolbox.readerThumbnails.attach(this);
             Toolbox.readerSettings.attach(this);
             Toolbox.readerTouch.attach(this);
 
@@ -262,7 +264,10 @@
             const hidden = opacity === '0';
             this.el.controls.classList.toggle('is-hidden', hidden);
             this.el.settingsControls.classList.toggle('is-hidden', hidden);
-            if (hidden) this.hideSettingsPanel();
+            if (hidden) {
+                this.hideSettingsPanel();
+                this.hideThumbnails();
+            }
         }
 
         showControls() {
@@ -277,7 +282,7 @@
         }
 
         scheduleHideControls() {
-            if (this.isSettingsPanelVisible()) return;
+            if (this.isSettingsPanelVisible() || this.isThumbnailsVisible()) return;
             if (this.hideTimer) clearTimeout(this.hideTimer);
             this.hideTimer = setTimeout(() => this.hideControls(), this.isTouchDevice ? 1000 : 500);
         }
@@ -345,11 +350,11 @@
                 getTransitionToken: () => this.pageFlipToken,
                 getTransform: () => this.getTransformStyle(),
                 getShiftedTransform: (screenTranslateX) => this.getTransformStyle(screenTranslateX),
-                rotation: this.rotation,
                 loadImages: (_index, mode, direction) => {
                     if (transitionToken !== this.pageFlipToken || container !== this.el.imgContainer) return;
                     this.commitImages(result.images, mode, direction, result.preloadStart);
                     this.displayedIndex = renderIndex;
+                    this.syncThumbnailSelection();
                 }
             });
         }
@@ -417,8 +422,7 @@
                 (screenTranslateX) => this.getTransformStyle(screenTranslateX)
             );
             this.preloadImages(preloadStart);
-            // Paper-turn snapshots finish synchronously after commitImages returns.
-            // Release old images only after those snapshots and the page index swap.
+            // Apply the memory policy after the displayed page index is committed.
             Promise.resolve().then(() => {
                 if (this.isOpen) this.pruneImageCache();
             });
@@ -434,14 +438,19 @@
             img.style.imageRendering = 'auto';
 
             const effectiveSize = displaySize || this.getEffectiveImageSize(img);
-            const effectiveWidth = Math.max(1, Math.round(effectiveSize.width || 1));
-            const effectiveHeight = Math.max(1, Math.round(effectiveSize.height || 1));
+            const effectiveWidth = Math.max(1, effectiveSize.width || 1);
+            const effectiveHeight = Math.max(1, effectiveSize.height || 1);
             img.dataset.displayWidth = String(effectiveWidth);
             img.dataset.displayHeight = String(effectiveHeight);
             img.style.width = `${rotated ? effectiveHeight : effectiveWidth}px`;
             img.style.height = `${rotated ? effectiveWidth : effectiveHeight}px`;
             img.style.maxWidth = 'none';
             img.style.maxHeight = 'none';
+
+            // A rotated flex item still occupies its unrotated layout box.
+            // Compensate so two sideways pages neither overlap nor escape the fit.
+            const rotationMargin = rotated ? (effectiveWidth - effectiveHeight) / 2 : 0;
+            img.style.margin = `${-rotationMargin}px ${rotationMargin}px`;
 
             img.style.transform = this.rotation ? `rotate(${this.rotation}deg)` : '';
         }
@@ -507,10 +516,16 @@
                 this.hidePageInput();
                 return;
             }
-            const step = page - 1 - this.currentIndex;
             this.el.pageInfo.classList.remove('is-editing');
-            this.currentIndex = page - 1;
-            this.render(true, step);
+            this.jumpToImage(page - 1);
+        }
+
+        jumpToImage(index) {
+            if (!this.isOpen || !Number.isInteger(index) || index < 0 || index >= this.imgList.length) return;
+            if (index === this.currentIndex && this.el.imgContainer?.firstChild) return;
+            const step = index - this.currentIndex;
+            this.currentIndex = index;
+            return this.render(true, step);
         }
 
         getNextPageGroupIndex(step) {
@@ -571,6 +586,13 @@
         }
 
         handleKeyDown(e) {
+            if (this.isThumbnailsVisible()) {
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    this.hideThumbnails(true);
+                }
+                return;
+            }
             if (this.isSelectingScreenshot) {
                 if (e.key === 'Escape') this.cancelScreenshotSelection(true);
                 if (e.key === 'Enter') {
@@ -609,6 +631,7 @@
             this.transformTransitionTimer = null;
             this.cancelScreenshotSelection(false, false);
             this.hideSettingsPanel();
+            this.hideThumbnails();
 
             if (this.eventBag) {
                 this.eventBag.cleanup();

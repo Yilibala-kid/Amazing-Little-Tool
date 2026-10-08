@@ -9,6 +9,7 @@ BiliPocketReader 是运行在 bilibili 页面上的 MV3 内容脚本扩展，同
 主要功能：
 
 - 漫画/图文阅读器：在专栏、动态图文等页面收集图片，打开全屏阅读器，支持单双页、自动宽图判断、缩放、拖拽、触摸手势、翻页动画、背景色、显示质量、图像滤镜、漫画预加载、图片内存策略、截图。
+- 缩略图导航：重置按钮左侧的入口展开页面预览，定位并标记当前显示页，点击任意缩略图跳转；支持触屏滚动和键盘操作。
 - 收藏面板：悬浮星标按钮，收藏用户空间、空间图文页、阅读列表，快速跳转。
 - 收藏显示设置：收藏面板每行 2 到 5 个收藏，保持收藏块固定宽度，通过调整面板宽度改变列数。
 - 动态过滤：在用户动态页隐藏转发动态，或临时按关键词只显示匹配动态。
@@ -23,14 +24,14 @@ BiliPocketReader 是运行在 bilibili 页面上的 MV3 内容脚本扩展，同
 1. `shared.js`
 2. `storage-service.js`
 3. `bilibili-dom-adapter.js`
-4. `paper-turn.js`
-5. `animations.js`
-6. `comic-reader-images.js`
-7. `reader-preferences.js`
-8. `reader-screenshot.js`
-9. `reader-transform.js`
-10. `reader-selection.js`
-11. `reader-dom.js`
+4. `animations.js`
+5. `comic-reader-images.js`
+6. `reader-preferences.js`
+7. `reader-screenshot.js`
+8. `reader-transform.js`
+9. `reader-selection.js`
+10. `reader-dom.js`
+11. `reader-thumbnails.js`
 12. `reader-settings.js`
 13. `reader-touch.js`
 14. `comic-reader-page-groups.js`
@@ -372,7 +373,7 @@ SPA URL 变化桥。
 
 - 定义合法选项：
   - `VIEW_MODES`: `auto`, `single`, `double`
-  - `ANIMATION_MODES`: `smooth`, `fade`, `paper`，复用 animations 模块定义
+  - `ANIMATION_MODES`: `smooth`, `fade`，复用 animations 模块定义
   - `IMAGE_RENDER_MODES`: `sharp`, `smooth`
   - `BACKGROUND_MODES`: `black`, `darkGray`, `lightGray`, `white`
   - `FILTER_MODES`: `original`, `soft`, `warm`, `grayscale`
@@ -396,30 +397,17 @@ SPA URL 变化桥。
 
 职责：
 
-- 管理动画模式：`smooth`, `fade`, `paper`（类纸）。
+- 管理动画模式：`smooth`, `fade`。
 - 运行翻页过渡。
 - 重置图片容器状态。
 - 完成渲染后恢复 transform/opacity。
-- 统一取消计时器和纸面动画。缩放/截图打断淡出时，先提交已准备好的新页；关闭/新请求则取消旧提交。
+- 统一取消过渡计时器。缩放/截图打断淡出时，先提交已准备好的新页；关闭/新请求则取消旧提交。
 - 系统偏好减少动态效果时使用即时切换。
 
 维护要点：
 
 - 首次渲染和设置变化引起的重排使用内部即时渲染路径，不作为用户可选动画模式。
 - 设置卡片的当前值由 `reader-settings.js` 统一同步，不由动画模块单独维护状态样式。
-
-### `paper-turn.js`
-
-类纸翻页效果，导出 `Toolbox.paperTurn.play()` 和可测试的 `createMesh()`。
-
-- 新页 DOM 作为动画底图；采集原图位置与滤镜，直接生成正反面纹理。双页仅额外保留旧页静止一侧的裁剪画布，不再生成两份整页快照。只绘制，不读取像素或导出，支持跨域图片。
-- 沿纸张宽度积分弯曲角，生成 44 段带深度的纸面，用透视投影与三角纹理映射绘制。
-- 双页模式以书脊为轴，展示旧页正面和下一页背面；单页模式向页边翻出。方向由翻页方向和阅读方向共同决定。
-- 正反面共用一张光照临时纹理，光照连续绘入，避免分段边缘出现亮线；叠加书脊阴影、投影和纸张边缘。
-- 翻页时长为 720 毫秒。画布按设备像素比绘制（上限 1200 万像素、单边 8192），纸面从已解码原图直接生成，并预留 1.5 倍透视放大分辨率（每面上限 800 万像素），避免从低分辨率快照再次缩放造成模糊。
-- 所有活动画布共享 4000 万像素预算（约 160 MB RGBA，不含浏览器/GPU 副本）；先分配显示层和静止侧，再分配纹理。此前各画布独立上限合计为 6800 万像素。普通高分屏保留原有分辨率，极大视口按剩余总预算降低纹理尺寸。
-- 动画结束、关闭、缩放、截图或下一次渲染时移除临时画布，并将全部临时画布尺寸归零释放像素缓冲；初始化失败也走同一清理路径。
-- Canvas 不可用时回退到新页直接显示。
 
 ### `reader-screenshot.js`
 
@@ -459,6 +447,8 @@ SPA URL 变化桥。
 - 计算图片边界、平移限制和鼠标拖拽。
 - 平移限制复用未变换的布局尺寸，换页、旋转、阅读方向或视口变化时失效；每次操作先计算限制，再一次性写入 transform，避免逐次写样式后强制读取图片边界。
 - 根据原图/流畅模式设置显示尺寸。
+- 两种画质均先按视口计算 CSS 显示尺寸，图片容器作为独立的绝对定位层，避免完整原图尺寸撑大绘制区域；不预设 `will-change`。保留原始图片来源及自然尺寸比例，用于原像素双击缩放和最大缩放计算。双页间距按屏幕像素保留，旋转图片通过外边距补偿 flex 占位。
+- 阅读工具栏和设置面板使用实色背景，避免背景模糊重复合成大图。窄屏工具栏允许换行，短屏将右上按钮排列为两列，滚动回退采用顶部对齐，防止首个按钮超出可滚动范围。
 
 维护要点：
 
@@ -485,6 +475,17 @@ SPA URL 变化桥。
 
 - 新增截图交互时优先改这里。
 - 该模块只处理选区状态，不负责图片渲染和翻页。
+
+### `reader-thumbnails.js`
+
+缩略图导航模块，导出 `Toolbox.readerThumbnails.attach(reader)`。
+
+- 默认收起，首次展开才创建面板。缩略图按图片原始顺序排列，每张图片对应一个页码。
+- 展开时滚动并聚焦到 `displayedIndex`，同时标记 `activePageCount` 张已显示图片；实际翻页提交后同步标记，避免把正在加载的页误标为当前页。
+- 使用面板滚动区的 IntersectionObserver 加载附近预览，离开附近区域、收起或关闭阅读器时释放缩略图；B 站图片使用 240 像素宽 CDN 预览，不进入原图缓存，不改变漫画预加载和内存设置。不支持 IntersectionObserver 时回退为原生 lazy 图片加载。
+- 点击后收起并调用阅读器的 `jumpToImage(index)`，沿用现有单双页、动画和失败保留旧页的逻辑。预览失败显示占位文字，仍可跳转。
+- 面板隔离滚轮、触摸和键盘事件；左右键/Home/End 移动缩略图焦点，Enter/空格使用按钮原生激活，Tab 保持在面板内，Esc 关闭并恢复入口焦点。
+- 所有事件走阅读器 event bag；关闭时断开 observer、释放预览图片，销毁阅读器时解除监听。
 
 ### `reader-dom.js`
 
@@ -572,6 +573,7 @@ SPA URL 变化桥。
 
 导出 `Toolbox.ReaderImageLoader`，每个阅读器拥有独立实例。通过状态读取函数获取当前页、可见图片来源和开关状态，负责原图请求、解码、共享加载 Promise、串行预加载及缓存回收。主类通过薄封装调用这些能力。
 
+- 已完成的缓存原图再次用于前台时，通过 `decode()` 确认可绘制帧已准备好，避免浏览器回收解码帧后在提交时同步解码。并发前台请求共享此次解码等待，释放图片会解除等待；后台读取直接复用原加载 Promise。
 - `getPreloadCount()` 按偏好返回 2、4、6 或本篇图片总数；`preloadImages(startIndex, delay)` 串行加载、等待解码，并在图片之间间隔 120 毫秒。有限页数从指定位置加载对应数量；`all` 每次续队列都从第一页依次检查未加载图片，复用完成缓存和在途请求。`previous` 内存策略下跳过当前显示页之前的图片，避免后台重新加载已经释放的页。
 - `imageMemoryPolicy === 'page'` 保留已解码图片直到关闭或离开当前文章；没有按像素预算或与当前页距离自动淘汰图片的限制。
 - `imageMemoryPolicy === 'previous'` 根据真正显示的 `displayedIndex` 释放之前的图片，并释放当前列表之外的旧画质地址；可见图片、待显示页组和受 `protectImages()` 保护的宽度探测图片继续保留。
@@ -645,9 +647,10 @@ SPA URL 变化桥。
 - `build-userscript.cmd`：Windows cmd wrapper。
 - `dist/BiliPocketReader.user.js`：userscript 构建产物，需要随源码变更重新生成。
 - `tests/content-modules.test.js`：内容脚本模块单元测试。
+- `tests/browser/original-layout.browser.cjs`：使用 2400×16000 PNG 验证原图布局、旋转双页边界、原像素缩放、翻页动画，以及桌面、窄屏、横屏工具栏的完整显示和可点击性；支持 `BPR_BROWSER_PATH` 指定浏览器。
 - `tests/storage-service.test.js`：storage 和收藏服务测试。
 - `tests/reader-settings.test.js`：九项默认偏好、已有页数选择保留、九个整卡按钮所有选项循环与回绕、固定标题/保存值/可访问状态恢复、装饰图形、真实点击后的单次保存、选择性显示效果和触摸翻页回归测试。
-- `tests/render-pipeline.test.js`：原图解码等待、过期渲染、关闭/加载失败、2/4/6/全部入口与翻页预加载、动态正文补齐、队列串行与取消、两种图片内存策略、回看宽度探测保护、旧画质清理、双页并行加载、平移尺寸复用、动画取消与纸面曲率/分辨率回归测试。
+- `tests/render-pipeline.test.js`：原图及缓存帧解码等待、过期渲染、关闭/加载失败、2/4/6/全部入口与翻页预加载、动态正文补齐、队列串行与取消、两种图片内存策略、回看宽度探测保护、旧画质清理、双页并行加载、平移尺寸复用、动画取消与减少动态效果回归测试。
 - `tests/reader-lifecycle.test.js`：原生导航、跨文章生命周期、离开页面释放、BFCache 恢复预热、复制/下载独立输出、复制失败、全图仅选择、截图并发限制、超大画布限制与取消资源清理回归测试。
 - `安装指南.txt`：面向用户的安装说明。
 
@@ -687,7 +690,7 @@ SPA URL 变化桥。
 - `currentIndex`：当前第一张图片下标。
 - `activePageCount` / `lastStep`：当前显示张数和默认翻页步长。
 - `viewMode`：`auto` / `single` / `double`。
-- `animationMode`：`smooth` / `fade` / `paper`。
+- `animationMode`：`smooth` / `fade`。
 - `imageRenderMode`：`sharp` / `smooth`。
 - `backgroundMode`：阅读背景色。
 - `filterMode`：`original` / `soft` / `warm` / `grayscale`，只影响阅读显示，不写入截图。
@@ -788,11 +791,13 @@ node --test BiliPocketReader/tests/*.test.js
 ```powershell
 # 使用系统 Chrome 时可设置 BPR_BROWSER_PATH；否则使用 Playwright 自带 Chromium。
 node BiliPocketReader/tests/browser/reader.browser.cjs
+# 缩略图导航：桌面/触屏、懒加载、焦点、跳转失败与关闭清理
+node BiliPocketReader/tests/browser/thumbnails.browser.cjs
 ```
 
-浏览器测试拦截全部网络请求，用本地生成的漫画图检查按设置进入页面与翻页预加载、打开复用缓存、图片内存选项、回看重新加载、关闭覆盖层保留完成图片与离开文章清理、快速切页、单双页/双向动画、旋转、缩放、十轮循环的 DOM/监听器数量、400 张卡片的增量过滤。控制台打印画布像素数和临时目录中的高分屏截图。该测试通过脚本注入模拟内容脚本，不替代真实站点或扩展隔离世界的兼容性检查。
+浏览器测试拦截全部网络请求，用本地生成的漫画图检查按设置进入页面与翻页预加载、打开复用缓存、图片内存选项、回看重新加载、关闭覆盖层保留完成图片与离开文章清理、快速切页、单双页/双向动画、旋转、缩放、十轮循环的 DOM/监听器数量、400 张卡片的增量过滤。控制台打印资源计数和临时目录中的高分屏截图路径。该测试通过脚本注入模拟内容脚本，不替代真实站点或扩展隔离世界的兼容性检查。
 
-单元回归另覆盖所有预加载数量、设置变化时重新调度、动态正文补齐、回看宽度探测与旧画质清理、BFCache 恢复、保存队列及失败恢复、选择性刷新、8K 视口动画总预算、解码/关闭竞态、截图取消和缩放合并。
+单元回归另覆盖所有预加载数量、设置变化时重新调度、动态正文补齐、回看宽度探测与旧画质清理、BFCache 恢复、保存队列及失败恢复、选择性刷新、解码/关闭竞态、截图取消和缩放合并。
 
 重新生成 userscript：
 

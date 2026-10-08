@@ -20,7 +20,7 @@ function fixture() {
         removeAttribute(name) { if (name === 'src') delete this.src; }
     }
     const context = vm.createContext({ console, Image: ControlledImage, setTimeout, clearTimeout,
-        document: { getElementById: () => null }, matchMedia: () => ({ matches: false }) });
+        document: { getElementById: () => null }, matchMedia: () => ({ matches: true }) });
     context.window = context;
     function run(name) {
         vm.runInContext(fs.readFileSync(path.join(__dirname, '..', name), 'utf8'), context, { filename: name });
@@ -30,8 +30,8 @@ function fixture() {
         storage: { getSetting: (_key, fallback) => fallback, async setSetting() {} },
         bilibiliDom: {}, comicImages: { collectImages: () => [] }
     });
-    for (const file of ['paper-turn.js', 'animations.js', 'reader-preferences.js', 'reader-screenshot.js',
-        'reader-transform.js', 'reader-selection.js', 'reader-dom.js', 'reader-settings.js',
+    for (const file of ['animations.js', 'reader-preferences.js', 'reader-screenshot.js',
+        'reader-transform.js', 'reader-selection.js', 'reader-dom.js', 'reader-thumbnails.js', 'reader-settings.js',
         'reader-touch.js', 'comic-reader-page-groups.js', 'comic-reader-interactions.js', 'reader-image-loader.js', 'comic-reader.js']) run(file);
     const reader = new context.BilibiliToolbox.reader.BiliComicReader();
     reader.isOpen = true;
@@ -45,7 +45,7 @@ function fixture() {
     };
     reader.el = { imgContainer: container, reader: { remove() {} } };
     reader.viewMode = 'single';
-    reader.animationMode = 'paper';
+    reader.animationMode = 'smooth';
     reader.applyTransform = () => {};
     reader.getTransformStyle = () => 'scale(0.2)';
     reader.setupImagesForRenderMode = () => {};
@@ -92,6 +92,37 @@ test('resize bursts coalesce without reloading images and close cancels pending 
     reader.close();
     assert.equal(frames.size, 0);
     assert.equal(layouts, 1);
+});
+
+test('cached originals prepare a fresh decoded frame while the visible page stays intact', async () => {
+    const { reader, container, images, oldImage } = fixture();
+    reader.imgList = ['cached-original'];
+    const warmup = reader.loadImage(reader.imgList[0], true);
+    images[0].onload(); images[0].finishDecode();
+    await warmup;
+    let finishFrame, decodes = 0;
+    images[0].decode = () => {
+        decodes++;
+        return new Promise(resolve => { finishFrame = resolve; });
+    };
+    const rendering = reader.render();
+    const concurrent = reader.loadImage(reader.imgList[0]);
+    await tick();
+    assert.equal(decodes, 1, 'foreground requests share the ongoing frame decode');
+    assert.equal(images.length, 1, 'a cached original does not start another image request');
+    assert.equal(container.firstChild, oldImage);
+    assert.equal(container.replacements, 0);
+    finishFrame();
+    await Promise.all([rendering, concurrent]);
+    assert.equal(container.firstChild, images[0]);
+    assert.equal(container.replacements, 1);
+
+    const cancelled = reader.loadImage(reader.imgList[0]);
+    await tick();
+    reader.imageLoader.releaseCachedImage(reader.imgList[0]);
+    assert.equal(await cancelled, null, 'releasing an image unblocks a pending cached decode');
+    finishFrame();
+    await tick();
 });
 
 test('a late render of the same index cannot overwrite a newer render', async () => {
@@ -768,8 +799,9 @@ test('zoom and pan reuse page geometry, clamp correctly, and refresh geometry af
     assert.equal(reader.getPanLimits().maxX, 744);
 });
 
-test('cancelled fades cannot commit and reduced motion skips paper animation', () => {
+test('cancelled fades cannot commit and reduced motion skips animation', () => {
     const { animations, context, container } = fixture();
+    context.matchMedia = () => ({ matches: false });
     const timers = new Map();
     context.setTimeout = fn => { timers.set(1, fn); return 1; };
     context.clearTimeout = id => timers.delete(id);
@@ -788,94 +820,7 @@ test('cancelled fades cannot commit and reduced motion skips paper animation', (
     animations.cancel(container, true);
     assert.equal(commits, 1, 'user interaction settles a prepared fade before zooming or capturing');
     context.matchMedia = () => ({ matches: true });
-    animations.runTransition({ ...options, animationMode: 'paper' });
+    animations.runTransition({ ...options, animationMode: 'smooth' });
     assert.equal(commits, 2);
     assert.equal(container.style.opacity, '1');
-});
-
-test('paper mesh has curved depth, mirrored directions, and exact flat endpoints', () => {
-    const { context } = fixture();
-    const { createMesh } = context.BilibiliToolbox.paperTurn;
-    const page = { hinge: 600, centerY: 400, width: 400, height: 600 };
-    const start = createMesh(0, page, page, 1);
-    const finish = createMesh(1, page, page, 1);
-    assert.ok(Math.abs(start.at(-1).x - 1000) < 1e-8);
-    assert.ok(Math.abs(finish.at(-1).x - 200) < 1e-8);
-    const middle = createMesh(0.5, page, page, 1);
-    const mirrored = createMesh(0.5, page, page, -1);
-    assert.ok(middle.at(-1).z > 100);
-    assert.ok(Math.abs(middle[0].angle - middle[22].angle) > 0.5, 'a bent sheet has varying tangents');
-    middle.forEach((point, index) => {
-        assert.ok(Number.isFinite(point.x) && point.top < point.bottom);
-        assert.ok(Math.abs(point.x + mirrored[index].x - 1200) < 1e-8);
-    });
-});
-
-test('paper animation retains device pixels and builds page textures from original images', () => {
-    const { context } = fixture();
-    const canvases = [];
-    context.document.createElement = () => {
-        const draws = [];
-        const drawing = new Proxy({
-            drawImage: (...args) => draws.push(args),
-            createLinearGradient: () => ({ addColorStop() {} })
-        }, { get: (target, key) => key in target ? target[key] : () => {} });
-        const canvas = { draws, getContext: () => drawing, setAttribute() {}, remove() {} };
-        canvases.push(canvas);
-        return canvas;
-    };
-    context.devicePixelRatio = 2;
-    context.getComputedStyle = () => ({ backgroundColor: '#fff', filter: 'none' });
-    context.requestAnimationFrame = () => 1;
-    context.cancelAnimationFrame = () => {};
-    context.performance = { now: () => 0 };
-    const bounds = { left: 0, top: 0, width: 1360, height: 900 };
-    const oldImage = { getBoundingClientRect: () => ({ left: 400, top: 50, width: 560, height: 800 }) };
-    const newImage = { getBoundingClientRect: oldImage.getBoundingClientRect };
-    let currentImage = oldImage;
-    let overlay;
-    const parent = { getBoundingClientRect: () => bounds, appendChild: canvas => { overlay = canvas; } };
-    const container = { parentElement: parent, style: {}, querySelectorAll: () => [currentImage] };
-    const { play, DURATION } = context.BilibiliToolbox.paperTurn;
-    const cancel = play({ container, rotation: 90, direction: -1,
-        commit: () => { currentImage = newImage; }, isCurrent: () => true, onFinish() {} });
-    assert.equal(DURATION, 720);
-    assert.equal(overlay.width, 2720);
-    assert.equal(overlay.height, 1800);
-    const originalTextures = canvases.filter(canvas => canvas.draws.some(([source]) => source === oldImage));
-    assert.equal(originalTextures.length, 2, 'both paper faces draw directly from the original');
-    assert.equal(canvases.length, 4, 'one overlay, two faces and one shared lighting texture');
-    const faces = originalTextures.filter(canvas => canvas.width !== overlay.width);
-    assert.equal(faces.length, 2);
-    for (const face of faces) {
-        assert.ok(face.height > 800 * context.devicePixelRatio, 'texture retains headroom for perspective');
-        assert.ok(face.draws.every(([source]) => source === oldImage), 'faces must not resample a viewport snapshot');
-    }
-    cancel();
-    assert.equal(container.style.visibility, '');
-    assert.ok(canvases.every(canvas => canvas.width === 0 && canvas.height === 0), 'cancel releases all canvas backing stores');
-
-    bounds.width = 7680;
-    bounds.height = 4320;
-    const cancelLarge = play({ container, rotation: 0, direction: 1,
-        commit() {}, isCurrent: () => true, onFinish() {} });
-    assert.ok(overlay.width * overlay.height < 12.01e6, 'very large displays stay within the canvas memory budget');
-    assert.ok(overlay.width <= 8192 && overlay.height <= 8192);
-    assert.ok(canvases.reduce((sum, canvas) => sum + canvas.width * canvas.height, 0) <= 40e6);
-    cancelLarge();
-    oldImage.getBoundingClientRect = () => ({ left: 40, top: 10, width: 3800, height: 4300 });
-    newImage.getBoundingClientRect = () => ({ left: 3840, top: 10, width: 3800, height: 4300 });
-    container.querySelectorAll = () => [oldImage, newImage];
-    parent.isConnected = true;
-    let nextFrame, finishes = 0;
-    context.requestAnimationFrame = fn => { nextFrame = fn; return 1; };
-    play({ container, rotation: 0, direction: 1,
-        commit() {}, isCurrent: () => true, onFinish() { finishes++; } });
-    const active = canvases.filter(canvas => canvas.width);
-    assert.equal(active.length, 5, 'double spread adds only a stationary half-page');
-    assert.ok(active.reduce((sum, canvas) => sum + canvas.width * canvas.height, 0) <= 40e6,
-        'even large spreads share one aggregate budget');
-    nextFrame(DURATION);
-    assert.equal(finishes, 1);
-    assert.ok(canvases.every(canvas => !canvas.width && !canvas.height), 'natural completion also releases every canvas');
 });

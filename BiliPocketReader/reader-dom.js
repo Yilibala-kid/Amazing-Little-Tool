@@ -75,6 +75,7 @@
             ['fullScreenBtn', '', '', 'comic-btn comic-btn-alt'],
             ['rotateBtn', '', '', 'comic-btn comic-btn-alt'],
             ['settingsBtn', '\u8bbe\u7f6e', '\u6253\u5f00\u9605\u8bfb\u5668\u8bbe\u7f6e', 'comic-btn comic-btn-alt'],
+            ['thumbnailsBtn', '缩略图', '预览所有页面并跳转', 'comic-btn comic-btn-alt'],
             ['closeBtn', '\u9000\u51fa', '\u9000\u51fa', 'comic-btn']
         ].forEach(([key, text, title, style]) => {
             reader.el[key] = createButton(text, title, style);
@@ -122,6 +123,10 @@
         reader.el.pageRange = document.createElement('span');
         reader.el.pageRange.className = 'comic-page-range';
         reader.el.pageInfo.append(reader.el.pageDisplay, reader.el.pageInput, reader.el.pageRange);
+        reader.el.thumbnailsBtn.type = 'button';
+        reader.el.thumbnailsBtn.setAttribute('aria-expanded', 'false');
+        reader.el.thumbnailsBtn.setAttribute('aria-controls', 'comic-thumbnails-panel');
+        reader.el.thumbnailsBtn.setAttribute('aria-haspopup', 'dialog');
 
         reader.el.toast = document.createElement('div');
         reader.el.toast.className = 'comic-toast';
@@ -167,7 +172,7 @@
         reader.el.selectionOverlay.append(reader.el.selectionHint, reader.el.selectionToolbar, reader.el.selectionBox);
 
         row.append(reader.el.leftBtn, reader.el.offsetIncBtn, reader.el.pageInfo, reader.el.offsetDecBtn, reader.el.rightBtn);
-        secondRow.append(reader.el.resetViewBtn, reader.el.fullScreenBtn);
+        secondRow.append(reader.el.thumbnailsBtn, reader.el.resetViewBtn, reader.el.fullScreenBtn);
         reader.el.controls.append(row, secondRow);
 
         reader.el.settingsControls.append(reader.el.closeBtn, reader.el.screenshotBtn, reader.el.rotateBtn, reader.el.settingsBtn);
