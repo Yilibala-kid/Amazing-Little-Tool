@@ -1099,7 +1099,7 @@ function createAnimationContainer() {
     const noop = () => {};
     const getTransform = () => 'scale(1) translate(0px,0px)';
 
-    assert.deepEqual(plain(animations.ANIMATION_MODES), ['smooth', 'fade', 'paper']);
+    assert.deepEqual(plain(animations.ANIMATION_MODES), ['smooth', 'fade']);
 
     const immediateContainer = createAnimationContainer();
     animations.resetImageContainer(immediateContainer, animations.IMMEDIATE_RENDER_MODE, 0, noop, getTransform, null);
@@ -1115,7 +1115,7 @@ function createAnimationContainer() {
 {
     const { reader } = loadReaderTransformContext();
     const [small] = reader.getSharpDisplaySizes([{ naturalWidth: 400, naturalHeight: 300 }], true);
-    assert.deepEqual(plain(small), { width: 400, height: 300 });
+    assert.deepEqual(plain(small), { width: 1200, height: 900 });
     assert.equal(reader.sharpDisplayFitRatio, 3);
     reader.updateFitScale([{ naturalWidth: 400, naturalHeight: 300, dataset: {} }]);
     assert.equal(reader.getRenderScale(), 3);
@@ -1126,7 +1126,7 @@ function createAnimationContainer() {
     const { reader } = loadReaderTransformContext();
     const largeImage = { naturalWidth: 2400, naturalHeight: 1800, dataset: {} };
     const [large] = reader.getSharpDisplaySizes([largeImage], true);
-    assert.deepEqual(plain(large), { width: 2400, height: 1800 });
+    assert.deepEqual(plain(large), { width: 1200, height: 900 });
     assert.equal(reader.sharpDisplayFitRatio, 0.5);
     reader.updateFitScale([largeImage]);
     assert.equal(reader.getRenderScale(), 0.5);
@@ -1144,13 +1144,13 @@ function createAnimationContainer() {
     ];
     const sizes = reader.getSharpDisplaySizes(images, false);
     assert.deepEqual(plain(sizes), [
-        { width: 1000, height: 1000 },
-        { width: 1000, height: 1000 }
+        { width: 600, height: 600 },
+        { width: 600, height: 600 }
     ]);
     reader.setupImagesForRenderMode(images);
     assert.deepEqual(plain(images.map(img => img.appliedDisplaySize)), [
-        { width: 1000, height: 1000 },
-        { width: 1000, height: 1000 }
+        { width: 600, height: 600 },
+        { width: 600, height: 600 }
     ]);
 }
 
@@ -1163,11 +1163,32 @@ function createAnimationContainer() {
     ];
     reader.setupImagesForRenderMode(images);
     assert.deepEqual(plain(images.map(img => img.appliedDisplaySize)), [
-        { width: 1000, height: 1000 },
-        { width: 1000, height: 1000 }
+        { width: 600, height: 600 },
+        { width: 600, height: 600 }
     ]);
     reader.updateFitScale(images);
-    assert.equal(reader.getRenderScale(), 0.6);
+    assert.equal(reader.getRenderScale(), 1);
+}
+
+{
+    const { reader } = loadReaderTransformContext({ width: 1200, height: 900 }, 4);
+    const images = [
+        { naturalWidth: 2400, naturalHeight: 16000 },
+        { naturalWidth: 1800, naturalHeight: 12000 }
+    ];
+    reader.setupImagesForRenderMode(images);
+    reader.updateFitScale(images);
+    assert.equal(reader.getRenderScale(), 1, 'large originals use viewport-sized layout at rest');
+    assert.ok(images.every(img => img.appliedDisplaySize.height <= 900));
+    assert.equal(reader.getBaseFitRatio(), 900 / 16000);
+    assert.equal(reader.getDoubleClickScale(), 16000 / 900, 'native-resolution zoom is retained');
+    reader.rotation = 90;
+    reader.setupImagesForRenderMode(images);
+    reader.updateFitScale(images);
+    const sizes = images.map(img => img.appliedDisplaySize);
+    assert.ok(Math.abs(sizes.reduce((sum, size) => sum + size.width, 4) - 1200) < 0.001,
+        'rotated spread reserves an unscaled screen-space gap');
+    assert.ok(Math.abs(reader.getRenderScale() - 1) < 0.001);
 }
 
 function loadReaderPreferencesContext() {
@@ -1283,6 +1304,7 @@ function loadComicReaderCoreContext(ImageClass, overrides = {}) {
     runFile(context, 'reader-settings.js');
     runFile(context, 'reader-touch.js');
     runFile(context, 'reader-image-loader.js');
+    runFile(context, 'reader-thumbnails.js');
     runFile(context, 'comic-reader.js');
     const reader = new context.BilibiliToolbox.reader.BiliComicReader();
     reader.isOpen = true;

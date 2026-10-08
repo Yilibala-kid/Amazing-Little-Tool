@@ -26,7 +26,7 @@ const settingCases = [
     ['preloadBtn', 'preloadPages', ['2', '4', '6', 'all'], ['2页', '4页', '6页', '全部']],
     ['imageMemoryBtn', 'imageMemoryPolicy', ['previous', 'page'], ['释放前页', '关闭页释放']],
     ['backgroundBtn', 'backgroundMode', ['lightGray', 'white', 'black', 'darkGray'], ['浅灰', '白色', '黑色', '深灰']],
-    ['animationBtn', 'animationMode', ['fade', 'paper', 'smooth'], ['淡入', '类纸', '平滑']],
+    ['animationBtn', 'animationMode', ['fade', 'smooth'], ['淡入', '平滑']],
     ['viewModeBtn', 'viewMode', ['single', 'double', 'auto'], ['单图', '双图', '自动']],
     ['tapPageBtn', 'tapPageNavigation', [true, false], ['开启', '关闭']],
     ['directionBtn', 'isRightToLeft', [false, true], ['从左往右', '从右往左']]
@@ -178,14 +178,24 @@ test('setting cards apply only their own effects and do not reload current image
     assert.throws(() => reader.setPreference('currentIndex', 10), /Unknown reader preference/);
 });
 
+test('retired animation preferences fall back to smooth and save a supported mode', async () => {
+    const { toolbox, reader, writes } = settingFixture({ animationMode: 'paper' });
+    assert.equal(reader.animationMode, 'smooth');
+    assert.equal(reader.el.animationBtn.dataset.value, 'smooth');
+    assert.equal(reader.el.animationBtn.querySelector('.comic-setting-value').textContent, '平滑');
+    assert.deepEqual(Array.from(toolbox.readerPreferences.ANIMATION_MODES), ['smooth', 'fade']);
+    await toolbox.readerPreferences.save(reader);
+    assert.equal(writes.at(-1).value.animationMode, 'smooth');
+});
+
 test('reader UI restores nine setting cards with saved values, fixed labels, and preference metadata', () => {
     const storedPreferences = {
-        isRightToLeft: false, viewMode: 'single', animationMode: 'paper', imageRenderMode: 'smooth',
+        isRightToLeft: false, viewMode: 'single', animationMode: 'fade', imageRenderMode: 'smooth',
         backgroundMode: 'darkGray', filterMode: 'warm', preloadPages: '6', imageMemoryPolicy: 'previous', tapPageNavigation: false
     };
     const { reader, document, writes } = settingFixture(storedPreferences);
     const labels = {
-        directionBtn: '从左往右', animationBtn: '类纸', viewModeBtn: '单图', imageRenderBtn: '流畅',
+        directionBtn: '从左往右', animationBtn: '淡入', viewModeBtn: '单图', imageRenderBtn: '流畅',
         filterBtn: '暖色护眼', preloadBtn: '6页', imageMemoryBtn: '释放前页', backgroundBtn: '深灰', tapPageBtn: '关闭'
     };
     assert.equal(reader.el.settingsPanel.querySelectorAll('.comic-setting-btn').length, 9);

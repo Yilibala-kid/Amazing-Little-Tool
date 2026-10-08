@@ -51,7 +51,12 @@
             const fitRatio = this.getSharpDisplayFitRatio(displaySizes);
             this.sharpDisplayFitRatio = fitRatio;
 
-            return displaySizes;
+            // Keep layout/paint bounds near the viewport even for huge originals.
+            // CSS sizing preserves the source pixels for zoom and screenshot export.
+            return displaySizes.map(size => ({
+                width: size.width * fitRatio,
+                height: size.height * fitRatio
+            }));
         },
 
         alignSharpDisplayHeights(sizes) {
@@ -73,11 +78,11 @@
             if (!readerRect || !sizes.length) return 1;
 
             const gap = this.getImageGap() * Math.max(0, sizes.length - 1);
-            const width = sizes.reduce((sum, size) => sum + size.width, 0) + gap;
+            const width = sizes.reduce((sum, size) => sum + size.width, 0);
             const height = Math.max(...sizes.map(size => size.height || 0));
             if (!width || !height || !readerRect.width || !readerRect.height) return 1;
 
-            const ratio = Math.min(readerRect.width / width, readerRect.height / height);
+            const ratio = Math.min(Math.max(1, readerRect.width - gap) / width, readerRect.height / height);
             return Number.isFinite(ratio) && ratio > 0 ? ratio : 1;
         },
 
@@ -114,8 +119,11 @@
                 return;
             }
 
-            this.sharpDisplayFitRatio = this.getSharpDisplayFitRatio(sizes);
-            this.fitScale = this.sharpDisplayFitRatio;
+            const naturalSizes = images.map(img => this.getEffectiveImageSize(img));
+            this.sharpDisplayFitRatio = this.getSharpDisplayFitRatio(
+                images.length === 1 ? naturalSizes : this.alignSharpDisplayHeights(naturalSizes)
+            );
+            this.fitScale = this.getSharpDisplayFitRatio(sizes);
         },
 
         getRenderScale(scale = this.scale) {
@@ -123,7 +131,7 @@
         },
 
         getBaseFitRatio() {
-            return this.fitScale || 1;
+            return this.sharpDisplayFitRatio || this.fitScale || 1;
         },
 
         getMaxScale() {

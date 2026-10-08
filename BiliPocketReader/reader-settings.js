@@ -29,7 +29,7 @@
         warm: '\u6696\u8272\u62a4\u773c',
         grayscale: '\u9ed1\u767d'
     });
-    const READER_ANIMATION_LABELS = Object.freeze({ smooth: '平滑', fade: '淡入', paper: '类纸' });
+    const READER_ANIMATION_LABELS = Object.freeze({ smooth: '平滑', fade: '淡入' });
     const PREFERENCE_EFFECTS = {
         isRightToLeft: ['updateDirection', 'syncDirectionButton'],
         animationMode: ['syncAnimationButton'],
@@ -79,8 +79,7 @@
             const mode = animations.normalizeAnimationMode(this.animationMode);
             const descriptions = {
                 smooth: '淡入、平移与细微缩放。',
-                fade: '使用淡入淡出翻页。',
-                paper: '弯曲纸面、书脊与光影翻书效果。'
+                fade: '使用淡入淡出翻页。'
             };
             syncSettingButton(this, this.el.animationBtn, 'animationMode', READER_ANIMATION_LABELS[mode], descriptions[mode]);
         },
