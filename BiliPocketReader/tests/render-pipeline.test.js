@@ -32,8 +32,9 @@ function fixture() {
     });
     for (const file of ['animations.js', 'reader-preferences.js', 'reader-screenshot.js',
         'reader-transform.js', 'reader-selection.js', 'reader-dom.js', 'reader-thumbnails.js', 'reader-settings.js',
-        'reader-touch.js', 'comic-reader-page-groups.js', 'comic-reader-interactions.js', 'reader-image-loader.js', 'comic-reader.js']) run(file);
+        'reader-touch.js', 'reader-swipe.js', 'comic-reader-page-groups.js', 'comic-reader-interactions.js', 'reader-image-loader.js', 'comic-reader.js']) run(file);
     const reader = new context.BilibiliToolbox.reader.BiliComicReader();
+    reader.isTouchDevice = false; // Touch rendering is exercised in swipe.browser.cjs.
     reader.isOpen = true;
     const oldImage = { src: 'old', style: {} };
     const container = {

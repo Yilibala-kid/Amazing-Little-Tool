@@ -27,7 +27,7 @@ const settingCases = [
     ['preloadBtn', 'preloadPages', ['2', '4', '6', 'all'], ['2页', '4页', '6页', '全部']],
     ['imageMemoryBtn', 'imageMemoryPolicy', ['previous', 'page'], ['释放前页', '关闭页释放']],
     ['backgroundBtn', 'backgroundMode', ['lightGray', 'white', 'black', 'darkGray'], ['浅灰', '白色', '黑色', '深灰']],
-    ['animationBtn', 'animationMode', ['fade', 'smooth'], ['淡入', '平滑']],
+    ['animationBtn', 'animationMode', ['fade', 'parallel', 'smooth'], ['淡入', '平行', '平滑']],
     ['viewModeBtn', 'viewMode', ['single', 'double', 'auto'], ['单图', '双图', '自动']],
     ['tapPageBtn', 'tapPageNavigation', [true, false], ['开启', '关闭']],
     ['directionBtn', 'isRightToLeft', [false, true], ['从左往右', '从右往左']]
@@ -185,7 +185,7 @@ test('retired animation preferences fall back to smooth and save a supported mod
     assert.equal(reader.animationMode, 'smooth');
     assert.equal(reader.el.animationBtn.dataset.value, 'smooth');
     assert.equal(reader.el.animationBtn.querySelector('.comic-setting-value').textContent, '平滑');
-    assert.deepEqual(Array.from(toolbox.readerPreferences.ANIMATION_MODES), ['smooth', 'fade']);
+    assert.deepEqual(Array.from(toolbox.readerPreferences.ANIMATION_MODES), ['smooth', 'fade', 'parallel']);
     await toolbox.readerPreferences.save(reader);
     assert.equal(writes.at(-1).value.animationMode, 'smooth');
 });
@@ -286,17 +286,33 @@ test('touch state belongs to each reader and swipes preserve reading direction',
     Object.assign(first, {
         el: { reader: {} }, isTouchDevice: true, isSelectingScreenshot: false,
         touchStartedOnInteractive: false, isTwoFingerGesturing: false,
-        touchPanLocked: false, touchStartX: 100, touchStartY: 100,
+        touchStartX: 100, touchStartY: 100,
         touchEndX: 200, touchEndY: 105, touchStartTime: Date.now() - 500,
-        isTouchSwiping: true, isRightToLeft: true, lastStep: 2,
+        isRightToLeft: true, lastStep: 2,
         turnPage(_event, step) { turns.push(step); }
     });
     first.handleTouchEnd({ touches: [], changedTouches: [] });
     assert.deepEqual(turns, [2]);
-    first.isTouchSwiping = true;
     first.isRightToLeft = false;
     first.handleTouchEnd({ touches: [], changedTouches: [] });
     assert.deepEqual(turns, [2, -2]);
+});
+
+test('remaining pinch contacts cannot restart a gesture and screenshot release clears suppression', () => {
+    const { toolbox } = loadReaderServices();
+    const reader = toolbox.readerTouch.attach({});
+    reader.suppressRemainingTouch = true;
+    reader.isTwoFingerGesturing = false;
+    reader.handleTouchStart({ touches: [{}, {}] });
+    assert.equal(reader.isTwoFingerGesturing, false, 'a new contact while waiting for all fingers to lift is ignored');
+    reader.isTwoFingerGesturing = true;
+    reader.handleTouchEnd({ touches: [] });
+    assert.equal(reader.suppressRemainingTouch, false);
+    assert.equal(reader.isTwoFingerGesturing, false);
+    reader.isSelectingScreenshot = true;
+    reader.suppressRemainingTouch = true;
+    reader.handleTouchEnd({ touches: [] });
+    assert.equal(reader.suppressRemainingTouch, false, 'ending a cancelled swipe inside screenshot selection never blocks the next reading gesture');
 });
 
 test('horizontal swipes on a setting value or panel space leave the page unchanged and cancel delayed taps', () => {
@@ -347,9 +363,6 @@ test('horizontal swipes on a setting value or panel space leave the page unchang
         assert.deepEqual(turns, [], `${targetType} must not turn the comic page`);
         assert.equal(timers.size, 0, 'finishing an interactive gesture cancels earlier delayed navigation');
         assert.equal(reader.pendingTapTimer, null);
-        assert.equal(reader.isTouchSwiping, false);
-        assert.equal(reader.touchDidMoveImage, false);
-        assert.equal(reader.touchEdgePageStep, 0);
         swipe(image);
         assert.deepEqual(turns, [2], 'the same horizontal gesture on the image still turns a page');
     }

@@ -17,6 +17,7 @@
     if (!window.BilibiliToolbox?.readerThumbnails) throw new Error('BilibiliToolbox: reader-thumbnails.js not loaded');
     if (!window.BilibiliToolbox?.readerSettings) throw new Error('BilibiliToolbox: reader-settings.js not loaded');
     if (!window.BilibiliToolbox?.readerTouch) throw new Error('BilibiliToolbox: reader-touch.js not loaded');
+    if (!window.BilibiliToolbox?.ReaderSwipe) throw new Error('BilibiliToolbox: reader-swipe.js not loaded');
     if (!window.BilibiliToolbox?.readerPageGroups) throw new Error('BilibiliToolbox: comic-reader-page-groups.js not loaded');
     if (!window.BilibiliToolbox?.ReaderImageLoader) throw new Error('BilibiliToolbox: reader-image-loader.js not loaded');
     if (!window.BilibiliToolbox?.readerInteractions) throw new Error('BilibiliToolbox: comic-reader-interactions.js not loaded');
@@ -104,6 +105,7 @@
             Toolbox.readerThumbnails.attach(this);
             Toolbox.readerSettings.attach(this);
             Toolbox.readerTouch.attach(this);
+            this.swipe = new Toolbox.ReaderSwipe(this);
 
             // Mixins bind their own methods; only core handlers need binding here.
             ['handleKeyDown', 'handleFullscreenChange', 'handleResize'].forEach(name => {
@@ -189,6 +191,7 @@
             if (this.imgList.length === 0) return alert('\u672a\u627e\u5230\u6f2b\u753b\u56fe\u7247');
 
             this.isOpen = true;
+            this.suppressRemainingTouch = false;
             this.stopPreparingImages();
             this.currentIndex = 0;
             this.displayedIndex = 0;
@@ -302,7 +305,9 @@
                 this.resizeFrame = null;
                 if (!this.isOpen) return;
                 animations.cancel(this.el.imgContainer, true);
+                this.swipe?.reset();
                 this.applyResponsiveLayout();
+                this.swipe?.schedule();
             });
         }
 
@@ -322,6 +327,7 @@
 
         // Keep the current page visible until the next group is decoded.
         async render(animate = true, step = 0) {
+            this.swipe?.reset();
             const container = this.el.imgContainer;
             if (!container) return;
             const renderIndex = this.currentIndex;
@@ -335,6 +341,11 @@
             if (!result) {
                 if (container.firstChild) this.currentIndex = this.displayedIndex;
                 this.showReaderMessage('图片加载失败，请重试', true);
+                return;
+            }
+            if (animate && this.animationMode === 'parallel' && container.firstChild &&
+                !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+                await this.swipe.play(result, renderIndex, step, transitionToken);
                 return;
             }
             animations.runTransition({
@@ -381,9 +392,6 @@
             this.contentNaturalHeight = 0;
             this.translateX = 0;
             this.translateY = 0;
-            this.touchPanLocked = false;
-            this.touchDidMoveImage = false;
-            this.touchEdgePageStep = 0;
             this.lastTapTime = 0;
             this.clearPendingTap();
         }
@@ -422,6 +430,7 @@
                 (screenTranslateX) => this.getTransformStyle(screenTranslateX)
             );
             this.preloadImages(preloadStart);
+            this.swipe?.schedule(animationMode === 'immediate' ? 120 : 550);
             // Apply the memory policy after the displayed page index is committed.
             Promise.resolve().then(() => {
                 if (this.isOpen) this.pruneImageCache();
@@ -574,8 +583,10 @@
         }
 
         updateDirection() {
+            this.swipe?.reset();
             this.panGeometry = null;
             if (this.el.imgContainer) this.el.imgContainer.style.flexDirection = this.isRightToLeft ? 'row-reverse' : 'row';
+            this.swipe?.schedule();
         }
 
         // 全局事件处理函数
@@ -613,6 +624,7 @@
 
         // 清理并关闭
         close(forceRelease = false) {
+            this.swipe?.reset();
             this.isOpen = false;
             this.stopPreparingImages();
             if (this.resizeFrame !== null) window.cancelAnimationFrame(this.resizeFrame);

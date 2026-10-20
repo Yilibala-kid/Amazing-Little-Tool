@@ -29,7 +29,7 @@
         warm: '\u6696\u8272\u62a4\u773c',
         grayscale: '\u9ed1\u767d'
     });
-    const READER_ANIMATION_LABELS = Object.freeze({ smooth: '平滑', fade: '淡入' });
+    const READER_ANIMATION_LABELS = Object.freeze({ smooth: '平滑', fade: '淡入', parallel: '平行' });
     const PREFERENCE_EFFECTS = {
         isRightToLeft: ['updateDirection', 'syncDirectionButton'],
         animationMode: ['syncAnimationButton'],
@@ -67,6 +67,10 @@
             this[key] = readerPreferences.normalize({ [key]: value })[key];
             PREFERENCE_EFFECTS[key].forEach(name => this[name]());
             this.savePreferences();
+            if (key === 'animationMode') {
+                this.swipe?.reset();
+                this.swipe?.schedule();
+            }
             if (key === 'viewMode') this.render(false);
             if (key === 'imageRenderMode') this.refreshImagesForRenderMode();
         },
@@ -79,8 +83,9 @@
         syncAnimationButton() {
             const mode = animations.normalizeAnimationMode(this.animationMode);
             const descriptions = {
-                smooth: '淡入、平移与细微缩放。',
-                fade: '使用淡入淡出翻页。'
+                smooth: '先淡出到背景色，再淡入下一页，配合短距离平移和细微缩放。',
+                fade: '当前页先淡出到阅读背景色，再淡入下一页。',
+                parallel: '当前页与相邻页平行横移，触屏拖动时紧随手指。'
             };
             syncSettingButton(this, this.el.animationBtn, 'animationMode', READER_ANIMATION_LABELS[mode], descriptions[mode]);
         },

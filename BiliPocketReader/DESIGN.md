@@ -375,7 +375,7 @@ SPA URL 变化桥。
 
 - 定义合法选项：
   - `VIEW_MODES`: `auto`, `single`, `double`
-  - `ANIMATION_MODES`: `smooth`, `fade`，复用 animations 模块定义
+  - `ANIMATION_MODES`: `smooth`, `fade`, `parallel`，复用 animations 模块定义
   - `IMAGE_RENDER_MODES`: `sharp`, `smooth`
   - `BACKGROUND_MODES`: `black`, `darkGray`, `lightGray`, `white`
   - `FILTER_MODES`: `original`, `soft`, `warm`, `grayscale`
@@ -702,7 +702,7 @@ SPA URL 变化桥。
 - `currentIndex`：当前第一张图片下标。
 - `activePageCount` / `lastStep`：当前显示张数和默认翻页步长。
 - `viewMode`：`auto` / `single` / `double`。
-- `animationMode`：`smooth` / `fade`。
+- `animationMode`：`smooth` / `fade` / `parallel`。
 - `imageRenderMode`：`sharp` / `smooth`。
 - `backgroundMode`：阅读背景色。
 - `filterMode`：`original` / `soft` / `warm` / `grayscale`，只影响阅读显示，不写入截图。
@@ -781,7 +781,7 @@ https://space.bilibili.com/<uid>/upload/opus
 - 缩放、平移、原图尺寸优先改 `reader-transform.js`。
 - 截图选区优先改 `reader-selection.js`。
 - 设置控件和显示效果优先改 `reader-settings.js`。
-- 移动端手势优先改 `reader-touch.js`。
+- 移动端点击、缩放与手势分流改 `reader-touch.js`；跟手翻页改 `reader-swipe.js`。
 - 主类 `comic-reader.js` 只保留状态和调度入口。
 
 ## 设置刷新与路由通知
@@ -805,6 +805,8 @@ node --test BiliPocketReader/tests/*.test.js
 node BiliPocketReader/tests/browser/reader.browser.cjs
 # 缩略图导航：桌面/触屏、懒加载、焦点、跳转失败与关闭清理
 node BiliPocketReader/tests/browser/thumbnails.browser.cjs
+# 手机跟手翻页：扩展/油猴、真实触摸、慢拖/甩动、加载失败、方向/分页、缩放与关闭清理
+node BiliPocketReader/tests/browser/swipe.browser.cjs
 ```
 
 浏览器测试拦截全部网络请求，用本地生成的漫画图检查按设置进入页面与翻页预加载、打开复用缓存、图片内存选项、回看重新加载、关闭覆盖层保留完成图片与离开文章清理、快速切页、单双页/双向动画、旋转、缩放、十轮循环的 DOM/监听器数量、400 张卡片的增量过滤。控制台打印资源计数和临时目录中的高分屏截图路径。该测试通过脚本注入模拟内容脚本，不替代真实站点或扩展隔离世界的兼容性检查。
@@ -823,6 +825,19 @@ powershell -ExecutionPolicy Bypass -File BiliPocketReader\build-userscript.ps1
 rg -n "dynamic-controls-ui|dynamicControlsUi|bilibili-fav-controls-panel|content\\.css" BiliPocketReader -g "!DESIGN.md"
 git status --short
 ```
+
+## 触屏跟手翻页
+
+- 点击/双指手势由 `reader-touch.js` 分流，跟手翻页及边缘接管由 `ReaderSwipe` 处理；图片是否已平移直接比较实际位置，不再维护平移锁、边缘页码等重复状态。当前组与相邻预览共用无副作用的 `getImageDisplayLayout()`，仅当前组更新缩放基准。
+- 动画帧与计时器统一通过 `cancelMotion()` 清理，舞台样式通过同一入口更新；淡入和平滑不再逐帧改写未参与过渡的邻页。翻页提交只由主渲染管线安排一次相邻组准备，避免重复定时器与缓存保护集合。
+- `ReaderSwipe` 在原有图片容器外增加视口大小的舞台。图片缩放和平移仍由内层管理，翻页只修改外层 transform 和 opacity，不改变布局尺寸或逐帧处理图片。
+- 约 10px 移动后锁定手势轴；requestAnimationFrame 合并同帧触摸事件。“平行”按 CSS 像素映射整页横移；“淡入”前半程将当前页淡出到阅读背景色，后半程淡入相邻页，中点两页透明度均为零，避免交叉叠加；“平滑”在两个阶段分别增加至多 60px 的短位移与 5% 的缩放。默认仍为平滑，三种动画都跟随拖动并在松手后接续完成或返回。纵向移动不触发翻页；放大后优先平移图片，边缘溢出的横向距离才交给翻页。
+- 松手按 25% 屏宽或最近 100ms 的速度（至少 20px、0.5px/ms）判断；快速反向移动可取消。平行收尾与边界回弹为 120–220ms；淡入和平滑单阶段收尾为 280–420ms，跨越背景中点时淡出为 160–220ms、淡入为 220–280ms，并用可取消的帧回调保证背景色至少绘制一帧，防止甩动或接近中点时过快跳过渐变。减少动态效果时即时完成。再次触摸按当前页或相邻页透明度恢复对应阶段进度。反向回退同样先回到背景色，再恢复原页。
+- 按钮与键盘选择平行时，主渲染管线将已解码目标组交给同一舞台引擎，两个页面同步移动；淡入与平滑保留原有按钮动画。切换动画设置会取消旧过渡并重新准备相邻组。
+- 当前组、上一组、下一组最多三个舞台；相邻组使用相同分页、旋转、方向、滤镜和图片缓存。默认先准备下一组，再准备上一组；拖动方向上的缺页可立即请求。后台整篇预加载保留原有设置，拖动时暂停排队，静止后恢复。
+- 预览图片通过缓存保护集合暂时保留，包括“释放前页”模式的上一组。翻页、换图、改变方向、旋转、窗口变化或关闭时释放旧预览与保护，取消帧回调和动画计时器；异步结果通过代次校验忽略。
+- 加载中的邻页显示占位，松手后停留当前拖动位置等待解码，成功后衔接翻页，失败则回弹并允许重试；页码仅在真正提交图片时更新。截图选区取消未完成的翻页，只采集当前组。
+- 此实现不限制原有“全部预加载/关闭页释放”的总缓存；额外预览只保留相邻组。真实手机的帧率、内存与滤镜成本需要实机测量，桌面触屏模拟只验证交互行为。
 
 ## 设计原则
 

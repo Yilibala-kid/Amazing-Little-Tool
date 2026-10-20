@@ -1043,7 +1043,6 @@ function loadReaderTransformContext(readerRect = { width: 1200, height: 900 }, g
         translateX: 0,
         translateY: 0,
         isTouchDevice: false,
-        touchPanLocked: false,
         el: {
             reader: {
                 getBoundingClientRect() {
@@ -1094,7 +1093,7 @@ function createAnimationContainer() {
     const noop = () => {};
     const getTransform = () => 'scale(1) translate(0px,0px)';
 
-    assert.deepEqual(plain(animations.ANIMATION_MODES), ['smooth', 'fade']);
+    assert.deepEqual(plain(animations.ANIMATION_MODES), ['smooth', 'fade', 'parallel']);
 
     const immediateContainer = createAnimationContainer();
     animations.resetImageContainer(immediateContainer, animations.IMMEDIATE_RENDER_MODE, 0, noop, getTransform, null);
@@ -1109,6 +1108,11 @@ function createAnimationContainer() {
 
 {
     const { reader } = loadReaderTransformContext();
+    reader.sharpDisplayFitRatio = 0.75;
+    const preview = reader.getImageDisplayLayout([{ naturalWidth: 400, naturalHeight: 300 }], true);
+    assert.deepEqual(plain(preview.sizes), [{ width: 1200, height: 900 }]);
+    assert.equal(preview.fitRatio, 3);
+    assert.equal(reader.sharpDisplayFitRatio, 0.75, 'neighbor layout must not change the current zoom basis');
     const [small] = reader.getSharpDisplaySizes([{ naturalWidth: 400, naturalHeight: 300 }], true);
     assert.deepEqual(plain(small), { width: 1200, height: 900 });
     assert.equal(reader.sharpDisplayFitRatio, 3);
@@ -1298,6 +1302,7 @@ function loadComicReaderCoreContext(ImageClass, overrides = {}) {
     });
     runFile(context, 'reader-settings.js');
     runFile(context, 'reader-touch.js');
+    runFile(context, 'reader-swipe.js');
     runFile(context, 'reader-image-loader.js');
     runFile(context, 'reader-thumbnails.js');
     runFile(context, 'comic-reader.js');

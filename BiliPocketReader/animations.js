@@ -7,7 +7,7 @@
     const FADE_SHIFT_DISTANCE = 60;
     const SMOOTH_SCALE_START = 0.95;
     const DEFAULT_ANIMATION_MODE = 'smooth';
-    const ANIMATION_MODES = ['smooth', 'fade'];
+    const ANIMATION_MODES = ['smooth', 'fade', 'parallel'];
     const activeTransitions = new WeakMap();
     const IMMEDIATE_RENDER_MODE = 'immediate';
 
@@ -56,30 +56,18 @@
         return `${transform} scale(${scale})`;
     }
 
-    function playSmoothTransition(imgContainer, renderIndex, getCurrentIndex, transitionToken, getTransitionToken, loadImages, direction, getTransform, getShiftedTransformFn) {
+    function playTransition(mode, imgContainer, renderIndex, getCurrentIndex, transitionToken, getTransitionToken, loadImages, direction, getTransform, getShiftedTransformFn) {
+        const smooth = mode === 'smooth';
         Object.assign(imgContainer.style, {
-            transition: `transform ${FADE_ANIMATION_DURATION}ms, opacity ${FADE_ANIMATION_DURATION}ms`,
-            opacity: '0',
-            filter: 'none',
-            transform: withSubtleScale(getShiftedTransform(getShiftedTransformFn, getTransform, direction * FADE_SHIFT_DISTANCE))
-        });
-        scheduleCommit(imgContainer, () => {
-            if (renderIndex !== getCurrentIndex()) return;
-            if (transitionToken !== getTransitionToken()) return;
-            loadImages(renderIndex, 'smooth', direction);
-        });
-    }
-
-    function playFadeTransition(imgContainer, renderIndex, getCurrentIndex, transitionToken, getTransitionToken, loadImages, direction) {
-        Object.assign(imgContainer.style, {
-            transition: `opacity ${FADE_ANIMATION_DURATION}ms`,
+            transition: `${smooth ? `transform ${FADE_ANIMATION_DURATION}ms, ` : ''}opacity ${FADE_ANIMATION_DURATION}ms`,
             opacity: '0',
             filter: 'none'
         });
+        if (smooth) imgContainer.style.transform = withSubtleScale(getShiftedTransform(getShiftedTransformFn, getTransform, direction * FADE_SHIFT_DISTANCE));
         scheduleCommit(imgContainer, () => {
             if (renderIndex !== getCurrentIndex()) return;
             if (transitionToken !== getTransitionToken()) return;
-            loadImages(renderIndex, 'fade', direction);
+            loadImages(renderIndex, mode, direction);
         });
     }
 
@@ -94,12 +82,8 @@
         const renderMode = resolveRenderMode(animate && !reduceMotion, Boolean(imgContainer.firstChild), animationMode);
         const direction = resolveTransitionDirection(step, isRightToLeft, lastStep);
 
-        if (renderMode === 'smooth') {
-            playSmoothTransition(imgContainer, renderIndex, getCurrentIndex, transitionToken, getTransitionToken, loadImages, direction, getTransform, getShiftedTransform);
-            return;
-        }
-        if (renderMode === 'fade') {
-            playFadeTransition(imgContainer, renderIndex, getCurrentIndex, transitionToken, getTransitionToken, loadImages, direction);
+        if (renderMode === 'smooth' || renderMode === 'fade') {
+            playTransition(renderMode, imgContainer, renderIndex, getCurrentIndex, transitionToken, getTransitionToken, loadImages, direction, getTransform, getShiftedTransform);
             return;
         }
         loadImages(renderIndex, IMMEDIATE_RENDER_MODE, direction);

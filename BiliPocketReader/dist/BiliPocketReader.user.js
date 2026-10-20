@@ -62,7 +62,7 @@
     };
     window.chrome = chromeShim;
 
-    const css = "/* ===== content-base.css ===== */\n/* Bilibili Toolbox — Spotify-inspired dark theme */\r\n\r\n:root {\r\n    --acc: #fb7299;\r\n    --acc-hover: #fc8bab;\r\n    --acc-active: #e86288;\r\n    --bg-deepest: #0a0a0a;\r\n    --bg-surface: #181818;\r\n    --bg-elevated: #1f1f1f;\r\n    --bg-overlay: rgba(20, 20, 20, 0.94);\r\n    --text-primary: #ffffff;\r\n    --text-secondary: #b3b3b3;\r\n    --text-muted: #7c7c7c;\r\n    --border-subtle: rgba(255, 255, 255, 0.12);\r\n    --border-strong: #4d4d4d;\r\n    --error: #f3727f;\r\n    --error-hover: #e86a77;\r\n    --shadow-heavy: 0 8px 24px rgba(0, 0, 0, 0.5);\r\n    --shadow-card: 0 4px 8px rgba(0, 0, 0, 0.3);\r\n    --shadow-float: 0 4px 16px rgba(251, 114, 153, 0.25);\r\n    --radius-sm: 6px;\r\n    --radius-md: 8px;\r\n    --radius-lg: 12px;\r\n    --radius-pill: 9999px;\r\n    --font: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif;\r\n}\r\n\r\n\n/* ===== content-toolbox.css ===== */\n/* ===== Floating star button ===== */\r\n#bilibili-fav-float-btn {\r\n    position: fixed;\r\n    bottom: 80px;\r\n    right: 20px;\r\n    width: 50px;\r\n    height: 50px;\r\n    background: var(--acc);\r\n    border-radius: 50%;\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    font-size: 24px;\r\n    cursor: pointer;\r\n    box-shadow: var(--shadow-float);\r\n    z-index: 999999;\r\n    transition: transform 0.2s, box-shadow 0.2s, opacity 0.3s, visibility 0.3s;\r\n    line-height: 1;\r\n    text-align: center;\r\n}\r\n\r\n#bilibili-fav-float-btn:hover {\r\n    transform: scale(1.1);\r\n    box-shadow: 0 6px 20px rgba(251, 114, 153, 0.4);\r\n}\r\n\r\n#bilibili-fav-float-btn.dynamic-filter-active {\r\n    border-radius: var(--radius-sm);\r\n}\r\n\r\n#bilibili-fav-float-btn.bilibili-fav-video-hidden {\r\n    opacity: 0;\r\n}\r\n\r\n#bilibili-fav-float-btn.bilibili-fav-video-visible {\r\n    opacity: 1;\r\n}\r\n\r\n/* ===== Shared panel base ===== */\r\n#bilibili-fav-panel,\r\n#bilibili-toolbox-settings-panel {\r\n    position: fixed;\r\n    bottom: 140px;\r\n    right: 20px;\r\n    width: 280px;\r\n    background: var(--bg-overlay);\r\n    backdrop-filter: blur(20px);\r\n    -webkit-backdrop-filter: blur(20px);\r\n    border-radius: var(--radius-lg);\r\n    box-shadow: var(--shadow-heavy);\r\n    z-index: 1000000;\r\n    opacity: 0;\r\n    visibility: hidden;\r\n    transition: opacity 0.2s, transform 0.2s, visibility 0.2s;\r\n    font-family: var(--font);\r\n    transform: translateY(10px);\r\n    color: var(--text-primary);\r\n    border: 1px solid var(--border-subtle);\r\n}\r\n\r\n#bilibili-fav-panel {\r\n    --bilibili-fav-columns: 2;\r\n    --bilibili-fav-item-width: 130px;\r\n    --bilibili-fav-list-gap: 4px;\r\n    --bilibili-fav-list-padding-x: 10px;\r\n    width: calc(\r\n        var(--bilibili-fav-columns) * var(--bilibili-fav-item-width)\r\n        + (var(--bilibili-fav-columns) - 1) * var(--bilibili-fav-list-gap)\r\n        + var(--bilibili-fav-list-padding-x) * 2\r\n    );\r\n}\r\n\r\n#bilibili-toolbox-settings-panel {\r\n    width: 320px;\r\n    z-index: 1000001;\r\n}\r\n\r\n#bilibili-fav-panel.show,\r\n#bilibili-toolbox-settings-panel.show {\r\n    opacity: 1;\r\n    visibility: visible;\r\n    transform: translateY(0);\r\n}\r\n\r\n/* ===== Panel header ===== */\r\n.bilibili-fav-header {\r\n    display: flex;\r\n    justify-content: space-between;\r\n    align-items: center;\r\n    padding: 10px 16px;\r\n    border-bottom: 1px solid var(--border-subtle);\r\n    background: var(--bg-elevated);\r\n    color: var(--text-primary);\r\n    border-radius: var(--radius-lg) var(--radius-lg) 0 0;\r\n    font-weight: 600;\r\n    font-size: 14px;\r\n    letter-spacing: 0.3px;\r\n}\r\n\r\n.bilibili-fav-header-actions {\r\n    display: flex;\r\n    align-items: center;\r\n    gap: 6px;\r\n}\r\n\r\n/* ===== Panel content ===== */\r\n.bilibili-fav-content { max-height: 400px; overflow: auto; }\r\n\r\n.bilibili-fav-list {\r\n    padding: 8px var(--bilibili-fav-list-padding-x);\r\n    display: grid;\r\n    grid-template-columns: repeat(var(--bilibili-fav-columns, 2), var(--bilibili-fav-item-width));\r\n    gap: var(--bilibili-fav-list-gap);\r\n}\r\n\r\n.bilibili-fav-content::-webkit-scrollbar { width: 5px; }\r\n.bilibili-fav-content::-webkit-scrollbar-track { background: transparent; }\r\n.bilibili-fav-content::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 3px; }\r\n.bilibili-fav-content::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.25); }\r\n\r\n/* ===== Toolbox settings content ===== */\r\n.bilibili-toolbox-control-content {\r\n    padding: 14px;\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: 14px;\r\n}\r\n\r\n.bilibili-toolbox-control-section {\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: 10px;\r\n}\r\n\r\n.bilibili-toolbox-section-title {\r\n    color: var(--text-secondary);\r\n    font-size: 12px;\r\n    font-weight: 700;\r\n    line-height: 1;\r\n}\r\n\r\n.bilibili-toolbox-control-row {\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: space-between;\r\n    gap: 12px;\r\n    padding: 12px 14px;\r\n    border-radius: var(--radius-md);\r\n    background: var(--bg-surface);\r\n    cursor: pointer;\r\n    border: 1px solid var(--border-subtle);\r\n}\r\n\r\n.bilibili-toolbox-control-row-stack {\r\n    align-items: stretch;\r\n    cursor: default;\r\n    flex-direction: column;\r\n    gap: 10px;\r\n}\r\n\r\n.bilibili-toolbox-control-copy {\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: 4px;\r\n    min-width: 0;\r\n}\r\n\r\n.bilibili-toolbox-control-title {\r\n    font-size: 14px;\r\n    font-weight: 600;\r\n    color: var(--text-primary);\r\n}\r\n\r\n.bilibili-toolbox-control-desc {\r\n    font-size: 12px;\r\n    color: var(--text-secondary);\r\n    line-height: 1.4;\r\n}\r\n\r\n.bilibili-toolbox-segmented {\r\n    display: grid;\r\n    grid-template-columns: repeat(4, minmax(0, 1fr));\r\n    gap: 4px;\r\n    padding: 3px;\r\n    border-radius: var(--radius-pill);\r\n    background: var(--bg-deepest);\r\n    border: 1px solid var(--border-subtle);\r\n}\r\n\r\n.bilibili-toolbox-segmented button {\r\n    min-height: 30px;\r\n    padding: 0;\r\n    color: var(--text-secondary);\r\n    background: transparent;\r\n    border: none;\r\n    border-radius: var(--radius-pill);\r\n    cursor: pointer;\r\n    font: 600 13px/1 var(--font);\r\n}\r\n\r\n.bilibili-toolbox-segmented button:hover {\r\n    color: var(--text-primary);\r\n    background: rgba(255, 255, 255, 0.08);\r\n}\r\n\r\n.bilibili-toolbox-segmented button.active {\r\n    color: #fff;\r\n    background: var(--acc);\r\n}\r\n\r\n.bilibili-toolbox-keyword-input {\r\n    width: 100%;\r\n    min-height: 38px;\r\n    padding: 0 12px;\r\n    box-sizing: border-box;\r\n    color: var(--text-primary);\r\n    background: var(--bg-deepest);\r\n    border: 1px solid var(--border-subtle);\r\n    border-radius: var(--radius-md);\r\n    font-family: var(--font);\r\n    font-size: 13px;\r\n    outline: none;\r\n    transition: border-color 0.2s, box-shadow 0.2s, opacity 0.2s;\r\n}\r\n\r\n.bilibili-toolbox-keyword-input::placeholder {\r\n    color: var(--text-muted);\r\n}\r\n\r\n.bilibili-toolbox-keyword-input:focus {\r\n    border-color: var(--acc);\r\n    box-shadow: 0 0 0 2px rgba(251, 114, 153, 0.18);\r\n}\r\n\r\n/* ===== Toggle switch ===== */\r\n.bilibili-toolbox-switch {\r\n    position: relative;\r\n    width: 46px;\r\n    height: 28px;\r\n    flex-shrink: 0;\r\n}\r\n\r\n.bilibili-toolbox-switch input {\r\n    position: absolute;\r\n    inset: 0;\r\n    opacity: 0;\r\n    cursor: pointer;\r\n    margin: 0;\r\n}\r\n\r\n.bilibili-toolbox-switch-slider {\r\n    position: absolute;\r\n    inset: 0;\r\n    border-radius: var(--radius-pill);\r\n    background: rgba(255, 255, 255, 0.2);\r\n    transition: background 0.2s;\r\n}\r\n\r\n.bilibili-toolbox-switch-slider::before {\r\n    content: \"\";\r\n    position: absolute;\r\n    top: 3px;\r\n    left: 3px;\r\n    width: 22px;\r\n    height: 22px;\r\n    border-radius: 50%;\r\n    background: #fff;\r\n    transition: transform 0.2s;\r\n    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);\r\n}\r\n\r\n.bilibili-toolbox-switch input:checked + .bilibili-toolbox-switch-slider {\r\n    background: var(--acc);\r\n}\r\n\r\n.bilibili-toolbox-switch input:checked + .bilibili-toolbox-switch-slider::before {\r\n    transform: translateX(18px);\r\n}\r\n\r\n/* ===== Empty state ===== */\r\n.bilibili-fav-empty { grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 40px 20px; font-size: 14px; }\r\n\r\n/* ===== Toast message ===== */\r\n.bilibili-fav-msg { padding: 8px; text-align: center; font-size: 12px; display: none; }\r\n\r\n/* ===== Pill buttons (global) ===== */\r\n.bilibili-fav-add-btn,\r\n.bilibili-fav-control-btn,\r\n.bilibili-toolbox-export-btn,\r\n.bilibili-toolbox-import-btn {\r\n    padding: 10px 0;\r\n    font-size: 13px;\r\n    font-weight: 600;\r\n    border: none;\r\n    border-radius: var(--radius-pill);\r\n    cursor: pointer;\r\n    transition: all 0.2s;\r\n    color: var(--text-primary);\r\n    letter-spacing: 0.3px;\r\n    flex: 1;\r\n}\r\n\r\n.bilibili-fav-add-btn {\r\n    padding: 8px 16px;\r\n    flex: none;\r\n}\r\n\r\n.bilibili-fav-control-btn {\r\n    display: none;\r\n    padding: 8px 12px;\r\n    flex: none;\r\n}\r\n\r\n/* Primary pill — accent fill */\r\n.bilibili-fav-add-btn,\r\n.bilibili-fav-control-btn,\r\n.bilibili-toolbox-export-btn {\r\n    background: var(--acc);\r\n    color: #fff;\r\n}\r\n\r\n.bilibili-fav-add-btn:hover,\r\n.bilibili-fav-control-btn:hover,\r\n.bilibili-toolbox-export-btn:hover {\r\n    background: var(--acc-hover);\r\n}\r\n\r\n/* Secondary pill — dark fill */\r\n.bilibili-toolbox-import-btn {\r\n    background: var(--bg-elevated);\r\n    border: 1px solid var(--border-strong);\r\n}\r\n\r\n.bilibili-toolbox-import-btn:hover {\r\n    background: #2a2a2a;\r\n}\r\n\r\n/* ===== Button group layout ===== */\r\n.bilibili-toolbox-control-actions {\r\n    display: flex;\r\n    gap: 8px;\r\n    padding: 0 16px 16px;\r\n}\r\n\r\n/* ===== Export text document ===== */\r\n.bilibili-toolbox-export-dialog {\r\n    position: fixed;\r\n    inset: 0;\r\n    z-index: 1000002;\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    padding: 16px;\r\n    background: rgba(0, 0, 0, 0.72);\r\n}\r\n\r\n.bilibili-toolbox-export-document {\r\n    display: flex;\r\n    width: min(640px, 100%);\r\n    max-height: min(720px, 86vh);\r\n    flex-direction: column;\r\n    overflow: hidden;\r\n    background: var(--bg-elevated);\r\n    border: 1px solid var(--border-subtle);\r\n    border-radius: var(--radius-md);\r\n    box-shadow: var(--shadow-heavy);\r\n}\r\n\r\n.bilibili-toolbox-export-header {\r\n    display: flex;\r\n    min-height: 44px;\r\n    align-items: center;\r\n    justify-content: space-between;\r\n    padding: 0 14px;\r\n    color: var(--text-primary);\r\n    font-size: 14px;\r\n    font-weight: 600;\r\n    border-bottom: 1px solid var(--border-subtle);\r\n}\r\n\r\n.bilibili-toolbox-export-close {\r\n    display: inline-flex;\r\n    width: 30px;\r\n    height: 30px;\r\n    align-items: center;\r\n    justify-content: center;\r\n    padding: 0;\r\n    color: var(--text-secondary);\r\n    background: transparent;\r\n    border: none;\r\n    border-radius: 50%;\r\n    cursor: pointer;\r\n    font-size: 22px;\r\n    line-height: 1;\r\n}\r\n\r\n.bilibili-toolbox-export-close:hover {\r\n    color: var(--text-primary);\r\n    background: rgba(255, 255, 255, 0.1);\r\n}\r\n\r\n.bilibili-toolbox-export-text {\r\n    width: 100%;\r\n    min-height: min(560px, 72vh);\r\n    padding: 14px;\r\n    resize: vertical;\r\n    box-sizing: border-box;\r\n    color: var(--text-primary);\r\n    background: var(--bg-deepest);\r\n    border: none;\r\n    outline: none;\r\n    font-family: Consolas, \"Courier New\", monospace;\r\n    font-size: 13px;\r\n    line-height: 1.5;\r\n}\r\n\r\n.bilibili-toolbox-export-footer {\r\n    display: flex;\r\n    min-height: 52px;\r\n    align-items: center;\r\n    justify-content: space-between;\r\n    gap: 12px;\r\n    padding: 8px 12px;\r\n    border-top: 1px solid var(--border-subtle);\r\n}\r\n\r\n.bilibili-toolbox-export-status {\r\n    color: var(--text-secondary);\r\n    font-size: 12px;\r\n    line-height: 1.4;\r\n}\r\n\r\n.bilibili-toolbox-export-status.is-error {\r\n    color: var(--error);\r\n}\r\n\r\n.bilibili-toolbox-export-actions {\r\n    display: flex;\r\n    flex-shrink: 0;\r\n    align-items: center;\r\n    gap: 8px;\r\n}\r\n\r\n.bilibili-toolbox-export-clipboard,\r\n.bilibili-toolbox-export-confirm {\r\n    flex-shrink: 0;\r\n    padding: 8px 18px;\r\n    color: #fff;\r\n    background: var(--acc);\r\n    border: none;\r\n    border-radius: var(--radius-pill);\r\n    cursor: pointer;\r\n    font-size: 13px;\r\n    font-weight: 600;\r\n}\r\n\r\n.bilibili-toolbox-export-clipboard:hover,\r\n.bilibili-toolbox-export-confirm:hover {\r\n    background: var(--acc-hover);\r\n}\r\n\r\n/* ===== Favorite list items ===== */\r\n.bilibili-fav-item-link {\r\n    display: block;\r\n    text-decoration: none;\r\n    color: inherit;\r\n    width: var(--bilibili-fav-item-width);\r\n    min-width: 0;\r\n    position: relative;\r\n}\r\n\r\n.bilibili-fav-item {\r\n    display: flex;\r\n    flex-direction: column;\r\n    align-items: center;\r\n    padding: 8px 6px 10px;\r\n    border-radius: var(--radius-md);\r\n    transition: background 0.2s;\r\n    text-align: center;\r\n    position: relative;\r\n    overflow: hidden;\r\n    height: 88px;\r\n    box-sizing: border-box;\r\n    background: transparent;\r\n}\r\n\r\n.bilibili-fav-item[data-readlist=\"true\"] { padding: 0; }\r\n\r\n.bilibili-fav-item-link:hover .bilibili-fav-item {\r\n    background: var(--bg-surface);\r\n}\r\n\r\n.bilibili-fav-item-info {\r\n    display: flex;\r\n    flex-direction: column;\r\n    align-items: center;\r\n    width: 100%;\r\n    height: 100%;\r\n    position: relative;\r\n    z-index: 1;\r\n}\r\n\r\n.bilibili-fav-item[data-readlist=\"true\"] .bilibili-fav-item-info {\r\n    padding: 0;\r\n    overflow: hidden;\r\n    border-radius: inherit;\r\n}\r\n\r\n/* ===== Avatar — round, no border ===== */\r\n.bilibili-fav-avatar {\r\n    width: 44px;\r\n    height: 44px;\r\n    border-radius: 50%;\r\n    object-fit: cover;\r\n    position: relative;\r\n    z-index: 1;\r\n    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);\r\n}\r\n\r\n.bilibili-fav-avatar.square {\r\n    border-radius: var(--radius-md);\r\n}\r\n\r\n.bilibili-fav-avatar.cover {\r\n    display: block;\r\n    width: 100%;\r\n    height: 100%;\r\n    border-radius: var(--radius-md);\r\n    box-shadow: none;\r\n    position: absolute;\r\n    inset: 0;\r\n}\r\n\r\n/* ===== Name label ===== */\r\n.bilibili-fav-name {\r\n    font-size: 12px;\r\n    color: var(--text-primary);\r\n    font-weight: 500;\r\n    max-width: 100%;\r\n    overflow: hidden;\r\n    text-overflow: ellipsis;\r\n    white-space: nowrap;\r\n    position: relative;\r\n    z-index: 1;\r\n    margin-top: 6px;\r\n}\r\n\r\n.bilibili-fav-item[data-readlist=\"true\"] .bilibili-fav-name {\r\n    position: absolute;\r\n    bottom: 0;\r\n    left: 0;\r\n    right: 0;\r\n    color: #fff;\r\n    background: linear-gradient(transparent, rgba(0, 0, 0, 0.75));\r\n    padding: 20px 8px 8px;\r\n    border-radius: 0 0 var(--radius-md) var(--radius-md);\r\n    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);\r\n    font-weight: 600;\r\n}\r\n\r\n/* ===== Delete button — ghost pill ===== */\r\n.bilibili-fav-delete {\r\n    position: absolute;\r\n    top: 4px;\r\n    right: 4px;\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    width: 20px;\r\n    height: 20px;\r\n    padding: 0;\r\n    font-size: 14px;\r\n    line-height: 1;\r\n    color: var(--text-primary);\r\n    background: rgba(0, 0, 0, 0.5);\r\n    border: none;\r\n    border-radius: 50%;\r\n    appearance: none;\r\n    cursor: pointer;\r\n    transition: all 0.2s;\r\n    z-index: 2;\r\n    opacity: 0;\r\n}\r\n\r\n.bilibili-fav-item:hover .bilibili-fav-delete { opacity: 1; }\r\n.bilibili-fav-delete:hover { background: var(--error); }\r\n\r\n/* ===== Dynamic filter visibility ===== */\r\n.bilibili-toolbox-dynamic-filter-active .bili-dyn-list__item:not(.bilibili-toolbox-dynamic-filter-ready),\r\n.bilibili-toolbox-dynamic-filter-active .bili-dyn-item:not(.bilibili-toolbox-dynamic-filter-ready),\r\n.bilibili-toolbox-dynamic-filter-active .bili-opus-view:not(.bilibili-toolbox-dynamic-filter-ready),\r\n.bilibili-toolbox-hide-forward-dynamic { display: none !important; }\r\n\r\n/* ══════════════════════════════════════ */\r\n\n/* ===== content-reader.css ===== */\n/*  Comic Reader — Spotify dark theme   */\r\n/* ══════════════════════════════════════ */\r\n\r\n.comic-entry-btn {\r\n    position: fixed;\r\n    bottom: 24px;\r\n    right: 24px;\r\n    z-index: 9999;\r\n    display: inline-flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    padding: 10px 18px;\r\n    cursor: pointer;\r\n    background: var(--acc);\r\n    color: #fff;\r\n    border: none;\r\n    border-radius: 24px;\r\n    font-size: 20px;\r\n    line-height: 1;\r\n    box-shadow: 0 4px 16px rgba(251,114,153,0.3);\r\n}\r\n\r\n.comic-entry-btn-touch {\r\n    bottom: 16px;\r\n    right: 16px;\r\n    padding: 12px 16px;\r\n    font-size: 18px;\r\n}\r\n\r\n#comic-reader-overlay {\r\n    position: fixed;\r\n    inset: 0;\r\n    background: var(--bg-deepest);\r\n    z-index: 10000;\r\n    display: flex;\r\n    flex-direction: column;\r\n    align-items: center;\r\n    justify-content: center;\r\n    overflow: hidden;\r\n    touch-action: none;\r\n    overscroll-behavior: none;\r\n    isolation: isolate;\r\n}\r\n\r\n.comic-img-container {\n    position: absolute;\n    inset: 0;\n    z-index: 0;\n    display: flex;\r\n    width: 100%;\r\n    height: 100%;\r\n    align-items: center;\r\n    justify-content: center;\r\n    gap: 4px;\r\n    padding: 0;\r\n    margin: 0;\r\n    cursor: grab;\r\n    touch-action: none;\n    transform-origin: center center;\n    min-width: 0;\n    min-height: 0;\n}\n\n.comic-img-container.is-grabbing,\r\n.comic-img-container.is-grabbing img { cursor: grabbing; }\r\n\r\n.comic-img-container img {\n    filter: var(--comic-image-filter, none);\r\n}\r\n\r\n/* ===== Reader control panels ===== */\r\n.comic-controls,\r\n.comic-settings-controls {\n    box-sizing: border-box;\n    position: fixed;\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: 6px;\r\n    background: var(--bg-elevated);\n    padding: 8px 10px;\r\n    border-radius: var(--radius-lg);\r\n    border: 1px solid var(--border-subtle);\r\n    color: var(--text-primary);\r\n    z-index: 10001;\r\n    transition: opacity 0.5s;\r\n    opacity: 1;\r\n    box-shadow: var(--shadow-heavy);\r\n}\r\n\r\n.comic-controls.is-hidden,\r\n.comic-settings-controls.is-hidden { opacity: 0; }\r\n\r\n.comic-controls { bottom: 24px; right: 24px; max-width: calc(100% - 48px); }\n.comic-settings-controls {\n    top: 24px;\n    right: 24px;\n    max-height: calc(100% - 48px);\n    overflow-y: auto;\n}\n.comic-controls .comic-reader-row { flex-wrap: wrap; }\n.comic-settings-controls > .comic-btn { flex-shrink: 0; }\n\r\n.comic-settings-panel {\r\n    box-sizing: border-box;\r\n    position: fixed;\r\n    left: 50%;\r\n    top: 50%;\r\n    z-index: 10002;\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: 8px;\r\n    width: min(420px, calc(100vw - 32px));\r\n    max-height: calc(100vh - 24px);\r\n    max-height: calc(100dvh - 24px);\r\n    overflow-y: auto;\r\n    padding: 14px;\r\n    color: var(--text-primary);\r\n    background: var(--bg-elevated);\n    border: 1px solid var(--border-subtle);\r\n    border-radius: var(--radius-md);\r\n    box-shadow: var(--shadow-heavy);\r\n    opacity: 0;\r\n    visibility: hidden;\r\n    pointer-events: none;\r\n    transform: translate(-50%, -50%) scale(0.96);\r\n    transition: opacity 0.18s ease-out, transform 0.18s ease-out, visibility 0.18s;\r\n}\r\n\r\n.comic-settings-panel.show {\r\n    opacity: 1;\r\n    visibility: visible;\r\n    pointer-events: auto;\r\n    transform: translate(-50%, -50%) scale(1);\r\n}\r\n\r\n.comic-settings-heading {\r\n    margin: 0;\r\n    font: 600 17px/1.4 var(--font);\r\n    color: var(--text-primary);\r\n}\r\n\r\n.comic-settings-hint {\r\n    margin: 0;\r\n    font: 12px/1.4 var(--font);\r\n    color: var(--text-secondary);\r\n}\r\n\r\n.comic-settings-grid {\r\n    display: grid;\r\n    grid-template-columns: repeat(2, minmax(0, 1fr));\r\n    gap: 8px;\r\n}\r\n\r\n.comic-setting-btn {\r\n    position: relative;\r\n    display: flex;\r\n    flex-direction: column;\r\n    align-items: flex-start;\r\n    justify-content: center;\r\n    gap: 5px;\r\n    box-sizing: border-box;\r\n    min-width: 0;\r\n    min-height: 66px;\r\n    padding: 10px 12px;\r\n    border: 1px solid var(--border-subtle);\r\n    border-radius: var(--radius-md);\r\n    background: rgba(255, 255, 255, 0.035);\r\n    color: var(--text-primary);\r\n    font-family: var(--font);\r\n    text-align: left;\r\n    cursor: pointer;\r\n    touch-action: manipulation;\r\n    transition: background .15s, border-color .15s;\r\n}\r\n\r\n.comic-setting-label {\r\n    font-size: 12px;\r\n    line-height: 1.3;\r\n    color: var(--text-secondary);\r\n}\r\n\r\n.comic-setting-value {\r\n    font-size: 16px;\r\n    font-weight: 600;\r\n    line-height: 1.35;\r\n}\r\n\r\n.comic-setting-content {\r\n    display: flex;\r\n    width: 100%;\r\n    align-items: center;\r\n    justify-content: space-between;\r\n    gap: 8px;\r\n}\r\n\r\n.comic-setting-preview {\r\n    display: inline-flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    width: 50px;\r\n    height: 22px;\r\n    flex-shrink: 0;\r\n    opacity: .85;\r\n    pointer-events: none;\r\n}\r\n\r\n.comic-setting-arrow {\r\n    position: relative;\r\n    width: 50px;\r\n    height: 22px;\r\n}\r\n\r\n.comic-setting-arrow::before {\r\n    content: '';\r\n    position: absolute;\r\n    left: 0;\r\n    right: 1px;\r\n    top: 10px;\r\n    height: 2px;\r\n    background: currentColor;\r\n}\r\n\r\n.comic-setting-arrow::after {\r\n    content: '';\r\n    position: absolute;\r\n    top: 5px;\r\n    right: 1px;\r\n    width: 10px;\r\n    height: 10px;\r\n    border-top: 2px solid currentColor;\r\n    border-right: 2px solid currentColor;\r\n    transform: rotate(45deg);\r\n}\r\n\r\n.comic-setting-btn[data-preference-key=\"isRightToLeft\"][data-value=\"true\"] .comic-setting-arrow {\r\n    transform: rotate(180deg);\r\n}\r\n\r\n.comic-setting-btn:where([data-preference-key=\"tapPageNavigation\"][aria-pressed=\"true\"]) {\r\n    border-color: rgba(251, 114, 153, .45);\r\n    background: rgba(251, 114, 153, .10);\r\n}\r\n\r\n.comic-setting-btn:where([data-preference-key=\"tapPageNavigation\"][aria-pressed=\"true\"]) .comic-setting-value {\r\n    color: var(--acc-hover);\r\n}\r\n\r\n.comic-setting-btn:hover {\r\n    border-color: var(--acc);\r\n    background: rgba(251, 114, 153, .15);\r\n}\r\n\r\n.comic-setting-btn:focus-visible {\r\n    outline: 2px solid var(--acc);\r\n    outline-offset: 2px;\r\n}\r\n\r\n@media (max-height: 480px) {\r\n    .comic-settings-panel { padding: 10px; gap: 6px; }\r\n    .comic-settings-grid { gap: 6px; }\r\n    .comic-setting-btn { min-height: 48px; padding: 6px 10px; gap: 2px; }\r\n    .comic-setting-label { font-size: 11px; }\r\n    .comic-setting-value { font-size: 14px; }\r\n}\r\n\r\n@media (min-width: 481px) and (max-height: 480px) {\r\n    .comic-settings-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }\r\n    .comic-setting-btn[data-preference-key=\"preloadPages\"] { grid-column: 1; }\r\n}\r\n\r\n.comic-reader-row {\r\n    display: flex;\r\n    gap: 6px;\r\n    align-items: center;\r\n    justify-content: center;\r\n}\r\n\r\n.comic-reader-row-wrap { flex-wrap: wrap; }\n\n/* Thumbnail navigation stays separate from the full-size image cache. */\n#comic-reader-overlay.thumbnails-open { touch-action: pan-y; }\n.comic-thumbnails-panel[hidden] { display: none; }\n.comic-thumbnails-panel {\n    position: absolute;\n    inset: 0;\n    z-index: 10003;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    padding: 12px;\n    box-sizing: border-box;\n    background: rgba(0, 0, 0, .55);\n    touch-action: pan-y;\n}\n.comic-thumbnails-dialog {\n    box-sizing: border-box;\n    display: flex;\n    flex-direction: column;\n    width: min(720px, 100%);\n    max-height: 80%;\n    padding: 18px;\n    border: 1px solid var(--border-subtle);\n    border-radius: var(--radius-lg);\n    background: var(--bg-deepest);\n    color: var(--text-primary);\n    box-shadow: var(--shadow-heavy);\n}\n.comic-thumbnails-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }\n.comic-thumbnails-header h2 { margin: 0; font-size: 18px; font-weight: 600; color: inherit; }\n.comic-thumbnails-hint { margin: 6px 0 14px; font-size: 12px; color: var(--text-secondary); }\n.comic-thumbnails-grid {\n    position: relative;\n    display: grid;\n    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));\n    gap: 10px;\n    min-height: 0;\n    overflow-y: auto;\n    overscroll-behavior: contain;\n    touch-action: pan-y;\n    padding: 4px;\n    scrollbar-gutter: stable;\n}\n.comic-thumbnail {\n    display: flex;\n    flex-direction: column;\n    gap: 6px;\n    min-width: 0;\n    padding: 6px;\n    border: 2px solid transparent;\n    border-radius: 10px;\n    background: rgba(255, 255, 255, .06);\n    color: var(--text-primary);\n    cursor: pointer;\n    font: inherit;\n    touch-action: pan-y;\n}\n.comic-thumbnail-preview {\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    width: 100%;\n    height: 132px;\n    overflow: hidden;\n    border-radius: 4px;\n    background: rgba(0, 0, 0, .25);\n    color: var(--text-secondary);\n    font-size: 12px;\n}\n.comic-thumbnail-preview img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }\n.comic-thumbnail-number { font-size: 13px; line-height: 20px; }\n.comic-thumbnail:hover { background: rgba(251, 114, 153, .12); }\n.comic-thumbnail.is-current { border-color: var(--acc); background: rgba(251, 114, 153, .16); }\n.comic-thumbnail.is-current .comic-thumbnail-number { color: var(--acc-hover); font-weight: 700; }\n.comic-thumbnail:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 1px; }\n@media (max-width: 480px) {\n    .comic-thumbnails-dialog { padding: 12px; max-height: 90%; }\n    .comic-thumbnails-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }\n    .comic-thumbnail-preview { height: 110px; }\n    #comic-reader-overlay.reader-compact .comic-reader-row { flex-wrap: wrap; }\n}\n\r\n.comic-page-info {\r\n    display: inline-flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    gap: 4px;\r\n    font-size: 14px;\r\n    min-width: 68px;\r\n    min-height: 32px;\r\n    padding: 0 2px;\r\n    color: var(--text-primary);\r\n    cursor: pointer;\r\n    white-space: nowrap;\r\n}\r\n\r\n.comic-page-display {\r\n    display: inline;\r\n}\r\n\r\n.comic-page-input {\r\n    display: none;\r\n    width: 44px;\r\n    height: 32px;\r\n    padding: 0 8px;\r\n    color: var(--text-primary);\r\n    background: var(--bg-deepest);\r\n    border: 1px solid var(--border-subtle);\r\n    border-radius: var(--radius-pill);\r\n    font: inherit;\r\n    text-align: center;\r\n    outline: none;\r\n}\r\n\r\n.comic-page-input:focus {\r\n    border-color: var(--acc);\r\n    box-shadow: 0 0 0 2px rgba(251, 114, 153, 0.18);\r\n}\r\n\r\n.comic-page-range {\r\n    display: none;\r\n    color: var(--text-secondary);\r\n}\r\n\r\n.comic-page-info.is-editing {\r\n    cursor: text;\r\n    justify-content: flex-start;\r\n}\r\n\r\n.comic-page-info.is-editing .comic-page-display {\r\n    display: none;\r\n}\r\n\r\n.comic-page-info.is-editing .comic-page-input,\r\n.comic-page-info.is-editing .comic-page-range {\r\n    display: inline-flex;\r\n}\r\n\r\n/* ===== Reader pill buttons ===== */\r\n.comic-btn {\r\n    padding: 8px 16px;\r\n    cursor: pointer;\r\n    background: var(--bg-elevated);\r\n    color: var(--text-primary);\r\n    border: 1px solid var(--border-strong);\r\n    border-radius: var(--radius-pill);\r\n    font-size: 13px;\r\n    font-weight: 500;\r\n    letter-spacing: 0.3px;\r\n    transition: background 0.15s, border-color 0.15s;\r\n}\r\n\r\n.comic-btn-alt {\r\n    background: transparent;\r\n    border-color: var(--border-subtle);\r\n}\r\n\r\n.comic-btn:hover { background: #2a2a2a; }\r\n\r\n.comic-btn-alt:hover { background: var(--bg-elevated); }\r\n\r\n.comic-btn.active {\r\n    background: var(--acc);\r\n    border-color: var(--acc);\r\n    color: #fff;\r\n}\r\n.comic-btn.active:hover { background: var(--acc-hover); }\r\n\r\n/* ===== Reader toast ===== */\r\n.comic-toast {\r\n    position: fixed;\r\n    left: 50%;\r\n    transform: translateX(-50%);\r\n    padding: 8px 16px;\r\n    border-radius: var(--radius-pill);\r\n    font-size: 13px;\r\n    font-weight: 500;\r\n    color: var(--text-primary);\r\n    z-index: 10004;\r\n    opacity: 0;\r\n    transition: opacity 0.2s;\r\n    pointer-events: none;\r\n    background: var(--bg-overlay);\r\n    backdrop-filter: blur(12px);\r\n    -webkit-backdrop-filter: blur(12px);\r\n    border: 1px solid var(--border-subtle);\r\n    box-shadow: var(--shadow-card);\r\n    top: 18px;\r\n}\r\n\r\n.comic-toast.is-visible { opacity: 1; }\r\n\r\n.comic-toast.is-error { background: rgba(180, 40, 40, 0.94); }\r\n\r\n/* ===== Reader images ===== */\r\n#comic-reader-overlay img {\r\n    cursor: grab;\r\n    display: block;\r\n    max-width: none;\r\n    max-height: none;\r\n    object-fit: contain;\r\n    box-shadow: 0 0 30px rgba(0, 0, 0, 0.4);\r\n    touch-action: none;\r\n    user-select: none;\r\n    -webkit-user-drag: none;\r\n    flex-shrink: 0;\r\n}\r\n\r\n#comic-reader-overlay .comic-img-full,\r\n#comic-reader-overlay .comic-img-half {\r\n    max-width: none;\r\n    max-height: none;\r\n}\r\n\r\n/* ===== Screenshot selection ===== */\r\n.comic-selection-overlay {\r\n    position: fixed;\r\n    inset: 0;\r\n    z-index: 10003;\r\n    display: none;\r\n    cursor: crosshair;\r\n    touch-action: none;\r\n    isolation: isolate;\r\n    background: rgba(10,10,10,0.01);\r\n}\r\n\r\n.comic-selection-hint {\r\n    position: fixed;\r\n    top: 18px;\r\n    right: 92px;\r\n    z-index: 3;\r\n    box-sizing: border-box;\r\n    width: 236px;\r\n    max-width: calc(100vw - 110px);\r\n    padding: 10px 12px;\r\n    border-radius: var(--radius-md);\r\n    background: rgba(15,15,15,0.92);\r\n    color: #fff;\r\n    font-size: 13px;\r\n    line-height: 1.45;\r\n    text-align: left;\r\n    pointer-events: none;\r\n    border: 1px solid var(--border-subtle);\r\n    box-shadow: var(--shadow-card);\r\n}\r\n\r\n.comic-selection-toolbar {\r\n    position: fixed;\r\n    top: 18px;\r\n    right: 18px;\r\n    z-index: 4;\r\n    display: flex;\r\n    flex-direction: column;\r\n    width: 64px;\r\n    max-height: calc(100vh - 36px);\r\n    overflow-y: auto;\r\n    gap: 10px;\r\n    align-items: stretch;\r\n}\r\n\r\n.comic-selection-action {\r\n    box-sizing: border-box;\r\n    min-width: 64px;\r\n    min-height: 44px;\r\n    flex-shrink: 0;\r\n    padding: 10px 12px;\r\n    border: none;\r\n    border-radius: var(--radius-pill);\r\n    color: #fff;\r\n    font-size: 13px;\r\n    line-height: 1.3;\r\n    cursor: pointer;\r\n    box-shadow: 0 4px 12px rgba(0,0,0,0.25);\r\n}\r\n\r\n.comic-selection-copy { background: var(--acc); }\r\n.comic-selection-download { background: #287f55; }\r\n.comic-selection-full { background: #3467a8; }\r\n.comic-selection-cancel { background: #d33; }\r\n\r\n.comic-selection-action.is-disabled {\r\n    opacity: 0.45;\r\n    cursor: not-allowed;\r\n}\r\n\r\n.comic-selection-box {\r\n    position: absolute;\r\n    z-index: 1;\r\n    display: none;\r\n    border: 2px dashed var(--acc);\r\n    background: rgba(251,114,153,0.18);\r\n    box-shadow: 0 0 0 1px rgba(255,255,255,0.25) inset;\r\n    cursor: move;\r\n    pointer-events: auto;\r\n}\r\n\r\n.comic-sel-handle {\r\n    position: absolute;\r\n    width: 28px;\r\n    height: 28px;\r\n    pointer-events: auto;\r\n    display: none;\r\n    z-index: 2;\r\n    transform: translate(-50%,-50%);\r\n    touch-action: none;\r\n}\r\n\r\n.comic-sel-handle::after {\r\n    content: \"\";\r\n    position: absolute;\r\n    left: 50%;\r\n    top: 50%;\r\n    width: 12px;\r\n    height: 12px;\r\n    background: var(--acc);\r\n    border: 2px solid #fff;\r\n    border-radius: 50%;\r\n    box-shadow: 0 1px 4px rgba(0,0,0,0.4);\r\n    transform: translate(-50%,-50%);\r\n}\r\n\r\n.comic-sel-handle[data-dir=\"n\"],\r\n.comic-sel-handle[data-dir=\"s\"] {\r\n    width: max(28px, calc(100% - 40px));\r\n}\r\n\r\n.comic-sel-handle[data-dir=\"e\"],\r\n.comic-sel-handle[data-dir=\"w\"] {\r\n    height: max(28px, calc(100% - 40px));\r\n}\r\n\r\n.comic-sel-handle[data-dir=\"nw\"],\r\n.comic-sel-handle[data-dir=\"ne\"],\r\n.comic-sel-handle[data-dir=\"se\"],\r\n.comic-sel-handle[data-dir=\"sw\"] {\r\n    width: 34px;\r\n    height: 34px;\r\n    z-index: 3;\r\n}\r\n\r\n/* ===== Compact layout (mobile) ===== */\r\n#comic-reader-overlay.reader-compact .comic-btn {\r\n    min-width: 54px;\r\n    min-height: 44px;\r\n    padding: 10px 12px;\r\n    font-size: 14px;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-controls {\r\n    left: auto;\r\n    right: max(12px, env(safe-area-inset-right));\r\n    bottom: max(12px, env(safe-area-inset-bottom));\r\n    width: fit-content;\r\n    max-width: calc(100vw - 24px);\r\n    padding: 8px 12px;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-settings-controls {\r\n    top: max(12px, env(safe-area-inset-top));\r\n    left: auto;\r\n    right: max(12px, env(safe-area-inset-right));\r\n    width: fit-content;\r\n    max-width: 96px;\r\n    flex-direction: column;\n    flex-wrap: nowrap;\n    justify-content: flex-start;\n    max-height: 40vh;\r\n    overflow-y: auto;\r\n    padding: 8px 12px;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-settings-panel {\n    padding: 10px;\n}\n\n@media (max-height: 480px) {\n    #comic-reader-overlay.reader-compact .comic-settings-controls {\n        display: grid;\n        grid-template-columns: repeat(2, minmax(0, 1fr));\n        max-width: calc(100vw - 24px);\n        max-height: calc(100dvh - 24px);\n    }\n}\n\r\n#comic-reader-overlay.reader-compact .comic-toast {\r\n    top: 12px;\r\n    max-width: calc(100vw - 24px);\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-selection-hint {\r\n    top: 12px;\r\n    right: 86px;\r\n    max-width: calc(100vw - 98px);\r\n    font-size: 12px;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-selection-toolbar {\r\n    top: 12px;\r\n    right: 12px;\r\n    max-height: calc(100vh - 24px);\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-selection-action {\r\n    padding: 10px 12px;\r\n    font-size: 12px;\r\n}\r\n\n/* ===== content-responsive.css ===== */\n@media (hover: none), (pointer: coarse) {\r\n    #bilibili-fav-float-btn.bilibili-fav-touch {\r\n        bottom: max(76px, env(safe-area-inset-bottom));\r\n        right: max(16px, env(safe-area-inset-right));\r\n        width: 54px;\r\n        height: 54px;\r\n        font-size: 24px;\r\n        opacity: 1 !important;\r\n        visibility: visible !important;\r\n    }\r\n\r\n    #bilibili-fav-panel,\r\n    #bilibili-toolbox-settings-panel {\r\n        right: max(12px, env(safe-area-inset-right));\r\n        bottom: max(140px, calc(env(safe-area-inset-bottom) + 84px));\r\n        max-height: min(70vh, 560px);\r\n        overflow: hidden;\r\n    }\r\n\r\n    #bilibili-fav-panel {\r\n        width: min(\r\n            calc(\r\n                var(--bilibili-fav-columns) * var(--bilibili-fav-item-width)\r\n                + (var(--bilibili-fav-columns) - 1) * var(--bilibili-fav-list-gap)\r\n                + var(--bilibili-fav-list-padding-x) * 2\r\n            ),\r\n            calc(100vw - 24px)\r\n        );\r\n    }\r\n\r\n    #bilibili-toolbox-settings-panel {\r\n        width: min(320px, calc(100vw - 24px));\r\n    }\r\n\r\n    .bilibili-fav-header {\r\n        gap: 8px;\r\n        padding: 10px 12px;\r\n    }\r\n\r\n    .bilibili-fav-header-actions {\r\n        flex-shrink: 0;\r\n    }\r\n\r\n    .bilibili-fav-control-btn {\r\n        display: inline-flex;\r\n        align-items: center;\r\n        justify-content: center;\r\n    }\r\n\r\n    .bilibili-fav-add-btn,\r\n    .bilibili-fav-control-btn,\r\n    .bilibili-toolbox-export-btn,\r\n    .bilibili-toolbox-import-btn {\r\n        min-height: 42px;\r\n    }\r\n\r\n    .bilibili-fav-content {\r\n        max-height: min(52vh, 420px);\r\n    }\r\n\r\n    .bilibili-fav-delete {\r\n        width: 26px;\r\n        height: 26px;\r\n        font-size: 16px;\r\n    }\r\n\r\n    .bilibili-fav-item-link {\r\n        touch-action: manipulation;\r\n    }\r\n\r\n    .comic-sel-handle {\r\n        width: 36px;\r\n        height: 36px;\r\n    }\r\n\r\n    .comic-sel-handle[data-dir=\"n\"],\r\n    .comic-sel-handle[data-dir=\"s\"] {\r\n        width: max(36px, calc(100% - 48px));\r\n    }\r\n\r\n    .comic-sel-handle[data-dir=\"e\"],\r\n    .comic-sel-handle[data-dir=\"w\"] {\r\n        height: max(36px, calc(100% - 48px));\r\n    }\r\n\r\n    .comic-sel-handle[data-dir=\"nw\"],\r\n    .comic-sel-handle[data-dir=\"ne\"],\r\n    .comic-sel-handle[data-dir=\"se\"],\r\n    .comic-sel-handle[data-dir=\"sw\"] {\r\n        width: 44px;\r\n        height: 44px;\r\n    }\r\n\r\n    #comic-reader-overlay.reader-compact .comic-reader-row {\r\n        gap: 6px;\r\n        flex-wrap: wrap;\r\n    }\r\n\r\n    #comic-reader-overlay.reader-compact .comic-settings-controls { gap: 8px; }\r\n\r\n    #comic-reader-overlay.reader-compact .comic-selection-hint { text-align: left; }\r\n}\r\n\n";
+    const css = "/* ===== content-base.css ===== */\n/* Bilibili Toolbox — Spotify-inspired dark theme */\r\n\r\n:root {\r\n    --acc: #fb7299;\r\n    --acc-hover: #fc8bab;\r\n    --acc-active: #e86288;\r\n    --bg-deepest: #0a0a0a;\r\n    --bg-surface: #181818;\r\n    --bg-elevated: #1f1f1f;\r\n    --bg-overlay: rgba(20, 20, 20, 0.94);\r\n    --text-primary: #ffffff;\r\n    --text-secondary: #b3b3b3;\r\n    --text-muted: #7c7c7c;\r\n    --border-subtle: rgba(255, 255, 255, 0.12);\r\n    --border-strong: #4d4d4d;\r\n    --error: #f3727f;\r\n    --error-hover: #e86a77;\r\n    --shadow-heavy: 0 8px 24px rgba(0, 0, 0, 0.5);\r\n    --shadow-card: 0 4px 8px rgba(0, 0, 0, 0.3);\r\n    --shadow-float: 0 4px 16px rgba(251, 114, 153, 0.25);\r\n    --radius-sm: 6px;\r\n    --radius-md: 8px;\r\n    --radius-lg: 12px;\r\n    --radius-pill: 9999px;\r\n    --font: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif;\r\n}\r\n\r\n\n/* ===== content-toolbox.css ===== */\n/* ===== Floating star button ===== */\r\n#bilibili-fav-float-btn {\r\n    position: fixed;\r\n    bottom: 80px;\r\n    right: 20px;\r\n    width: 50px;\r\n    height: 50px;\r\n    background: var(--acc);\r\n    border-radius: 50%;\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    font-size: 24px;\r\n    cursor: pointer;\r\n    box-shadow: var(--shadow-float);\r\n    z-index: 999999;\r\n    transition: transform 0.2s, box-shadow 0.2s, opacity 0.3s, visibility 0.3s;\r\n    line-height: 1;\r\n    text-align: center;\r\n}\r\n\r\n#bilibili-fav-float-btn:hover {\r\n    transform: scale(1.1);\r\n    box-shadow: 0 6px 20px rgba(251, 114, 153, 0.4);\r\n}\r\n\r\n#bilibili-fav-float-btn.dynamic-filter-active {\r\n    border-radius: var(--radius-sm);\r\n}\r\n\r\n#bilibili-fav-float-btn.bilibili-fav-video-hidden {\r\n    opacity: 0;\r\n}\r\n\r\n#bilibili-fav-float-btn.bilibili-fav-video-visible {\r\n    opacity: 1;\r\n}\r\n\r\n/* ===== Shared panel base ===== */\r\n#bilibili-fav-panel,\r\n#bilibili-toolbox-settings-panel {\r\n    position: fixed;\r\n    bottom: 140px;\r\n    right: 20px;\r\n    width: 280px;\r\n    background: var(--bg-overlay);\r\n    backdrop-filter: blur(20px);\r\n    -webkit-backdrop-filter: blur(20px);\r\n    border-radius: var(--radius-lg);\r\n    box-shadow: var(--shadow-heavy);\r\n    z-index: 1000000;\r\n    opacity: 0;\r\n    visibility: hidden;\r\n    transition: opacity 0.2s, transform 0.2s, visibility 0.2s;\r\n    font-family: var(--font);\r\n    transform: translateY(10px);\r\n    color: var(--text-primary);\r\n    border: 1px solid var(--border-subtle);\r\n}\r\n\r\n#bilibili-fav-panel {\r\n    --bilibili-fav-columns: 2;\r\n    --bilibili-fav-item-width: 130px;\r\n    --bilibili-fav-list-gap: 4px;\r\n    --bilibili-fav-list-padding-x: 10px;\r\n    width: calc(\r\n        var(--bilibili-fav-columns) * var(--bilibili-fav-item-width)\r\n        + (var(--bilibili-fav-columns) - 1) * var(--bilibili-fav-list-gap)\r\n        + var(--bilibili-fav-list-padding-x) * 2\r\n    );\r\n}\r\n\r\n#bilibili-toolbox-settings-panel {\r\n    width: 320px;\r\n    z-index: 1000001;\r\n}\r\n\r\n#bilibili-fav-panel.show,\r\n#bilibili-toolbox-settings-panel.show {\r\n    opacity: 1;\r\n    visibility: visible;\r\n    transform: translateY(0);\r\n}\r\n\r\n/* ===== Panel header ===== */\r\n.bilibili-fav-header {\r\n    display: flex;\r\n    justify-content: space-between;\r\n    align-items: center;\r\n    padding: 10px 16px;\r\n    border-bottom: 1px solid var(--border-subtle);\r\n    background: var(--bg-elevated);\r\n    color: var(--text-primary);\r\n    border-radius: var(--radius-lg) var(--radius-lg) 0 0;\r\n    font-weight: 600;\r\n    font-size: 14px;\r\n    letter-spacing: 0.3px;\r\n}\r\n\r\n.bilibili-fav-header-actions {\r\n    display: flex;\r\n    align-items: center;\r\n    gap: 6px;\r\n}\r\n\r\n/* ===== Panel content ===== */\r\n.bilibili-fav-content { max-height: 400px; overflow: auto; }\r\n\r\n.bilibili-fav-list {\r\n    padding: 8px var(--bilibili-fav-list-padding-x);\r\n    display: grid;\r\n    grid-template-columns: repeat(var(--bilibili-fav-columns, 2), var(--bilibili-fav-item-width));\r\n    gap: var(--bilibili-fav-list-gap);\r\n}\r\n\r\n.bilibili-fav-content::-webkit-scrollbar { width: 5px; }\r\n.bilibili-fav-content::-webkit-scrollbar-track { background: transparent; }\r\n.bilibili-fav-content::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 3px; }\r\n.bilibili-fav-content::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.25); }\r\n\r\n/* ===== Toolbox settings content ===== */\r\n.bilibili-toolbox-control-content {\r\n    padding: 14px;\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: 14px;\r\n}\r\n\r\n.bilibili-toolbox-control-section {\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: 10px;\r\n}\r\n\r\n.bilibili-toolbox-section-title {\r\n    color: var(--text-secondary);\r\n    font-size: 12px;\r\n    font-weight: 700;\r\n    line-height: 1;\r\n}\r\n\r\n.bilibili-toolbox-control-row {\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: space-between;\r\n    gap: 12px;\r\n    padding: 12px 14px;\r\n    border-radius: var(--radius-md);\r\n    background: var(--bg-surface);\r\n    cursor: pointer;\r\n    border: 1px solid var(--border-subtle);\r\n}\r\n\r\n.bilibili-toolbox-control-row-stack {\r\n    align-items: stretch;\r\n    cursor: default;\r\n    flex-direction: column;\r\n    gap: 10px;\r\n}\r\n\r\n.bilibili-toolbox-control-copy {\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: 4px;\r\n    min-width: 0;\r\n}\r\n\r\n.bilibili-toolbox-control-title {\r\n    font-size: 14px;\r\n    font-weight: 600;\r\n    color: var(--text-primary);\r\n}\r\n\r\n.bilibili-toolbox-control-desc {\r\n    font-size: 12px;\r\n    color: var(--text-secondary);\r\n    line-height: 1.4;\r\n}\r\n\r\n.bilibili-toolbox-segmented {\r\n    display: grid;\r\n    grid-template-columns: repeat(4, minmax(0, 1fr));\r\n    gap: 4px;\r\n    padding: 3px;\r\n    border-radius: var(--radius-pill);\r\n    background: var(--bg-deepest);\r\n    border: 1px solid var(--border-subtle);\r\n}\r\n\r\n.bilibili-toolbox-segmented button {\r\n    min-height: 30px;\r\n    padding: 0;\r\n    color: var(--text-secondary);\r\n    background: transparent;\r\n    border: none;\r\n    border-radius: var(--radius-pill);\r\n    cursor: pointer;\r\n    font: 600 13px/1 var(--font);\r\n}\r\n\r\n.bilibili-toolbox-segmented button:hover {\r\n    color: var(--text-primary);\r\n    background: rgba(255, 255, 255, 0.08);\r\n}\r\n\r\n.bilibili-toolbox-segmented button.active {\r\n    color: #fff;\r\n    background: var(--acc);\r\n}\r\n\r\n.bilibili-toolbox-keyword-input {\r\n    width: 100%;\r\n    min-height: 38px;\r\n    padding: 0 12px;\r\n    box-sizing: border-box;\r\n    color: var(--text-primary);\r\n    background: var(--bg-deepest);\r\n    border: 1px solid var(--border-subtle);\r\n    border-radius: var(--radius-md);\r\n    font-family: var(--font);\r\n    font-size: 13px;\r\n    outline: none;\r\n    transition: border-color 0.2s, box-shadow 0.2s, opacity 0.2s;\r\n}\r\n\r\n.bilibili-toolbox-keyword-input::placeholder {\r\n    color: var(--text-muted);\r\n}\r\n\r\n.bilibili-toolbox-keyword-input:focus {\r\n    border-color: var(--acc);\r\n    box-shadow: 0 0 0 2px rgba(251, 114, 153, 0.18);\r\n}\r\n\r\n/* ===== Toggle switch ===== */\r\n.bilibili-toolbox-switch {\r\n    position: relative;\r\n    width: 46px;\r\n    height: 28px;\r\n    flex-shrink: 0;\r\n}\r\n\r\n.bilibili-toolbox-switch input {\r\n    position: absolute;\r\n    inset: 0;\r\n    opacity: 0;\r\n    cursor: pointer;\r\n    margin: 0;\r\n}\r\n\r\n.bilibili-toolbox-switch-slider {\r\n    position: absolute;\r\n    inset: 0;\r\n    border-radius: var(--radius-pill);\r\n    background: rgba(255, 255, 255, 0.2);\r\n    transition: background 0.2s;\r\n}\r\n\r\n.bilibili-toolbox-switch-slider::before {\r\n    content: \"\";\r\n    position: absolute;\r\n    top: 3px;\r\n    left: 3px;\r\n    width: 22px;\r\n    height: 22px;\r\n    border-radius: 50%;\r\n    background: #fff;\r\n    transition: transform 0.2s;\r\n    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);\r\n}\r\n\r\n.bilibili-toolbox-switch input:checked + .bilibili-toolbox-switch-slider {\r\n    background: var(--acc);\r\n}\r\n\r\n.bilibili-toolbox-switch input:checked + .bilibili-toolbox-switch-slider::before {\r\n    transform: translateX(18px);\r\n}\r\n\r\n/* ===== Empty state ===== */\r\n.bilibili-fav-empty { grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 40px 20px; font-size: 14px; }\r\n\r\n/* ===== Toast message ===== */\r\n.bilibili-fav-msg { padding: 8px; text-align: center; font-size: 12px; display: none; }\r\n\r\n/* ===== Pill buttons (global) ===== */\r\n.bilibili-fav-add-btn,\r\n.bilibili-fav-control-btn,\r\n.bilibili-toolbox-export-btn,\r\n.bilibili-toolbox-import-btn {\r\n    padding: 10px 0;\r\n    font-size: 13px;\r\n    font-weight: 600;\r\n    border: none;\r\n    border-radius: var(--radius-pill);\r\n    cursor: pointer;\r\n    transition: all 0.2s;\r\n    color: var(--text-primary);\r\n    letter-spacing: 0.3px;\r\n    flex: 1;\r\n}\r\n\r\n.bilibili-fav-add-btn {\r\n    padding: 8px 16px;\r\n    flex: none;\r\n}\r\n\r\n.bilibili-fav-control-btn {\r\n    display: none;\r\n    padding: 8px 12px;\r\n    flex: none;\r\n}\r\n\r\n/* Primary pill — accent fill */\r\n.bilibili-fav-add-btn,\r\n.bilibili-fav-control-btn,\r\n.bilibili-toolbox-export-btn {\r\n    background: var(--acc);\r\n    color: #fff;\r\n}\r\n\r\n.bilibili-fav-add-btn:hover,\r\n.bilibili-fav-control-btn:hover,\r\n.bilibili-toolbox-export-btn:hover {\r\n    background: var(--acc-hover);\r\n}\r\n\r\n/* Secondary pill — dark fill */\r\n.bilibili-toolbox-import-btn {\r\n    background: var(--bg-elevated);\r\n    border: 1px solid var(--border-strong);\r\n}\r\n\r\n.bilibili-toolbox-import-btn:hover {\r\n    background: #2a2a2a;\r\n}\r\n\r\n/* ===== Button group layout ===== */\r\n.bilibili-toolbox-control-actions {\r\n    display: flex;\r\n    gap: 8px;\r\n    padding: 0 16px 16px;\r\n}\r\n\r\n/* ===== Export text document ===== */\r\n.bilibili-toolbox-export-dialog {\r\n    position: fixed;\r\n    inset: 0;\r\n    z-index: 1000002;\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    padding: 16px;\r\n    background: rgba(0, 0, 0, 0.72);\r\n}\r\n\r\n.bilibili-toolbox-export-document {\r\n    display: flex;\r\n    width: min(640px, 100%);\r\n    max-height: min(720px, 86vh);\r\n    flex-direction: column;\r\n    overflow: hidden;\r\n    background: var(--bg-elevated);\r\n    border: 1px solid var(--border-subtle);\r\n    border-radius: var(--radius-md);\r\n    box-shadow: var(--shadow-heavy);\r\n}\r\n\r\n.bilibili-toolbox-export-header {\r\n    display: flex;\r\n    min-height: 44px;\r\n    align-items: center;\r\n    justify-content: space-between;\r\n    padding: 0 14px;\r\n    color: var(--text-primary);\r\n    font-size: 14px;\r\n    font-weight: 600;\r\n    border-bottom: 1px solid var(--border-subtle);\r\n}\r\n\r\n.bilibili-toolbox-export-close {\r\n    display: inline-flex;\r\n    width: 30px;\r\n    height: 30px;\r\n    align-items: center;\r\n    justify-content: center;\r\n    padding: 0;\r\n    color: var(--text-secondary);\r\n    background: transparent;\r\n    border: none;\r\n    border-radius: 50%;\r\n    cursor: pointer;\r\n    font-size: 22px;\r\n    line-height: 1;\r\n}\r\n\r\n.bilibili-toolbox-export-close:hover {\r\n    color: var(--text-primary);\r\n    background: rgba(255, 255, 255, 0.1);\r\n}\r\n\r\n.bilibili-toolbox-export-text {\r\n    width: 100%;\r\n    min-height: min(560px, 72vh);\r\n    padding: 14px;\r\n    resize: vertical;\r\n    box-sizing: border-box;\r\n    color: var(--text-primary);\r\n    background: var(--bg-deepest);\r\n    border: none;\r\n    outline: none;\r\n    font-family: Consolas, \"Courier New\", monospace;\r\n    font-size: 13px;\r\n    line-height: 1.5;\r\n}\r\n\r\n.bilibili-toolbox-export-footer {\r\n    display: flex;\r\n    min-height: 52px;\r\n    align-items: center;\r\n    justify-content: space-between;\r\n    gap: 12px;\r\n    padding: 8px 12px;\r\n    border-top: 1px solid var(--border-subtle);\r\n}\r\n\r\n.bilibili-toolbox-export-status {\r\n    color: var(--text-secondary);\r\n    font-size: 12px;\r\n    line-height: 1.4;\r\n}\r\n\r\n.bilibili-toolbox-export-status.is-error {\r\n    color: var(--error);\r\n}\r\n\r\n.bilibili-toolbox-export-actions {\r\n    display: flex;\r\n    flex-shrink: 0;\r\n    align-items: center;\r\n    gap: 8px;\r\n}\r\n\r\n.bilibili-toolbox-export-clipboard,\r\n.bilibili-toolbox-export-confirm {\r\n    flex-shrink: 0;\r\n    padding: 8px 18px;\r\n    color: #fff;\r\n    background: var(--acc);\r\n    border: none;\r\n    border-radius: var(--radius-pill);\r\n    cursor: pointer;\r\n    font-size: 13px;\r\n    font-weight: 600;\r\n}\r\n\r\n.bilibili-toolbox-export-clipboard:hover,\r\n.bilibili-toolbox-export-confirm:hover {\r\n    background: var(--acc-hover);\r\n}\r\n\r\n/* ===== Favorite list items ===== */\r\n.bilibili-fav-item-link {\r\n    display: block;\r\n    text-decoration: none;\r\n    color: inherit;\r\n    width: var(--bilibili-fav-item-width);\r\n    min-width: 0;\r\n    position: relative;\r\n}\r\n\r\n.bilibili-fav-item {\r\n    display: flex;\r\n    flex-direction: column;\r\n    align-items: center;\r\n    padding: 8px 6px 10px;\r\n    border-radius: var(--radius-md);\r\n    transition: background 0.2s;\r\n    text-align: center;\r\n    position: relative;\r\n    overflow: hidden;\r\n    height: 88px;\r\n    box-sizing: border-box;\r\n    background: transparent;\r\n}\r\n\r\n.bilibili-fav-item[data-readlist=\"true\"] { padding: 0; }\r\n\r\n.bilibili-fav-item-link:hover .bilibili-fav-item {\r\n    background: var(--bg-surface);\r\n}\r\n\r\n.bilibili-fav-item-info {\r\n    display: flex;\r\n    flex-direction: column;\r\n    align-items: center;\r\n    width: 100%;\r\n    height: 100%;\r\n    position: relative;\r\n    z-index: 1;\r\n}\r\n\r\n.bilibili-fav-item[data-readlist=\"true\"] .bilibili-fav-item-info {\r\n    padding: 0;\r\n    overflow: hidden;\r\n    border-radius: inherit;\r\n}\r\n\r\n/* ===== Avatar — round, no border ===== */\r\n.bilibili-fav-avatar {\r\n    width: 44px;\r\n    height: 44px;\r\n    border-radius: 50%;\r\n    object-fit: cover;\r\n    position: relative;\r\n    z-index: 1;\r\n    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);\r\n}\r\n\r\n.bilibili-fav-avatar.square {\r\n    border-radius: var(--radius-md);\r\n}\r\n\r\n.bilibili-fav-avatar.cover {\r\n    display: block;\r\n    width: 100%;\r\n    height: 100%;\r\n    border-radius: var(--radius-md);\r\n    box-shadow: none;\r\n    position: absolute;\r\n    inset: 0;\r\n}\r\n\r\n/* ===== Name label ===== */\r\n.bilibili-fav-name {\r\n    font-size: 12px;\r\n    color: var(--text-primary);\r\n    font-weight: 500;\r\n    max-width: 100%;\r\n    overflow: hidden;\r\n    text-overflow: ellipsis;\r\n    white-space: nowrap;\r\n    position: relative;\r\n    z-index: 1;\r\n    margin-top: 6px;\r\n}\r\n\r\n.bilibili-fav-item[data-readlist=\"true\"] .bilibili-fav-name {\r\n    position: absolute;\r\n    bottom: 0;\r\n    left: 0;\r\n    right: 0;\r\n    color: #fff;\r\n    background: linear-gradient(transparent, rgba(0, 0, 0, 0.75));\r\n    padding: 20px 8px 8px;\r\n    border-radius: 0 0 var(--radius-md) var(--radius-md);\r\n    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);\r\n    font-weight: 600;\r\n}\r\n\r\n/* ===== Delete button — ghost pill ===== */\r\n.bilibili-fav-delete {\r\n    position: absolute;\r\n    top: 4px;\r\n    right: 4px;\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    width: 20px;\r\n    height: 20px;\r\n    padding: 0;\r\n    font-size: 14px;\r\n    line-height: 1;\r\n    color: var(--text-primary);\r\n    background: rgba(0, 0, 0, 0.5);\r\n    border: none;\r\n    border-radius: 50%;\r\n    appearance: none;\r\n    cursor: pointer;\r\n    transition: all 0.2s;\r\n    z-index: 2;\r\n    opacity: 0;\r\n}\r\n\r\n.bilibili-fav-item:hover .bilibili-fav-delete { opacity: 1; }\r\n.bilibili-fav-delete:hover { background: var(--error); }\r\n\r\n/* ===== Dynamic filter visibility ===== */\r\n.bilibili-toolbox-dynamic-filter-active .bili-dyn-list__item:not(.bilibili-toolbox-dynamic-filter-ready),\r\n.bilibili-toolbox-dynamic-filter-active .bili-dyn-item:not(.bilibili-toolbox-dynamic-filter-ready),\r\n.bilibili-toolbox-dynamic-filter-active .bili-opus-view:not(.bilibili-toolbox-dynamic-filter-ready),\r\n.bilibili-toolbox-hide-forward-dynamic { display: none !important; }\r\n\r\n/* ══════════════════════════════════════ */\r\n\n/* ===== content-reader.css ===== */\n/*  Comic Reader — Spotify dark theme   */\r\n/* ══════════════════════════════════════ */\r\n\r\n.comic-entry-btn {\r\n    position: fixed;\r\n    bottom: 24px;\r\n    right: 24px;\r\n    z-index: 9999;\r\n    display: inline-flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    padding: 10px 18px;\r\n    cursor: pointer;\r\n    background: var(--acc);\r\n    color: #fff;\r\n    border: none;\r\n    border-radius: 24px;\r\n    font-size: 20px;\r\n    line-height: 1;\r\n    box-shadow: 0 4px 16px rgba(251,114,153,0.3);\r\n}\r\n\r\n.comic-entry-btn-touch {\r\n    bottom: 16px;\r\n    right: 16px;\r\n    padding: 12px 16px;\r\n    font-size: 18px;\r\n}\r\n\r\n#comic-reader-overlay {\r\n    position: fixed;\r\n    inset: 0;\r\n    background: var(--bg-deepest);\r\n    z-index: 10000;\r\n    display: flex;\r\n    flex-direction: column;\r\n    align-items: center;\r\n    justify-content: center;\r\n    overflow: hidden;\r\n    touch-action: none;\r\n    overscroll-behavior: none;\r\n    isolation: isolate;\r\n}\r\n\r\n.comic-page-stage {\r\n    position: absolute;\r\n    inset: 0;\r\n    overflow: hidden;\r\n    pointer-events: none;\r\n}\r\n.comic-page-current { pointer-events: auto; }\r\n.comic-page-neighbor { visibility: hidden; }\r\n.comic-page-loading {\r\n    position: absolute;\r\n    inset: 0;\r\n    display: grid;\r\n    place-items: center;\r\n    color: var(--text-primary);\r\n    font-size: 14px;\r\n}\r\n\r\n.comic-img-container,\r\n.comic-swipe-images {\r\n    position: absolute;\n    inset: 0;\n    z-index: 0;\n    display: flex;\r\n    width: 100%;\r\n    height: 100%;\r\n    align-items: center;\r\n    justify-content: center;\r\n    gap: 4px;\r\n    padding: 0;\r\n    margin: 0;\r\n    cursor: grab;\r\n    touch-action: none;\n    transform-origin: center center;\n    min-width: 0;\n    min-height: 0;\n}\n\n.comic-img-container.is-grabbing,\r\n.comic-img-container.is-grabbing img { cursor: grabbing; }\r\n\r\n.comic-img-container img,\r\n.comic-swipe-images img {\r\n    filter: var(--comic-image-filter, none);\r\n}\r\n\r\n/* ===== Reader control panels ===== */\r\n.comic-controls,\r\n.comic-settings-controls {\n    box-sizing: border-box;\n    position: fixed;\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: 6px;\r\n    background: var(--bg-elevated);\n    padding: 8px 10px;\r\n    border-radius: var(--radius-lg);\r\n    border: 1px solid var(--border-subtle);\r\n    color: var(--text-primary);\r\n    z-index: 10001;\r\n    transition: opacity 0.5s;\r\n    opacity: 1;\r\n    box-shadow: var(--shadow-heavy);\r\n}\r\n\r\n.comic-controls.is-hidden,\r\n.comic-settings-controls.is-hidden { opacity: 0; }\r\n\r\n.comic-controls { bottom: 24px; right: 24px; max-width: calc(100% - 48px); }\n.comic-settings-controls {\n    top: 24px;\n    right: 24px;\n    max-height: calc(100% - 48px);\n    overflow-y: auto;\n}\n.comic-controls .comic-reader-row { flex-wrap: wrap; }\n.comic-settings-controls \u003e .comic-btn { flex-shrink: 0; }\n\r\n.comic-settings-panel {\r\n    box-sizing: border-box;\r\n    position: fixed;\r\n    left: 50%;\r\n    top: 50%;\r\n    z-index: 10002;\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: 8px;\r\n    width: min(420px, calc(100vw - 32px));\r\n    max-height: calc(100vh - 24px);\r\n    max-height: calc(100dvh - 24px);\r\n    overflow-y: auto;\r\n    padding: 14px;\r\n    color: var(--text-primary);\r\n    background: var(--bg-elevated);\n    border: 1px solid var(--border-subtle);\r\n    border-radius: var(--radius-md);\r\n    box-shadow: var(--shadow-heavy);\r\n    opacity: 0;\r\n    visibility: hidden;\r\n    pointer-events: none;\r\n    transform: translate(-50%, -50%) scale(0.96);\r\n    transition: opacity 0.18s ease-out, transform 0.18s ease-out, visibility 0.18s;\r\n}\r\n\r\n.comic-settings-panel.show {\r\n    opacity: 1;\r\n    visibility: visible;\r\n    pointer-events: auto;\r\n    transform: translate(-50%, -50%) scale(1);\r\n}\r\n\r\n.comic-settings-heading {\r\n    margin: 0;\r\n    font: 600 17px/1.4 var(--font);\r\n    color: var(--text-primary);\r\n}\r\n\r\n.comic-settings-hint {\r\n    margin: 0;\r\n    font: 12px/1.4 var(--font);\r\n    color: var(--text-secondary);\r\n}\r\n\r\n.comic-settings-grid {\r\n    display: grid;\r\n    grid-template-columns: repeat(2, minmax(0, 1fr));\r\n    gap: 8px;\r\n}\r\n\r\n.comic-setting-btn {\r\n    position: relative;\r\n    display: flex;\r\n    flex-direction: column;\r\n    align-items: flex-start;\r\n    justify-content: center;\r\n    gap: 5px;\r\n    box-sizing: border-box;\r\n    min-width: 0;\r\n    min-height: 66px;\r\n    padding: 10px 12px;\r\n    border: 1px solid var(--border-subtle);\r\n    border-radius: var(--radius-md);\r\n    background: rgba(255, 255, 255, 0.035);\r\n    color: var(--text-primary);\r\n    font-family: var(--font);\r\n    text-align: left;\r\n    cursor: pointer;\r\n    touch-action: manipulation;\r\n    transition: background .15s, border-color .15s;\r\n}\r\n\r\n.comic-setting-label {\r\n    font-size: 12px;\r\n    line-height: 1.3;\r\n    color: var(--text-secondary);\r\n}\r\n\r\n.comic-setting-value {\r\n    font-size: 16px;\r\n    font-weight: 600;\r\n    line-height: 1.35;\r\n}\r\n\r\n.comic-setting-content {\r\n    display: flex;\r\n    width: 100%;\r\n    align-items: center;\r\n    justify-content: space-between;\r\n    gap: 8px;\r\n}\r\n\r\n.comic-setting-preview {\r\n    display: inline-flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    width: 50px;\r\n    height: 22px;\r\n    flex-shrink: 0;\r\n    opacity: .85;\r\n    pointer-events: none;\r\n}\r\n\r\n.comic-setting-arrow {\r\n    position: relative;\r\n    width: 50px;\r\n    height: 22px;\r\n}\r\n\r\n.comic-setting-arrow::before {\r\n    content: \u0027\u0027;\r\n    position: absolute;\r\n    left: 0;\r\n    right: 1px;\r\n    top: 10px;\r\n    height: 2px;\r\n    background: currentColor;\r\n}\r\n\r\n.comic-setting-arrow::after {\r\n    content: \u0027\u0027;\r\n    position: absolute;\r\n    top: 5px;\r\n    right: 1px;\r\n    width: 10px;\r\n    height: 10px;\r\n    border-top: 2px solid currentColor;\r\n    border-right: 2px solid currentColor;\r\n    transform: rotate(45deg);\r\n}\r\n\r\n.comic-setting-btn[data-preference-key=\"isRightToLeft\"][data-value=\"true\"] .comic-setting-arrow {\r\n    transform: rotate(180deg);\r\n}\r\n\r\n.comic-setting-btn:where([data-preference-key=\"tapPageNavigation\"][aria-pressed=\"true\"]) {\r\n    border-color: rgba(251, 114, 153, .45);\r\n    background: rgba(251, 114, 153, .10);\r\n}\r\n\r\n.comic-setting-btn:where([data-preference-key=\"tapPageNavigation\"][aria-pressed=\"true\"]) .comic-setting-value {\r\n    color: var(--acc-hover);\r\n}\r\n\r\n.comic-setting-btn:hover {\r\n    border-color: var(--acc);\r\n    background: rgba(251, 114, 153, .15);\r\n}\r\n\r\n.comic-setting-btn:focus-visible {\r\n    outline: 2px solid var(--acc);\r\n    outline-offset: 2px;\r\n}\r\n\r\n@media (max-height: 480px) {\r\n    .comic-settings-panel { padding: 10px; gap: 6px; }\r\n    .comic-settings-grid { gap: 6px; }\r\n    .comic-setting-btn { min-height: 48px; padding: 6px 10px; gap: 2px; }\r\n    .comic-setting-label { font-size: 11px; }\r\n    .comic-setting-value { font-size: 14px; }\r\n}\r\n\r\n@media (min-width: 481px) and (max-height: 480px) {\r\n    .comic-settings-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }\r\n    .comic-setting-btn[data-preference-key=\"preloadPages\"] { grid-column: 1; }\r\n}\r\n\r\n.comic-reader-row {\r\n    display: flex;\r\n    gap: 6px;\r\n    align-items: center;\r\n    justify-content: center;\r\n}\r\n\r\n.comic-reader-row-wrap { flex-wrap: wrap; }\n\n/* Thumbnail navigation stays separate from the full-size image cache. */\n#comic-reader-overlay.thumbnails-open { touch-action: pan-y; }\n.comic-thumbnails-panel[hidden] { display: none; }\n.comic-thumbnails-panel {\n    position: absolute;\n    inset: 0;\n    z-index: 10003;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    padding: 12px;\n    box-sizing: border-box;\n    background: rgba(0, 0, 0, .55);\n    touch-action: pan-y;\n}\n.comic-thumbnails-dialog {\n    box-sizing: border-box;\n    display: flex;\n    flex-direction: column;\n    width: min(720px, 100%);\n    max-height: 80%;\n    padding: 18px;\n    border: 1px solid var(--border-subtle);\n    border-radius: var(--radius-lg);\n    background: var(--bg-deepest);\n    color: var(--text-primary);\n    box-shadow: var(--shadow-heavy);\n}\n.comic-thumbnails-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }\n.comic-thumbnails-header h2 { margin: 0; font-size: 18px; font-weight: 600; color: inherit; }\n.comic-thumbnails-hint { margin: 6px 0 14px; font-size: 12px; color: var(--text-secondary); }\n.comic-thumbnails-grid {\n    position: relative;\n    display: grid;\n    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));\n    gap: 10px;\n    min-height: 0;\n    overflow-y: auto;\n    overscroll-behavior: contain;\n    touch-action: pan-y;\n    padding: 4px;\n    scrollbar-gutter: stable;\n}\n.comic-thumbnail {\n    display: flex;\n    flex-direction: column;\n    gap: 6px;\n    min-width: 0;\n    padding: 6px;\n    border: 2px solid transparent;\n    border-radius: 10px;\n    background: rgba(255, 255, 255, .06);\n    color: var(--text-primary);\n    cursor: pointer;\n    font: inherit;\n    touch-action: pan-y;\n}\n.comic-thumbnail-preview {\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    width: 100%;\n    height: 132px;\n    overflow: hidden;\n    border-radius: 4px;\n    background: rgba(0, 0, 0, .25);\n    color: var(--text-secondary);\n    font-size: 12px;\n}\n.comic-thumbnail-preview img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }\n.comic-thumbnail-number { font-size: 13px; line-height: 20px; }\n.comic-thumbnail:hover { background: rgba(251, 114, 153, .12); }\n.comic-thumbnail.is-current { border-color: var(--acc); background: rgba(251, 114, 153, .16); }\n.comic-thumbnail.is-current .comic-thumbnail-number { color: var(--acc-hover); font-weight: 700; }\n.comic-thumbnail:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 1px; }\n@media (max-width: 480px) {\n    .comic-thumbnails-dialog { padding: 12px; max-height: 90%; }\n    .comic-thumbnails-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }\n    .comic-thumbnail-preview { height: 110px; }\n    #comic-reader-overlay.reader-compact .comic-reader-row { flex-wrap: wrap; }\n}\n\r\n.comic-page-info {\r\n    display: inline-flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    gap: 4px;\r\n    font-size: 14px;\r\n    min-width: 68px;\r\n    min-height: 32px;\r\n    padding: 0 2px;\r\n    color: var(--text-primary);\r\n    cursor: pointer;\r\n    white-space: nowrap;\r\n}\r\n\r\n.comic-page-display {\r\n    display: inline;\r\n}\r\n\r\n.comic-page-input {\r\n    display: none;\r\n    width: 44px;\r\n    height: 32px;\r\n    padding: 0 8px;\r\n    color: var(--text-primary);\r\n    background: var(--bg-deepest);\r\n    border: 1px solid var(--border-subtle);\r\n    border-radius: var(--radius-pill);\r\n    font: inherit;\r\n    text-align: center;\r\n    outline: none;\r\n}\r\n\r\n.comic-page-input:focus {\r\n    border-color: var(--acc);\r\n    box-shadow: 0 0 0 2px rgba(251, 114, 153, 0.18);\r\n}\r\n\r\n.comic-page-range {\r\n    display: none;\r\n    color: var(--text-secondary);\r\n}\r\n\r\n.comic-page-info.is-editing {\r\n    cursor: text;\r\n    justify-content: flex-start;\r\n}\r\n\r\n.comic-page-info.is-editing .comic-page-display {\r\n    display: none;\r\n}\r\n\r\n.comic-page-info.is-editing .comic-page-input,\r\n.comic-page-info.is-editing .comic-page-range {\r\n    display: inline-flex;\r\n}\r\n\r\n/* ===== Reader pill buttons ===== */\r\n.comic-btn {\r\n    padding: 8px 16px;\r\n    cursor: pointer;\r\n    background: var(--bg-elevated);\r\n    color: var(--text-primary);\r\n    border: 1px solid var(--border-strong);\r\n    border-radius: var(--radius-pill);\r\n    font-size: 13px;\r\n    font-weight: 500;\r\n    letter-spacing: 0.3px;\r\n    transition: background 0.15s, border-color 0.15s;\r\n}\r\n\r\n.comic-btn-alt {\r\n    background: transparent;\r\n    border-color: var(--border-subtle);\r\n}\r\n\r\n.comic-btn:hover { background: #2a2a2a; }\r\n\r\n.comic-btn-alt:hover { background: var(--bg-elevated); }\r\n\r\n.comic-btn.active {\r\n    background: var(--acc);\r\n    border-color: var(--acc);\r\n    color: #fff;\r\n}\r\n.comic-btn.active:hover { background: var(--acc-hover); }\r\n\r\n/* ===== Reader toast ===== */\r\n.comic-toast {\r\n    position: fixed;\r\n    left: 50%;\r\n    transform: translateX(-50%);\r\n    padding: 8px 16px;\r\n    border-radius: var(--radius-pill);\r\n    font-size: 13px;\r\n    font-weight: 500;\r\n    color: var(--text-primary);\r\n    z-index: 10004;\r\n    opacity: 0;\r\n    transition: opacity 0.2s;\r\n    pointer-events: none;\r\n    background: var(--bg-overlay);\r\n    backdrop-filter: blur(12px);\r\n    -webkit-backdrop-filter: blur(12px);\r\n    border: 1px solid var(--border-subtle);\r\n    box-shadow: var(--shadow-card);\r\n    top: 18px;\r\n}\r\n\r\n.comic-toast.is-visible { opacity: 1; }\r\n\r\n.comic-toast.is-error { background: rgba(180, 40, 40, 0.94); }\r\n\r\n/* ===== Reader images ===== */\r\n#comic-reader-overlay img {\r\n    cursor: grab;\r\n    display: block;\r\n    max-width: none;\r\n    max-height: none;\r\n    object-fit: contain;\r\n    box-shadow: 0 0 30px rgba(0, 0, 0, 0.4);\r\n    touch-action: none;\r\n    user-select: none;\r\n    -webkit-user-drag: none;\r\n    flex-shrink: 0;\r\n}\r\n\r\n#comic-reader-overlay .comic-img-full,\r\n#comic-reader-overlay .comic-img-half {\r\n    max-width: none;\r\n    max-height: none;\r\n}\r\n\r\n/* ===== Screenshot selection ===== */\r\n.comic-selection-overlay {\r\n    position: fixed;\r\n    inset: 0;\r\n    z-index: 10003;\r\n    display: none;\r\n    cursor: crosshair;\r\n    touch-action: none;\r\n    isolation: isolate;\r\n    background: rgba(10,10,10,0.01);\r\n}\r\n\r\n.comic-selection-hint {\r\n    position: fixed;\r\n    top: 18px;\r\n    right: 92px;\r\n    z-index: 3;\r\n    box-sizing: border-box;\r\n    width: 236px;\r\n    max-width: calc(100vw - 110px);\r\n    padding: 10px 12px;\r\n    border-radius: var(--radius-md);\r\n    background: rgba(15,15,15,0.92);\r\n    color: #fff;\r\n    font-size: 13px;\r\n    line-height: 1.45;\r\n    text-align: left;\r\n    pointer-events: none;\r\n    border: 1px solid var(--border-subtle);\r\n    box-shadow: var(--shadow-card);\r\n}\r\n\r\n.comic-selection-toolbar {\r\n    position: fixed;\r\n    top: 18px;\r\n    right: 18px;\r\n    z-index: 4;\r\n    display: flex;\r\n    flex-direction: column;\r\n    width: 64px;\r\n    max-height: calc(100vh - 36px);\r\n    overflow-y: auto;\r\n    gap: 10px;\r\n    align-items: stretch;\r\n}\r\n\r\n.comic-selection-action {\r\n    box-sizing: border-box;\r\n    min-width: 64px;\r\n    min-height: 44px;\r\n    flex-shrink: 0;\r\n    padding: 10px 12px;\r\n    border: none;\r\n    border-radius: var(--radius-pill);\r\n    color: #fff;\r\n    font-size: 13px;\r\n    line-height: 1.3;\r\n    cursor: pointer;\r\n    box-shadow: 0 4px 12px rgba(0,0,0,0.25);\r\n}\r\n\r\n.comic-selection-copy { background: var(--acc); }\r\n.comic-selection-download { background: #287f55; }\r\n.comic-selection-full { background: #3467a8; }\r\n.comic-selection-cancel { background: #d33; }\r\n\r\n.comic-selection-action.is-disabled {\r\n    opacity: 0.45;\r\n    cursor: not-allowed;\r\n}\r\n\r\n.comic-selection-box {\r\n    position: absolute;\r\n    z-index: 1;\r\n    display: none;\r\n    border: 2px dashed var(--acc);\r\n    background: rgba(251,114,153,0.18);\r\n    box-shadow: 0 0 0 1px rgba(255,255,255,0.25) inset;\r\n    cursor: move;\r\n    pointer-events: auto;\r\n}\r\n\r\n.comic-sel-handle {\r\n    position: absolute;\r\n    width: 28px;\r\n    height: 28px;\r\n    pointer-events: auto;\r\n    display: none;\r\n    z-index: 2;\r\n    transform: translate(-50%,-50%);\r\n    touch-action: none;\r\n}\r\n\r\n.comic-sel-handle::after {\r\n    content: \"\";\r\n    position: absolute;\r\n    left: 50%;\r\n    top: 50%;\r\n    width: 12px;\r\n    height: 12px;\r\n    background: var(--acc);\r\n    border: 2px solid #fff;\r\n    border-radius: 50%;\r\n    box-shadow: 0 1px 4px rgba(0,0,0,0.4);\r\n    transform: translate(-50%,-50%);\r\n}\r\n\r\n.comic-sel-handle[data-dir=\"n\"],\r\n.comic-sel-handle[data-dir=\"s\"] {\r\n    width: max(28px, calc(100% - 40px));\r\n}\r\n\r\n.comic-sel-handle[data-dir=\"e\"],\r\n.comic-sel-handle[data-dir=\"w\"] {\r\n    height: max(28px, calc(100% - 40px));\r\n}\r\n\r\n.comic-sel-handle[data-dir=\"nw\"],\r\n.comic-sel-handle[data-dir=\"ne\"],\r\n.comic-sel-handle[data-dir=\"se\"],\r\n.comic-sel-handle[data-dir=\"sw\"] {\r\n    width: 34px;\r\n    height: 34px;\r\n    z-index: 3;\r\n}\r\n\r\n/* ===== Compact layout (mobile) ===== */\r\n#comic-reader-overlay.reader-compact .comic-btn {\r\n    min-width: 54px;\r\n    min-height: 44px;\r\n    padding: 10px 12px;\r\n    font-size: 14px;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-controls {\r\n    left: auto;\r\n    right: max(12px, env(safe-area-inset-right));\r\n    bottom: max(12px, env(safe-area-inset-bottom));\r\n    width: fit-content;\r\n    max-width: calc(100vw - 24px);\r\n    padding: 8px 12px;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-settings-controls {\r\n    top: max(12px, env(safe-area-inset-top));\r\n    left: auto;\r\n    right: max(12px, env(safe-area-inset-right));\r\n    width: fit-content;\r\n    max-width: 96px;\r\n    flex-direction: column;\n    flex-wrap: nowrap;\n    justify-content: flex-start;\n    max-height: 40vh;\r\n    overflow-y: auto;\r\n    padding: 8px 12px;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-settings-panel {\n    padding: 10px;\n}\n\n@media (max-height: 480px) {\n    #comic-reader-overlay.reader-compact .comic-settings-controls {\n        display: grid;\n        grid-template-columns: repeat(2, minmax(0, 1fr));\n        max-width: calc(100vw - 24px);\n        max-height: calc(100dvh - 24px);\n    }\n}\n\r\n#comic-reader-overlay.reader-compact .comic-toast {\r\n    top: 12px;\r\n    max-width: calc(100vw - 24px);\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-selection-hint {\r\n    top: 12px;\r\n    right: 86px;\r\n    max-width: calc(100vw - 98px);\r\n    font-size: 12px;\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-selection-toolbar {\r\n    top: 12px;\r\n    right: 12px;\r\n    max-height: calc(100vh - 24px);\r\n}\r\n\r\n#comic-reader-overlay.reader-compact .comic-selection-action {\r\n    padding: 10px 12px;\r\n    font-size: 12px;\r\n}\r\n\n/* ===== content-responsive.css ===== */\n@media (hover: none), (pointer: coarse) {\r\n    #bilibili-fav-float-btn.bilibili-fav-touch {\r\n        bottom: max(76px, env(safe-area-inset-bottom));\r\n        right: max(16px, env(safe-area-inset-right));\r\n        width: 54px;\r\n        height: 54px;\r\n        font-size: 24px;\r\n        opacity: 1 !important;\r\n        visibility: visible !important;\r\n    }\r\n\r\n    #bilibili-fav-panel,\r\n    #bilibili-toolbox-settings-panel {\r\n        right: max(12px, env(safe-area-inset-right));\r\n        bottom: max(140px, calc(env(safe-area-inset-bottom) + 84px));\r\n        max-height: min(70vh, 560px);\r\n        overflow: hidden;\r\n    }\r\n\r\n    #bilibili-fav-panel {\r\n        width: min(\r\n            calc(\r\n                var(--bilibili-fav-columns) * var(--bilibili-fav-item-width)\r\n                + (var(--bilibili-fav-columns) - 1) * var(--bilibili-fav-list-gap)\r\n                + var(--bilibili-fav-list-padding-x) * 2\r\n            ),\r\n            calc(100vw - 24px)\r\n        );\r\n    }\r\n\r\n    #bilibili-toolbox-settings-panel {\r\n        width: min(320px, calc(100vw - 24px));\r\n    }\r\n\r\n    .bilibili-fav-header {\r\n        gap: 8px;\r\n        padding: 10px 12px;\r\n    }\r\n\r\n    .bilibili-fav-header-actions {\r\n        flex-shrink: 0;\r\n    }\r\n\r\n    .bilibili-fav-control-btn {\r\n        display: inline-flex;\r\n        align-items: center;\r\n        justify-content: center;\r\n    }\r\n\r\n    .bilibili-fav-add-btn,\r\n    .bilibili-fav-control-btn,\r\n    .bilibili-toolbox-export-btn,\r\n    .bilibili-toolbox-import-btn {\r\n        min-height: 42px;\r\n    }\r\n\r\n    .bilibili-fav-content {\r\n        max-height: min(52vh, 420px);\r\n    }\r\n\r\n    .bilibili-fav-delete {\r\n        width: 26px;\r\n        height: 26px;\r\n        font-size: 16px;\r\n    }\r\n\r\n    .bilibili-fav-item-link {\r\n        touch-action: manipulation;\r\n    }\r\n\r\n    .comic-sel-handle {\r\n        width: 36px;\r\n        height: 36px;\r\n    }\r\n\r\n    .comic-sel-handle[data-dir=\"n\"],\r\n    .comic-sel-handle[data-dir=\"s\"] {\r\n        width: max(36px, calc(100% - 48px));\r\n    }\r\n\r\n    .comic-sel-handle[data-dir=\"e\"],\r\n    .comic-sel-handle[data-dir=\"w\"] {\r\n        height: max(36px, calc(100% - 48px));\r\n    }\r\n\r\n    .comic-sel-handle[data-dir=\"nw\"],\r\n    .comic-sel-handle[data-dir=\"ne\"],\r\n    .comic-sel-handle[data-dir=\"se\"],\r\n    .comic-sel-handle[data-dir=\"sw\"] {\r\n        width: 44px;\r\n        height: 44px;\r\n    }\r\n\r\n    #comic-reader-overlay.reader-compact .comic-reader-row {\r\n        gap: 6px;\r\n        flex-wrap: wrap;\r\n    }\r\n\r\n    #comic-reader-overlay.reader-compact .comic-settings-controls { gap: 8px; }\r\n\r\n    #comic-reader-overlay.reader-compact .comic-selection-hint { text-align: left; }\r\n}\r\n\n";
     function injectStyle() {
         if (document.getElementById('bilibili-toolbox-userscript-style')) return;
         const style = document.createElement('style');
@@ -733,7 +733,7 @@
     const FADE_SHIFT_DISTANCE = 60;
     const SMOOTH_SCALE_START = 0.95;
     const DEFAULT_ANIMATION_MODE = 'smooth';
-    const ANIMATION_MODES = ['smooth', 'fade'];
+    const ANIMATION_MODES = ['smooth', 'fade', 'parallel'];
     const activeTransitions = new WeakMap();
     const IMMEDIATE_RENDER_MODE = 'immediate';
 
@@ -782,30 +782,18 @@
         return `${transform} scale(${scale})`;
     }
 
-    function playSmoothTransition(imgContainer, renderIndex, getCurrentIndex, transitionToken, getTransitionToken, loadImages, direction, getTransform, getShiftedTransformFn) {
+    function playTransition(mode, imgContainer, renderIndex, getCurrentIndex, transitionToken, getTransitionToken, loadImages, direction, getTransform, getShiftedTransformFn) {
+        const smooth = mode === 'smooth';
         Object.assign(imgContainer.style, {
-            transition: `transform ${FADE_ANIMATION_DURATION}ms, opacity ${FADE_ANIMATION_DURATION}ms`,
-            opacity: '0',
-            filter: 'none',
-            transform: withSubtleScale(getShiftedTransform(getShiftedTransformFn, getTransform, direction * FADE_SHIFT_DISTANCE))
-        });
-        scheduleCommit(imgContainer, () => {
-            if (renderIndex !== getCurrentIndex()) return;
-            if (transitionToken !== getTransitionToken()) return;
-            loadImages(renderIndex, 'smooth', direction);
-        });
-    }
-
-    function playFadeTransition(imgContainer, renderIndex, getCurrentIndex, transitionToken, getTransitionToken, loadImages, direction) {
-        Object.assign(imgContainer.style, {
-            transition: `opacity ${FADE_ANIMATION_DURATION}ms`,
+            transition: `${smooth ? `transform ${FADE_ANIMATION_DURATION}ms, ` : ''}opacity ${FADE_ANIMATION_DURATION}ms`,
             opacity: '0',
             filter: 'none'
         });
+        if (smooth) imgContainer.style.transform = withSubtleScale(getShiftedTransform(getShiftedTransformFn, getTransform, direction * FADE_SHIFT_DISTANCE));
         scheduleCommit(imgContainer, () => {
             if (renderIndex !== getCurrentIndex()) return;
             if (transitionToken !== getTransitionToken()) return;
-            loadImages(renderIndex, 'fade', direction);
+            loadImages(renderIndex, mode, direction);
         });
     }
 
@@ -820,12 +808,8 @@
         const renderMode = resolveRenderMode(animate && !reduceMotion, Boolean(imgContainer.firstChild), animationMode);
         const direction = resolveTransitionDirection(step, isRightToLeft, lastStep);
 
-        if (renderMode === 'smooth') {
-            playSmoothTransition(imgContainer, renderIndex, getCurrentIndex, transitionToken, getTransitionToken, loadImages, direction, getTransform, getShiftedTransform);
-            return;
-        }
-        if (renderMode === 'fade') {
-            playFadeTransition(imgContainer, renderIndex, getCurrentIndex, transitionToken, getTransitionToken, loadImages, direction);
+        if (renderMode === 'smooth' || renderMode === 'fade') {
+            playTransition(renderMode, imgContainer, renderIndex, getCurrentIndex, transitionToken, getTransitionToken, loadImages, direction, getTransform, getShiftedTransform);
             return;
         }
         loadImages(renderIndex, IMMEDIATE_RENDER_MODE, direction);
@@ -1349,7 +1333,6 @@
     const MAX_SCALE = 3;
     const DOUBLE_CLICK_SCALE = 2;
     const MAX_RENDER_SCALE = 2;
-    const TOUCH_ZOOM_EPSILON = 0.01;
     const PAN_EDGE_ALLOWANCE = 72;
 
     const methods = {
@@ -1386,17 +1369,23 @@
         },
 
         getSharpDisplaySizes(images, isFull) {
+            const { sizes, fitRatio } = this.getImageDisplayLayout(images, isFull);
+            this.sharpDisplayFitRatio = fitRatio;
+            return sizes;
+        },
+
+        getImageDisplayLayout(images, isFull) {
             const naturalSizes = images.map(img => this.getEffectiveImageSize(img));
             const displaySizes = isFull ? naturalSizes : this.alignSharpDisplayHeights(naturalSizes);
             const fitRatio = this.getSharpDisplayFitRatio(displaySizes);
-            this.sharpDisplayFitRatio = fitRatio;
 
             // Keep layout/paint bounds near the viewport even for huge originals.
             // CSS sizing preserves the source pixels for zoom and screenshot export.
-            return displaySizes.map(size => ({
+            const sizes = displaySizes.map(size => ({
                 width: size.width * fitRatio,
                 height: size.height * fitRatio
             }));
+            return { sizes, fitRatio };
         },
 
         alignSharpDisplayHeights(sizes) {
@@ -1563,9 +1552,6 @@
             const nextRenderScale = this.getRenderScale(clampedScale);
             this.translateX += offsetX * (1 / nextRenderScale - 1 / previousRenderScale);
             this.translateY += offsetY * (1 / nextRenderScale - 1 / previousRenderScale);
-            if (this.isTouchDevice) {
-                this.touchPanLocked = clampedScale > 1 + TOUCH_ZOOM_EPSILON;
-            }
             this.applyTransform();
         },
 
@@ -1573,9 +1559,6 @@
             this.scale = 1;
             this.translateX = 0;
             this.translateY = 0;
-            this.touchPanLocked = false;
-            this.touchDidMoveImage = false;
-            this.touchEdgePageStep = 0;
             this.applyTransform();
         },
 
@@ -1586,9 +1569,6 @@
             this.translateX = 0;
             this.translateY = 0;
             this.rotation = 0;
-            this.touchPanLocked = false;
-            this.touchDidMoveImage = false;
-            this.touchEdgePageStep = 0;
             this.lastTapTime = 0;
             this.twoFingerTapCandidate = false;
             this.lastTwoFingerTapTime = 0;
@@ -1609,9 +1589,6 @@
 
         applyTransform() {
             this.clampTransform();
-            if (this.isTouchDevice && this.scale <= 1 + TOUCH_ZOOM_EPSILON) {
-                this.touchPanLocked = false;
-            }
             this.writeTransform();
         },
 
@@ -1726,6 +1703,7 @@
 
         startScreenshotSelection() {
             if (this.isSelectingScreenshot) return;
+            this.swipe?.reset();
             Toolbox.animations?.cancel(this.el.imgContainer, true);
             this.currentIndex = this.displayedIndex ?? this.currentIndex;
             this.applyTransform();
@@ -2376,7 +2354,7 @@
         warm: '\u6696\u8272\u62a4\u773c',
         grayscale: '\u9ed1\u767d'
     });
-    const READER_ANIMATION_LABELS = Object.freeze({ smooth: '平滑', fade: '淡入' });
+    const READER_ANIMATION_LABELS = Object.freeze({ smooth: '平滑', fade: '淡入', parallel: '平行' });
     const PREFERENCE_EFFECTS = {
         isRightToLeft: ['updateDirection', 'syncDirectionButton'],
         animationMode: ['syncAnimationButton'],
@@ -2414,6 +2392,10 @@
             this[key] = readerPreferences.normalize({ [key]: value })[key];
             PREFERENCE_EFFECTS[key].forEach(name => this[name]());
             this.savePreferences();
+            if (key === 'animationMode') {
+                this.swipe?.reset();
+                this.swipe?.schedule();
+            }
             if (key === 'viewMode') this.render(false);
             if (key === 'imageRenderMode') this.refreshImagesForRenderMode();
         },
@@ -2426,8 +2408,9 @@
         syncAnimationButton() {
             const mode = animations.normalizeAnimationMode(this.animationMode);
             const descriptions = {
-                smooth: '淡入、平移与细微缩放。',
-                fade: '使用淡入淡出翻页。'
+                smooth: '先淡出到背景色，再淡入下一页，配合短距离平移和细微缩放。',
+                fade: '当前页先淡出到阅读背景色，再淡入下一页。',
+                parallel: '当前页与相邻页平行横移，触屏拖动时紧随手指。'
             };
             syncSettingButton(this, this.el.animationBtn, 'animationMode', READER_ANIMATION_LABELS[mode], descriptions[mode]);
         },
@@ -2598,24 +2581,19 @@
     const TAP_DELAY = 220;
     const DOUBLE_TAP_DELAY = 300;
     const TAP_ZONE_RATIO = 0.28;
-    const TOUCH_ZOOM_EPSILON = 0.01;
-    const TOUCH_EDGE_EPSILON = 0.5;
 
     const INITIAL_TOUCH_STATE = Object.freeze({
         touchStartX: 0,
         touchStartY: 0,
         touchEndX: 0,
         touchEndY: 0,
-        isTouchSwiping: false,
         touchStartTime: 0,
         touchStartedOnInteractive: false,
-        touchPanLocked: false,
-        touchDidMoveImage: false,
-        touchEdgePageStep: 0,
         pendingTapTimer: null,
         lastTapTime: 0,
         lastTapX: 0,
         lastTapY: 0,
+        suppressRemainingTouch: false,
         isTwoFingerGesturing: false,
         initialPinchDistance: 0,
         initialScale: 1,
@@ -2636,7 +2614,8 @@
             return el?.closest('button, a, input, textarea, select')
                 || this.el.controls.contains(el)
                 || this.el.settingsControls.contains(el)
-                || this.el.settingsPanel.contains(el);
+                || this.el.settingsPanel.contains(el)
+                || this.el.thumbnailPanel?.contains(el);
         },
 
         handleTapNavigation(clientX) {
@@ -2679,11 +2658,9 @@
                 this.animateTransform(220);
                 if (Math.abs(this.scale - 1) < 0.05) {
                     this.zoomAt(clientX, clientY, this.getDoubleClickScale());
-                    this.touchPanLocked = this.scale > 1 + TOUCH_ZOOM_EPSILON;
                     return;
                 }
                 this.resetScaleAndPan();
-                this.touchPanLocked = false;
                 return;
             }
 
@@ -2697,19 +2674,29 @@
         },
 
         handleTouchStart(e) {
-            if (this.isSelectingScreenshot) return;
+            if (this.isSelectingScreenshot || this.suppressRemainingTouch) return;
+            if (e.touches.length > 2) {
+                this.swipe?.reset();
+                this.clearPendingTap();
+                this.isTwoFingerGesturing = false;
+                this.twoFingerTapCandidate = false;
+                this.suppressRemainingTouch = true;
+                return;
+            }
             if (e.touches.length === 2) {
+                this.swipe?.reset(false);
+                if (this.isInteractiveTouchTarget(e.target)) {
+                    this.suppressRemainingTouch = true;
+                    return;
+                }
                 // 双指缩放开启
                 e.preventDefault();
                 this.clearPendingTap();
                 this.setTransformTransition('none');
                 this.isTwoFingerGesturing = true;
-                this.touchPanLocked = true;
-                this.touchDidMoveImage = false;
-                this.touchEdgePageStep = 0;
                 const dx = e.touches[0].clientX - e.touches[1].clientX;
                 const dy = e.touches[0].clientY - e.touches[1].clientY;
-                this.initialPinchDistance = Math.sqrt(dx * dx + dy * dy);
+                this.initialPinchDistance = Math.hypot(dx, dy);
                 this.initialScale = this.scale;
                 this.initialCenterX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
                 this.initialCenterY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
@@ -2725,27 +2712,26 @@
                 this.touchStartY = e.touches[0].clientY;
                 this.touchEndX = this.touchStartX;
                 this.touchEndY = this.touchStartY;
-                this.isTouchSwiping = false;
-                this.touchDidMoveImage = false;
-                this.touchEdgePageStep = 0;
                 this.touchStartTime = Date.now();
                 this.touchStartedOnInteractive = this.isInteractiveTouchTarget(e.target);
                 this.initX = this.translateX;
                 this.initY = this.translateY;
                 if (this.touchStartedOnInteractive) {
                     this.showControls();
+                } else {
+                    this.swipe?.start(e);
                 }
             }
         },
 
         handleTouchMove(e) {
-            if (this.isSelectingScreenshot) return;
+            if (this.isSelectingScreenshot || this.suppressRemainingTouch) return;
             if (e.touches.length === 2 && this.isTwoFingerGesturing) {
                 // 双指缩放中
                 e.preventDefault();
                 const dx = e.touches[0].clientX - e.touches[1].clientX;
                 const dy = e.touches[0].clientY - e.touches[1].clientY;
-                const currentDistance = Math.sqrt(dx * dx + dy * dy);
+                const currentDistance = Math.hypot(dx, dy);
 
                 const scaleFactor = currentDistance / this.initialPinchDistance;
                 this.scale = Math.max(MIN_SCALE, Math.min(this.getMaxScale(), this.initialScale * scaleFactor));
@@ -2777,64 +2763,46 @@
                 const deltaY = Math.abs(moveY);
 
                 if (!this.touchStartedOnInteractive) {
+                    if (this.swipe?.move(e)) return;
                     if (deltaX > 4 || deltaY > 4) {
                         e.preventDefault();
                         this.setTransformTransition('none');
                         const renderScale = this.getRenderScale();
                         const limits = this.getPanLimits();
-                        const nextX = this.initX + moveX / renderScale;
-                        const nextY = this.initY + moveY / renderScale;
-                        const clampedX = this.clampPanValue(nextX, limits.maxX);
-                        const clampedY = this.clampPanValue(nextY, limits.maxY);
-
-                        this.translateX = clampedX;
-                        this.translateY = clampedY;
+                        this.translateX = this.clampPanValue(this.initX + moveX / renderScale, limits.maxX);
+                        this.translateY = this.clampPanValue(this.initY + moveY / renderScale, limits.maxY);
                         this.applyTransform();
-
-                        const movedImage = Math.abs(clampedX - this.initX) > TOUCH_EDGE_EPSILON
-                            || Math.abs(clampedY - this.initY) > TOUCH_EDGE_EPSILON;
-                        const blockedHorizontally = limits.maxX <= TOUCH_EDGE_EPSILON
-                            || Math.abs(nextX - clampedX) > TOUCH_EDGE_EPSILON;
-
-                        this.touchDidMoveImage = movedImage;
-                        this.isTouchSwiping = deltaX > 10 || deltaY > 10;
-                        this.touchEdgePageStep = 0;
-                        if (deltaX > deltaY && deltaX > SWIPE_THRESHOLD && blockedHorizontally) {
-                            this.touchEdgePageStep = (moveX > 0) !== this.isRightToLeft ? -this.lastStep : this.lastStep;
-                        }
                     }
                     return;
                 }
 
-                if (deltaX > 10 || deltaY > 10) {
-                    this.isTouchSwiping = true;
-                    if (deltaX > deltaY) {
-                        e.preventDefault();
-                    }
-                }
+                if (deltaX > 10 && deltaX > deltaY) e.preventDefault();
             }
         },
 
         handleTouchEnd(e) {
-            if (this.isSelectingScreenshot) return;
+            if (this.isSelectingScreenshot || this.suppressRemainingTouch) {
+                if (!e.touches.length) {
+                    this.suppressRemainingTouch = false;
+                    this.isTwoFingerGesturing = false;
+                    this.twoFingerTapCandidate = false;
+                }
+                return;
+            }
             if (e.type === 'touchcancel') {
+                this.swipe?.end(e);
                 this.clearPendingTap();
                 this.isTwoFingerGesturing = false;
-                this.isTouchSwiping = false;
-                this.touchDidMoveImage = false;
-                this.touchEdgePageStep = 0;
                 this.twoFingerTapCandidate = false;
                 return;
             }
 
             if (this.isTwoFingerGesturing) {
+                this.suppressRemainingTouch = e.touches.length > 0;
                 const isTwoFingerTap = this.twoFingerTapCandidate
                     && Date.now() - this.twoFingerTapStartTime < 300;
                 this.isTwoFingerGesturing = false;
                 this.twoFingerTapCandidate = false;
-                if (this.scale <= 1 + TOUCH_ZOOM_EPSILON) {
-                    this.touchPanLocked = false;
-                }
                 if (isTwoFingerTap) {
                     const now = Date.now();
                     const isDoubleTwoFingerTap = now - this.lastTwoFingerTapTime < 320
@@ -2855,54 +2823,31 @@
                 return;
             }
 
+            if (this.swipe?.end(e)) return;
+
             if (this.touchStartedOnInteractive) {
                 this.clearPendingTap();
-                this.isTouchSwiping = false;
-                this.touchDidMoveImage = false;
-                this.touchEdgePageStep = 0;
                 return;
             }
 
             const deltaX = this.touchEndX - this.touchStartX;
             const deltaY = this.touchEndY - this.touchStartY;
-            const threshold = SWIPE_THRESHOLD;
             const isTap = Math.abs(deltaX) < 10 && Math.abs(deltaY) < 10 && Date.now() - this.touchStartTime < 300;
-
-            if (this.touchEdgePageStep && Math.abs(deltaX) > threshold && Math.abs(deltaX) > Math.abs(deltaY)) {
-                const step = this.touchEdgePageStep;
-                this.touchEdgePageStep = 0;
-                this.touchDidMoveImage = false;
-                this.isTouchSwiping = false;
-                this.turnPage(null, step);
-                return;
-            }
-
-            if (this.touchDidMoveImage) {
-                this.isTouchSwiping = false;
-                this.touchDidMoveImage = false;
-                this.touchEdgePageStep = 0;
-                return;
-            }
+            if (Math.abs(this.translateX - this.initX) > 0.5 || Math.abs(this.translateY - this.initY) > 0.5) return;
 
             if (isTap) {
                 e.preventDefault();
                 this.handleSingleFingerTap(this.touchEndX, this.touchEndY);
-                this.isTouchSwiping = false;
                 return;
             }
 
             this.clearPendingTap();
-            if (!this.isTouchSwiping || (Math.abs(deltaX) < threshold && Math.abs(deltaY) < threshold)) {
-                return;
-            }
-
-            if (Math.abs(deltaX) > threshold) {
+            // A pending foreground render can temporarily prevent the swipe
+            // engine from starting. Preserve navigation in that case only.
+            if (Math.abs(deltaX) > SWIPE_THRESHOLD && Math.abs(deltaX) > Math.abs(deltaY)) {
                 const dir = (deltaX > 0) !== this.isRightToLeft ? -this.lastStep : this.lastStep;
                 this.turnPage(null, dir);
             }
-
-            this.isTouchSwiping = false;
-            this.touchEdgePageStep = 0;
         }
     };
 
@@ -2912,6 +2857,446 @@
     }
 
     Toolbox.readerTouch = { attach, methods };
+})();
+
+// ===== reader-swipe.js =====
+// Direct-manipulation page turns. Image zoom stays on the inner container;
+// only these viewport-sized stages move during a swipe.
+(function() {
+    'use strict';
+    const Toolbox = window.BilibiliToolbox;
+    const AXIS_SLOP = 10;
+    const FLICK_SPEED = 0.5; // CSS pixels per millisecond
+    const now = () => performance.now();
+    const animationMode = reader => Toolbox.animations.normalizeAnimationMode(reader.animationMode);
+    const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+
+    function releaseDecision(offset, velocity, width) {
+        const sign = Math.sign(offset);
+        const reversing = Math.abs(velocity) >= FLICK_SPEED && Math.sign(velocity) !== sign;
+        return sign && !reversing && (Math.abs(offset) >= width * 0.25
+            || (Math.abs(offset) >= 20 && Math.abs(velocity) >= FLICK_SPEED));
+    }
+
+    class ReaderSwipe {
+        constructor(reader) {
+            this.reader = reader;
+            this.epoch = 0;
+            this.motion = 0;
+            this.slots = new Map();
+            this.offset = 0;
+            this.frame = null;
+            this.timer = null;
+            this.prepareTimer = null;
+            this.gesture = null;
+            this.pendingOffset = undefined;
+        }
+
+        ensureStage() {
+            const r = this.reader;
+            if (!r.el.pageStage) {
+                const stage = document.createElement('div');
+                stage.className = 'comic-page-stage comic-page-current';
+                r.el.imgContainer.before(stage);
+                stage.appendChild(r.el.imgContainer);
+                r.el.pageStage = stage;
+            }
+            return r.el.pageStage;
+        }
+
+        setStageStyle(property, value) {
+            if (this.reader.el.pageStage) this.reader.el.pageStage.style[property] = value;
+            for (const { stage } of this.slots.values()) stage.style[property] = value;
+        }
+
+        cancelMotion() {
+            ++this.motion;
+            clearTimeout(this.timer);
+            if (this.frame !== null) cancelAnimationFrame(this.frame);
+            this.frame = this.timer = null;
+            this.animating = this.waiting = false;
+        }
+
+        reset(suppressTouch = true) {
+            if (this.gesture && suppressTouch) this.reader.suppressRemainingTouch = true;
+            ++this.epoch;
+            this.cancelMotion();
+            clearTimeout(this.prepareTimer);
+            this.prepareTimer = null;
+            this.gesture = null;
+            this.pendingOffset = undefined;
+            this.offset = 0;
+            this.visualSign = 0;
+            this.programmatic = false;
+            if (this.reader.el.pageStage) Object.assign(this.reader.el.pageStage.style,
+                { transform: '', opacity: '', transition: '', willChange: '' });
+            for (const slot of this.slots.values()) {
+                slot.stage.querySelectorAll('img').forEach(img => img.remove());
+                slot.stage.remove();
+                slot.release();
+            }
+            this.slots.clear();
+            this.warmProtection?.();
+            this.warmProtection = null;
+        }
+
+        schedule(delay = 120) {
+            const r = this.reader;
+            if (!r.isTouchDevice || !r.isOpen || !r.el.imgContainer?.firstChild) return;
+            clearTimeout(this.prepareTimer);
+            this.warmProtection?.();
+            // Protect predecessors before the existing memory-policy microtask.
+            const releaseWarm = r.imageLoader.protectImages(
+                r.imgList.slice(Math.max(0, r.currentIndex - 2), r.currentIndex + r.activePageCount + 2));
+            this.warmProtection = releaseWarm;
+            const epoch = this.epoch;
+            this.prepareTimer = setTimeout(() => {
+                this.prepareTimer = null;
+                if (epoch !== this.epoch || !r.isOpen) return;
+                this.ensureStage();
+                // Decode the next group first, then the predecessor, yielding to
+                // foreground rendering rather than decoding four originals at once.
+                this.prepare(1).then(() => {
+                    if (epoch === this.epoch) return this.prepare(-1);
+                }).finally(() => {
+                    if (epoch !== this.epoch) return;
+                    releaseWarm();
+                    if (this.warmProtection === releaseWarm) this.warmProtection = null;
+                    r.pruneImageCache();
+                });
+            }, delay);
+        }
+
+        prepare(direction) {
+            const r = this.reader;
+            if (!r.isOpen || !r.canTurnPage(direction)) return Promise.resolve(null);
+            const cached = this.slots.get(direction);
+            if (cached) return cached.promise;
+            const epoch = this.epoch;
+            const index = r.currentIndex;
+            const start = direction < 0 ? Math.max(0, index - 2) : index + r.activePageCount;
+            const slot = this.createSlot(direction, r.imgList.slice(start, direction < 0 ? index : start + 2));
+            const { hint } = slot;
+            slot.promise = (async () => {
+                const target = direction < 0 ? await r.getPreviousPageGroupIndex()
+                    : r.getNextPageGroupIndex(r.activePageCount);
+                if (epoch !== this.epoch) return null;
+                const result = await Toolbox.readerPageGroups.loadVisibleImages({
+                    currentIndex: target, imgList: r.imgList, viewMode: r.viewMode,
+                    loadImage: src => epoch === this.epoch ? r.loadImage(src) : Promise.resolve(null),
+                    isWideImage: img => r.isWideImage(img)
+                });
+                if (epoch !== this.epoch || !result) return null;
+                return this.fillSlot(slot, result, target, epoch);
+            })().catch(() => null).then(ready => {
+                if (!ready && epoch === this.epoch) hint.textContent = '图片加载失败';
+                return ready;
+            });
+            return slot.promise;
+        }
+
+        createSlot(direction, sources) {
+            const r = this.reader;
+            const stage = document.createElement('div');
+            stage.className = 'comic-page-stage comic-page-neighbor';
+            stage.setAttribute('aria-hidden', 'true');
+            const hint = document.createElement('span');
+            hint.className = 'comic-page-loading';
+            hint.textContent = '图片加载中…';
+            stage.appendChild(hint);
+            this.ensureStage().before(stage);
+            const slot = { stage, hint, result: null,
+                release: r.imageLoader.protectImages(sources) };
+            this.slots.set(direction, slot);
+            this.write(this.offset);
+            return slot;
+        }
+
+        async fillSlot(slot, result, target, epoch) {
+            const r = this.reader;
+            // Repeated URLs must never move a currently visible node away.
+            const used = new Set(), clones = [];
+            result.images = result.images.map(img => {
+                const duplicate = img.parentElement || used.has(img);
+                used.add(img);
+                if (!duplicate) return img;
+                const clone = img.cloneNode(false);
+                clones.push(clone);
+                return clone;
+            });
+            await Promise.all(clones.map(img => img.decode().catch(() => {})));
+            if (epoch !== this.epoch) return null;
+            const content = document.createElement('div');
+            content.className = 'comic-swipe-images';
+            content.style.flexDirection = r.isRightToLeft ? 'row-reverse' : 'row';
+            const { sizes } = r.getImageDisplayLayout(result.images, result.images.length === 1);
+            result.images.forEach((img, i) => r.setupImg(img, result.images.length === 1,
+                sizes[i]));
+            content.append(...result.images);
+            slot.stage.replaceChildren(content);
+            slot.result = { ...result, index: target };
+            return slot;
+        }
+
+        async play(result, index, step, token) {
+            const r = this.reader;
+            const epoch = this.epoch;
+            this.programmatic = true;
+            this.width = r.viewportRect?.width || r.el.reader.clientWidth;
+            const direction = Math.sign(step || index - r.displayedIndex) || 1;
+            const slot = this.createSlot(direction, result.images.map(img => img.src));
+            slot.promise = this.fillSlot(slot, result, index, epoch);
+            await slot.promise;
+            if (epoch !== this.epoch || token !== r.pageFlipToken || !r.isOpen) return;
+            const side = direction * (r.isRightToLeft ? 1 : -1);
+            this.animateTo(side * this.width, 0, () => this.commit(slot, false));
+        }
+
+        commit(slot, advanceToken = true) {
+            const r = this.reader;
+            const result = slot.result;
+            r.currentIndex = result.index;
+            if (advanceToken) ++r.pageFlipToken;
+            // Detach the preview before committing; commitImages schedules its
+            // replacement once, with the new cache protections in place.
+            this.reset();
+            r.commitImages(result.images, 'immediate', 0, result.preloadStart);
+            r.displayedIndex = result.index;
+            r.syncThumbnailSelection();
+        }
+
+        direction(offset) {
+            return (offset > 0) !== this.reader.isRightToLeft ? -1 : 1;
+        }
+
+        write(offset) {
+            this.offset = offset;
+            const stage = this.reader.el.pageStage;
+            if (!stage) return;
+            const width = this.width || this.reader.viewportRect?.width || this.reader.el.reader.clientWidth;
+            const mode = animationMode(this.reader);
+            if (offset) this.visualSign = Math.sign(offset);
+            const sign = this.visualSign || 0;
+            const selected = this.direction(sign);
+            // At article boundaries every style uses the same resistant nudge.
+            const blend = mode !== 'parallel' && this.slots.has(selected);
+            const progress = Math.min(1, Math.abs(offset) / Math.max(1, width));
+            // The two opacity ranges never overlap: halfway through the turn,
+            // both stages are transparent and the selected reader background shows.
+            const outgoing = Math.min(1, progress * 2);
+            const incoming = Math.max(0, progress * 2 - 1);
+            const shift = Math.min(60, width * 0.12);
+            const active = this.gesture?.axis === 'x' || this.animating || this.waiting;
+            stage.style.opacity = String(blend ? 1 - outgoing : 1);
+            stage.style.transform = !blend ? `translate3d(${offset}px,0,0)`
+                : mode === 'smooth' ? `translate3d(${sign * shift * outgoing}px,0,0) scale(${1 - 0.05 * outgoing})`
+                : 'translate3d(0px,0,0)';
+            for (const [direction, slot] of this.slots) {
+                slot.stage.style.visibility = active && (!blend || (direction === selected && (progress > 0 || this.animating))) ? 'visible' : 'hidden';
+                if (blend && direction !== selected) continue;
+                const side = direction * (this.reader.isRightToLeft ? -1 : 1);
+                slot.stage.style.opacity = String(blend ? incoming : 1);
+                slot.stage.style.transform = !blend ? `translate3d(${offset + side * width}px,0,0)`
+                    : mode === 'smooth' ? `translate3d(${-sign * shift * (1 - incoming)}px,0,0) scale(${0.95 + 0.05 * incoming})`
+                    : 'translate3d(0px,0,0)';
+            }
+        }
+
+        stopMotion(freeze = false) {
+            if (freeze && this.animating) {
+                const styles = getComputedStyle(this.reader.el.pageStage);
+                if (animationMode(this.reader) === 'parallel' || !this.slots.has(this.direction(this.visualSign || this.offset))) {
+                    this.offset = styles.transform === 'none' ? 0 : new DOMMatrixReadOnly(styles.transform).m41;
+                } else {
+                    const opacity = Number(styles.opacity);
+                    const slot = this.slots.get(this.direction(this.visualSign));
+                    const progress = opacity > 0 ? (1 - opacity) / 2
+                        : (1 + Number(getComputedStyle(slot.stage).opacity)) / 2;
+                    this.offset = this.visualSign * this.width * progress;
+                }
+            }
+            this.cancelMotion();
+            this.setStageStyle('transition', 'none');
+            this.write(this.offset);
+        }
+
+        start(e) {
+            const r = this.reader;
+            if (this.programmatic) {
+                r.currentIndex = r.displayedIndex;
+                ++r.pageFlipToken;
+                this.programmatic = false;
+            }
+            if (!r.el.imgContainer?.firstChild || r.currentIndex !== r.displayedIndex) return;
+            this.ensureStage();
+            this.stopMotion(true);
+            this.pendingOffset = this.offset;
+            this.width = r.viewportRect?.width || r.el.reader.clientWidth;
+            const touch = e.touches[0];
+            this.gesture = { x: touch.clientX, y: touch.clientY, origin: this.offset,
+                axis: Math.abs(this.offset) > 1 ? 'x' : null,
+                samples: [{ x: touch.clientX, time: now() }] };
+            this.schedule(0);
+        }
+
+        move(e) {
+            const g = this.gesture;
+            if (!g) return false;
+            const r = this.reader;
+            const touch = e.touches[0];
+            let dx = touch.clientX - g.x;
+            const dy = touch.clientY - g.y;
+            if (!g.axis) {
+                if (Math.max(Math.abs(dx), Math.abs(dy)) < AXIS_SLOP) return true;
+                if (Math.abs(dy) > Math.abs(dx) * 1.2) g.axis = 'y';
+                else if (Math.abs(dx) > Math.abs(dy) * 1.2) {
+                    if (r.scale > 1.01) {
+                        const scale = r.getRenderScale();
+                        const limits = r.getPanLimits();
+                        const nextX = r.initX + dx / scale;
+                        const clampedX = r.clampPanValue(nextX, limits.maxX);
+                        const excess = (nextX - clampedX) * scale;
+                        if (Math.abs(excess) < AXIS_SLOP) return false;
+                        r.translateX = clampedX;
+                        r.translateY = r.clampPanValue(r.initY + dy / scale, limits.maxY);
+                        r.applyTransform();
+                        g.x = touch.clientX - (excess - Math.sign(excess) * AXIS_SLOP);
+                        dx = touch.clientX - g.x;
+                    }
+                    g.axis = 'x';
+                    r.clearPendingTap();
+                    r.cancelPreload();
+                    r.setTransformTransition('none');
+                    this.setStageStyle('willChange', 'transform, opacity');
+                } else return true;
+            }
+            if (g.axis === 'y') return r.scale <= 1.01;
+            e.preventDefault();
+            const raw = g.origin + dx;
+            if (r.canTurnPage(this.direction(raw))) this.prepare(this.direction(raw));
+            const offset = r.canTurnPage(this.direction(raw)) ? clamp(raw, -this.width, this.width)
+                : Math.sign(raw) * 72 * (1 - Math.exp(-Math.abs(raw) / 180));
+            const time = now();
+            g.samples.push({ x: touch.clientX, time });
+            g.samples = g.samples.filter(sample => time - sample.time <= 100);
+            this.pendingOffset = offset;
+            if (this.frame === null) this.frame = requestAnimationFrame(() => {
+                this.frame = null;
+                this.write(this.pendingOffset);
+            });
+            return true;
+        }
+
+        animateTo(target, velocity, done) {
+            this.stopMotion();
+            const motion = this.motion;
+            const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+            const distance = Math.abs(target - this.offset);
+            const mode = animationMode(this.reader);
+            const gentle = mode !== 'parallel' && this.slots.has(this.direction(this.visualSign));
+            const speed = gentle ? Math.max(1, Math.abs(velocity) * 0.6) : Math.max(1.6, Math.abs(velocity));
+            const duration = reduced ? 0 : clamp(distance / speed, gentle ? 280 : 120, gentle ? 420 : 220);
+            this.animating = true;
+            const finish = () => { this.animating = false; done(); };
+            const phase = (offset, milliseconds, complete) => {
+                if (motion !== this.motion) return;
+                this.reader.el.pageStage.getBoundingClientRect();
+                this.setStageStyle('transition', `transform ${milliseconds}ms cubic-bezier(.2,.7,.25,1), opacity ${milliseconds}ms cubic-bezier(.2,.7,.25,1)`);
+                this.write(offset);
+                this.timer = setTimeout(() => {
+                    if (motion !== this.motion) return;
+                    this.timer = null;
+                    complete();
+                }, milliseconds);
+            };
+            const middle = this.visualSign * this.width / 2;
+            const crossesBackground = gentle
+                && (this.offset - middle) * (target - middle) < 0;
+            if (duration && crossesBackground) {
+                const firstShare = duration * Math.abs(middle - this.offset) / distance;
+                // Keep both phases perceptible even when release is close to
+                // the background midpoint; a flick must not compress either one.
+                const firstDuration = clamp(firstShare, 160, 220);
+                const secondDuration = clamp(duration - firstShare, 220, 280);
+                phase(middle, firstDuration, () => {
+                    // Paint the fully transparent midpoint before starting the
+                    // next phase. Cancel/reset can still stop either frame.
+                    this.frame = requestAnimationFrame(() => {
+                        this.frame = requestAnimationFrame(() => {
+                            this.frame = null;
+                            phase(target, secondDuration, finish);
+                        });
+                    });
+                });
+            } else phase(target, duration, finish);
+        }
+
+        end(e) {
+            const g = this.gesture;
+            if (!g) return false;
+            if (e.type === 'touchcancel') {
+                this.gesture = null;
+                this.animateTo(0, 0, () => this.rest());
+                return true;
+            }
+            if (g.axis !== 'x') {
+                this.gesture = null;
+                return g.axis === 'y' && this.reader.scale <= 1.01;
+            }
+            const finalTouch = e.changedTouches?.[0];
+            if (finalTouch && finalTouch.clientX !== g.samples[g.samples.length - 1]?.x) {
+                this.move({ touches: [finalTouch], preventDefault() {} });
+            }
+            e.preventDefault();
+            if (this.frame !== null) cancelAnimationFrame(this.frame);
+            this.frame = null;
+            if (this.pendingOffset !== undefined) this.write(this.pendingOffset);
+            const samples = g.samples.filter(sample => now() - sample.time <= 100);
+            const first = samples[0], last = samples[samples.length - 1];
+            const velocity = samples.length > 1 && last.time > first.time ? (last.x - first.x) / (last.time - first.time) : 0;
+            const direction = this.direction(this.offset);
+            const commit = this.reader.canTurnPage(direction) && releaseDecision(this.offset, velocity, this.width);
+            this.gesture = null;
+            this.reader.clearPendingTap();
+            if (!commit) {
+                this.animateTo(0, velocity, () => this.rest());
+                return true;
+            }
+            const epoch = this.epoch;
+            const settle = ready => {
+                if (epoch !== this.epoch) return;
+                if (!ready) {
+                    this.reader.showReaderMessage('图片加载失败，请重试', true);
+                    this.animateTo(0, 0, () => { this.reset(); this.schedule(); });
+                    return;
+                }
+                this.animateTo(Math.sign(this.offset) * this.width, velocity, () => {
+                    this.commit(ready);
+                });
+            };
+            const slot = this.slots.get(direction);
+            if (slot?.result) settle(slot);
+            else {
+                this.waiting = true;
+                this.write(this.offset);
+                const motion = this.motion;
+                this.prepare(direction).then(ready => {
+                    if (motion === this.motion && !this.gesture) settle(ready);
+                });
+            }
+            return true;
+        }
+
+        rest() {
+            this.stopMotion();
+            this.write(0);
+            this.setStageStyle('willChange', '');
+            this.reader.preloadImages(this.reader.currentIndex + this.reader.activePageCount);
+        }
+    }
+
+    Toolbox.ReaderSwipe = ReaderSwipe;
+    Toolbox.swipeReleaseDecision = releaseDecision;
 })();
 
 // ===== comic-reader-page-groups.js =====
@@ -3333,6 +3718,7 @@
     if (!window.BilibiliToolbox?.readerThumbnails) throw new Error('BilibiliToolbox: reader-thumbnails.js not loaded');
     if (!window.BilibiliToolbox?.readerSettings) throw new Error('BilibiliToolbox: reader-settings.js not loaded');
     if (!window.BilibiliToolbox?.readerTouch) throw new Error('BilibiliToolbox: reader-touch.js not loaded');
+    if (!window.BilibiliToolbox?.ReaderSwipe) throw new Error('BilibiliToolbox: reader-swipe.js not loaded');
     if (!window.BilibiliToolbox?.readerPageGroups) throw new Error('BilibiliToolbox: comic-reader-page-groups.js not loaded');
     if (!window.BilibiliToolbox?.ReaderImageLoader) throw new Error('BilibiliToolbox: reader-image-loader.js not loaded');
     if (!window.BilibiliToolbox?.readerInteractions) throw new Error('BilibiliToolbox: comic-reader-interactions.js not loaded');
@@ -3420,6 +3806,7 @@
             Toolbox.readerThumbnails.attach(this);
             Toolbox.readerSettings.attach(this);
             Toolbox.readerTouch.attach(this);
+            this.swipe = new Toolbox.ReaderSwipe(this);
 
             // Mixins bind their own methods; only core handlers need binding here.
             ['handleKeyDown', 'handleFullscreenChange', 'handleResize'].forEach(name => {
@@ -3505,6 +3892,7 @@
             if (this.imgList.length === 0) return alert('\u672a\u627e\u5230\u6f2b\u753b\u56fe\u7247');
 
             this.isOpen = true;
+            this.suppressRemainingTouch = false;
             this.stopPreparingImages();
             this.currentIndex = 0;
             this.displayedIndex = 0;
@@ -3618,7 +4006,9 @@
                 this.resizeFrame = null;
                 if (!this.isOpen) return;
                 animations.cancel(this.el.imgContainer, true);
+                this.swipe?.reset();
                 this.applyResponsiveLayout();
+                this.swipe?.schedule();
             });
         }
 
@@ -3638,6 +4028,7 @@
 
         // Keep the current page visible until the next group is decoded.
         async render(animate = true, step = 0) {
+            this.swipe?.reset();
             const container = this.el.imgContainer;
             if (!container) return;
             const renderIndex = this.currentIndex;
@@ -3651,6 +4042,11 @@
             if (!result) {
                 if (container.firstChild) this.currentIndex = this.displayedIndex;
                 this.showReaderMessage('图片加载失败，请重试', true);
+                return;
+            }
+            if (animate && this.animationMode === 'parallel' && container.firstChild &&
+                !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+                await this.swipe.play(result, renderIndex, step, transitionToken);
                 return;
             }
             animations.runTransition({
@@ -3697,9 +4093,6 @@
             this.contentNaturalHeight = 0;
             this.translateX = 0;
             this.translateY = 0;
-            this.touchPanLocked = false;
-            this.touchDidMoveImage = false;
-            this.touchEdgePageStep = 0;
             this.lastTapTime = 0;
             this.clearPendingTap();
         }
@@ -3738,6 +4131,7 @@
                 (screenTranslateX) => this.getTransformStyle(screenTranslateX)
             );
             this.preloadImages(preloadStart);
+            this.swipe?.schedule(animationMode === 'immediate' ? 120 : 550);
             // Apply the memory policy after the displayed page index is committed.
             Promise.resolve().then(() => {
                 if (this.isOpen) this.pruneImageCache();
@@ -3890,8 +4284,10 @@
         }
 
         updateDirection() {
+            this.swipe?.reset();
             this.panGeometry = null;
             if (this.el.imgContainer) this.el.imgContainer.style.flexDirection = this.isRightToLeft ? 'row-reverse' : 'row';
+            this.swipe?.schedule();
         }
 
         // 全局事件处理函数
@@ -3929,6 +4325,7 @@
 
         // 清理并关闭
         close(forceRelease = false) {
+            this.swipe?.reset();
             this.isOpen = false;
             this.stopPreparingImages();
             if (this.resizeFrame !== null) window.cancelAnimationFrame(this.resizeFrame);

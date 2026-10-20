@@ -42,7 +42,25 @@
     isolation: isolate;
 }
 
-.comic-img-container {
+.comic-page-stage {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+.comic-page-current { pointer-events: auto; }
+.comic-page-neighbor { visibility: hidden; }
+.comic-page-loading {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    color: var(--text-primary);
+    font-size: 14px;
+}
+
+.comic-img-container,
+.comic-swipe-images {
     position: absolute;
     inset: 0;
     z-index: 0;
@@ -64,7 +82,8 @@
 .comic-img-container.is-grabbing,
 .comic-img-container.is-grabbing img { cursor: grabbing; }
 
-.comic-img-container img {
+.comic-img-container img,
+.comic-swipe-images img {
     filter: var(--comic-image-filter, none);
 }
 

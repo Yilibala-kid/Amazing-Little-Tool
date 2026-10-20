@@ -252,15 +252,18 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
         });
         await page.waitForFunction(() => reader.displayedIndex === 4);
         assert.equal(await page.evaluate(() => reader.displayedIndex), 4);
-        assert.equal(await page.evaluate(() => [...reader.imageCache.keys()].every(src => Number(src.match(/page(\d+)/)[1]) >= 4)), true);
-        assert.equal(await page.evaluate(() => trackedImages.slice(0, 4).every(img => img.src.startsWith('data:image/gif'))), true);
+        assert.equal(await page.evaluate(() => [...reader.imageCache.keys()].every(src =>
+            Number(src.match(/page(\d+)/)[1]) >= (reader.isTouchDevice ? 2 : 4))), true,
+            'touch keeps predecessors for its neighboring preview; older pages are released');
+        assert.equal(await page.evaluate(() => trackedImages.slice(0, reader.isTouchDevice ? 2 : 4)
+            .every(img => img.src.startsWith('data:image/gif'))), true);
         assert.equal(await page.evaluate(() => /page4\.jpg(?:@|$)/.test(reader.el.imgContainer.firstChild.src) &&
             reader.el.imgContainer.firstChild.naturalWidth === 2400), true);
         await page.evaluate(() => reader.turnPage(null, -1));
         await page.waitForFunction(() => reader.displayedIndex === 3 &&
             reader.el.imgContainer?.querySelector('img')?.naturalWidth === 2400);
         assert.equal(await page.evaluate(() => /page3\.jpg(?:@|$)/.test(reader.el.imgContainer.firstChild.src)), true,
-            'backward navigation reloads the released image');
+            'backward navigation displays a decoded predecessor');
         await page.setViewportSize({ width: 390, height: 844 });
         await page.waitForFunction(() => reader.resizeFrame === null);
         await page.evaluate(() => reader.toggleSettingsPanel());
@@ -306,7 +309,7 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
         });
         assert.deepEqual(await page.evaluate(() => [reader.currentIndex, reader.preloadPages]), beforeSwipe,
             'swiping across a setting card does not navigate or change its setting');
-        assert.equal(await page.evaluate(() => reader.isTouchSwiping), false, 'interactive swipe state is cleared');
+        assert.equal(await page.evaluate(() => reader.swipe.gesture), null, 'interactive touches never start a page gesture');
         await page.mouse.move(4, 4);
         await page.screenshot({ path: path.join(artifactDir, 'mobile-settings.png') });
         await chooseSetting(memoryButton, 'page');

@@ -33,6 +33,7 @@
         "reader-thumbnails.js",
         "reader-settings.js",
         "reader-touch.js",
+        "reader-swipe.js",
         "comic-reader-page-groups.js",
         "comic-reader-interactions.js",
         "reader-image-loader.js",

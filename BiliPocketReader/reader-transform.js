@@ -9,7 +9,6 @@
     const MAX_SCALE = 3;
     const DOUBLE_CLICK_SCALE = 2;
     const MAX_RENDER_SCALE = 2;
-    const TOUCH_ZOOM_EPSILON = 0.01;
     const PAN_EDGE_ALLOWANCE = 72;
 
     const methods = {
@@ -46,17 +45,23 @@
         },
 
         getSharpDisplaySizes(images, isFull) {
+            const { sizes, fitRatio } = this.getImageDisplayLayout(images, isFull);
+            this.sharpDisplayFitRatio = fitRatio;
+            return sizes;
+        },
+
+        getImageDisplayLayout(images, isFull) {
             const naturalSizes = images.map(img => this.getEffectiveImageSize(img));
             const displaySizes = isFull ? naturalSizes : this.alignSharpDisplayHeights(naturalSizes);
             const fitRatio = this.getSharpDisplayFitRatio(displaySizes);
-            this.sharpDisplayFitRatio = fitRatio;
 
             // Keep layout/paint bounds near the viewport even for huge originals.
             // CSS sizing preserves the source pixels for zoom and screenshot export.
-            return displaySizes.map(size => ({
+            const sizes = displaySizes.map(size => ({
                 width: size.width * fitRatio,
                 height: size.height * fitRatio
             }));
+            return { sizes, fitRatio };
         },
 
         alignSharpDisplayHeights(sizes) {
@@ -223,9 +228,6 @@
             const nextRenderScale = this.getRenderScale(clampedScale);
             this.translateX += offsetX * (1 / nextRenderScale - 1 / previousRenderScale);
             this.translateY += offsetY * (1 / nextRenderScale - 1 / previousRenderScale);
-            if (this.isTouchDevice) {
-                this.touchPanLocked = clampedScale > 1 + TOUCH_ZOOM_EPSILON;
-            }
             this.applyTransform();
         },
 
@@ -233,9 +235,6 @@
             this.scale = 1;
             this.translateX = 0;
             this.translateY = 0;
-            this.touchPanLocked = false;
-            this.touchDidMoveImage = false;
-            this.touchEdgePageStep = 0;
             this.applyTransform();
         },
 
@@ -246,9 +245,6 @@
             this.translateX = 0;
             this.translateY = 0;
             this.rotation = 0;
-            this.touchPanLocked = false;
-            this.touchDidMoveImage = false;
-            this.touchEdgePageStep = 0;
             this.lastTapTime = 0;
             this.twoFingerTapCandidate = false;
             this.lastTwoFingerTapTime = 0;
@@ -269,9 +265,6 @@
 
         applyTransform() {
             this.clampTransform();
-            if (this.isTouchDevice && this.scale <= 1 + TOUCH_ZOOM_EPSILON) {
-                this.touchPanLocked = false;
-            }
             this.writeTransform();
         },
 

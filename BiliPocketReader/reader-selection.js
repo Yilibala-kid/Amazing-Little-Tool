@@ -83,6 +83,7 @@
 
         startScreenshotSelection() {
             if (this.isSelectingScreenshot) return;
+            this.swipe?.reset();
             Toolbox.animations?.cancel(this.el.imgContainer, true);
             this.currentIndex = this.displayedIndex ?? this.currentIndex;
             this.applyTransform();
