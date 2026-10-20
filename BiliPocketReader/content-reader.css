@@ -255,10 +255,6 @@
     outline-offset: 2px;
 }
 
-.comic-setting-btn[data-preference-key="isRightToLeft"] {
-    grid-column: 1 / -1;
-}
-
 @media (max-height: 480px) {
     .comic-settings-panel { padding: 10px; gap: 6px; }
     .comic-settings-grid { gap: 6px; }

@@ -13,6 +13,8 @@
     const IMAGE_RENDER_MODES = Object.freeze(['sharp', 'smooth']);
     const BACKGROUND_MODES = Object.freeze(['black', 'darkGray', 'lightGray', 'white']);
     const FILTER_MODES = Object.freeze(['original', 'soft', 'warm', 'grayscale']);
+    const MILD_CLARITY_STRENGTH = 40;
+    const CLARITY_STRENGTHS = Object.freeze([0, MILD_CLARITY_STRENGTH, 100]);
     const PRELOAD_PAGES = Object.freeze(['2', '4', '6', 'all']);
     const IMAGE_MEMORY_POLICIES = Object.freeze(['page', 'previous']);
     const ANIMATION_MODES = Object.freeze([...Toolbox.animations.ANIMATION_MODES]);
@@ -23,6 +25,7 @@
         imageRenderMode: 'sharp',
         backgroundMode: 'white',
         filterMode: 'original',
+        clarityStrength: 0,
         preloadPages: 'all',
         imageMemoryPolicy: 'page',
         tapPageNavigation: true
@@ -49,10 +52,19 @@
         return normalizeMode('filterMode', mode);
     }
 
+    function normalizeClarityStrength(value) {
+        if (typeof value !== 'number' || !Number.isFinite(value)) return 0;
+        return CLARITY_STRENGTHS.reduce((nearest, strength) =>
+            Math.abs(value - strength) < Math.abs(value - nearest) ? strength : nearest, 0);
+    }
+
     function normalizePreferences(value = {}) {
         const input = value && typeof value === 'object' ? value : {};
         return Object.fromEntries(Object.entries(DEFAULT_READER_PREFERENCES).map(([key, fallback]) => [
-            key, MODES_BY_KEY[key]
+            key, key === 'clarityStrength'
+                ? normalizeClarityStrength(Object.hasOwn(input, key) ? input[key]
+                    : (input.clarityMode === 'mild' ? MILD_CLARITY_STRENGTH : 0))
+                : MODES_BY_KEY[key]
                 ? normalizeMode(key, input[key])
                 : (typeof input[key] === 'boolean' ? input[key] : fallback)
         ]));
@@ -71,6 +83,9 @@
         IMAGE_RENDER_MODES,
         BACKGROUND_MODES,
         FILTER_MODES,
+        MILD_CLARITY_STRENGTH,
+        CLARITY_STRENGTHS,
+        normalizeClarityStrength,
         PRELOAD_PAGES,
         IMAGE_MEMORY_POLICIES,
         ANIMATION_MODES,

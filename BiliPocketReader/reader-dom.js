@@ -5,6 +5,34 @@
     if (!window.BilibiliToolbox) throw new Error('BilibiliToolbox: shared.js not loaded');
 
     const Toolbox = window.BilibiliToolbox;
+    let clarityFilterSequence = 0;
+
+    function createClarityFilter(reader) {
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('width', '0');
+        svg.setAttribute('height', '0');
+        svg.setAttribute('aria-hidden', 'true');
+        svg.style.position = 'absolute';
+        const filter = document.createElementNS(svg.namespaceURI, 'filter');
+        filter.id = `bpr-clarity-${++clarityFilterSequence}`;
+        filter.setAttribute('x', '0%');
+        filter.setAttribute('y', '0%');
+        filter.setAttribute('width', '100%');
+        filter.setAttribute('height', '100%');
+        filter.setAttribute('color-interpolation-filters', 'sRGB');
+        const convolution = document.createElementNS(svg.namespaceURI, 'feConvolveMatrix');
+        // The strength control updates this unit-sum four-neighbour kernel.
+        convolution.setAttribute('order', '3');
+        convolution.setAttribute('kernelMatrix', '0 0 0 0 1 0 0 0 0');
+        convolution.setAttribute('divisor', '1');
+        convolution.setAttribute('edgeMode', 'duplicate');
+        convolution.setAttribute('preserveAlpha', 'true');
+        filter.appendChild(convolution);
+        svg.appendChild(filter);
+        reader.el.clarityFilter = filter;
+        reader.el.clarityConvolution = convolution;
+        reader.el.reader.appendChild(svg);
+    }
 
     function createButton(text, title, className = 'comic-btn') {
         const btn = document.createElement('button');
@@ -44,6 +72,7 @@
     function createReaderUi(reader) {
         reader.el.reader = document.createElement('div');
         reader.el.reader.id = 'comic-reader-overlay';
+        createClarityFilter(reader);
 
         reader.el.imgContainer = document.createElement('div');
         reader.el.imgContainer.className = 'comic-img-container';
@@ -93,6 +122,7 @@
             ['filterBtn', '图像滤镜', 'filterMode'],
             ['preloadBtn', '漫画预加载', 'preloadPages'],
             ['imageMemoryBtn', '图片内存', 'imageMemoryPolicy'],
+            ['clarityBtn', '清晰度增强', 'clarityStrength'],
             ['backgroundBtn', '背景颜色', 'backgroundMode'],
             ['animationBtn', '翻页动画', 'animationMode'],
             ['viewModeBtn', '显示张数', 'viewMode'],
@@ -186,6 +216,7 @@
         reader.syncViewModeButton();
         reader.syncImageRenderButton();
         reader.syncFilterControl();
+        reader.syncClarityControl();
         reader.syncPreloadControl();
         reader.syncImageMemoryControl();
         reader.syncBackgroundButton();

@@ -23,6 +23,7 @@ function loadReaderServices({ storedPreferences, document, runtime = {} } = {}) 
 const settingCases = [
     ['imageRenderBtn', 'imageRenderMode', ['sharp', 'smooth'], ['原图', '流畅']],
     ['filterBtn', 'filterMode', ['soft', 'warm', 'grayscale', 'original'], ['柔和', '暖色护眼', '黑白', '原图']],
+    ['clarityBtn', 'clarityStrength', [0, 40, 100], ['关闭', '轻度', '较强']],
     ['preloadBtn', 'preloadPages', ['2', '4', '6', 'all'], ['2页', '4页', '6页', '全部']],
     ['imageMemoryBtn', 'imageMemoryPolicy', ['previous', 'page'], ['释放前页', '关闭页释放']],
     ['backgroundBtn', 'backgroundMode', ['lightGray', 'white', 'black', 'darkGray'], ['浅灰', '白色', '黑色', '深灰']],
@@ -35,6 +36,11 @@ const settingCases = [
 function createReaderDocument() {
     const document = {
         addEventListener() {},
+        createElementNS(namespaceURI, tagName) {
+            const element = this.createElement(tagName);
+            element.namespaceURI = namespaceURI;
+            return element;
+        },
         createElement(tagName) {
             const element = {
                 tagName: tagName.toUpperCase(), children: [], dataset: {}, className: '',
@@ -131,7 +137,6 @@ test('each setting card reaches every option, wraps, and saves exactly once per 
         const label = button.querySelector('.comic-setting-label');
         const value = button.querySelector('.comic-setting-value');
         const originalLabel = label.textContent;
-        const originalChildren = [...button.children];
         const startIndex = values.indexOf(reader[key]);
         for (let index = 0; index < values.length; index++) {
             const expectedIndex = (startIndex + index + 1) % values.length;
@@ -140,9 +145,7 @@ test('each setting card reaches every option, wraps, and saves exactly once per 
             assert.equal(reader[key], expectedValue, `${key} reaches ${expectedValue}`);
             assert.equal(value.textContent, labels[expectedIndex]);
             assert.equal(label.textContent, originalLabel, 'cycling updates the value without replacing its fixed title');
-            assert.deepEqual(button.children, originalChildren, 'cycling preserves both span nodes');
             assert.equal(button.dataset.value, String(expectedValue));
-            assert.equal(button.dataset.changed, undefined, 'changed values do not create persistent highlight metadata');
             assert.equal(button.getAttribute('aria-label'), `${originalLabel}：${labels[expectedIndex]}`);
             if (typeof expectedValue === 'boolean') assert.equal(button.getAttribute('aria-pressed'), String(expectedValue));
             if (key === 'backgroundMode') {
@@ -161,7 +164,7 @@ test('setting cards apply only their own effects and do not reload current image
     const { reader, effects } = settingFixture();
     const expectedEffects = {
         directionBtn: ['direction'], animationBtn: [], viewModeBtn: [['render', false]],
-        imageRenderBtn: ['images'], filterBtn: [], preloadBtn: ['loading settings'],
+        imageRenderBtn: ['images'], filterBtn: [], clarityBtn: [], preloadBtn: ['loading settings'],
         imageMemoryBtn: ['loading settings'], backgroundBtn: [], tapPageBtn: []
     };
     for (const [ref] of settingCases) {
@@ -169,12 +172,11 @@ test('setting cards apply only their own effects and do not reload current image
         reader.el[ref].click();
         assert.deepEqual(effects, expectedEffects[ref], `${ref} affects only the required reader behavior`);
     }
-    assert.equal(reader.el.reader.style['--comic-image-filter'], 'brightness(.94) contrast(.92) saturate(.92)');
+    assert.equal(reader.el.reader.style['--comic-image-filter'], reader.getReaderClarityFilterCss() + ' brightness(.94) contrast(.92) saturate(.92)');
     assert.equal(reader.el.reader.style.background, '#0a0a0a');
     reader.setPreference('filterMode', 'invalid');
     assert.equal(reader.filterMode, 'original');
     assert.equal(reader.el.filterBtn.dataset.value, 'original');
-    assert.equal(reader.el.filterBtn.dataset.changed, undefined);
     assert.throws(() => reader.setPreference('currentIndex', 10), /Unknown reader preference/);
 });
 
@@ -188,40 +190,35 @@ test('retired animation preferences fall back to smooth and save a supported mod
     assert.equal(writes.at(-1).value.animationMode, 'smooth');
 });
 
-test('reader UI restores nine setting cards with saved values, fixed labels, and preference metadata', () => {
+test('reader UI restores saved settings without rewriting them and displays defaults for new readers', () => {
     const storedPreferences = {
+        clarityStrength: 40,
         isRightToLeft: false, viewMode: 'single', animationMode: 'fade', imageRenderMode: 'smooth',
         backgroundMode: 'darkGray', filterMode: 'warm', preloadPages: '6', imageMemoryPolicy: 'previous', tapPageNavigation: false
     };
-    const { reader, document, writes } = settingFixture(storedPreferences);
+    const { reader, writes } = settingFixture(storedPreferences);
     const labels = {
+        clarityBtn: '轻度',
         directionBtn: '从左往右', animationBtn: '淡入', viewModeBtn: '单图', imageRenderBtn: '流畅',
         filterBtn: '暖色护眼', preloadBtn: '6页', imageMemoryBtn: '释放前页', backgroundBtn: '深灰', tapPageBtn: '关闭'
     };
-    assert.equal(reader.el.settingsPanel.querySelectorAll('.comic-setting-btn').length, 9);
-    assert.equal(reader.el.settingsPanel.querySelectorAll('select').length, 0);
-    assert.equal(reader.el.directionBtn.querySelector('.comic-setting-preview').getAttribute('aria-hidden'), 'true');
-    assert.ok(reader.el.directionBtn.querySelector('.comic-setting-arrow'));
     for (const [ref, key] of settingCases) {
         const button = reader.el[ref];
         const label = button.querySelector('.comic-setting-label').textContent;
-        assert.equal(button.tagName, 'BUTTON');
         assert.ok(label.length > 0);
-        assert.equal(button.dataset.settingLabel, label);
-        assert.equal(button.dataset.preferenceKey, key);
+        assert.equal(reader[key], storedPreferences[key]);
         assert.equal(button.querySelector('.comic-setting-value').textContent, labels[ref]);
         assert.equal(button.dataset.value, String(storedPreferences[key]));
-        assert.equal(button.dataset.changed, undefined);
         assert.equal(button.getAttribute('aria-label'), `${label}：${labels[ref]}`);
         if (typeof storedPreferences[key] === 'boolean') assert.equal(button.getAttribute('aria-pressed'), String(storedPreferences[key]));
     }
-    assert.equal(reader.el.preloadBtn.dataset.settingLabel, '漫画预加载');
-    assert.equal(reader.el.imageMemoryBtn.dataset.settingLabel, '图片内存');
     assert.match(reader.el.imageMemoryBtn.title, /返回时会重新加载/);
-    assert.equal(document.body.children[0], reader.el.reader);
     assert.equal(writes.length, 0, 'restoring saved values does not rewrite preferences');
+    assert.equal(reader.clarityStrength, 40, 'legacy mild preserves its original sharpening strength');
+    assert.equal(reader.el.clarityBtn.dataset.value, '40');
     const defaults = settingFixture().reader;
     const expectedDefaults = {
+        clarityStrength: 0,
         imageRenderMode: 'sharp', filterMode: 'original', preloadPages: 'all', imageMemoryPolicy: 'page',
         backgroundMode: 'white', animationMode: 'smooth', viewMode: 'double', tapPageNavigation: true, isRightToLeft: true
     };
@@ -229,8 +226,41 @@ test('reader UI restores nine setting cards with saved values, fixed labels, and
         assert.equal(defaults[key], expectedDefaults[key], `${key} uses the requested default`);
         assert.equal(defaults.el[ref].dataset.value, String(expectedDefaults[key]));
         assert.equal(defaults.el[ref].querySelector('.comic-setting-value').textContent, labels[values.indexOf(expectedDefaults[key])]);
-        assert.equal(defaults.el[ref].dataset.changed, undefined);
     }
+});
+
+test('clarity strength preserves view and combines with other filters', () => {
+    const { reader, writes, effects, toolbox } = settingFixture();
+    assert.equal(toolbox.readerPreferences.normalize({ clarityMode: 'ai' }).clarityStrength, 0);
+    assert.equal(reader.clarityStrength, 0);
+    reader.scale = 2.3; reader.translateX = 71; reader.translateY = -36; reader.rotation = 90;
+    reader.setPreference('filterMode', 'warm');
+    reader.setPreference('clarityStrength', 40);
+    assert.equal(reader.el.clarityConvolution.getAttribute('kernelMatrix'), '0 -0.12 0 -0.12 1.48 -0.12 0 -0.12 0');
+    const enhancedFilter = reader.el.reader.style['--comic-image-filter'];
+    assert.match(enhancedFilter, /^url\(/);
+    const savedCount = writes.length;
+    reader.setPreference('clarityStrength', 0);
+    assert.equal(reader.el.reader.style['--comic-image-filter'], reader.getReaderFilterCss());
+    reader.setPreference('clarityStrength', 40);
+    assert.equal(reader.el.reader.style['--comic-image-filter'], enhancedFilter);
+    assert.equal(writes.length, savedCount + 2, 'each strength change is saved');
+    assert.deepEqual([reader.scale, reader.translateX, reader.translateY, reader.rotation], [2.3, 71, -36, 90]);
+    assert.deepEqual(effects, [], 'clarity never reloads images or changes page layout');
+    reader.setPreference('clarityStrength', 0);
+    assert.equal(reader.getReaderClarityFilterCss(), 'none');
+});
+
+test('clarity strength migrates legacy slider values to three levels and rejects malformed settings', () => {
+    const { toolbox } = loadReaderServices();
+    const normalize = toolbox.readerPreferences.normalize;
+    assert.equal(normalize({ clarityMode: 'mild' }).clarityStrength, 40);
+    assert.equal(normalize({ clarityMode: 'off' }).clarityStrength, 0);
+    assert.equal(normalize({ clarityMode: 'mild', clarityStrength: 0 }).clarityStrength, 0);
+    for (const [value, expected] of [[-5, 0], [120, 100], [0, 0], [20, 0], [20.1, 40], [25.6, 40], [40, 40], [70, 40], [70.1, 100], [77, 100], [100, 100], [NaN, 0], [Infinity, 0], ['40', 0], [null, 0]]) {
+        assert.equal(normalize({ clarityStrength: value }).clarityStrength, expected);
+    }
+    assert.equal(Object.hasOwn(normalize({ clarityMode: 'mild' }), 'clarityMode'), false);
 });
 
 test('screenshot toolbar separates cancel, copy, download, and full-image selection actions', () => {

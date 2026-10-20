@@ -36,6 +36,7 @@
         viewMode: ['syncViewModeButton'],
         imageRenderMode: ['syncImageRenderButton'],
         filterMode: ['syncFilterControl', 'applyReaderFilter'],
+        clarityStrength: ['syncClarityControl', 'applyReaderFilter'],
         preloadPages: ['syncPreloadControl', 'syncImageLoadingSettings'],
         imageMemoryPolicy: ['syncImageMemoryControl', 'syncImageLoadingSettings'],
         backgroundMode: ['syncBackgroundButton', 'applyReaderBackground'],
@@ -117,6 +118,31 @@
         syncFilterControl() {
             const mode = readerPreferences.normalizeFilterMode(this.filterMode);
             syncSettingButton(this, this.el.filterBtn, 'filterMode', READER_FILTER_LABELS[mode], '图像滤镜仅影响显示，不影响原图和截图。');
+        },
+
+        syncClarityControl() {
+            const strength = preferenceValue(this, 'clarityStrength');
+            const text = { 0: '关闭', 40: '轻度', 100: '较强' }[strength];
+            syncSettingButton(this, this.el.clarityBtn, 'clarityStrength', text,
+                '清晰度增强：关闭 / 轻度 / 较强。锐化文字和线条边缘，同时用于截图；出现白边或网点过重时可降低一档。');
+            const amount = strength * 0.003;
+            this.el.clarityConvolution?.setAttribute('kernelMatrix',
+                `0 ${-amount} 0 ${-amount} ${1 + 4 * amount} ${-amount} 0 ${-amount} 0`);
+        },
+
+        getReaderClarityFilterCss() {
+            return this.clarityStrength > 0 && this.el.clarityFilter
+                ? `url("#${this.el.clarityFilter.id}")` : 'none';
+        },
+
+        snapshotClarityFilter(task) {
+            if (this.getReaderClarityFilterCss() === 'none') return 'none';
+            // A URL alone is not a snapshot: changing the setting mutates its kernel.
+            const filter = this.el.clarityFilter.cloneNode(true);
+            filter.id += '-export';
+            this.el.clarityFilter.parentNode.appendChild(filter);
+            task.cleanups.add(() => filter.remove());
+            return `url("#${filter.id}")`;
         },
 
         syncTapPageButton() {
@@ -201,7 +227,8 @@
 
         applyReaderFilter() {
             if (this.el.reader) {
-                this.el.reader.style.setProperty('--comic-image-filter', this.getReaderFilterCss());
+                const filters = [this.getReaderClarityFilterCss(), this.getReaderFilterCss()].filter(value => value !== 'none');
+                this.el.reader.style.setProperty('--comic-image-filter', filters.join(' ') || 'none');
             }
         }
     };

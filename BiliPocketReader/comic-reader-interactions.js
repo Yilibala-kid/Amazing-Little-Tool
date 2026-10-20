@@ -44,6 +44,7 @@
             [el.viewModeBtn, 'viewMode', VIEW_MODES],
             [el.imageRenderBtn, 'imageRenderMode', IMAGE_RENDER_MODES],
             [el.filterBtn, 'filterMode', readerPreferences.FILTER_MODES],
+            [el.clarityBtn, 'clarityStrength', readerPreferences.CLARITY_STRENGTHS],
             [el.preloadBtn, 'preloadPages', readerPreferences.PRELOAD_PAGES],
             [el.imageMemoryBtn, 'imageMemoryPolicy', readerPreferences.IMAGE_MEMORY_POLICIES],
             [el.backgroundBtn, 'backgroundMode', BACKGROUND_MODES],

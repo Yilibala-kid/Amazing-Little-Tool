@@ -54,7 +54,7 @@
         return { x: left, y: top, width: right - left, height: bottom - top };
     }
 
-    function drawImage(ctx, img, descriptor, selectionRect, rotation = 0) {
+    function drawImage(ctx, img, descriptor, selectionRect, rotation = 0, clarityFilter = 'none') {
         const x = descriptor.x - selectionRect.x;
         const y = descriptor.y - selectionRect.y;
         const swap = rotation === 90 || rotation === 270;
@@ -62,6 +62,7 @@
         const dh = swap ? descriptor.width : descriptor.height;
 
         ctx.save();
+        ctx.filter = clarityFilter;
         ctx.translate(x + descriptor.width / 2, y + descriptor.height / 2);
         if (rotation) ctx.rotate(rotation * Math.PI / 180);
         ctx.drawImage(img, -dw / 2, -dh / 2, dw, dh);
@@ -125,9 +126,12 @@
         reader.updateSelectionActions?.();
         const signal = task.controller.signal;
         const rotation = reader.rotation;
+        // Snapshot the selected clarity effect; colour/comfort filters stay display-only.
+        let clarityFilter = 'none';
         const filename = getFileName(reader.currentIndex, reader.activePageCount);
         let renderError = null;
         try {
+            clarityFilter = reader.snapshotClarityFilter?.(task) || reader.getReaderClarityFilterCss?.() || 'none';
             if (!selectionRect || !Number.isFinite(selectionRect.width) || !Number.isFinite(selectionRect.height)
                 || selectionRect.width <= 0 || selectionRect.height <= 0) throw new Error('INVALID_BOUNDS');
             if (action !== 'copy' && action !== 'download') throw new Error('INVALID_ACTION');
@@ -155,7 +159,7 @@
                     const loaded = await loadExportImage(reader, descriptor.src, task);
                     if (signal.aborted) throw new Error('CANCELED');
                     if (!loaded) throw new Error('LOAD_FAILED');
-                    try { drawImage(ctx, loaded.image, descriptor, selectionRect, rotation); }
+                    try { drawImage(ctx, loaded.image, descriptor, selectionRect, rotation, clarityFilter); }
                     finally { loaded.release(); }
                 }
                 const blob = await canvasToBlob(outputCanvas);
