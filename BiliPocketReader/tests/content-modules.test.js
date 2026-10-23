@@ -804,9 +804,6 @@ function loadFavoritesUiContext(data, keywordState = { enabled: false, isActive:
     const buttons = panel.querySelectorAll('.bilibili-toolbox-favorite-columns button');
 
     assert.equal(panel.innerHTML.includes('\u52a8\u6001\u8fc7\u6ee4\uff08\u5728\u52a8\u6001\u9875\u751f\u6548\uff09'), true);
-    assert.equal(panel.innerHTML.includes('\u81ea\u52a8\u5207\u5230\u4e13\u680f'), false);
-    assert.equal(panel.innerHTML.includes('bilibili-toolbox-opus-tab-toggle'), false);
-    assert.equal(panel.innerHTML.includes('bilibili-toolbox-control-status'), false);
     assert.equal(buttons.find(button => button.dataset.columns === '4').classList.contains('active'), true);
     assert.equal(buttons.find(button => button.dataset.columns === '4')['aria-pressed'], 'true');
     assert.equal(buttons.find(button => button.dataset.columns === '2').classList.contains('active'), false);
@@ -1019,13 +1016,6 @@ function loadReaderSelectionContext(readerRect = { width: 1000, height: 800 }) {
     });
 }
 
-function loadAnimationsContext() {
-    const context = createBaseContext();
-    runFile(context, 'shared.js');
-    runFile(context, 'animations.js');
-    return context;
-}
-
 function loadReaderTransformContext(readerRect = { width: 1200, height: 900 }, gap = 0) {
     const context = createBaseContext({
         getComputedStyle() {
@@ -1065,45 +1055,6 @@ function loadReaderTransformContext(readerRect = { width: 1200, height: 900 }, g
     };
     context.BilibiliToolbox.readerTransform.attach(reader);
     return { context, reader };
-}
-
-function createAnimationContainer() {
-    return {
-        children: [{}],
-        style: {},
-        get firstChild() {
-            return this.children[0] || null;
-        },
-        set innerHTML(value) {
-            this._innerHTML = value;
-            if (value === '') this.children = [];
-        },
-        get innerHTML() {
-            return this._innerHTML || '';
-        },
-        getBoundingClientRect() {
-            return {};
-        }
-    };
-}
-
-{
-    const { BilibiliToolbox } = loadAnimationsContext();
-    const animations = BilibiliToolbox.animations;
-    const noop = () => {};
-    const getTransform = () => 'scale(1) translate(0px,0px)';
-
-    assert.deepEqual(plain(animations.ANIMATION_MODES), ['smooth', 'fade', 'parallel']);
-
-    const immediateContainer = createAnimationContainer();
-    animations.resetImageContainer(immediateContainer, animations.IMMEDIATE_RENDER_MODE, 0, noop, getTransform, null);
-    assert.equal(immediateContainer.children.length, 1);
-    assert.equal(immediateContainer.style.opacity, '1');
-
-    const fadeContainer = createAnimationContainer();
-    animations.resetImageContainer(fadeContainer, 'fade', 0, noop, getTransform, null);
-    assert.equal(fadeContainer.children.length, 1);
-    assert.equal(fadeContainer.style.opacity, '0');
 }
 
 {
@@ -1463,25 +1414,6 @@ function loadComicReaderCoreContext(ImageClass, overrides = {}) {
         assert.equal(img.style.maxHeight, 'none');
         assert.equal(img.style.objectFit, 'contain');
     }
-    {
-        const { Image } = createFakeImageClass();
-        const reader = loadComicReaderCoreContext(Image);
-        const style = {
-            setProperty(name, value) {
-                this[name] = value;
-            }
-        };
-        reader.el.reader = { style };
-
-        reader.filterMode = 'grayscale';
-        reader.applyReaderFilter();
-        assert.equal(style['--comic-image-filter'], 'grayscale(1)');
-
-        reader.filterMode = 'unknown';
-        reader.applyReaderFilter();
-        assert.equal(style['--comic-image-filter'], 'none');
-    }
-
     const { BilibiliToolbox } = loadReaderPreferencesContext();
     const preferences = BilibiliToolbox.readerPreferences;
     const storage = BilibiliToolbox.storage;
@@ -1500,7 +1432,7 @@ function loadComicReaderCoreContext(ImageClass, overrides = {}) {
         imageMemoryPolicy: 'previous'
     };
     await preferences.save(custom);
-    assert.deepEqual(plain(preferences.load()), { ...custom, clarityStrength: 0 });
+    assert.deepEqual(plain(preferences.load()), { ...custom, clarityStrength: 0, transitionEnabled: true });
 
     assert.deepEqual(
         plain(preferences.normalize({

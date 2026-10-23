@@ -33,6 +33,7 @@
     const PREFERENCE_EFFECTS = {
         isRightToLeft: ['updateDirection', 'syncDirectionButton'],
         animationMode: ['syncAnimationButton'],
+        transitionEnabled: ['syncAnimationButton'],
         viewMode: ['syncViewModeButton'],
         imageRenderMode: ['syncImageRenderButton'],
         filterMode: ['syncFilterControl', 'applyReaderFilter'],
@@ -44,7 +45,7 @@
     };
 
     function preferenceValue(reader, key) {
-        return readerPreferences.normalize({ [key]: reader[key] })[key];
+        return readerPreferences.normalizeValue(key, reader[key]);
     }
 
     function syncSettingButton(reader, button, key, text, title) {
@@ -64,12 +65,21 @@
 
         setPreference(key, value) {
             if (!Object.hasOwn(PREFERENCE_EFFECTS, key)) throw new Error('Unknown reader preference: ' + key);
-            this[key] = readerPreferences.normalize({ [key]: value })[key];
+            const next = readerPreferences.normalizeValue(key, value);
+            if (this[key] === next) return;
+            this[key] = next;
             PREFERENCE_EFFECTS[key].forEach(name => this[name]());
             this.savePreferences();
-            if (key === 'animationMode') {
-                this.swipe?.reset();
-                this.swipe?.schedule();
+            if (key === 'animationMode' || key === 'transitionEnabled') {
+                if (this.isOpen && this.currentIndex !== this.displayedIndex) {
+                    // Rendering owns cancellation and the next preview schedule.
+                    this.render(false);
+                } else {
+                    animations.cancel(this.el.imgContainer);
+                    this.applyTransform?.();
+                    this.swipe?.reset();
+                    this.swipe?.schedule();
+                }
             }
             if (key === 'viewMode') this.render(false);
             if (key === 'imageRenderMode') this.refreshImagesForRenderMode();
@@ -88,6 +98,13 @@
                 parallel: '当前页与相邻页平行横移，触屏拖动时紧随手指。'
             };
             syncSettingButton(this, this.el.animationBtn, 'animationMode', READER_ANIMATION_LABELS[mode], descriptions[mode]);
+            const toggle = this.el.transitionBtn;
+            if (toggle) {
+                const enabled = preferenceValue(this, 'transitionEnabled');
+                toggle.textContent = enabled ? '过渡：开' : '过渡：关';
+                toggle.setAttribute('aria-checked', String(enabled));
+                toggle.title = '关闭后直接切页；开启后使用所选动画。';
+            }
         },
 
         syncDirectionButton() {

@@ -22,6 +22,7 @@
         isRightToLeft: true,
         viewMode: 'double',
         animationMode: 'smooth',
+        transitionEnabled: true,
         imageRenderMode: 'sharp',
         backgroundMode: 'white',
         filterMode: 'original',
@@ -58,15 +59,17 @@
             Math.abs(value - strength) < Math.abs(value - nearest) ? strength : nearest, 0);
     }
 
+    function normalizeValue(key, value) {
+        if (key === 'clarityStrength') return normalizeClarityStrength(value);
+        if (MODES_BY_KEY[key]) return normalizeMode(key, value);
+        return typeof value === 'boolean' ? value : DEFAULT_READER_PREFERENCES[key];
+    }
+
     function normalizePreferences(value = {}) {
         const input = value && typeof value === 'object' ? value : {};
-        return Object.fromEntries(Object.entries(DEFAULT_READER_PREFERENCES).map(([key, fallback]) => [
-            key, key === 'clarityStrength'
-                ? normalizeClarityStrength(Object.hasOwn(input, key) ? input[key]
-                    : (input.clarityMode === 'mild' ? MILD_CLARITY_STRENGTH : 0))
-                : MODES_BY_KEY[key]
-                ? normalizeMode(key, input[key])
-                : (typeof input[key] === 'boolean' ? input[key] : fallback)
+        return Object.fromEntries(Object.keys(DEFAULT_READER_PREFERENCES).map(key => [
+            key, normalizeValue(key, key === 'clarityStrength' && !Object.hasOwn(input, key)
+                ? (input.clarityMode === 'mild' ? MILD_CLARITY_STRENGTH : 0) : input[key])
         ]));
     }
 
@@ -92,6 +95,7 @@
         DEFAULT_READER_PREFERENCES,
         normalizeAnimationMode,
         normalizeFilterMode,
+        normalizeValue,
         normalize: normalizePreferences,
         load: loadPreferences,
         save: savePreferences

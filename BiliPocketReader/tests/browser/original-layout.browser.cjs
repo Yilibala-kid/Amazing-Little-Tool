@@ -1,16 +1,11 @@
 // Run with Node and Playwright; BPR_BROWSER_PATH may select system Edge/Chrome.
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const os = require('node:os');
 const path = require('node:path');
-const { chromium } = require('playwright');
-const root = path.resolve(__dirname, '../..');
-const manifest = JSON.parse(fs.readFileSync(path.join(root, 'manifest.json'), 'utf8'));
-const artifacts = fs.mkdtempSync(path.join(os.tmpdir(), 'bpr-original-layout-'));
+const { launchBrowser, createArtifacts, loadReader } = require('./helpers.cjs');
+const artifacts = createArtifacts('original-layout');
 
 (async () => {
-    const browser = await chromium.launch({ headless: true,
-        ...(process.env.BPR_BROWSER_PATH ? { executablePath: process.env.BPR_BROWSER_PATH } : {}) });
+    const browser = await launchBrowser();
     try {
         const page = await browser.newPage({ viewport: { width: 1360, height: 900 }, deviceScaleFactor: 2 });
         const errors = [];
@@ -35,12 +30,7 @@ const artifacts = fs.mkdtempSync(path.join(os.tmpdir(), 'bpr-original-layout-'))
             : route.fulfill({ contentType: 'text/html', body: '<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><div class="article-content">' +
                 [0, 1, 2, 3].map(i => `<img width="60" height="400" src="https://i0.hdslb.com/bfs/article/long${i}.png">`).join('') + '</div>' }));
         await page.goto('https://www.bilibili.com/read/cv1');
-        for (const file of manifest.content_scripts[0].css) {
-            await page.addStyleTag({ content: fs.readFileSync(path.join(root, file), 'utf8').replace(/^\uFEFF/, '') });
-        }
-        for (const file of manifest.content_scripts[0].js.filter(file => file !== 'content.js')) {
-            await page.addScriptTag({ path: path.join(root, file) });
-        }
+        await loadReader(page);
         await page.evaluate(async () => {
             window.reader = new BilibiliToolbox.reader.BiliComicReader();
             reader.preloadPages = '2'; reader.imageMemoryPolicy = 'previous';

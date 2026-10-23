@@ -13,7 +13,7 @@ function walk(directory) {
     for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
         const file = path.join(directory, entry.name);
         if (entry.isDirectory()) {
-            if (!['vendor', 'dist', 'node_modules', 'sample', 'browser'].includes(entry.name)) walk(file);
+            if (!['vendor', 'dist', 'node_modules', 'sample'].includes(entry.name)) walk(file);
         } else if (/\.(js|jsx|cjs)$/.test(file)) {
             new vm.Script(fs.readFileSync(file, 'utf8'), { filename: file });
             checked++;

@@ -343,6 +343,7 @@
                 this.showReaderMessage('图片加载失败，请重试', true);
                 return;
             }
+            animate = animate && this.transitionEnabled !== false;
             if (animate && this.animationMode === 'parallel' && container.firstChild &&
                 !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
                 await this.swipe.play(result, renderIndex, step, transitionToken);

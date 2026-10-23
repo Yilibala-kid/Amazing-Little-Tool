@@ -4,7 +4,7 @@
 
     const Toolbox = window.BilibiliToolbox;
     const MIN_SCALE = 0.5;
-    const SWIPE_THRESHOLD = 50;
+    const SWIPE_THRESHOLD = 80;
     const TAP_DELAY = 220;
     const DOUBLE_TAP_DELAY = 300;
     const TAP_ZONE_RATIO = 0.28;
@@ -271,7 +271,7 @@
             this.clearPendingTap();
             // A pending foreground render can temporarily prevent the swipe
             // engine from starting. Preserve navigation in that case only.
-            if (Math.abs(deltaX) > SWIPE_THRESHOLD && Math.abs(deltaX) > Math.abs(deltaY)) {
+            if (Math.abs(deltaX) >= SWIPE_THRESHOLD && Math.abs(deltaX) > Math.abs(deltaY)) {
                 const dir = (deltaX > 0) !== this.isRightToLeft ? -this.lastStep : this.lastStep;
                 this.turnPage(null, dir);
             }

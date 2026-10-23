@@ -130,7 +130,17 @@
             ['directionBtn', '阅读方向', 'isRightToLeft']
         ].forEach(([key, title, preferenceKey]) => {
             reader.el[key] = createSettingsButton(title, preferenceKey);
-            settingsGrid.appendChild(reader.el[key]);
+            if (key === 'animationBtn') {
+                const card = document.createElement('div');
+                card.className = 'comic-animation-card';
+                const toggle = createButton('', '', 'comic-transition-toggle');
+                toggle.type = 'button';
+                toggle.setAttribute('role', 'switch');
+                toggle.setAttribute('aria-label', '过渡动画');
+                reader.el.transitionBtn = toggle;
+                card.append(reader.el[key], toggle);
+                settingsGrid.appendChild(card);
+            } else settingsGrid.appendChild(reader.el[key]);
         });
         reader.el.settingsPanel.append(settingsTitle, settingsHint, settingsGrid);
 

@@ -198,6 +198,43 @@
     color: var(--text-secondary);
 }
 
+.comic-animation-card {
+    position: relative;
+    min-width: 0;
+}
+
+.comic-animation-card > .comic-setting-btn {
+    width: 100%;
+    height: 100%;
+    padding-right: 76px;
+}
+
+.comic-transition-toggle {
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    min-height: 44px;
+    padding: 0 8px;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    background: var(--bg-secondary, #252525);
+    color: var(--text-secondary);
+    font: 12px var(--font);
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+.comic-transition-toggle[aria-checked="true"] {
+    color: var(--acc-hover);
+    border-color: var(--acc);
+}
+
+.comic-transition-toggle:focus-visible {
+    outline: 2px solid var(--acc);
+    outline-offset: 2px;
+}
+
 .comic-setting-value {
     font-size: 16px;
     font-weight: 600;

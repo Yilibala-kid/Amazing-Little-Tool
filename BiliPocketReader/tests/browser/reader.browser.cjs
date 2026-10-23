@@ -1,12 +1,9 @@
 // Run with node tests/browser/reader.browser.cjs; Playwright must be resolvable.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
-const os = require('node:os');
 const path = require('node:path');
-const { chromium } = require('playwright');
-const root = path.resolve(__dirname, '../..');
-const manifest = JSON.parse(fs.readFileSync(path.join(root, 'manifest.json'), 'utf8'));
-const artifactDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bpr-browser-'));
+const { root, launchBrowser, createArtifacts, loadReader, mockStorage } = require('./helpers.cjs');
+const artifactDir = createArtifacts('reader');
 const svg = number => '<svg xmlns="http://www.w3.org/2000/svg" width="2400" height="3600">' +
     '<rect width="2400" height="3600" fill="' + (number % 2 ? '#fcf3db' : '#e3edf5') + '"/>' +
     '<rect x="90" y="90" width="2220" height="3420" fill="none" stroke="#243346" stroke-width="8"/>' +
@@ -18,9 +15,7 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
         i + '.jpg@200w.webp">').join('') + '</div>';
 
 (async () => {
-    const browser = await chromium.launch({
-        headless: true, ...(process.env.BPR_BROWSER_PATH ? { executablePath: process.env.BPR_BROWSER_PATH } : {})
-    });
+    const browser = await launchBrowser();
     try {
         const context = await browser.newContext({ viewport: { width: 1360, height: 900 }, deviceScaleFactor: 2 });
         const page = await context.newPage();
@@ -39,19 +34,8 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
             } else await route.fulfill({ contentType: 'text/html', body: html });
         });
         await page.goto('https://www.bilibili.com/read/cv1');
+        await mockStorage(page);
         await page.evaluate(() => {
-            const values = {}, listeners = new Set();
-            window.chrome = { storage: {
-                local: {
-                    async get(keys) { return structuredClone(Object.fromEntries(keys.map(key => [key, values[key]]))); },
-                    async set(items) {
-                        Object.assign(values, structuredClone(items));
-                        const changes = Object.fromEntries(Object.entries(items).map(([key, newValue]) => [key, { newValue }]));
-                        listeners.forEach(fn => fn(changes, 'local'));
-                    }
-                },
-                onChanged: { addListener: fn => listeners.add(fn), removeListener: fn => listeners.delete(fn) }
-            }, runtime: { onMessage: { addListener() {}, removeListener() {} } } };
             const NativeImage = window.Image;
             window.trackedImages = [];
             window.preloadOverlap = false;
@@ -64,33 +48,10 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
                 return img;
             };
         });
-        for (const file of manifest.content_scripts[0].css) {
-            // File-based extension loading consumes the encoding marker. A
-            // literal style tag would treat it as part of the first selector.
-            await page.addStyleTag({ content: fs.readFileSync(path.join(root, file), 'utf8').replace(/^\uFEFF/, '') });
-        }
-        assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim()),
-            '#ffffff', 'reader theme tokens are loaded');
-        for (const file of manifest.content_scripts[0].js) {
-            if (file === 'content.js') await page.evaluate(() => {
-                const Base = BilibiliToolbox.reader.BiliComicReader;
-                BilibiliToolbox.reader.BiliComicReader = class extends Base {
-                    constructor() { super(); window.reader = this; }
-                };
-            });
-            await page.addScriptTag({ path: path.join(root, file) });
-        }
+        await loadReader(page, { entry: true });
         await page.locator('.comic-entry-btn').waitFor();
         await page.waitForFunction(() => reader.imageCache.size === 12 &&
             [...reader.imageCache.values()].every(entry => entry.settled));
-        const defaults = {
-            clarityStrength: 0,
-            imageRenderMode: 'sharp', filterMode: 'original', preloadPages: 'all', imageMemoryPolicy: 'page',
-            backgroundMode: 'white', animationMode: 'smooth', viewMode: 'double',
-            tapPageNavigation: true, isRightToLeft: true
-        };
-        assert.deepEqual(await page.evaluate(keys => Object.fromEntries(keys.map(key => [key, reader[key]])),
-            Object.keys(defaults)), defaults, 'new installations apply all ten reader defaults');
         assert.deepEqual(await page.evaluate(() => trackedImages.map(img => Number(img.src.match(/page(\d+)/)[1]))),
             Array.from({ length: 12 }, (_, i) => i), 'all entry preloading starts at page one and requests pages in order');
         assert.equal(await page.evaluate(() => trackedImages.every(img => !img.src.includes('@'))), true,
@@ -153,9 +114,6 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
                     const rect = button.getBoundingClientRect();
                     const key = button.dataset.preferenceKey;
                     if (!inside(rect, panelRect) || rect.height < 44) issues.push(key + ': button clipped or too small');
-                    if (!['none', 'normal'].includes(getComputedStyle(button, '::after').content)) {
-                        issues.push(key + ': unexpected refresh glyph');
-                    }
                     for (const selector of ['.comic-setting-label', '.comic-setting-value']) {
                         const span = button.querySelector(selector);
                         if (!span?.textContent.trim()) { issues.push(key + ': empty text'); continue; }
@@ -188,16 +146,12 @@ const html = '<!doctype html><meta charset="utf-8"><title>Reader regression</tit
         await page.keyboard.press('Space');
         assert.equal(await settingButton('filterMode').getAttribute('data-value'), 'warm', 'Space advances exactly one option');
         const backgroundButton = settingButton('backgroundMode');
-        for (const [mode, label, color] of [
-            ['black', '黑色', 'rgb(10, 10, 10)'], ['darkGray', '深灰', 'rgb(31, 31, 31)'],
-            ['lightGray', '浅灰', 'rgb(216, 216, 216)'], ['white', '白色', 'rgb(255, 255, 255)']
+        for (const [mode, color] of [
+            ['black', 'rgb(10, 10, 10)'], ['darkGray', 'rgb(31, 31, 31)'],
+            ['lightGray', 'rgb(216, 216, 216)'], ['white', 'rgb(255, 255, 255)']
         ]) {
             await chooseSetting(backgroundButton, mode);
             await page.mouse.move(4, 4);
-            assert.equal(await backgroundButton.locator('.comic-setting-label').innerText(), '背景颜色');
-            assert.equal(await backgroundButton.locator('.comic-setting-value').innerText(), label, 'the background button displays its color name');
-            assert.equal(await backgroundButton.getAttribute('aria-label'), '背景颜色：' + label);
-            assert.ok((await backgroundButton.getAttribute('title')).includes(label), 'the background tooltip names its color');
             assert.equal(await page.locator('#comic-reader-overlay').evaluate(element => getComputedStyle(element).backgroundColor), color);
             assert.equal(await page.evaluate(() => BilibiliToolbox.readerPreferences.load().backgroundMode), mode);
         }

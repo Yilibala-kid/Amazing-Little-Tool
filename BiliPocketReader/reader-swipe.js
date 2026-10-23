@@ -4,15 +4,17 @@
     'use strict';
     const Toolbox = window.BilibiliToolbox;
     const AXIS_SLOP = 10;
+    const TURN_DISTANCE = 80; // CSS pixels, independent of viewport width/density
+    const BLEND_DISTANCE = 240;
     const FLICK_SPEED = 0.5; // CSS pixels per millisecond
     const now = () => performance.now();
     const animationMode = reader => Toolbox.animations.normalizeAnimationMode(reader.animationMode);
     const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
-    function releaseDecision(offset, velocity, width) {
+    function releaseDecision(offset, velocity) {
         const sign = Math.sign(offset);
         const reversing = Math.abs(velocity) >= FLICK_SPEED && Math.sign(velocity) !== sign;
-        return sign && !reversing && (Math.abs(offset) >= width * 0.25
+        return sign && !reversing && (Math.abs(offset) >= TURN_DISTANCE
             || (Math.abs(offset) >= 20 && Math.abs(velocity) >= FLICK_SPEED));
     }
 
@@ -26,6 +28,7 @@
             this.frame = null;
             this.timer = null;
             this.prepareTimer = null;
+            this.preparing = false;
             this.gesture = null;
             this.pendingOffset = undefined;
         }
@@ -44,7 +47,7 @@
 
         setStageStyle(property, value) {
             if (this.reader.el.pageStage) this.reader.el.pageStage.style[property] = value;
-            for (const { stage } of this.slots.values()) stage.style[property] = value;
+            for (const { stage } of this.slots.values()) if (stage) stage.style[property] = value;
         }
 
         cancelMotion() {
@@ -61,6 +64,7 @@
             this.cancelMotion();
             clearTimeout(this.prepareTimer);
             this.prepareTimer = null;
+            this.preparing = false;
             this.gesture = null;
             this.pendingOffset = undefined;
             this.offset = 0;
@@ -69,8 +73,8 @@
             if (this.reader.el.pageStage) Object.assign(this.reader.el.pageStage.style,
                 { transform: '', opacity: '', transition: '', willChange: '' });
             for (const slot of this.slots.values()) {
-                slot.stage.querySelectorAll('img').forEach(img => img.remove());
-                slot.stage.remove();
+                slot.stage?.querySelectorAll('img').forEach(img => img.remove());
+                slot.stage?.remove();
                 slot.release();
             }
             this.slots.clear();
@@ -81,25 +85,26 @@
         schedule(delay = 120) {
             const r = this.reader;
             if (!r.isTouchDevice || !r.isOpen || !r.el.imgContainer?.firstChild) return;
+            if (this.preparing || [-1, 1].every(direction =>
+                !r.canTurnPage(direction) || this.slots.has(direction))) return;
             clearTimeout(this.prepareTimer);
-            this.warmProtection?.();
             // Protect predecessors before the existing memory-policy microtask.
-            const releaseWarm = r.imageLoader.protectImages(
+            this.warmProtection ||= r.imageLoader.protectImages(
                 r.imgList.slice(Math.max(0, r.currentIndex - 2), r.currentIndex + r.activePageCount + 2));
-            this.warmProtection = releaseWarm;
             const epoch = this.epoch;
             this.prepareTimer = setTimeout(() => {
                 this.prepareTimer = null;
                 if (epoch !== this.epoch || !r.isOpen) return;
-                this.ensureStage();
+                this.preparing = true;
                 // Decode the next group first, then the predecessor, yielding to
                 // foreground rendering rather than decoding four originals at once.
                 this.prepare(1).then(() => {
                     if (epoch === this.epoch) return this.prepare(-1);
                 }).finally(() => {
                     if (epoch !== this.epoch) return;
-                    releaseWarm();
-                    if (this.warmProtection === releaseWarm) this.warmProtection = null;
+                    this.preparing = false;
+                    this.warmProtection?.();
+                    this.warmProtection = null;
                     r.pruneImageCache();
                 });
             }, delay);
@@ -127,7 +132,7 @@
                 if (epoch !== this.epoch || !result) return null;
                 return this.fillSlot(slot, result, target, epoch);
             })().catch(() => null).then(ready => {
-                if (!ready && epoch === this.epoch) hint.textContent = '图片加载失败';
+                if (!ready && epoch === this.epoch && hint) hint.textContent = '图片加载失败';
                 return ready;
             });
             return slot.promise;
@@ -135,6 +140,10 @@
 
         createSlot(direction, sources) {
             const r = this.reader;
+            const slot = { stage: null, hint: null, result: null,
+                release: r.imageLoader.protectImages(sources) };
+            this.slots.set(direction, slot);
+            if (r.transitionEnabled === false) return slot;
             const stage = document.createElement('div');
             stage.className = 'comic-page-stage comic-page-neighbor';
             stage.setAttribute('aria-hidden', 'true');
@@ -143,19 +152,17 @@
             hint.textContent = '图片加载中…';
             stage.appendChild(hint);
             this.ensureStage().before(stage);
-            const slot = { stage, hint, result: null,
-                release: r.imageLoader.protectImages(sources) };
-            this.slots.set(direction, slot);
+            Object.assign(slot, { stage, hint });
             this.write(this.offset);
             return slot;
         }
 
-        async fillSlot(slot, result, target, epoch) {
-            const r = this.reader;
-            // Repeated URLs must never move a currently visible node away.
+        async prepareDisplayImages(images, preserveParents = true) {
+            // Previews preserve visible nodes; direct commits only clone repeats
+            // within the destination spread, so one node can occupy both pages.
             const used = new Set(), clones = [];
-            result.images = result.images.map(img => {
-                const duplicate = img.parentElement || used.has(img);
+            const prepared = images.map(img => {
+                const duplicate = (preserveParents && img.parentElement) || used.has(img);
                 used.add(img);
                 if (!duplicate) return img;
                 const clone = img.cloneNode(false);
@@ -163,6 +170,16 @@
                 return clone;
             });
             await Promise.all(clones.map(img => img.decode().catch(() => {})));
+            return prepared;
+        }
+
+        async fillSlot(slot, result, target, epoch) {
+            const r = this.reader;
+            if (!slot.stage) {
+                slot.result = { ...result, index: target };
+                return slot;
+            }
+            result.images = await this.prepareDisplayImages(result.images);
             if (epoch !== this.epoch) return null;
             const content = document.createElement('div');
             content.className = 'comic-swipe-images';
@@ -190,9 +207,16 @@
             this.animateTo(side * this.width, 0, () => this.commit(slot, false));
         }
 
-        commit(slot, advanceToken = true) {
+        async commit(slot, advanceToken = true) {
             const r = this.reader;
             const result = slot.result;
+            if (!slot.stage && new Set(result.images).size !== result.images.length) {
+                const epoch = this.epoch;
+                const motion = this.motion;
+                const images = await this.prepareDisplayImages(result.images, false);
+                if (epoch !== this.epoch || motion !== this.motion || !r.isOpen) return;
+                result.images = images;
+            }
             r.currentIndex = result.index;
             if (advanceToken) ++r.pageFlipToken;
             // Detach the preview before committing; commitImages schedules its
@@ -207,10 +231,20 @@
             return (offset > 0) !== this.reader.isRightToLeft ? -1 : 1;
         }
 
+        get travelDistance() {
+            return animationMode(this.reader) === 'parallel' ? this.width : BLEND_DISTANCE;
+        }
+
         write(offset) {
             this.offset = offset;
             const stage = this.reader.el.pageStage;
             if (!stage) return;
+            if (this.reader.transitionEnabled === false) {
+                stage.style.opacity = '1';
+                stage.style.transform = 'none';
+                for (const { stage: neighbor } of this.slots.values()) if (neighbor) neighbor.style.visibility = 'hidden';
+                return;
+            }
             const width = this.width || this.reader.viewportRect?.width || this.reader.el.reader.clientWidth;
             const mode = animationMode(this.reader);
             if (offset) this.visualSign = Math.sign(offset);
@@ -218,12 +252,12 @@
             const selected = this.direction(sign);
             // At article boundaries every style uses the same resistant nudge.
             const blend = mode !== 'parallel' && this.slots.has(selected);
-            const progress = Math.min(1, Math.abs(offset) / Math.max(1, width));
+            const progress = Math.min(1, Math.abs(offset) / this.travelDistance);
             // The two opacity ranges never overlap: halfway through the turn,
             // both stages are transparent and the selected reader background shows.
             const outgoing = Math.min(1, progress * 2);
             const incoming = Math.max(0, progress * 2 - 1);
-            const shift = Math.min(60, width * 0.12);
+            const shift = 48;
             const active = this.gesture?.axis === 'x' || this.animating || this.waiting;
             stage.style.opacity = String(blend ? 1 - outgoing : 1);
             stage.style.transform = !blend ? `translate3d(${offset}px,0,0)`
@@ -250,7 +284,7 @@
                     const slot = this.slots.get(this.direction(this.visualSign));
                     const progress = opacity > 0 ? (1 - opacity) / 2
                         : (1 + Number(getComputedStyle(slot.stage).opacity)) / 2;
-                    this.offset = this.visualSign * this.width * progress;
+                    this.offset = this.visualSign * this.travelDistance * progress;
                 }
             }
             this.cancelMotion();
@@ -266,7 +300,7 @@
                 this.programmatic = false;
             }
             if (!r.el.imgContainer?.firstChild || r.currentIndex !== r.displayedIndex) return;
-            this.ensureStage();
+            if (r.transitionEnabled !== false) this.ensureStage();
             this.stopMotion(true);
             this.pendingOffset = this.offset;
             this.width = r.viewportRect?.width || r.el.reader.clientWidth;
@@ -305,19 +339,25 @@
                     r.clearPendingTap();
                     r.cancelPreload();
                     r.setTransformTransition('none');
-                    this.setStageStyle('willChange', 'transform, opacity');
+                    if (r.transitionEnabled !== false) this.setStageStyle('willChange', 'transform, opacity');
                 } else return true;
             }
             if (g.axis === 'y') return r.scale <= 1.01;
             e.preventDefault();
             const raw = g.origin + dx;
-            if (r.canTurnPage(this.direction(raw))) this.prepare(this.direction(raw));
-            const offset = r.canTurnPage(this.direction(raw)) ? clamp(raw, -this.width, this.width)
+            const direction = this.direction(raw);
+            const canTurn = r.canTurnPage(direction);
+            if (canTurn && !this.slots.has(direction)) this.prepare(direction);
+            const offset = canTurn ? clamp(raw, -this.travelDistance, this.travelDistance)
                 : Math.sign(raw) * 72 * (1 - Math.exp(-Math.abs(raw) / 180));
             const time = now();
             g.samples.push({ x: touch.clientX, time });
             g.samples = g.samples.filter(sample => time - sample.time <= 100);
             this.pendingOffset = offset;
+            if (r.transitionEnabled === false) {
+                this.offset = offset;
+                return true;
+            }
             if (this.frame === null) this.frame = requestAnimationFrame(() => {
                 this.frame = null;
                 this.write(this.pendingOffset);
@@ -327,13 +367,18 @@
 
         animateTo(target, velocity, done) {
             this.stopMotion();
-            const motion = this.motion;
-            const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
             const distance = Math.abs(target - this.offset);
+            if (this.reader.transitionEnabled === false || !distance ||
+                matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                this.write(target);
+                done();
+                return;
+            }
+            const motion = this.motion;
             const mode = animationMode(this.reader);
             const gentle = mode !== 'parallel' && this.slots.has(this.direction(this.visualSign));
             const speed = gentle ? Math.max(1, Math.abs(velocity) * 0.6) : Math.max(1.6, Math.abs(velocity));
-            const duration = reduced ? 0 : clamp(distance / speed, gentle ? 280 : 120, gentle ? 420 : 220);
+            const duration = clamp(distance / speed, gentle ? 280 : 120, gentle ? 420 : 220);
             this.animating = true;
             const finish = () => { this.animating = false; done(); };
             const phase = (offset, milliseconds, complete) => {
@@ -347,10 +392,10 @@
                     complete();
                 }, milliseconds);
             };
-            const middle = this.visualSign * this.width / 2;
+            const middle = this.visualSign * this.travelDistance / 2;
             const crossesBackground = gentle
                 && (this.offset - middle) * (target - middle) < 0;
-            if (duration && crossesBackground) {
+            if (crossesBackground) {
                 const firstShare = duration * Math.abs(middle - this.offset) / distance;
                 // Keep both phases perceptible even when release is close to
                 // the background midpoint; a flick must not compress either one.
@@ -393,7 +438,7 @@
             const first = samples[0], last = samples[samples.length - 1];
             const velocity = samples.length > 1 && last.time > first.time ? (last.x - first.x) / (last.time - first.time) : 0;
             const direction = this.direction(this.offset);
-            const commit = this.reader.canTurnPage(direction) && releaseDecision(this.offset, velocity, this.width);
+            const commit = this.reader.canTurnPage(direction) && releaseDecision(this.offset, velocity);
             this.gesture = null;
             this.reader.clearPendingTap();
             if (!commit) {
@@ -408,7 +453,7 @@
                     this.animateTo(0, 0, () => { this.reset(); this.schedule(); });
                     return;
                 }
-                this.animateTo(Math.sign(this.offset) * this.width, velocity, () => {
+                this.animateTo(Math.sign(this.offset) * this.travelDistance, velocity, () => {
                     this.commit(ready);
                 });
             };

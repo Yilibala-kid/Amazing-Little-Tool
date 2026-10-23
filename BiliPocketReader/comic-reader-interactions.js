@@ -40,6 +40,7 @@
 
         const preferenceButtons = [
             [el.directionBtn, 'isRightToLeft'],
+            [el.transitionBtn, 'transitionEnabled'],
             [el.animationBtn, 'animationMode', readerPreferences.ANIMATION_MODES],
             [el.viewModeBtn, 'viewMode', VIEW_MODES],
             [el.imageRenderBtn, 'imageRenderMode', IMAGE_RENDER_MODES],

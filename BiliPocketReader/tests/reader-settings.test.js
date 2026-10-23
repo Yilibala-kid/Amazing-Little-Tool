@@ -101,6 +101,25 @@ function settingFixture(storedPreferences) {
     return { toolbox, writes, document, reader, effects };
 }
 
+test('transition switch saves independently and restores without losing the animation mode', () => {
+    const { reader, writes, toolbox } = settingFixture({ animationMode: 'fade' });
+    assert.equal(reader.transitionEnabled, true, 'existing users keep animations enabled');
+    const toggle = reader.el.transitionBtn;
+    assert.equal(toggle.getAttribute('role'), 'switch');
+    toggle.click();
+    assert.equal(reader.transitionEnabled, false);
+    assert.equal(toggle.getAttribute('aria-checked'), 'false');
+    assert.equal(reader.animationMode, 'fade');
+    assert.equal(writes.length, 1);
+    const restored = settingFixture(writes[0].value).reader;
+    assert.equal(restored.transitionEnabled, false);
+    assert.equal(restored.animationMode, 'fade');
+    restored.el.transitionBtn.click();
+    assert.equal(restored.transitionEnabled, true);
+    assert.equal(restored.animationMode, 'fade');
+    assert.equal(toolbox.readerPreferences.normalize({ transitionEnabled: 'false' }).transitionEnabled, true);
+});
+
 test('preloading preferences preserve older settings and reject unsupported values', async () => {
     const { toolbox, writes } = loadReaderServices({ storedPreferences: {
         viewMode: 'single', imageRenderMode: 'sharp', tapPageNavigation: true
@@ -178,6 +197,25 @@ test('setting cards apply only their own effects and do not reload current image
     assert.equal(reader.filterMode, 'original');
     assert.equal(reader.el.filterBtn.dataset.value, 'original');
     assert.throws(() => reader.setPreference('currentIndex', 10), /Unknown reader preference/);
+});
+
+test('unchanged preferences skip persistence, rendering and preview scheduling', () => {
+    const { reader, writes, effects, toolbox } = settingFixture();
+    let previews = 0;
+    reader.swipe = { reset() { previews++; }, schedule() { previews++; } };
+    for (const key of Object.keys(toolbox.readerPreferences.DEFAULT_READER_PREFERENCES)) {
+        reader.setPreference(key, reader[key]);
+    }
+    reader.setPreference('clarityStrength', 20); // Normalizes to the current off state.
+    assert.equal(writes.length, 0);
+    assert.deepEqual(effects, []);
+    assert.equal(previews, 0);
+    reader.isOpen = true;
+    reader.displayedIndex = -1;
+    reader.setPreference('transitionEnabled', false);
+    assert.deepEqual(effects, [['render', false]], 'pending navigation owns its reset and preview schedule');
+    assert.equal(previews, 0);
+    assert.equal(writes.length, 1);
 });
 
 test('retired animation preferences fall back to smooth and save a supported mode', async () => {

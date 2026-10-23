@@ -1,12 +1,8 @@
 // Run with Node and Playwright, optionally BPR_BROWSER_PATH for system Edge/Chrome.
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const os = require('node:os');
 const path = require('node:path');
-const { chromium } = require('playwright');
-const root = path.resolve(__dirname, '../..');
-const manifest = JSON.parse(fs.readFileSync(path.join(root, 'manifest.json'), 'utf8'));
-const artifacts = fs.mkdtempSync(path.join(os.tmpdir(), 'bpr-thumbnails-'));
+const { launchBrowser, createArtifacts, loadReader } = require('./helpers.cjs');
+const artifacts = createArtifacts('thumbnails');
 const svg = number => `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900">
     <rect width="600" height="900" fill="${number % 2 ? '#e3edf5' : '#fcf3db'}"/>
     <rect x="30" y="30" width="540" height="840" fill="none" stroke="#243346" stroke-width="5"/>
@@ -16,8 +12,7 @@ const html = '<!doctype html><meta name="viewport" content="width=device-width,i
         `<img width="200" height="300" src="https://i0.hdslb.com/bfs/article/page${i}.jpg@200w.webp">`).join('') + '</div>';
 
 (async () => {
-    const browser = await chromium.launch({ headless: true,
-        ...(process.env.BPR_BROWSER_PATH ? { executablePath: process.env.BPR_BROWSER_PATH } : {}) });
+    const browser = await launchBrowser();
     try {
         for (const mobile of [false, true]) {
             const context = await browser.newContext({ viewport: mobile ? { width: 393, height: 820 } : { width: 1360, height: 900 },
@@ -38,12 +33,7 @@ const html = '<!doctype html><meta name="viewport" content="width=device-width,i
                 await route.fulfill({ contentType: 'image/svg+xml', body: svg(index) });
             });
             await page.goto('https://www.bilibili.com/read/cv1');
-            for (const file of manifest.content_scripts[0].css) {
-                await page.addStyleTag({ content: fs.readFileSync(path.join(root, file), 'utf8').replace(/^\uFEFF/, '') });
-            }
-            for (const file of manifest.content_scripts[0].js.filter(file => file !== 'content.js')) {
-                await page.addScriptTag({ path: path.join(root, file) });
-            }
+            await loadReader(page);
             await page.evaluate(async () => {
                 window.reader = new BilibiliToolbox.reader.BiliComicReader();
                 reader.preloadPages = '2';

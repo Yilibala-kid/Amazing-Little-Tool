@@ -2,15 +2,11 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const os = require('node:os');
-const { chromium } = require('playwright');
-const root = path.resolve(__dirname, '../..');
-const manifest = JSON.parse(fs.readFileSync(path.join(root, 'manifest.json'), 'utf8'));
-const artifacts = fs.mkdtempSync(path.join(os.tmpdir(), 'bpr-clarity-'));
+const { launchBrowser, createArtifacts, loadReader, mockStorage } = require('./helpers.cjs');
+const artifacts = createArtifacts('clarity');
 
 (async () => {
-    const browser = await chromium.launch({ headless: true,
-        ...(process.env.BPR_BROWSER_PATH ? { executablePath: process.env.BPR_BROWSER_PATH } : {}) });
+    const browser = await launchBrowser();
     try {
         for (const variant of ['extension', 'userscript']) {
             const context = await browser.newContext({ viewport: { width: 1100, height: 850 }, deviceScaleFactor: 1, hasTouch: true });
@@ -33,34 +29,8 @@ const artifacts = fs.mkdtempSync(path.join(os.tmpdir(), 'bpr-clarity-'));
                 : route.fulfill({ contentType: 'text/html', body: '<meta name="viewport" content="width=device-width,initial-scale=1"><div class="article-content">' +
                     [0, 1, 2].map(i => `<img src="https://i0.hdslb.com/bfs/article/page${i}.png">`).join('') + '</div>' }));
             await page.goto('https://www.bilibili.com/read/cv1');
-            await page.evaluate(() => {
-                const values = {};
-                window.GM = { async getValue(key) { return values[key]; }, async setValue(key, value) { values[key] = value; } };
-                const listeners = new Set();
-                window.chrome = { runtime: { onMessage: { addListener() {}, removeListener() {} } }, storage: {
-                    local: {
-                        async get(keys) { return Object.fromEntries(keys.map(key => [key, values[key]])); },
-                        async set(items) {
-                            Object.assign(values, items);
-                            const changes = Object.fromEntries(Object.entries(items).map(([key, newValue]) => [key, { newValue }]));
-                            listeners.forEach(fn => fn(changes, 'local'));
-                        }
-                    },
-                    onChanged: { addListener(fn) { listeners.add(fn); }, removeListener(fn) { listeners.delete(fn); } }
-                } };
-            });
-            if (variant === 'extension') {
-                for (const file of manifest.content_scripts[0].css) {
-                    await page.addStyleTag({ content: fs.readFileSync(path.join(root, file), 'utf8').replace(/^\uFEFF/, '') });
-                }
-                for (const file of manifest.content_scripts[0].js.filter(file => file !== 'content.js')) {
-                    await page.addScriptTag({ path: path.join(root, file) });
-                }
-            } else {
-                // Exercise the userscript's own storage adapter, not the extension mock.
-                await page.evaluate(() => { delete window.chrome.storage; });
-                await page.addScriptTag({ path: path.join(root, 'dist/BiliPocketReader.user.js') });
-            }
+            await mockStorage(page, variant);
+            await loadReader(page, { variant });
             await page.evaluate(async () => {
                 await BilibiliToolbox.storage.init();
                 window.reader = new BilibiliToolbox.reader.BiliComicReader();
