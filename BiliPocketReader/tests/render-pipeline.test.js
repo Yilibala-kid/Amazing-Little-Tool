@@ -95,6 +95,29 @@ test('resize bursts coalesce without reloading images and close cancels pending 
     assert.equal(layouts, 1);
 });
 
+test('disabling drag transitions preserves normal page-turn animations for prepared images', async () => {
+    for (const mode of ['smooth', 'fade']) {
+        const { reader, context, container, oldImage } = fixture();
+        let finish;
+        context.matchMedia = () => ({ matches: false });
+        context.setTimeout = fn => { finish = fn; return 1; };
+        context.clearTimeout = () => {};
+        reader.transitionEnabled = false;
+        reader.animationMode = mode;
+        reader.imgList = ['old', 'new'];
+        reader.currentIndex = 1;
+        const image = { src: 'new', style: {}, dataset: {} };
+        await reader.render(true, 1, { images: [image], preloadStart: 2 });
+        assert.equal(container.firstChild, oldImage, 'old page stays until its outgoing animation finishes');
+        assert.equal(container.style.opacity, '0');
+        assert.match(container.style.transition, /opacity 200ms/);
+        finish();
+        assert.equal(container.firstChild, image);
+        assert.equal(reader.displayedIndex, 1);
+        assert.match(container.style.transition, /opacity 300ms/);
+    }
+});
+
 test('cached originals prepare a fresh decoded frame while the visible page stays intact', async () => {
     const { reader, container, images, oldImage } = fixture();
     reader.imgList = ['cached-original'];

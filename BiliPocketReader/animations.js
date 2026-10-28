@@ -89,48 +89,22 @@
         loadImages(renderIndex, IMMEDIATE_RENDER_MODE, direction);
     }
 
-    function resetAnimatedContainer(imgContainer, animationMode, transitionDirection, applyTransform, getTransform, getShiftedTransformFn) {
-        const mode = ANIMATION_MODES.includes(animationMode) ? animationMode : IMMEDIATE_RENDER_MODE;
-        imgContainer.style.transition = 'none';
-        applyTransform();
-        if (mode === 'smooth') {
-            Object.assign(imgContainer.style, {
-                transform: withSubtleScale(getShiftedTransform(getShiftedTransformFn, getTransform, -transitionDirection * FADE_SHIFT_DISTANCE)),
-                opacity: '0',
-                filter: 'none'
-            });
-        } else if (mode === 'fade') {
-            Object.assign(imgContainer.style, { opacity: '0', filter: 'none' });
-        } else {
-            Object.assign(imgContainer.style, { opacity: '1', filter: 'none' });
-        }
-    }
-
     function finishAnimatedRender(imgContainer, animationMode, transitionDirection, applyTransform, getTransform, getShiftedTransformFn) {
-        const mode = ANIMATION_MODES.includes(animationMode) ? animationMode : IMMEDIATE_RENDER_MODE;
-        if (mode === 'smooth') {
-            Object.assign(imgContainer.style, {
-                transition: 'none',
-                opacity: '0',
-                filter: 'none',
-                transform: withSubtleScale(getShiftedTransform(getShiftedTransformFn, getTransform, -transitionDirection * FADE_SHIFT_DISTANCE))
-            });
+        const smooth = animationMode === 'smooth';
+        const animated = smooth || animationMode === 'fade';
+        Object.assign(imgContainer.style, {
+            transition: 'none', opacity: animated ? '0' : '1', filter: 'none',
+            transform: smooth
+                ? withSubtleScale(getShiftedTransform(getShiftedTransformFn, getTransform, -transitionDirection * FADE_SHIFT_DISTANCE))
+                : getBaseTransform(getTransform)
+        });
+        if (animated) {
             imgContainer.getBoundingClientRect();
             Object.assign(imgContainer.style, {
-                transition: `transform ${FADE_SETTLE_DURATION}ms ease-out, opacity ${FADE_SETTLE_DURATION}ms ease-out`,
-                opacity: '1',
-                filter: 'none',
-                transform: getBaseTransform(getTransform)
+                transition: (smooth ? 'transform ' + FADE_SETTLE_DURATION + 'ms ease-out, ' : '')
+                    + 'opacity ' + FADE_SETTLE_DURATION + 'ms ease-out',
+                opacity: '1', transform: getBaseTransform(getTransform)
             });
-        } else if (mode === 'fade') {
-            imgContainer.getBoundingClientRect();
-            Object.assign(imgContainer.style, {
-                transition: `opacity ${FADE_SETTLE_DURATION}ms ease-out`,
-                opacity: '1',
-                filter: 'none'
-            });
-        } else {
-            Object.assign(imgContainer.style, { transition: 'none', opacity: '1', filter: 'none' });
         }
         applyTransform();
     }
@@ -144,7 +118,6 @@
         IMMEDIATE_RENDER_MODE,
         normalizeAnimationMode: normalizeMode,
         runTransition: runTransitionFlow,
-        resetImageContainer: resetAnimatedContainer,
         finishRender: finishAnimatedRender,
         cancel: cancelTransition
     };

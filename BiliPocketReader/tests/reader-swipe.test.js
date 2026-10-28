@@ -54,8 +54,8 @@ test('touch bursts coalesce into one frame without layout reads; reset cancels a
     assert.equal(h.frames.size, 1);
     assert.equal(h.swipe.offset, 0, 'no immediate DOM write per touch event');
     h.flush();
-    assert.equal(h.swipe.offset, -96);
-    assert.equal(h.stage.style.transform, 'translate3d(-96px,0,0)');
+    assert.equal(h.swipe.offset, -72);
+    assert.equal(h.stage.style.transform, 'translate3d(-72px,0,0)');
     assert.equal(h.reads(), 0, 'dragging never forces a geometry read');
     h.swipe.end({ type: 'touchcancel' });
     assert.equal(h.timers.size, 1);
@@ -64,6 +64,22 @@ test('touch bursts coalesce into one frame without layout reads; reset cancels a
     assert.equal(h.frames.size, 0);
     assert.equal(h.swipe.offset, 0);
     assert.equal(h.stage.style.transform, '');
+});
+
+test('drag visuals start after 24px and a long hold never advances the page before release', () => {
+    const h = fixture();
+    h.swipe.start(h.event(300));
+    h.swipe.move(h.event(280)); h.flush();
+    assert.equal(h.swipe.offset, 0);
+    assert.equal(h.stage.style.opacity, '1');
+    h.swipe.move(h.event(276)); h.flush();
+    assert.equal(h.swipe.offset, 0);
+    h.swipe.move(h.event(270)); h.flush();
+    assert.equal(h.swipe.offset, -6, 'the threshold is subtracted to avoid a jump');
+    for (let i = 0; i < 20; i++) { h.swipe.move(h.event(-1000 - i * 100)); h.flush(); }
+    assert.equal(h.swipe.offset, -400);
+    assert.equal(h.reader.currentIndex, 2);
+    assert.equal(h.reader.displayedIndex, 2);
 });
 
 test('disabled transitions keep the current image still and complete without timers or layout reads', () => {
@@ -76,7 +92,7 @@ test('disabled transitions keep the current image still and complete without tim
         h.swipe.start(h.event(300));
         h.swipe.move(h.event(210));
         assert.equal(h.frames.size, 0, 'disabled effects do not schedule visual updates');
-        assert.equal(h.swipe.offset, -90, 'gesture still records the release distance');
+        assert.equal(h.swipe.offset, -66, 'visual distance excludes the initial dead zone');
         assert.equal(h.stage.style.transform, 'none');
         assert.equal(h.stage.style.opacity, '1');
         assert.equal(neighbor.style.visibility, 'hidden');
@@ -104,10 +120,10 @@ test('boundary resistance, vertical axis lock and zoom edge handoff stay distinc
     assert.equal(h.swipe.move(h.event(80)), false, 'movement within the zoomed image remains pan');
     h.swipe.move(h.event(140)); h.flush();
     assert.equal(h.reader.translateX, 100);
-    assert.equal(h.swipe.offset, 20, 'only edge overflow after the dead zone moves the page');
+    assert.equal(h.swipe.offset, 6, 'only edge overflow after the 24px dead zone moves the page');
 });
 
-test('disabled previews prepare decoded images without DOM, clones or layout and commit the cached node', async () => {
+test('disabled previews prepare images without DOM and hand the cached group to normal animated rendering', async () => {
     const h = fixture();
     const image = { parentElement: {}, cloneNode() { throw new Error('unneeded clone'); } };
     let protectedGroup = false, committed;
@@ -115,7 +131,12 @@ test('disabled previews prepare decoded images without DOM, clones or layout and
         imgList: ['a', 'b', 'c', 'd'], getNextPageGroupIndex: () => 3,
         getImageDisplayLayout() { throw new Error('unneeded preview layout'); },
         imageLoader: { protectImages() { protectedGroup = true; return () => { protectedGroup = false; }; } },
-        commitImages(images) { committed = images; }, syncThumbnailSelection() {} });
+        render(animate, step, result) {
+            assert.equal(animate, true);
+            assert.equal(step, 1);
+            committed = result.images;
+            h.swipe.reset();
+        } });
     h.context.BilibiliToolbox.readerPageGroups = { async loadVisibleImages() {
         return { images: [image], preloadStart: 4 };
     } };
@@ -130,7 +151,7 @@ test('disabled previews prepare decoded images without DOM, clones or layout and
     assert.equal(protectedGroup, true);
     await h.swipe.commit(slot);
     assert.equal(committed[0], image);
-    assert.equal(h.reader.displayedIndex, 3);
+    assert.equal(h.reader.currentIndex, 3);
     assert.equal(protectedGroup, false);
     assert.equal(h.swipe.slots.size, 0);
 });

@@ -52,7 +52,7 @@ const artifacts = createArtifacts('swipe');
             const down = (x, y = 410) => send('touchStart', [[x, y]]);
             const move = (x, y = 410) => send('touchMove', [[x, y]]);
             const up = () => send('touchEnd', []);
-            const rest = () => page.waitForFunction(() => !reader.swipe.animating && !reader.swipe.waiting && !reader.swipe.gesture && Math.abs(reader.swipe.offset) < 0.1);
+            const rest = () => page.waitForFunction(() => !reader.swipe.animating && !reader.swipe.waiting && !reader.swipe.gesture && Math.abs(reader.swipe.offset) < 0.1 && reader.currentIndex === reader.displayedIndex && Number(getComputedStyle(reader.el.imgContainer).opacity) > 0.99);
             const ready = direction => page.waitForFunction(dir => !!reader.swipe.slots.get(dir)?.result, direction);
             const jump = async (index, viewMode = 'single') => {
                 await page.evaluate(async ({ index, viewMode }) => {
@@ -70,10 +70,15 @@ const artifacts = createArtifacts('swipe');
             await page.waitForFunction(() => reader.el.imgContainer.children.length === 1);
             await ready(1);
 
+            await down(300); await move(280);
+            await page.waitForTimeout(40);
+            assert.equal(await page.evaluate(() => reader.swipe.offset), 0, '20px movement stays inside the dead zone');
+            await up(); await rest();
+
             // Before release, finger delta equals stage delta and index stays put.
             await down(260);
             await move(190);
-            await page.waitForFunction(() => reader.swipe.offset === -70);
+            await page.waitForFunction(() => reader.swipe.offset === -46);
             assert.equal(await page.evaluate(() => reader.currentIndex), 0);
             const follow = await page.evaluate(() => ({
                 x: new DOMMatrixReadOnly(getComputedStyle(reader.el.pageStage).transform).m41,
@@ -81,9 +86,9 @@ const artifacts = createArtifacts('swipe');
                 slots: document.querySelectorAll('.comic-page-stage').length,
                 neighborImage: reader.swipe.slots.get(1).stage.querySelector('img').getBoundingClientRect().left
             }));
-            assert.equal(follow.x, -70);
-            assert.equal(follow.next, 320);
-            assert.ok(follow.neighborImage >= 320 && follow.neighborImage < 390);
+            assert.equal(follow.x, -46);
+            assert.equal(follow.next, 344);
+            assert.ok(follow.neighborImage >= 344 && follow.neighborImage < 390);
             assert.ok(follow.slots <= 3);
             await page.screenshot({ path: path.join(artifacts, `${variant}-following.png`) });
             await page.waitForTimeout(140); await up(); await rest();
@@ -225,7 +230,7 @@ const artifacts = createArtifacts('swipe');
                 await page.evaluate(mode => reader.setPreference('animationMode', mode), mode);
                 await jump(3); await ready(1); await ready(-1);
                 await down(300); await move(240);
-                await page.waitForFunction(() => reader.swipe.offset === -60);
+                await page.waitForFunction(() => reader.swipe.offset === -36);
                 const visual = await page.evaluate(() => {
                     const current = getComputedStyle(reader.el.pageStage);
                     const incoming = getComputedStyle(reader.swipe.slots.get(1).stage);
@@ -236,9 +241,9 @@ const artifacts = createArtifacts('swipe');
                 });
                 assert.equal(visual.nextVisible, 'visible');
                 if (mode === 'parallel') {
-                    assert.equal(visual.x, -60); assert.equal(visual.opacity, 1);
+                    assert.equal(visual.x, -36); assert.equal(visual.opacity, 1);
                 } else {
-                    assert.ok(Math.abs(visual.opacity - 0.5) < 0.01);
+                    assert.ok(Math.abs(visual.opacity - 0.7) < 0.01);
                     assert.equal(visual.nextOpacity, 0, 'next page stays transparent until the old page has faded out');
                     if (mode === 'fade') {
                         assert.equal(visual.x, 0); assert.equal(visual.nextX, 0); assert.equal(visual.scale, 1);
@@ -259,7 +264,7 @@ const artifacts = createArtifacts('swipe');
                 if (mode !== 'parallel') {
                     for (const [background, value] of [['white', 255], ['darkGray', 31]]) {
                         await page.evaluate(background => reader.setPreference('backgroundMode', background), background);
-                        await down(300); await move(180);
+                        await down(300); await move(156);
                         await page.waitForFunction(() => reader.swipe.offset === -120);
                         assert.deepEqual(await page.evaluate(() => [reader.el.pageStage,
                             reader.swipe.slots.get(1).stage].map(stage => Number(getComputedStyle(stage).opacity))), [0, 0]);
@@ -272,7 +277,7 @@ const artifacts = createArtifacts('swipe');
                             return [...ctx.getImageData(0, 0, 1, 1).data];
                         }, [...pixels]);
                         assert.deepEqual(pixel, [value, value, value, 255], 'midpoint pixels equal the selected reader background');
-                        await move(120);
+                        await move(96);
                         await page.waitForFunction(() => reader.swipe.offset === -180);
                         const incoming = await page.evaluate(() => [reader.el.pageStage,
                             reader.swipe.slots.get(1).stage].map(stage => Number(getComputedStyle(stage).opacity)));
@@ -327,7 +332,7 @@ const artifacts = createArtifacts('swipe');
                     await drag(300, 230); await rest();
                     assert.equal(await page.evaluate(() => reader.currentIndex), 3, '70px slow drag rebounds on every screen');
                     if (mode !== 'parallel') {
-                        await down(300); await move(180);
+                        await down(300); await move(156);
                         await page.waitForFunction(() => reader.swipe.offset === -120);
                         assert.deepEqual(await page.evaluate(() => [reader.el.pageStage,
                             reader.swipe.slots.get(1).stage].map(stage => Number(getComputedStyle(stage).opacity))), [0, 0]);
@@ -360,7 +365,7 @@ const artifacts = createArtifacts('swipe');
                 assert.equal(await page.locator('.comic-page-neighbor').count(), 0, 'disabled transitions create no neighbor DOM');
                 assert.equal(await page.evaluate(() => reader.swipe.slots.get(1).stage), null);
                 await down(300); await move(210);
-                await page.waitForFunction(() => reader.swipe.offset === -90);
+                await page.waitForFunction(() => reader.swipe.offset === -66);
                 assert.deepEqual(await page.evaluate(() => {
                     const style = getComputedStyle(reader.el.pageStage);
                     return [style.transform, Number(style.opacity), reader.currentIndex];
@@ -368,11 +373,11 @@ const artifacts = createArtifacts('swipe');
                 await page.waitForTimeout(140); await up(); await rest();
                 assert.equal(await page.evaluate(() => reader.currentIndex), 4);
                 await page.evaluate(() => reader.el.leftBtn.click());
-                await page.waitForFunction(() => reader.displayedIndex === 3);
-                assert.equal(await page.evaluate(() => getComputedStyle(reader.el.imgContainer).opacity), '1');
+                await rest();
+                assert.equal(await page.evaluate(() => reader.displayedIndex), 3);
                 await page.keyboard.press('ArrowRight');
-                await page.waitForFunction(() => reader.displayedIndex === 4);
-                assert.equal(await page.evaluate(() => reader.swipe.animating), false);
+                await rest();
+                assert.equal(await page.evaluate(() => reader.displayedIndex), 4);
             }
             // Equal URLs in a destination spread need separate nodes only at commit.
             await page.evaluate(() => { window.savedFifth = reader.imgList[5]; reader.imgList[5] = reader.imgList[4]; });
@@ -404,6 +409,21 @@ const artifacts = createArtifacts('swipe');
             await ready(1);
             assert.equal(await page.locator('.comic-page-stage').count(), 0, 'opening with animation disabled creates no stages');
             await page.evaluate(() => reader.setPreference('transitionEnabled', true));
+
+            for (const enabled of [false, true]) {
+                await page.evaluate(enabled => reader.setPreference('transitionEnabled', enabled), enabled);
+                await jump(3); await ready(1);
+                await down(350);
+                for (const x of [200, 5, 120, 5, 80, 5]) await move(x);
+                assert.equal(await page.evaluate(() => reader.currentIndex), 3, 'holding a long swipe never chains pages');
+                await up(); await rest();
+                await page.evaluate(() => {
+                    reader.handleTouchEnd({ type: 'touchend', touches: [], changedTouches: [], preventDefault() {} });
+                    reader.handleTouchEnd({ type: 'touchend', touches: [], changedTouches: [], preventDefault() {} });
+                });
+                await page.waitForTimeout(250);
+                assert.equal(await page.evaluate(() => reader.currentIndex), 4, 'one physical gesture turns exactly one group');
+            }
 
             // Parallel button/keyboard navigation also moves both pages together.
             await page.evaluate(() => reader.setPreference('animationMode', 'parallel'));

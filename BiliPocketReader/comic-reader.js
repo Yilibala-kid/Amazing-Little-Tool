@@ -192,6 +192,7 @@
 
             this.isOpen = true;
             this.suppressRemainingTouch = false;
+            this.singleTouchActive = false;
             this.stopPreparingImages();
             this.currentIndex = 0;
             this.displayedIndex = 0;
@@ -326,7 +327,7 @@
         }
 
         // Keep the current page visible until the next group is decoded.
-        async render(animate = true, step = 0) {
+        async render(animate = true, step = 0, prepared = null) {
             this.swipe?.reset();
             const container = this.el.imgContainer;
             if (!container) return;
@@ -336,14 +337,13 @@
             animations.cancel(container);
             this.pruneImageCache();
             this.applyTransform();
-            const result = await this.loadImages(renderIndex, transitionToken);
+            const result = prepared || await this.loadImages(renderIndex, transitionToken);
             if (transitionToken !== this.pageFlipToken || container !== this.el.imgContainer) return;
             if (!result) {
                 if (container.firstChild) this.currentIndex = this.displayedIndex;
                 this.showReaderMessage('图片加载失败，请重试', true);
                 return;
             }
-            animate = animate && this.transitionEnabled !== false;
             if (animate && this.animationMode === 'parallel' && container.firstChild &&
                 !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
                 await this.swipe.play(result, renderIndex, step, transitionToken);
@@ -365,8 +365,6 @@
                 loadImages: (_index, mode, direction) => {
                     if (transitionToken !== this.pageFlipToken || container !== this.el.imgContainer) return;
                     this.commitImages(result.images, mode, direction, result.preloadStart);
-                    this.displayedIndex = renderIndex;
-                    this.syncThumbnailSelection();
                 }
             });
         }
@@ -415,11 +413,6 @@
             this.resetPageInteractionState();
             this.setupImagesForRenderMode(images);
             this.updateFitScale(images);
-            animations.resetImageContainer(
-                this.el.imgContainer, animationMode, transitionDirection,
-                () => this.applyTransform(), () => this.getTransformStyle(),
-                (offset) => this.getTransformStyle(offset)
-            );
             this.el.imgContainer.replaceChildren(...images);
             this.updatePageInfo(images.length);
             animations.finishRender(
@@ -430,12 +423,11 @@
                 () => this.getTransformStyle(),
                 (screenTranslateX) => this.getTransformStyle(screenTranslateX)
             );
+            this.displayedIndex = this.currentIndex;
+            this.syncThumbnailSelection();
             this.preloadImages(preloadStart);
             this.swipe?.schedule(animationMode === 'immediate' ? 120 : 550);
-            // Apply the memory policy after the displayed page index is committed.
-            Promise.resolve().then(() => {
-                if (this.isOpen) this.pruneImageCache();
-            });
+            if (this.isOpen) this.pruneImageCache();
         }
 
         // 辅助：设置图片样式

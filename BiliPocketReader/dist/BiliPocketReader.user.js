@@ -815,48 +815,22 @@
         loadImages(renderIndex, IMMEDIATE_RENDER_MODE, direction);
     }
 
-    function resetAnimatedContainer(imgContainer, animationMode, transitionDirection, applyTransform, getTransform, getShiftedTransformFn) {
-        const mode = ANIMATION_MODES.includes(animationMode) ? animationMode : IMMEDIATE_RENDER_MODE;
-        imgContainer.style.transition = 'none';
-        applyTransform();
-        if (mode === 'smooth') {
-            Object.assign(imgContainer.style, {
-                transform: withSubtleScale(getShiftedTransform(getShiftedTransformFn, getTransform, -transitionDirection * FADE_SHIFT_DISTANCE)),
-                opacity: '0',
-                filter: 'none'
-            });
-        } else if (mode === 'fade') {
-            Object.assign(imgContainer.style, { opacity: '0', filter: 'none' });
-        } else {
-            Object.assign(imgContainer.style, { opacity: '1', filter: 'none' });
-        }
-    }
-
     function finishAnimatedRender(imgContainer, animationMode, transitionDirection, applyTransform, getTransform, getShiftedTransformFn) {
-        const mode = ANIMATION_MODES.includes(animationMode) ? animationMode : IMMEDIATE_RENDER_MODE;
-        if (mode === 'smooth') {
-            Object.assign(imgContainer.style, {
-                transition: 'none',
-                opacity: '0',
-                filter: 'none',
-                transform: withSubtleScale(getShiftedTransform(getShiftedTransformFn, getTransform, -transitionDirection * FADE_SHIFT_DISTANCE))
-            });
+        const smooth = animationMode === 'smooth';
+        const animated = smooth || animationMode === 'fade';
+        Object.assign(imgContainer.style, {
+            transition: 'none', opacity: animated ? '0' : '1', filter: 'none',
+            transform: smooth
+                ? withSubtleScale(getShiftedTransform(getShiftedTransformFn, getTransform, -transitionDirection * FADE_SHIFT_DISTANCE))
+                : getBaseTransform(getTransform)
+        });
+        if (animated) {
             imgContainer.getBoundingClientRect();
             Object.assign(imgContainer.style, {
-                transition: `transform ${FADE_SETTLE_DURATION}ms ease-out, opacity ${FADE_SETTLE_DURATION}ms ease-out`,
-                opacity: '1',
-                filter: 'none',
-                transform: getBaseTransform(getTransform)
+                transition: (smooth ? 'transform ' + FADE_SETTLE_DURATION + 'ms ease-out, ' : '')
+                    + 'opacity ' + FADE_SETTLE_DURATION + 'ms ease-out',
+                opacity: '1', transform: getBaseTransform(getTransform)
             });
-        } else if (mode === 'fade') {
-            imgContainer.getBoundingClientRect();
-            Object.assign(imgContainer.style, {
-                transition: `opacity ${FADE_SETTLE_DURATION}ms ease-out`,
-                opacity: '1',
-                filter: 'none'
-            });
-        } else {
-            Object.assign(imgContainer.style, { transition: 'none', opacity: '1', filter: 'none' });
         }
         applyTransform();
     }
@@ -870,7 +844,6 @@
         IMMEDIATE_RENDER_MODE,
         normalizeAnimationMode: normalizeMode,
         runTransition: runTransitionFlow,
-        resetImageContainer: resetAnimatedContainer,
         finishRender: finishAnimatedRender,
         cancel: cancelTransition
     };
@@ -2442,7 +2415,7 @@
                 const enabled = preferenceValue(this, 'transitionEnabled');
                 toggle.textContent = enabled ? '过渡：开' : '过渡：关';
                 toggle.setAttribute('aria-checked', String(enabled));
-                toggle.title = '关闭后直接切页；开启后使用所选动画。';
+                toggle.title = '开启：滑动超过 24 像素后跟手过渡；关闭：松手后播放所选翻页动画。每次滑动最多翻一页。';
             }
         },
 
@@ -2620,6 +2593,7 @@
         touchEndY: 0,
         touchStartTime: 0,
         touchStartedOnInteractive: false,
+        singleTouchActive: false,
         pendingTapTimer: null,
         lastTapTime: 0,
         lastTapX: 0,
@@ -2707,6 +2681,7 @@
         handleTouchStart(e) {
             if (this.isSelectingScreenshot || this.suppressRemainingTouch) return;
             if (e.touches.length > 2) {
+                this.singleTouchActive = false;
                 this.swipe?.reset();
                 this.clearPendingTap();
                 this.isTwoFingerGesturing = false;
@@ -2715,6 +2690,7 @@
                 return;
             }
             if (e.touches.length === 2) {
+                this.singleTouchActive = false;
                 this.swipe?.reset(false);
                 if (this.isInteractiveTouchTarget(e.target)) {
                     this.suppressRemainingTouch = true;
@@ -2739,6 +2715,8 @@
             }
 
             if (e.touches.length === 1) {
+                if (this.singleTouchActive) return;
+                this.singleTouchActive = true;
                 this.touchStartX = e.touches[0].clientX;
                 this.touchStartY = e.touches[0].clientY;
                 this.touchEndX = this.touchStartX;
@@ -2757,6 +2735,7 @@
 
         handleTouchMove(e) {
             if (this.isSelectingScreenshot || this.suppressRemainingTouch) return;
+            if (e.touches.length === 1 && !this.singleTouchActive) return;
             if (e.touches.length === 2 && this.isTwoFingerGesturing) {
                 // 双指缩放中
                 e.preventDefault();
@@ -2813,6 +2792,7 @@
 
         handleTouchEnd(e) {
             if (this.isSelectingScreenshot || this.suppressRemainingTouch) {
+                this.singleTouchActive = false;
                 if (!e.touches.length) {
                     this.suppressRemainingTouch = false;
                     this.isTwoFingerGesturing = false;
@@ -2821,6 +2801,7 @@
                 return;
             }
             if (e.type === 'touchcancel') {
+                this.singleTouchActive = false;
                 this.swipe?.end(e);
                 this.clearPendingTap();
                 this.isTwoFingerGesturing = false;
@@ -2854,6 +2835,8 @@
                 return;
             }
 
+            if (e.touches.length || !this.singleTouchActive) return;
+            this.singleTouchActive = false;
             if (this.swipe?.end(e)) return;
 
             if (this.touchStartedOnInteractive) {
@@ -2897,6 +2880,7 @@
     'use strict';
     const Toolbox = window.BilibiliToolbox;
     const AXIS_SLOP = 10;
+    const DRAG_THRESHOLD = 24;
     const TURN_DISTANCE = 80; // CSS pixels, independent of viewport width/density
     const BLEND_DISTANCE = 240;
     const FLICK_SPEED = 0.5; // CSS pixels per millisecond
@@ -2908,7 +2892,7 @@
         const sign = Math.sign(offset);
         const reversing = Math.abs(velocity) >= FLICK_SPEED && Math.sign(velocity) !== sign;
         return sign && !reversing && (Math.abs(offset) >= TURN_DISTANCE
-            || (Math.abs(offset) >= 20 && Math.abs(velocity) >= FLICK_SPEED));
+            || (Math.abs(offset) >= 32 && Math.abs(velocity) >= FLICK_SPEED));
     }
 
     class ReaderSwipe {
@@ -2923,7 +2907,6 @@
             this.prepareTimer = null;
             this.preparing = false;
             this.gesture = null;
-            this.pendingOffset = undefined;
         }
 
         ensureStage() {
@@ -2943,6 +2926,10 @@
             for (const { stage } of this.slots.values()) if (stage) stage.style[property] = value;
         }
 
+        get hasVisuals() {
+            return this.reader.transitionEnabled !== false || this.programmatic;
+        }
+
         cancelMotion() {
             ++this.motion;
             clearTimeout(this.timer);
@@ -2959,7 +2946,6 @@
             this.prepareTimer = null;
             this.preparing = false;
             this.gesture = null;
-            this.pendingOffset = undefined;
             this.offset = 0;
             this.visualSign = 0;
             this.programmatic = false;
@@ -3036,7 +3022,7 @@
             const slot = { stage: null, hint: null, result: null,
                 release: r.imageLoader.protectImages(sources) };
             this.slots.set(direction, slot);
-            if (r.transitionEnabled === false) return slot;
+            if (!this.hasVisuals) return slot;
             const stage = document.createElement('div');
             stage.className = 'comic-page-stage comic-page-neighbor';
             stage.setAttribute('aria-hidden', 'true');
@@ -3097,10 +3083,10 @@
             await slot.promise;
             if (epoch !== this.epoch || token !== r.pageFlipToken || !r.isOpen) return;
             const side = direction * (r.isRightToLeft ? 1 : -1);
-            this.animateTo(side * this.width, 0, () => this.commit(slot, false));
+            this.animateTo(side * this.width, 0, () => this.commit(slot));
         }
 
-        async commit(slot, advanceToken = true) {
+        async commit(slot) {
             const r = this.reader;
             const result = slot.result;
             if (!slot.stage && new Set(result.images).size !== result.images.length) {
@@ -3110,14 +3096,17 @@
                 if (epoch !== this.epoch || motion !== this.motion || !r.isOpen) return;
                 result.images = images;
             }
+            if (!slot.stage) {
+                const step = result.index - r.displayedIndex;
+                r.currentIndex = result.index;
+                return r.render(true, step, result);
+            }
             r.currentIndex = result.index;
-            if (advanceToken) ++r.pageFlipToken;
+            if (!this.programmatic) ++r.pageFlipToken;
             // Detach the preview before committing; commitImages schedules its
             // replacement once, with the new cache protections in place.
             this.reset();
             r.commitImages(result.images, 'immediate', 0, result.preloadStart);
-            r.displayedIndex = result.index;
-            r.syncThumbnailSelection();
         }
 
         direction(offset) {
@@ -3132,7 +3121,7 @@
             this.offset = offset;
             const stage = this.reader.el.pageStage;
             if (!stage) return;
-            if (this.reader.transitionEnabled === false) {
+            if (!this.hasVisuals) {
                 stage.style.opacity = '1';
                 stage.style.transform = 'none';
                 for (const { stage: neighbor } of this.slots.values()) if (neighbor) neighbor.style.visibility = 'hidden';
@@ -3190,16 +3179,18 @@
             if (this.programmatic) {
                 r.currentIndex = r.displayedIndex;
                 ++r.pageFlipToken;
-                this.programmatic = false;
+                if (r.transitionEnabled === false) this.reset(false);
+                else this.programmatic = false;
             }
             if (!r.el.imgContainer?.firstChild || r.currentIndex !== r.displayedIndex) return;
             if (r.transitionEnabled !== false) this.ensureStage();
             this.stopMotion(true);
-            this.pendingOffset = this.offset;
             this.width = r.viewportRect?.width || r.el.reader.clientWidth;
             const touch = e.touches[0];
+            const interrupted = Math.abs(this.offset) > 1;
             this.gesture = { x: touch.clientX, y: touch.clientY, origin: this.offset,
-                axis: Math.abs(this.offset) > 1 ? 'x' : null,
+                distance: this.offset, offset: this.offset,
+                deadZone: interrupted ? 0 : DRAG_THRESHOLD, axis: interrupted ? 'x' : null,
                 samples: [{ x: touch.clientX, time: now() }] };
             this.schedule(0);
         }
@@ -3225,7 +3216,7 @@
                         r.translateX = clampedX;
                         r.translateY = r.clampPanValue(r.initY + dy / scale, limits.maxY);
                         r.applyTransform();
-                        g.x = touch.clientX - (excess - Math.sign(excess) * AXIS_SLOP);
+                        g.x = touch.clientX - excess;
                         dx = touch.clientX - g.x;
                     }
                     g.axis = 'x';
@@ -3237,7 +3228,9 @@
             }
             if (g.axis === 'y') return r.scale <= 1.01;
             e.preventDefault();
-            const raw = g.origin + dx;
+            const distance = g.origin + dx;
+            g.distance = distance;
+            const raw = Math.sign(distance) * Math.max(0, Math.abs(distance) - g.deadZone) || 0;
             const direction = this.direction(raw);
             const canTurn = r.canTurnPage(direction);
             if (canTurn && !this.slots.has(direction)) this.prepare(direction);
@@ -3246,14 +3239,14 @@
             const time = now();
             g.samples.push({ x: touch.clientX, time });
             g.samples = g.samples.filter(sample => time - sample.time <= 100);
-            this.pendingOffset = offset;
+            g.offset = offset;
             if (r.transitionEnabled === false) {
                 this.offset = offset;
                 return true;
             }
             if (this.frame === null) this.frame = requestAnimationFrame(() => {
                 this.frame = null;
-                this.write(this.pendingOffset);
+                this.write(g.offset);
             });
             return true;
         }
@@ -3261,7 +3254,7 @@
         animateTo(target, velocity, done) {
             this.stopMotion();
             const distance = Math.abs(target - this.offset);
-            if (this.reader.transitionEnabled === false || !distance ||
+            if (!this.hasVisuals || !distance ||
                 matchMedia('(prefers-reduced-motion: reduce)').matches) {
                 this.write(target);
                 done();
@@ -3326,41 +3319,36 @@
             e.preventDefault();
             if (this.frame !== null) cancelAnimationFrame(this.frame);
             this.frame = null;
-            if (this.pendingOffset !== undefined) this.write(this.pendingOffset);
+            this.write(g.offset);
             const samples = g.samples.filter(sample => now() - sample.time <= 100);
             const first = samples[0], last = samples[samples.length - 1];
             const velocity = samples.length > 1 && last.time > first.time ? (last.x - first.x) / (last.time - first.time) : 0;
             const direction = this.direction(this.offset);
-            const commit = this.reader.canTurnPage(direction) && releaseDecision(this.offset, velocity);
+            const commit = this.reader.canTurnPage(direction) && releaseDecision(g.distance, velocity);
             this.gesture = null;
             this.reader.clearPendingTap();
-            if (!commit) {
-                this.animateTo(0, velocity, () => this.rest());
-                return true;
-            }
-            const epoch = this.epoch;
-            const settle = ready => {
-                if (epoch !== this.epoch) return;
-                if (!ready) {
-                    this.reader.showReaderMessage('图片加载失败，请重试', true);
-                    this.animateTo(0, 0, () => { this.reset(); this.schedule(); });
-                    return;
-                }
-                this.animateTo(Math.sign(this.offset) * this.travelDistance, velocity, () => {
-                    this.commit(ready);
-                });
-            };
-            const slot = this.slots.get(direction);
-            if (slot?.result) settle(slot);
-            else {
+            if (commit) void this.finishTurn(direction, velocity);
+            else this.animateTo(0, velocity, () => this.rest());
+            return true;
+        }
+
+        async finishTurn(direction, velocity) {
+            let slot = this.slots.get(direction);
+            if (!slot?.result) {
+                const epoch = this.epoch, motion = this.motion;
                 this.waiting = true;
                 this.write(this.offset);
-                const motion = this.motion;
-                this.prepare(direction).then(ready => {
-                    if (motion === this.motion && !this.gesture) settle(ready);
-                });
+                slot = await this.prepare(direction);
+                if (epoch !== this.epoch || motion !== this.motion || this.gesture) return;
             }
-            return true;
+            if (!slot) {
+                this.reader.showReaderMessage('图片加载失败，请重试', true);
+                this.animateTo(0, 0, () => { this.reset(); this.schedule(); });
+            } else if (!slot.stage) {
+                await this.commit(slot);
+            } else {
+                this.animateTo(Math.sign(this.offset) * this.travelDistance, velocity, () => this.commit(slot));
+            }
         }
 
         rest() {
@@ -3970,6 +3958,7 @@
 
             this.isOpen = true;
             this.suppressRemainingTouch = false;
+            this.singleTouchActive = false;
             this.stopPreparingImages();
             this.currentIndex = 0;
             this.displayedIndex = 0;
@@ -4104,7 +4093,7 @@
         }
 
         // Keep the current page visible until the next group is decoded.
-        async render(animate = true, step = 0) {
+        async render(animate = true, step = 0, prepared = null) {
             this.swipe?.reset();
             const container = this.el.imgContainer;
             if (!container) return;
@@ -4114,14 +4103,13 @@
             animations.cancel(container);
             this.pruneImageCache();
             this.applyTransform();
-            const result = await this.loadImages(renderIndex, transitionToken);
+            const result = prepared || await this.loadImages(renderIndex, transitionToken);
             if (transitionToken !== this.pageFlipToken || container !== this.el.imgContainer) return;
             if (!result) {
                 if (container.firstChild) this.currentIndex = this.displayedIndex;
                 this.showReaderMessage('图片加载失败，请重试', true);
                 return;
             }
-            animate = animate && this.transitionEnabled !== false;
             if (animate && this.animationMode === 'parallel' && container.firstChild &&
                 !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
                 await this.swipe.play(result, renderIndex, step, transitionToken);
@@ -4143,8 +4131,6 @@
                 loadImages: (_index, mode, direction) => {
                     if (transitionToken !== this.pageFlipToken || container !== this.el.imgContainer) return;
                     this.commitImages(result.images, mode, direction, result.preloadStart);
-                    this.displayedIndex = renderIndex;
-                    this.syncThumbnailSelection();
                 }
             });
         }
@@ -4193,11 +4179,6 @@
             this.resetPageInteractionState();
             this.setupImagesForRenderMode(images);
             this.updateFitScale(images);
-            animations.resetImageContainer(
-                this.el.imgContainer, animationMode, transitionDirection,
-                () => this.applyTransform(), () => this.getTransformStyle(),
-                (offset) => this.getTransformStyle(offset)
-            );
             this.el.imgContainer.replaceChildren(...images);
             this.updatePageInfo(images.length);
             animations.finishRender(
@@ -4208,12 +4189,11 @@
                 () => this.getTransformStyle(),
                 (screenTranslateX) => this.getTransformStyle(screenTranslateX)
             );
+            this.displayedIndex = this.currentIndex;
+            this.syncThumbnailSelection();
             this.preloadImages(preloadStart);
             this.swipe?.schedule(animationMode === 'immediate' ? 120 : 550);
-            // Apply the memory policy after the displayed page index is committed.
-            Promise.resolve().then(() => {
-                if (this.isOpen) this.pruneImageCache();
-            });
+            if (this.isOpen) this.pruneImageCache();
         }
 
         // 辅助：设置图片样式

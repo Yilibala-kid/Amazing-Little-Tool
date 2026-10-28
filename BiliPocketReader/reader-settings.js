@@ -103,7 +103,7 @@
                 const enabled = preferenceValue(this, 'transitionEnabled');
                 toggle.textContent = enabled ? '过渡：开' : '过渡：关';
                 toggle.setAttribute('aria-checked', String(enabled));
-                toggle.title = '关闭后直接切页；开启后使用所选动画。';
+                toggle.title = '开启：滑动超过 24 像素后跟手过渡；关闭：松手后播放所选翻页动画。每次滑动最多翻一页。';
             }
         },
 

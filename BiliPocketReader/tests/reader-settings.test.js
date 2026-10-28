@@ -323,7 +323,7 @@ test('touch state belongs to each reader and swipes preserve reading direction',
     const turns = [];
     Object.assign(first, {
         el: { reader: {} }, isTouchDevice: true, isSelectingScreenshot: false,
-        touchStartedOnInteractive: false, isTwoFingerGesturing: false,
+        touchStartedOnInteractive: false, isTwoFingerGesturing: false, singleTouchActive: true,
         touchStartX: 100, touchStartY: 100,
         touchEndX: 200, touchEndY: 105, touchStartTime: Date.now() - 500,
         isRightToLeft: true, lastStep: 2,
@@ -331,7 +331,10 @@ test('touch state belongs to each reader and swipes preserve reading direction',
     });
     first.handleTouchEnd({ touches: [], changedTouches: [] });
     assert.deepEqual(turns, [2]);
+    first.handleTouchEnd({ touches: [], changedTouches: [] });
+    assert.deepEqual(turns, [2], 'repeated end events cannot turn another page');
     first.isRightToLeft = false;
+    first.singleTouchActive = true;
     first.handleTouchEnd({ touches: [], changedTouches: [] });
     assert.deepEqual(turns, [2, -2]);
 });

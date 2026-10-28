@@ -16,6 +16,7 @@
         touchEndY: 0,
         touchStartTime: 0,
         touchStartedOnInteractive: false,
+        singleTouchActive: false,
         pendingTapTimer: null,
         lastTapTime: 0,
         lastTapX: 0,
@@ -103,6 +104,7 @@
         handleTouchStart(e) {
             if (this.isSelectingScreenshot || this.suppressRemainingTouch) return;
             if (e.touches.length > 2) {
+                this.singleTouchActive = false;
                 this.swipe?.reset();
                 this.clearPendingTap();
                 this.isTwoFingerGesturing = false;
@@ -111,6 +113,7 @@
                 return;
             }
             if (e.touches.length === 2) {
+                this.singleTouchActive = false;
                 this.swipe?.reset(false);
                 if (this.isInteractiveTouchTarget(e.target)) {
                     this.suppressRemainingTouch = true;
@@ -135,6 +138,8 @@
             }
 
             if (e.touches.length === 1) {
+                if (this.singleTouchActive) return;
+                this.singleTouchActive = true;
                 this.touchStartX = e.touches[0].clientX;
                 this.touchStartY = e.touches[0].clientY;
                 this.touchEndX = this.touchStartX;
@@ -153,6 +158,7 @@
 
         handleTouchMove(e) {
             if (this.isSelectingScreenshot || this.suppressRemainingTouch) return;
+            if (e.touches.length === 1 && !this.singleTouchActive) return;
             if (e.touches.length === 2 && this.isTwoFingerGesturing) {
                 // 双指缩放中
                 e.preventDefault();
@@ -209,6 +215,7 @@
 
         handleTouchEnd(e) {
             if (this.isSelectingScreenshot || this.suppressRemainingTouch) {
+                this.singleTouchActive = false;
                 if (!e.touches.length) {
                     this.suppressRemainingTouch = false;
                     this.isTwoFingerGesturing = false;
@@ -217,6 +224,7 @@
                 return;
             }
             if (e.type === 'touchcancel') {
+                this.singleTouchActive = false;
                 this.swipe?.end(e);
                 this.clearPendingTap();
                 this.isTwoFingerGesturing = false;
@@ -250,6 +258,8 @@
                 return;
             }
 
+            if (e.touches.length || !this.singleTouchActive) return;
+            this.singleTouchActive = false;
             if (this.swipe?.end(e)) return;
 
             if (this.touchStartedOnInteractive) {
